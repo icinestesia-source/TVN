@@ -411,7 +411,6 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           picked={picked}
           onNow={() => tv.dispatch({ type: 'guide-now' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
-          onExport={tv.exportUserNetwork}
         />
         <button type="button" className="tab guide-close" onClick={() => tv.dispatch({ type: 'cancel' })}>
           Close
@@ -424,7 +423,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {addRow ? (
             <>
               <p className="guide-empty-note">Your User Network starts at {padChannel(USER_NUMBER_START)} and is kept in this browser.</p>
-              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onFocus={openAddRow} inputRef={addInput} />
+              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onExport={tv.exportUserNetwork} onFocus={openAddRow} inputRef={addInput} />
               <TestChannelsButton onLoad={tv.loadTestChannels} />
             </>
           ) : null}
@@ -569,8 +568,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                   ))}
                 </div>
                 {addRow ? (
-                  <div className="add-row" style={{ top: tv.visibleChannels.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(260, viewWidth - 16) }}>
-                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onFocus={openAddRow} inputRef={addInput} />
+                  <div className="add-row" style={{ top: tv.visibleChannels.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(200, viewWidth - 16) }}>
+                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onExport={tv.exportUserNetwork} onFocus={openAddRow} inputRef={addInput} />
                   </div>
                 ) : null}
                 <div className="now-line" style={{ left: nowX }} />

@@ -19,37 +19,19 @@ function viewerMessage(caught: unknown, fallback: string): string {
   return message && message.length <= 90 && !/[<>{}]/.test(message) ? message.toUpperCase() : fallback
 }
 
-/** NOW, IMPORT, ADD and EXPORT: ordinary Guide actions beside SEARCH. IMPORT and ADD open in the Guide itself; EXPORT downloads a file. */
+/** NOW, IMPORT and ADD: ordinary Guide actions beside SEARCH. IMPORT and ADD open in the Guide itself. */
 export function GuideActions({
   tool,
   picked,
   onNow,
   onTool,
-  onExport,
 }: {
   tool: GuideTool | null
   /** A programme chosen in the Guide is playing; NOW returns to air. */
   picked: boolean
   onNow: () => void
   onTool: (tool: GuideTool) => void
-  /** Download the User Network as a file; the answer is a short line for the viewer. */
-  onExport?: () => Promise<string>
 }) {
-  const [exporting, setExporting] = useState(false)
-  const [exported, setExported] = useState<string | null>(null)
-  const runExport = () => {
-    if (!onExport || exporting) return
-    setExporting(true)
-    onExport()
-      .then((message) => setExported(message))
-      .catch((caught: unknown) => setExported(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE EXPORTED')))
-      .finally(() => setExporting(false))
-  }
-  useEffect(() => {
-    if (!exported) return
-    const timer = setTimeout(() => setExported(null), 4000)
-    return () => clearTimeout(timer)
-  }, [exported])
   const action = (label: string, on: boolean, run: () => void, title?: string) => (
     <button type="button" className={on ? 'tab is-on' : 'tab'} aria-pressed={on} title={title} onKeyDown={keepKey} onClick={run}>
       {label}
@@ -60,33 +42,47 @@ export function GuideActions({
       {action('Now', picked, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
       {action('Import', tool === 'import', () => onTool('import'))}
       {action('Add', tool === 'add', () => onTool('add'))}
-      {onExport
-        ? action(exporting ? 'Exporting…' : exported ? 'Exported' : 'Export', false, runExport, exported ?? 'Download your User Network (1001+) as a JSON file')
-        : null}
-      {exported ? (
-        <span className="visually-hidden" role="status">
-          {exported}
-        </span>
-      ) : null}
     </div>
   )
 }
 
-/** A box for a YouTube channel or video link; the channel joins the bottom of the guide. */
+/** A box for a YouTube channel or video link; the channel joins the bottom of the guide. EXPORT, after ADD, downloads the User Network. */
 export function AddChannelForm({
   nextNumber,
   onAdd,
+  onExport,
   onFocus,
   inputRef,
 }: {
   nextNumber: number | null
   onAdd: (link: string) => Promise<string>
+  /** Download the User Network as a file; the answer is a short line for the viewer. */
+  onExport?: () => Promise<string>
   onFocus?: () => void
   inputRef?: RefObject<HTMLInputElement | null>
 }) {
   const [link, setLink] = useState('')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exported, setExported] = useState(false)
+
+  const runExport = () => {
+    if (!onExport || exporting) return
+    setExporting(true)
+    onExport()
+      .then((message) => {
+        setNote(message)
+        setExported(true)
+      })
+      .catch((caught: unknown) => setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE EXPORTED')))
+      .finally(() => setExporting(false))
+  }
+  useEffect(() => {
+    if (!exported) return
+    const timer = setTimeout(() => setExported(false), 4000)
+    return () => clearTimeout(timer)
+  }, [exported])
 
   const submit = async (event: FormEvent | KeyboardEvent<HTMLInputElement>) => {
     event.preventDefault()
@@ -125,6 +121,11 @@ export function AddChannelForm({
       <button type="submit" className="tab" disabled={busy || !link.trim()}>
         {busy ? 'Adding…' : 'Add'}
       </button>
+      {onExport ? (
+        <button type="button" className="tab" title="Download your User Network (1001+) as a JSON file" disabled={exporting} onClick={runExport}>
+          {exporting ? 'Exporting…' : exported ? 'Exported' : 'Export'}
+        </button>
+      ) : null}
       {note ? (
         <span className="add-channel-note" role="status">
           {note}

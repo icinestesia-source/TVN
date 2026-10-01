@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { GuideActions } from './components/GuideAdd.tsx'
+import { AddChannelForm, GuideActions } from './components/GuideAdd.tsx'
 import { adjacentChannel, channelByNumber, listChannels } from './data/catalogue.ts'
 import { channelMatchesFilter } from './data/network.ts'
 import { installUserCatalogue } from './data/user-overlay.ts'
@@ -292,11 +292,16 @@ describe('EXPORT: the User Network as tvn-user-network-v1', () => {
     expect(storedKindOf('collection')).toBe('collection')
   })
 
-  it('EXPORT sits immediately after ADD in the Guide actions', () => {
-    const html = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {}, onExport: async () => '' }))
+  it('EXPORT sits on the ADD CHANNEL line, after the link box and its ADD button, not in the Guide actions', () => {
+    const html = renderToStaticMarkup(createElement(AddChannelForm, { nextNumber: 1055, onAdd: async () => '', onExport: async () => '' }))
+    expect(html.indexOf('<input')).toBeLessThan(html.indexOf('>Add</button>'))
     const labels = [...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Now', 'Import', 'Add', 'Export'])
-    expect(read('src/components/Guide.tsx')).toContain('onExport={tv.exportUserNetwork}')
+    expect(labels).toEqual(['Add', 'Export'])
+    const actions = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
+    expect([...actions.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Now', 'Import', 'Add'])
+    const guide = read('src/components/Guide.tsx')
+    expect(guide.match(/<AddChannelForm [^>]*onExport=\{tv\.exportUserNetwork\}/g)).toHaveLength(2)
+    expect(guide).not.toMatch(/<GuideActions[^>]*onExport/)
   })
 })
 
