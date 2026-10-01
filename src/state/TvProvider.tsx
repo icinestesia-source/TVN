@@ -44,7 +44,7 @@ import { probeStream } from '../player/stream.ts'
 import { isLiveStreamChannel } from '../dynamic/stream.ts'
 import { editorScope } from '../view/channel-edit.ts'
 import { loadOverrides, setVideoOverride, subscribeOverrides, videoOverride } from '../services/overrides.ts'
-import { loadPreferences, preferencesSaved, savePreferences } from '../services/preferences.ts'
+import { defaultFavouritesDue, loadPreferences, savePreferences } from '../services/preferences.ts'
 import { placeStarterFavourites, starterFavouriteSources } from '../services/default-favourites.ts'
 import {
   assignShortcut,
@@ -136,7 +136,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   ensureDefaultNetwork()
   beginScheduleBootstrap()
   const [starterDue] = useState(() => claimStarterInstall())
-  const [favouritesSeeded] = useState(() => !preferencesSaved())
+  const [favouritesSeeded] = useState(() => defaultFavouritesDue())
   const stored = useRef(loadPreferences()).current
   const initialNumber = channelByNumber(stored.lastChannelNumber)?.number ?? 1
   const initialPrevious =
@@ -1664,6 +1664,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       subtitles,
       sleepMinutes,
       infoShortcuts,
+      defaultFavouritesOffered: true,
     })
   }, [
     audioFocus,

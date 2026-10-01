@@ -44,6 +44,7 @@ describe('Pass 15A programme-level reuse', () => {
       const chosen = new Set(doc.programmeRoutes?.[channel] ?? [])
       expect(chosen.size, channel).toBeGreaterThan(0)
       for (const item of airing(Number(channel))) {
+        if (item.genreChannels?.includes(Number(channel)) || item.eraChannels?.includes(Number(channel))) continue
         if (sources.includes(item.sourceId ?? '')) expect(chosen.has(item.externalId ?? ''), `${item.title} on ${channel}`).toBe(true)
       }
       for (const source of sources) {

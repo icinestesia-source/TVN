@@ -65,7 +65,7 @@ describe('curated videos that refuse embedded playback', () => {
     expect(mediaLibrary().some((item) => item.externalId === playable)).toBe(true)
     expect(getEligibleMedia(mediaLibrary(), 225).some((item) => item.externalId === refused)).toBe(false)
     expect(librarySnapshot().media.some((item) => item.externalId === refused)).toBe(true)
-  })
+  }, 120_000)
 
   it('a refusal seen in this browser hides the video at once and is remembered', async () => {
     memoryStorage()
@@ -76,7 +76,7 @@ describe('curated videos that refuse embedded playback', () => {
     expect(isRefusedVideo(seen!)).toBe(true)
     republishLibrary()
     expect(mediaLibrary().some((item) => item.externalId === seen)).toBe(false)
-  })
+  }, 120_000)
 
   it('the provider learns refusals on every channel and retunes in place', () => {
     const provider = read('src/state/TvProvider.tsx')

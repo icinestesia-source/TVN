@@ -49,6 +49,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   subtitles: false,
   sleepMinutes: DEFAULT_SLEEP_MINUTES,
   infoShortcuts: DEFAULT_SHORTCUTS,
+  defaultFavouritesOffered: true,
 }
 
 function clampVolume(value: unknown): number {
@@ -82,6 +83,28 @@ export function preferencesSaved(): boolean {
   }
 }
 
+/**
+ * A saved record from before the starter Favourites existed carries no marker; if it also holds no favourites,
+ * this browser was never offered them. A record with the marker is the viewer's own list, empty or not.
+ */
+function savedRecordDue(record: Partial<UserPreferences>): boolean {
+  return record.defaultFavouritesOffered !== true && asNumbers(record.favouriteChannelNumbers).length === 0
+}
+
+/** Whether this load seeds the starter Favourites: a new viewer, or a browser never offered them. Seeds once. */
+export function defaultFavouritesDue(): boolean {
+  try {
+    const raw = localStorage.getItem(PREFERENCES_KEY)
+    if (raw === null) return true
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return false
+    const record = parsed as Partial<UserPreferences>
+    return (record.version === 1 || record.version === 2) && savedRecordDue(record)
+  } catch {
+    return false
+  }
+}
+
 export function loadPreferences(): UserPreferences {
   // Something was saved but cannot be read: the viewer's favourites are unknown, not unset.
   const unreadable = (): UserPreferences => ({ ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [], multiviewChannels: [] })
@@ -100,7 +123,7 @@ export function loadPreferences(): UserPreferences {
         typeof record.previousChannelNumber === 'number' ? record.previousChannelNumber : null,
       volume: clampVolume(record.volume),
       muted: Boolean(record.muted),
-      favouriteChannelNumbers: asNumbers(record.favouriteChannelNumbers),
+      favouriteChannelNumbers: savedRecordDue(record) ? [...DEFAULT_FAVOURITES] : asNumbers(record.favouriteChannelNumbers),
       guideFilter: asFilter(record.guideFilter),
       guideSplit: clampGuideSplit(record.guideSplit ?? 0.5),
       multiviewMode: asMode(record.multiviewMode),
@@ -112,6 +135,7 @@ export function loadPreferences(): UserPreferences {
       subtitles: record.subtitles === true,
       sleepMinutes: asSleepMinutes(record.sleepMinutes),
       infoShortcuts: asShortcuts(record.infoShortcuts),
+      defaultFavouritesOffered: true,
     }
   } catch {
     return unreadable()

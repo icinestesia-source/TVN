@@ -829,7 +829,7 @@ Generated from the shipped catalogue (119627 programmes, 56714 h). Full records:
 | 809 | Industrial Film Archive | specialist | PLAYABLE | 116 | 18.9 | Huntley Film Archives – Industry | None required; keep differentiated. |
 | 810 | Retro Computing | specialist | PLAYABLE_STRONG | 297 | 78.5 | The 8-Bit Guy | None required; keep differentiated. |
 | 811 | Home Computers | specialist | PLAYABLE_STRONG | 135 | 36.4 | Computerphile | None required; keep differentiated. |
-| 812 | Arcade Archive | specialist | NEEDS_CONTENT | 0 | 0 |  | Needs a dedicated official, authorised or creator-owned publisher for this identity. |
+| 812 | Fortnite | specialist | NEEDS_CONTENT | 0 | 0 |  | Targeted acquisition from official and creator publishers (docs/FORTNITE_ACQUISITION_PLAN.md). |
 | 813 | Console Archive | specialist | PLAYABLE_STRONG | 300 | 86.9 | Modern Vintage Gamer | None required; keep differentiated. |
 | 814 | Software History | specialist | PLAYABLE_STRONG | 434 | 301.8 | Computer History Museum | None required; keep differentiated. |
 | 815 | Internet History | specialist | PLAYABLE_STRONG | 42 | 47.9 | Computer History Museum – Internet History | None required; keep differentiated. |

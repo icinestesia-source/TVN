@@ -45,4 +45,6 @@ export interface UserPreferences {
   sleepMinutes: number
   /** The actions in the corners of the information overlay's control pad. */
   infoShortcuts: ShortcutAssignment
+  /** Set once the starter Favourites have been offered; from then on the list is the viewer's own, even if empty. */
+  defaultFavouritesOffered?: boolean
 }

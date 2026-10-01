@@ -1,7 +1,7 @@
 {
  "catalogue": "catalogue-v43",
  "note": "Programmes the mandatory 000–999 space/aviation/religion exclusion removes from each channel pool. Every id is rejected by src/library/exclusions.ts; without the exclusion every channel meets the v38/v40/v41 baselines and every static channel meets v42.",
- "channels": 117,
+ "channels": 116,
  "programmes": 217,
  "removed": {
   "1": [
@@ -562,9 +562,6 @@
    "yt:IbpcxRrj1YY",
    "yt:JFwzMvFJYik",
    "yt:swuHFQPkJpc"
-  ],
-  "787": [
-   "yt:ZTFWvOKvOcM"
   ],
   "788": [
    "yt:3lWWH1zfl38",

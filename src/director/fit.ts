@@ -509,7 +509,7 @@ export const DEDICATED: Readonly<Record<string, readonly number[]>> = {
   src_real_wild: [66],
   src_brave_wilderness: [66],
   src_terra_mater: [784],
-  src_the_dodo: [788],
+  src_the_dodo: [787, 788],
   src_nick_zentner: [65],
   src_usgs: [431],
   src_iris_earthquake: [431],
@@ -774,7 +774,7 @@ const LAW_REUSE = [
  * Approved programme-level reuse: channel -> dedicated sources whose individually chosen programmes
  * (programmeRoutes, scripts/programme_reuse.py) may air there. The rest of each source stays on its homes.
  */
-export const PROGRAMME_REUSE: Readonly<Record<number, readonly string[]>> = {
+const CURATED_REUSE: Readonly<Record<number, readonly string[]>> = {
   824: ['src_jago_hazzard', 'src_all_the_stations'],
   437: EARTH_REUSE,
   438: EARTH_REUSE,
@@ -879,6 +879,33 @@ export const PROGRAMME_REUSE: Readonly<Record<number, readonly string[]>> = {
     return sources ? [[number, sources]] : []
   })),
 }
+
+/**
+ * First Harvester import (TVN 1.0.7): each pair was reviewed against the programmes it admits. Like every reuse
+ * entry it admits only the programmes individually routed to that channel, never the rest of the publisher.
+ */
+export const HARVESTER_REUSE: Readonly<Record<number, readonly string[]>> = {
+  37: ['src_filmrise_movies'],
+  149: ['src_popcornflix'],
+  152: ['src_filmrise_movies', 'src_popcornflix'],
+  157: ['src_movie_central', 'src_popcornflix'],
+  218: ['src_filmrise_movies'],
+  404: ['src_bloomberg_originals'],
+  450: ['src_harvard_law_international'],
+  471: ['src_gresham_medicine'],
+  609: ['src_bloomberg_originals'],
+  675: ['src_chrisfix'],
+  695: ['src_gresham_medicine'],
+  696: ['src_bbc_archive'],
+  916: ['src_abc_news_indepth', 'src_berkman_klein'],
+}
+
+export const PROGRAMME_REUSE: Readonly<Record<number, readonly string[]>> = Object.fromEntries(
+  [...new Set([...Object.keys(CURATED_REUSE), ...Object.keys(HARVESTER_REUSE)].map(Number))].map((number) => [
+    number,
+    [...new Set([...(CURATED_REUSE[number] ?? []), ...(HARVESTER_REUSE[number] ?? [])])],
+  ]),
+)
 const FEED_BY_SOURCE = new Map(FEEDS.flatMap((feed) => feed.sources.map((source) => [source, feed] as const)))
 
 function feedAllows(source: string, channel: { name: string; category: string }): boolean {
@@ -978,6 +1005,20 @@ const FILM_RULES: Theme[] = [
 ]
 const TRAILER = /trailers?\b|teaser/i
 
+/**
+ * Subject channels whose name alone is ambiguous ("\bcat" matches Catching, Cathedral, Catskinner). The title must
+ * be about the subject for every source, dedicated or not. Cats means domestic cats: not big cats, the musical,
+ * Cat's Eye, Doja Cat, "Save the Cat" or cat-shaped antiques. Fortnite means programmes about Fortnite, not news
+ * round-ups or titles that only mention it.
+ */
+export const SUBJECT_TITLES: readonly { channel: RegExp; title: RegExp }[] = [
+  {
+    channel: /^cats$/i,
+    title: /^(?!.*(?:\bbig cats?\b|\bwild cats?\b|\b(?:lions?|tigers?|leopards?|jaguars?|cheetahs?|cougars?|pumas?|lynx|ocelots?|langurs?|servals?|pallas'?s cat)\b|\btiger cub|cats the musical|cats musical|\bcats\s*\(19|jellicle|cat'?s eye|doja cat|save the cat|cat in the hat|cat'?s meow|\bbronze\b|figurines?|porcelain|appraisal|\bca\. ?1\d{3}\b)).*\b(?:cats?|kittens?|kitty|kitties|felines?)\b/i,
+  },
+  { channel: /^fortnite$/i, title: /^(?!.*(?:\band more\b|\bnews\b|fortnite kid|fortnite\?|\bfrom fortnite\b)).*\bfortnite\b/i },
+]
+
 function decadeTitle(name: string): RegExp | undefined {
   const decade = /\b(19|20)(\d)0s\b/.exec(name)
   return decade ? new RegExp(`\\b${decade[1]}${decade[2]}\\d\\b`) : undefined
@@ -1070,6 +1111,11 @@ function channelFit(channelNumber: number): ChannelFit {
     const decade = decadeTitle(name)
     if (/trailer/i.test(name)) fit.must.push(TRAILER)
     if (decade) fit.must.push(decade)
+  }
+  for (const subject of SUBJECT_TITLES) {
+    if (!subject.channel.test(name)) continue
+    fit.must.push(subject.title)
+    themes = [{ channel: subject.channel, title: subject.title, strict: true }]
   }
   const strict = themes.find((theme) => theme.strict)
   const sportTopic = themes.filter((theme) => theme.categories?.includes('sport'))

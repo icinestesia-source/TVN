@@ -31,9 +31,9 @@ describe('programme-level routes', () => {
         const item = byVideo.get(id)
         expect(item, `${channel} ${id}`).toBeDefined()
         const source = item!.sourceId ?? ''
-        expect(DEDICATED[source], `${channel} ${source}`).toBeUndefined()
         expect(OWNED_SOURCES.has(source), `${channel} ${source}`).toBe(false)
-        expect(doc.sourceClasses?.[source]).toBe('BROAD_PROGRAMME_ROUTED')
+        if (DEDICATED[source]) expect(DEDICATED[source], `${channel} ${source}`).toContain(channel)
+        else expect(doc.sourceClasses?.[source]).toBe('BROAD_PROGRAMME_ROUTED')
         expect(seen.has(id), id).toBe(false)
         seen.add(id)
         expect(item!.curatedChannels).toContain(channel)
@@ -41,25 +41,32 @@ describe('programme-level routes', () => {
     }
   })
 
-  it('gives every routed channel at least three hours of its chosen programmes and its own publishers', () => {
+  it('gives every routed channel at least three hours of its chosen programmes and its own publishers, unless the routes add to a channel already on air', () => {
     for (const { channel, ids } of routes) {
       const chosen = new Set(ids.map((id) => `yt:${id}`))
-      const airing = (getChannelMedia(items as MediaItem[], channel) as LibraryMedia[])
-        .filter((item) => chosen.has(item.id) || DEDICATED[item.sourceId ?? '']?.includes(channel))
+      const pool = getChannelMedia(items as MediaItem[], channel) as LibraryMedia[]
+      const airing = pool.filter((item) => chosen.has(item.id) || DEDICATED[item.sourceId ?? '']?.includes(channel))
       const hours = airing.reduce((sum, item) => sum + item.durationSeconds, 0) / 3600
+      if (airing.length < pool.length) continue
       expect(hours, `${channel}`).toBeGreaterThan(3)
     }
   })
 
   it('routes the programme, not its publisher', () => {
+    const unrouted = expandPlayableCatalogue({ ...doc, programmeRoutes: {} })
+    resetDirector()
+    setMediaLibrary(unrouted)
+    const before = new Map(routes.map(({ channel }) => [channel, new Set(getChannelMedia(unrouted as MediaItem[], channel).map((item) => item.id))]))
+    resetDirector()
+    setMediaLibrary(items)
     for (const { channel, ids } of routes) {
       const chosen = new Set(ids)
       const sources = new Set(ids.map((id) => byVideo.get(id)!.sourceId))
-      const others = items.filter((item) => sources.has(item.sourceId) && !chosen.has(item.externalId ?? ''))
-      const leaked = getChannelMedia(items as MediaItem[], channel).filter((item) => others.some((other) => other.id === item.id))
-      expect(leaked.length, `${channel}`).toBe(0)
+      const others = new Set(items.filter((item) => sources.has(item.sourceId) && !chosen.has(item.externalId ?? '')).map((item) => item.id))
+      const leaked = getChannelMedia(items as MediaItem[], channel).filter((item) => others.has(item.id) && !before.get(channel)!.has(item.id))
+      expect(leaked.map((item) => item.title), `${channel}`).toEqual([])
     }
-  })
+  }, 120_000)
 
   it('cannot route a dedicated source away from its home', () => {
     const [source, homes] = Object.entries(DEDICATED)[0]

@@ -172,8 +172,8 @@ describe('seeding once, for a new viewer only', () => {
   })
 
   it('seeding is decided before anything is saved and is not tied to a catalogue refresh', () => {
-    expect(provider).toContain('const [favouritesSeeded] = useState(() => !preferencesSaved())')
-    expect(provider.indexOf('!preferencesSaved()')).toBeLessThan(provider.indexOf('useRef(loadPreferences())'))
+    expect(provider).toContain('const [favouritesSeeded] = useState(() => defaultFavouritesDue())')
+    expect(provider.indexOf('defaultFavouritesDue()')).toBeLessThan(provider.indexOf('useRef(loadPreferences())'))
     expect(provider).not.toMatch(/catalogueVersion[^\n]*DEFAULT_FAVOURITES|DEFAULT_FAVOURITES[^\n]*catalogueVersion/)
     expect(provider).not.toContain('DEFAULT_FAVOURITES')
   })

@@ -12,9 +12,9 @@ export function shownDescription(programme: Programme): string | null {
   return text
 }
 
-/** Only the viewer's own networks are named; a TVN channel needs no label. */
+/** 1001+ channels carry the TVN brand ahead of their own name; 001–999 need no label, a session is named. */
 export function networkLabel(channel: Channel): string | null {
-  return channel.origin === 'session' ? 'Session' : channel.number >= 1001 ? 'User' : null
+  return channel.origin === 'session' ? 'Session' : channel.number >= 1001 ? 'TVN' : null
 }
 
 /**
