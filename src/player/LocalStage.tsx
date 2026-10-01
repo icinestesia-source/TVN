@@ -67,7 +67,18 @@ export function LocalStage({
         onStatusRef.current('playing')
         settle(id, 'playing')
       },
-      () => fail(id),
+      (error: unknown) => {
+        // The browser refusing to start before the viewer has interacted is not a broken stream: the source
+        // is loaded and waiting, and TVN's start check takes it from here.
+        if (error instanceof DOMException && error.name === 'NotAllowedError') {
+          if (id !== requestId.current) return
+          notePlayback({ playerState: 'paused', lastError: 'waiting for the viewer' })
+          onStatusRef.current('paused')
+          settle(id, 'playing')
+          return
+        }
+        fail(id)
+      },
     )
   }
 

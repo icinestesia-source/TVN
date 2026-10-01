@@ -3,9 +3,9 @@ import type { ImportedVideo, ParsedExport, StoredSource } from './channels-impor
 import { refreshOrigin } from './channel-sources.ts'
 
 /**
- * The User Network (1001+) belongs to the viewer and lives in this browser. It starts empty; channels
- * arrive through Add Channel, a channel list file, or the bundled TVN test channels, and each change
- * appends after the last user channel without touching the ones already there.
+ * The User Network (1001+) belongs to the viewer and lives in this browser. A new viewer starts with the
+ * bundled starter network; channels also arrive through Add Channel or a channel list file, and each
+ * change appends after the last user channel without touching the ones already there.
  */
 export const ADDED_PREFIX = 'yt:'
 
@@ -65,7 +65,7 @@ export function addChannelSource(
 }
 
 /**
- * Install the bundled test channels after the viewer's own. A collection already present (the same
+ * Install the bundled starter network after the viewer's own. A collection already present (the same
  * collection, the same name, or the same uploader added by link) is left exactly as it is.
  */
 export function planTestChannels(

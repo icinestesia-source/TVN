@@ -23,6 +23,7 @@ import { TouchRemote } from '../components/TouchRemote.tsx'
 import { VolumeOsd } from '../components/VolumeOsd.tsx'
 import { CreditsRoll } from '../credits/CreditsRoll.tsx'
 import { useAboutOpen, useNoticeAcknowledged } from '../legal/about-store.ts'
+import { START_HOLD_COPY } from '../player/autoplay.ts'
 import { AboutPanel } from '../legal/AboutPanel.tsx'
 import { FirstRunNotice } from '../legal/FirstRunNotice.tsx'
 
@@ -106,6 +107,7 @@ export function TvScreen() {
         {tv.numeric ? <NumericEntry digits={tv.numeric} /> : null}
         {tv.notice ? <div className="notice">{tv.notice}</div> : null}
         {tv.paused ? <div className="paused-bug">Paused</div> : null}
+        {tv.startHold && !tv.paused ? <div className="paused-bug" role="status">{START_HOLD_COPY[tv.startHold]}</div> : null}
         <Hints />
       </div>
       {tv.guideMode === 'integrated' && single && !narrow ? <GuideSplitter /> : null}

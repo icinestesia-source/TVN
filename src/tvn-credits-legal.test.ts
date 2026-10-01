@@ -396,9 +396,9 @@ describe('Multi View and YouTube', () => {
 })
 
 describe('the public network', () => {
-  it('has no NASA channel and no test network for a new visitor', () => {
+  it('has no NASA channel, and the starter network is user data rather than part of the curated network', () => {
     expect(listChannels().some((channel) => /\bnasa\b/i.test(channel.name))).toBe(false)
     expect(Object.values(register.sources).some((entry) => /\bnasa\b/i.test(entry.name))).toBe(false)
-    expect(read('src/data/user-network/bootstrap.ts')).toContain('nothing is installed for a\n * new viewer')
+    expect(read('src/data/user-network/bootstrap.ts')).toContain('Nothing is installed here')
   })
 })

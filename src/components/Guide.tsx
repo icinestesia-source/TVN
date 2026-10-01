@@ -508,6 +508,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           userChannels={userNumbers.length}
           onImportList={importList}
           onLoadTest={tv.loadTestChannels}
+          onRemoveStarter={tv.removeStarterNetwork}
           onRemoveAll={() => tv.removeUserChannels('all')}
         />
       ) : sessionMatches.length > 0 ? (
@@ -719,7 +720,7 @@ function ProgrammePanel({
   )
 }
 
-/** The opt-in bundled example network, offered while the viewer's own User Network is empty. */
+/** The bundled starter network, offered again while the viewer's own User Network is empty. */
 function TestChannelsButton({ onLoad }: { onLoad: () => Promise<string> }) {
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -737,7 +738,7 @@ function TestChannelsButton({ onLoad }: { onLoad: () => Promise<string> }) {
             .finally(() => setBusy(false))
         }}
       >
-        {busy ? 'Loading…' : 'Load TVN test channels'}
+        {busy ? 'Loading…' : 'Add starter network'}
       </button>
       {note ? <span role="status"> {note}</span> : null}
     </p>

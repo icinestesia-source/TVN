@@ -11,7 +11,7 @@ const actions = () =>
 const importTools = () => renderToStaticMarkup(createElement(SessionImportTools, { onImport: async () => '' }))
 const userTools = () =>
   renderToStaticMarkup(
-    createElement(UserNetworkTools, { userChannels: 0, onImportList: async () => '', onLoadTest: async () => '', onRemoveAll: async () => '' }),
+    createElement(UserNetworkTools, { userChannels: 0, onImportList: async () => '', onLoadTest: async () => '', onRemoveStarter: async () => '', onRemoveAll: async () => '' }),
   )
 import { adjacentChannel, channelByNumber, channels, listChannels, programmesFor, randomChannel } from '../data/catalogue.ts'
 import { installUserCatalogue, userChannelList } from '../data/user-overlay.ts'

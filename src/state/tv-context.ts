@@ -1,4 +1,5 @@
 import { createContext, useContext, type RefObject } from 'react'
+import type { StartHold } from '../player/autoplay.ts'
 import type { Channel } from '../types/channel.ts'
 import type { TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
@@ -26,6 +27,8 @@ export interface TvContextValue {
   /** Back and Forward through the channels watched this session are available. */
   canGoBack: boolean
   canGoForward: boolean
+  /** What the browser held back at startup until the viewer's first key or tap. */
+  startHold: StartHold
   visibleChannels: readonly Channel[]
   volume: number
   muted: boolean
@@ -106,8 +109,10 @@ export interface TvContextValue {
   ) => Promise<void>
   /** Add a YouTube channel from a channel or video link as the last user channel (or refresh it if present). */
   addChannel: (link: string) => Promise<{ number: number | null; message: string }>
-  /** Install the bundled TVN test channels after the viewer's own, skipping any already present. */
+  /** Add the bundled starter network after the viewer's own channels, skipping any already present. */
   loadTestChannels: () => Promise<string>
+  /** Remove the starter network's channels (edited or not) and remember that the viewer removed it. */
+  removeStarterNetwork: () => Promise<string>
   /** Deliberately remove the given user channels, or all of them. */
   removeUserChannels: (numbers: 'all' | readonly number[]) => Promise<string>
   /**

@@ -199,21 +199,24 @@ export function UserNetworkTools({
   userChannels,
   onImportList,
   onLoadTest,
+  onRemoveStarter,
   onRemoveAll,
 }: {
   userChannels: number
   /** A channel list file (a TVN export or a list of YouTube links) joins 1001+. */
   onImportList: (file: File) => Promise<string>
+  /** The bundled starter network, added after the viewer's own channels. */
   onLoadTest: () => Promise<string>
+  onRemoveStarter: () => Promise<string>
   onRemoveAll: () => Promise<string>
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
-  const [confirming, setConfirming] = useState(false)
+  const [confirming, setConfirming] = useState<'starter' | 'all' | null>(null)
   const listInput = useRef<HTMLInputElement>(null)
 
   const run = async (work: () => Promise<string>) => {
-    setConfirming(false)
+    setConfirming(null)
     setBusy(true)
     setNote(null)
     try {
@@ -249,17 +252,24 @@ export function UserNetworkTools({
         ) : null}
       </div>
       <div className="info-actions">
-        {confirming ? (
+        {confirming === 'all' ? (
           <>
             <span className="remove-ask">Remove all {userChannels} user channels from this browser?</span>
             {key('Yes, remove them', () => void run(onRemoveAll), 'tab remove-key')}
-            {key('Keep them', () => setConfirming(false))}
+            {key('Keep them', () => setConfirming(null))}
+          </>
+        ) : confirming === 'starter' ? (
+          <>
+            <span className="remove-ask">Remove the starter network from this browser? Your other channels stay.</span>
+            {key('Yes, remove it', () => void run(onRemoveStarter), 'tab remove-key')}
+            {key('Keep it', () => setConfirming(null))}
           </>
         ) : (
           <>
             {key('Channel list', () => listInput.current?.click())}
-            {key('TVN test channels', () => void run(onLoadTest))}
-            {userChannels > 0 ? key('Remove all…', () => setConfirming(true), 'tab remove-key') : null}
+            {key('Add starter network', () => void run(onLoadTest))}
+            {userChannels > 0 ? key('Remove starter…', () => setConfirming('starter'), 'tab remove-key') : null}
+            {userChannels > 0 ? key('Remove all…', () => setConfirming('all'), 'tab remove-key') : null}
           </>
         )}
       </div>

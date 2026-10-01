@@ -74,7 +74,7 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
         live={now >= current.startMs && now < current.endMs}
         onTune={tv.screenAction}
         onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}
-        onNext={steps && hasPicture(next.programme) ? () => tv.screenStep(1) : undefined}
+        onNext={steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}
         history={{
           canBack: tv.canGoBack,
           canForward: tv.canGoForward,

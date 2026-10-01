@@ -1,4 +1,5 @@
 import { broadcast } from '../services/broadcast.ts'
+import { hasPicture } from '../session/session-channel.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import type { ScheduleSnapshot } from '../types/schedule.ts'
@@ -29,11 +30,23 @@ export function selectProgramme(
   return selected
 }
 
-/** The programme before (-1) or after (1) the one on screen, in the channel's running order. */
+/** How many slots with nothing to show (the schedule's holding cards) Prev and Next look past. */
+const STEP_REACH = 24
+
+/**
+ * The programme before (-1) or after (1) the one on screen, in the channel's running order. A holding card
+ * has nothing to play, so the step goes on past it to the nearest programme on the same channel that does.
+ */
 export function stepFrom(channel: Channel, nowMs: number, direction: -1 | 1) {
   const manual = manualAiring(channel.number, nowMs)
-  const place = manual ? (manual.slot ?? manual) : broadcast(channel, nowMs).current
-  return broadcast(channel, direction === 1 ? place.endMs : place.startMs - 1).current
+  let place: { startMs: number; endMs: number } = manual ? (manual.slot ?? manual) : broadcast(channel, nowMs).current
+  const adjacent = broadcast(channel, direction === 1 ? place.endMs : place.startMs - 1).current
+  let found = adjacent
+  for (let skipped = 0; skipped < STEP_REACH && !hasPicture(found.programme); skipped += 1) {
+    place = found
+    found = broadcast(channel, direction === 1 ? place.endMs : place.startMs - 1).current
+  }
+  return hasPicture(found.programme) ? found : adjacent
 }
 
 /**

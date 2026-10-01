@@ -31,7 +31,7 @@ describe('TVN surf range', () => {
     expect(loadSurfRange(store)).toEqual(DEFAULT_SURF_RANGE)
   })
 
-  it('is on for a first visit, then follows what the viewer last chose, independently of the range', () => {
+  it('stores the switch independently of the range; whether Surf starts running is set by the entry address', () => {
     const { store } = memory()
     expect(loadSurfOn(store)).toBe(true)
     saveSurfOn(false, store)
@@ -42,7 +42,7 @@ describe('TVN surf range', () => {
     expect(loadSurfOn(store)).toBe(true)
     expect(loadSurfRange(store)).toEqual({ minSeconds: 3, maxSeconds: 9 })
     const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
-    expect(provider).toContain('const [surfing, setSurfing] = useState(() => loadSurfOn())')
+    expect(provider).toContain('const [surfing, setSurfing] = useState(() => surfsOnEntry(currentEntryMode()))')
   })
 
   it('T switches surfing like the TVN button, in or out of the Guide; B and N are Prev and Next', () => {

@@ -25,12 +25,11 @@ import { markLiveUnavailable } from '../dynamic/runtime.ts'
 import { loadUserLibraryMode, setUserLibraryMode, userLibraryMode } from '../library/mode.ts'
 import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary } from '../library/store.ts'
 import { guideSlots } from '../services/broadcast.ts'
-import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readTestChannelTexts } from '../data/user-network/bootstrap.ts'
+import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
+import { claimStarterInstall, setStarterState, starterIds, withoutStarter } from '../data/user-network/starter.ts'
 import {
   channelsFromSources,
-  mergeParsedExports,
   migrateLegacyUserNumbers,
-  parseChannelsExport,
   planImport,
   type ParsedExport,
   type StoredSource,
@@ -54,7 +53,8 @@ import type { GuideTool, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, sleep } from '../utils/time.ts'
 import { nextSleepMinutes, sleepPhase } from './sleep.ts'
-import { asSurfRange, loadSurfOn, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
+import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
+import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, stepTarget, type Tuned } from './tuning.ts'
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
@@ -74,6 +74,7 @@ import {
   tileCount,
 } from '../view/multiview.ts'
 import { isOnAir } from '../network/airing.ts'
+import { confirmStart, type StartHold } from '../player/autoplay.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './history.ts'
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
 import {
@@ -124,6 +125,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   setUserLibraryMode(loadUserLibraryMode())
   ensureDefaultNetwork()
   beginScheduleBootstrap()
+  const [starterDue] = useState(() => claimStarterInstall())
   const stored = useRef(loadPreferences()).current
   const initialNumber = channelByNumber(stored.lastChannelNumber)?.number ?? 1
   const initialPrevious =
@@ -181,7 +183,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const activityRef = useRef(Date.now())
   const sleepWarnedRef = useRef(false)
   const goToSleepRef = useRef<() => void>(() => {})
-  const [surfing, setSurfing] = useState(() => loadSurfOn())
+  // The address decides whether Surf starts running: tvn.lol/tvn does, tvn.lol/ waits for the TVN button.
+  const [surfing, setSurfing] = useState(() => surfsOnEntry(currentEntryMode()))
   const surfingRef = useRef(surfing)
   const [surfHops, setSurfHops] = useState(0)
   const [surfRange, setSurfRangeState] = useState<SurfRange>(() => loadSurfRange())
@@ -211,6 +214,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const visibleRef = useRef<Channel[]>([])
   const playerReadyRef = useRef(false)
   const bootedRef = useRef(false)
+  const [startHold, setStartHold] = useState<StartHold>(null)
+  const startHoldRef = useRef<StartHold>(null)
   const loadedKey = useRef('')
   const loadToken = useRef(0)
   const tokenRef = useRef(0)
@@ -366,7 +371,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       pendingNumberRef.current = null
       staticSince.current = 0
       setTuningNumber(null)
-      playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current)
+      playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || startHoldRef.current !== null)
       if (pausedRef.current) resumeViewing()
       showOverlay('info', INFO_MS)
       return
@@ -399,7 +404,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     pendingNumberRef.current = null
     staticSince.current = 0
     setTuningNumber(null)
-    playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current)
+    playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || startHoldRef.current !== null)
     showOverlay('info', INFO_MS)
   }
 
@@ -565,9 +570,42 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!current || !playerRef.current) return
     bootedRef.current = true
     playerRef.current.setAudible(true, volumeRef.current, mutedRef.current)
-    if (!pausedRef.current) void loadProgramme(current, Date.now())
+    if (!pausedRef.current) {
+      void loadProgramme(current, Date.now()).then((result) => {
+        const player = playerRef.current
+        if (result !== 'playing' || !player) return
+        const load = loadToken.current
+        const stillFirst = () =>
+          load === loadToken.current && playerRef.current === player && !pausedRef.current && !tuningRef.current && multiviewRef.current === '1'
+        void confirmStart(player, stillFirst, sleep).then((hold) => {
+          if (!hold) return
+          startHoldRef.current = hold
+          setStartHold(hold)
+        })
+      })
+    }
     showOverlay('info', INFO_MS)
   }
+
+  // The viewer's first key or tap is the interaction the browser waits for: sound (or the picture) starts
+  // on the programme already selected, and whatever that key or tap does happens as usual.
+  useEffect(() => {
+    if (!startHold) return
+    const release = () => {
+      startHoldRef.current = null
+      setStartHold(null)
+      const player = playerRef.current
+      if (!player || multiviewRef.current !== '1' || pausedRef.current) return
+      player.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
+      player.play()
+    }
+    window.addEventListener('pointerdown', release, true)
+    window.addEventListener('keydown', release, true)
+    return () => {
+      window.removeEventListener('pointerdown', release, true)
+      window.removeEventListener('keydown', release, true)
+    }
+  }, [startHold])
 
   /** Show the session channel's schedule as it now stands: reload in place when watching it, tune to it otherwise. */
   const showSession = () => {
@@ -1341,16 +1379,44 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
-  const loadTestChannels = useCallback(async () => {
-    const parsed = mergeParsedExports((await readTestChannelTexts()).map((text) => parseChannelsExport(text)))
-    await ingestParsed(parsed, { filename: BUILT_IN_CATALOGUE_ID })
-    const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
-    const plan = planTestChannels(existing, parsed, Date.now(), uploaderIdFor)
-    if (plan.added.length === 0) return 'TVN TEST CHANNELS ARE ALREADY INSTALLED'
-    await saveStoredSources(plan.sources)
-    installSources(plan.sources)
-    const range = plan.added.length === 1 ? `${plan.added[0]}` : `${plan.added[0]}–${plan.added[plan.added.length - 1]}`
-    return `${plan.added.length} TVN TEST CHANNELS ADDED ON ${range}${plan.skipped > 0 ? ` · ${plan.skipped} ALREADY PRESENT` : ''}`
+  /** Add the starter network after the viewer's own channels; anything already present is left as it is. */
+  const loadTestChannels = useCallback(
+    async (automatic = false) => {
+      const parsed = await readStarterTemplate()
+      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      if (automatic && existing.length > 0) {
+        setStarterState('skipped')
+        return ''
+      }
+      await ingestParsed(parsed, { filename: BUILT_IN_CATALOGUE_ID })
+      const plan = planTestChannels(existing, parsed, Date.now(), uploaderIdFor)
+      if (plan.added.length > 0) await saveStoredSources(plan.sources)
+      setStarterState('installed')
+      if (plan.added.length === 0) return 'THE STARTER NETWORK IS ALREADY INSTALLED'
+      installSources(plan.sources)
+      const range = plan.added.length === 1 ? `${plan.added[0]}` : `${plan.added[0]}–${plan.added[plan.added.length - 1]}`
+      return `${plan.added.length} STARTER CHANNELS ADDED ON ${range}${plan.skipped > 0 ? ` · ${plan.skipped} ALREADY PRESENT` : ''}`
+    },
+    [installSources],
+  )
+
+  const starterRanRef = useRef(false)
+  useEffect(() => {
+    if (startupPhase !== 'ready' || !starterDue || starterRanRef.current) return
+    starterRanRef.current = true
+    void loadTestChannels(true).catch(() => undefined)
+  }, [startupPhase, starterDue, loadTestChannels])
+
+  const removeStarterNetwork = useCallback(async () => {
+    const ids = starterIds(await readStarterTemplate())
+    const existing = await loadStoredSources()
+    const remaining = withoutStarter(existing, ids)
+    setStarterState('removed')
+    const removed = existing.length - remaining.length
+    if (removed === 0) return 'NO STARTER CHANNELS TO REMOVE'
+    await saveStoredSources(remaining)
+    installSources(remaining)
+    return `${removed} STARTER ${removed === 1 ? 'CHANNEL' : 'CHANNELS'} REMOVED`
   }, [installSources])
 
   const removeUserChannels = useCallback(
@@ -1359,6 +1425,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const remaining = withoutUserChannels(existing, numbers)
       await saveStoredSources(remaining)
       installSources(remaining)
+      if (numbers === 'all') setStarterState('removed')
       const removed = existing.length - remaining.length
       return removed === 0 ? 'NO USER CHANNELS REMOVED' : `${removed} USER ${removed === 1 ? 'CHANNEL' : 'CHANNELS'} REMOVED`
     },
@@ -1585,6 +1652,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       previousChannel,
       canGoBack: canGoBack(history),
       canGoForward: canGoForward(history),
+      startHold,
       visibleChannels,
       volume,
       muted,
@@ -1639,6 +1707,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       applyImport,
       addChannel,
       loadTestChannels,
+      removeStarterNetwork,
       removeUserChannels,
       openChannelEdit,
       saveChannelEdit,
@@ -1659,6 +1728,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importSession,
       addChannel,
       loadTestChannels,
+      removeStarterNetwork,
       removeUserChannels,
       activateGuide,
       channel,
@@ -1687,6 +1757,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       playerStatus,
       previousChannel,
       history,
+      startHold,
       startupPhase,
       startupProgress,
       sleepMinutes,

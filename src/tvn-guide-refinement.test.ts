@@ -93,11 +93,18 @@ describe('ADD', () => {
 
   it('keeps the rest of the User Network tools in the Guide footer, removal behind a confirmation', () => {
     const markup = renderToStaticMarkup(
-      createElement(UserNetworkTools, { userChannels: 3, onImportList: async () => '', onLoadTest: async () => '', onRemoveAll: async () => '' }),
+      createElement(UserNetworkTools, {
+        userChannels: 3,
+        onImportList: async () => '',
+        onLoadTest: async () => '',
+        onRemoveStarter: async () => '',
+        onRemoveAll: async () => '',
+      }),
     )
     expect(markup).toMatch(/^<footer class="guide-info guide-tool"/)
     expect(markup).toMatch(/>Channel list</)
-    expect(markup).toMatch(/>TVN test channels</)
+    expect(markup).toMatch(/>Add starter network</)
+    expect(markup).toMatch(/>Remove starter…</)
     expect(markup).toMatch(/>Remove all…</)
     expect(markup).not.toMatch(/Yes, remove/)
   })

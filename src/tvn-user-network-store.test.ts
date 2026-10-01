@@ -41,7 +41,7 @@ afterEach(() => {
 })
 
 describe('a new viewer', () => {
-  it('starts with an empty User Network: nothing is installed at startup', async () => {
+  it('loads only what is stored: bootstrap itself installs nothing (the starter network comes later, from the provider)', async () => {
     const { bootstrapUserNetwork } = await import('./data/user-network/bootstrap.ts')
     vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 404 })))
     const result = await bootstrapUserNetwork()

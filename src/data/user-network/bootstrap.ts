@@ -147,9 +147,9 @@ export async function applyBuiltInCatalogues(input: {
   }
 }
 
-/** The bundled TVN test channels: installed only when the viewer asks for them. */
-export async function readTestChannelTexts(): Promise<string[]> {
-  return (await readCatalogueTexts()).texts
+/** The bundled starter network template (1001–1081), read fresh each time and never written to. */
+export async function readStarterTemplate(): Promise<ParsedExport> {
+  return mergeParsedExports((await readCatalogueTexts()).texts.map((text) => parseChannelsExport(text)))
 }
 
 async function readCatalogueTexts(): Promise<{ texts: string[]; read: number }> {
@@ -173,8 +173,8 @@ function readStoredFingerprint(): string | null {
 
 /**
  * The User Network is the viewer's own. Whatever this browser has stored is loaded exactly as it is,
- * including channels an earlier TVN installed from the bundled catalogues; nothing is installed for a
- * new viewer, whose 1001+ starts empty.
+ * including channels an earlier TVN installed from the bundled catalogues. Nothing is installed here:
+ * the starter network reaches a new viewer only through the provider, once, after startup is ready.
  */
 export async function bootstrapUserNetwork(): Promise<BootstrapResult> {
   const started = performance.now()
