@@ -4,8 +4,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { InfoActions } from './components/InfoActions.tsx'
 import { TouchRemote } from './components/TouchRemote.tsx'
-import { creditFor, EMPTY_REGISTER } from './credits/provenance.ts'
-import { mediaLibrary } from './director/library.ts'
 import { padProps } from './info-pad.fixture.ts'
 import { commandFromKey } from './input/keyboard.ts'
 import { DEFAULT_PREFERENCES, loadPreferences, PREFERENCES_KEY, savePreferences } from './services/preferences.ts'
@@ -107,7 +105,7 @@ const DEFAULT_NAMES = [
   'Remote control',
   'Previous watched channel',
   'Channel up',
-  'Open original source',
+  'Fullscreen',
   'Previous programme',
   'Guide',
   'Next programme',
@@ -123,7 +121,6 @@ const block = (selector: string) => {
 }
 
 const context = (overrides: Partial<ShortcutContext> = {}): ShortcutContext => ({
-  original: null,
   captionsAvailable: false,
   fullscreenAvailable: true,
   subtitles: false,
@@ -135,9 +132,9 @@ const context = (overrides: Partial<ShortcutContext> = {}): ShortcutContext => (
 })
 
 describe('information overlay: 3×3 control pad', () => {
-  it('1. the default layout is REMOTE ↑|CH+ ↗ / ← GUIDE → / TVN ↓|CH− R, nine cells', () => {
+  it('1. the default layout is REMOTE ↑|CH+ ⛶ / ← GUIDE → / TVN ↓|CH− R, nine cells', () => {
     const { tree, list } = pad()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '↗', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
     expect(cells(tree)).toHaveLength(9)
     expect((tree as ReactElement<{ className: string }>).props.className).toBe('info-actions info-pad has-history')
     expect((tree as ReactElement<{ role: string }>).props.role).toBe('group')
@@ -174,10 +171,10 @@ describe('information overlay: 3×3 control pad', () => {
     expect(block('.info-pad > .info-square')).toMatch(/width: auto;\s*height: auto;\s*justify-self: stretch;\s*align-self: stretch;/)
   })
 
-  it('6. the corners default to Remote, Source, TVN and Random', () => {
-    expect(DEFAULT_SHORTCUTS).toEqual({ topLeft: 'remote', topRight: 'source', bottomLeft: 'tvn', bottomRight: 'random' })
+  it('6. the corners default to Remote, Fullscreen, TVN and Random', () => {
+    expect(DEFAULT_SHORTCUTS).toEqual({ topLeft: 'remote', topRight: 'fullscreen', bottomLeft: 'tvn', bottomRight: 'random' })
     const grid = cells(pad().tree)
-    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Remote control', 'Open original source', 'TVN surf', 'Random channel'])
+    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Remote control', 'Fullscreen', 'TVN surf', 'Random channel'])
   })
 
   it('7. ↑ goes back through the watched channels; CH+ beside it steps up the channel numbers', () => {
@@ -270,16 +267,14 @@ describe('information overlay: 3×3 control pad', () => {
     expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
   })
 
-  it('14. ↗ is the existing original-source link, from the programme record, never a built URL', () => {
-    const link = pad().find('Open original source')
-    const expected = creditFor(channel, youtube, { library: mediaLibrary(), register: EMPTY_REGISTER }).originalUrl
-    expect(link.props).toMatchObject({ href: expected, target: '_blank', rel: 'noopener noreferrer' })
-    expect(String(link.props.className)).toContain('info-original')
-    expect(registrySource).toContain('href: (context) => context.original')
-    // No source on record: a disabled cell, not a link.
-    const none = pad({ programme: card }).find('Open original source')
-    expect(none.props.href).toBeUndefined()
-    expect(none.props.disabled).toBe(true)
+  it('14. the pad holds no links out of TVN: originals open from the Channel Editor programme lists', () => {
+    expect(pad().list.some((control) => control.props.href !== undefined)).toBe(false)
+    expect(registrySource).not.toContain('href')
+    // A corner saved as the old original-source key takes the action not already on the pad.
+    expect(asShortcuts({ topLeft: 'remote', topRight: 'source', bottomLeft: 'tvn', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
+    expect(asShortcuts({ topLeft: 'remote', topRight: 'source', bottomLeft: 'tvn', bottomRight: 'fullscreen' })).toEqual({
+      topLeft: 'remote', topRight: 'random', bottomLeft: 'tvn', bottomRight: 'fullscreen',
+    })
   })
 
   it('15. Fullscreen, when chosen, is the existing fullscreen command, and is disabled where the browser cannot', () => {
@@ -296,7 +291,7 @@ describe('information overlay: 3×3 control pad', () => {
     expect(fullscreenAvailable({ fullscreenEnabled: true, documentElement: { requestFullscreen: () => Promise.resolve() } } as unknown as Document)).toBe(true)
     const fired: TvCommand[] = []
     const run = SHORTCUTS.fullscreen
-    if (run.kind === 'action') run.run(context({ dispatch: (command) => void fired.push(command) }))
+    run.run(context({ dispatch: (command) => void fired.push(command) }))
     expect(fired).toEqual([{ type: 'fullscreen' }])
     expect(provider).toContain("case 'fullscreen':")
     expect(provider).toContain('else if (fullscreenAvailable(document)) void document.documentElement.requestFullscreen().catch(() => {})')
@@ -323,9 +318,9 @@ describe('information overlay: 3×3 control pad', () => {
   })
 
   it('17. the corners follow the assignment', () => {
-    const assignment: ShortcutAssignment = { topLeft: 'random', topRight: 'captions', bottomLeft: 'source', bottomRight: 'fullscreen' }
+    const assignment: ShortcutAssignment = { topLeft: 'random', topRight: 'captions', bottomLeft: 'remote', bottomRight: 'fullscreen' }
     const grid = cells(pad({ assignment }).tree)
-    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Random channel', 'Subtitles/captions', 'Open original source', 'Fullscreen'])
+    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Random channel', 'Subtitles/captions', 'Remote control', 'Fullscreen'])
   })
 
   it('18. the assignment is saved with the other preferences and restored', () => {
@@ -350,31 +345,31 @@ describe('information overlay: 3×3 control pad', () => {
     expect(provider.slice(provider.indexOf('savePreferences({'), provider.indexOf('savePreferences({') + 500)).toContain('infoShortcuts,')
   })
 
-  it('19. Reset to defaults restores Remote, Source, TVN, Random', () => {
+  it('19. Reset to defaults restores Remote, Fullscreen, TVN, Random', () => {
     expect(provider).toContain('const resetInfoShortcuts = useCallback(() => setInfoShortcuts({ ...DEFAULT_SHORTCUTS }), [])')
     expect(remote).toContain('onClick={tv.resetInfoShortcuts}')
     expect(remote).toContain('Reset to defaults')
   })
 
   it('20. choosing an action already in use swaps the two corners; an unused one replaces; a bad saved record falls back', () => {
-    expect(assignShortcut(DEFAULT_SHORTCUTS, 'topLeft', 'random')).toEqual({ topLeft: 'random', topRight: 'source', bottomLeft: 'tvn', bottomRight: 'remote' })
-    expect(assignShortcut(DEFAULT_SHORTCUTS, 'bottomLeft', 'source')).toEqual({ topLeft: 'remote', topRight: 'tvn', bottomLeft: 'source', bottomRight: 'random' })
+    expect(assignShortcut(DEFAULT_SHORTCUTS, 'topLeft', 'random')).toEqual({ topLeft: 'random', topRight: 'fullscreen', bottomLeft: 'tvn', bottomRight: 'remote' })
+    expect(assignShortcut(DEFAULT_SHORTCUTS, 'bottomLeft', 'fullscreen')).toEqual({ topLeft: 'remote', topRight: 'tvn', bottomLeft: 'fullscreen', bottomRight: 'random' })
     expect(assignShortcut(DEFAULT_SHORTCUTS, 'topLeft', 'captions')).toEqual({ ...DEFAULT_SHORTCUTS, topLeft: 'captions' })
-    expect(assignShortcut(DEFAULT_SHORTCUTS, 'topRight', 'source')).toEqual(DEFAULT_SHORTCUTS)
+    expect(assignShortcut(DEFAULT_SHORTCUTS, 'topRight', 'fullscreen')).toEqual(DEFAULT_SHORTCUTS)
     for (const corner of CORNERS) {
       for (const id of SHORTCUT_IDS) expect(new Set(Object.values(assignShortcut(DEFAULT_SHORTCUTS, corner, id))).size).toBe(4)
     }
     expect(asShortcuts({ topLeft: 'random', topRight: 'random', bottomLeft: 'tvn', bottomRight: 'remote' })).toEqual(DEFAULT_SHORTCUTS)
-    expect(asShortcuts({ topLeft: 'favourite', topRight: 'source', bottomLeft: 'tvn', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
+    expect(asShortcuts({ topLeft: 'favourite', topRight: 'fullscreen', bottomLeft: 'tvn', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
     expect(asShortcuts(null)).toEqual(DEFAULT_SHORTCUTS)
     expect(remote).toContain('onChange={(event) => tv.setInfoShortcut(corner, event.target.value as ShortcutId)}')
   })
 
   it('21. every cell has an accessible name, and the names follow the assignment', () => {
     expect(pad().names).toEqual(DEFAULT_NAMES)
-    const swapped = pad({ assignment: { topLeft: 'captions', topRight: 'random', bottomLeft: 'fullscreen', bottomRight: 'source' } }).names
-    expect([swapped[0], swapped[3], swapped[7], swapped[10]]).toEqual(['Subtitles/captions', 'Random channel', 'Fullscreen', 'Open original source'])
-    expect(SHORTCUT_IDS.map((id) => SHORTCUTS[id].name)).toEqual(['Remote control', 'Open original source', 'TVN surf', 'Random channel', 'Fullscreen', 'Subtitles/captions'])
+    const swapped = pad({ assignment: { topLeft: 'captions', topRight: 'random', bottomLeft: 'fullscreen', bottomRight: 'remote' } }).names
+    expect([swapped[0], swapped[3], swapped[7], swapped[10]]).toEqual(['Subtitles/captions', 'Random channel', 'Fullscreen', 'Remote control'])
+    expect(SHORTCUT_IDS.map((id) => SHORTCUTS[id].name)).toEqual(['Remote control', 'Fullscreen', 'TVN surf', 'Random channel', 'Subtitles/captions'])
     expect(remote).toContain('{SHORTCUTS[id].name}')
   })
 
@@ -391,9 +386,7 @@ describe('information overlay: 3×3 control pad', () => {
 
   it('23. Channel 000 material keeps its safety: no source link, no captions', () => {
     const local = pad({ programme: session, assignment: { ...DEFAULT_SHORTCUTS, bottomLeft: 'captions' } })
-    const source = local.find('Open original source')
-    expect(source.props.href).toBeUndefined()
-    expect(source.props.disabled).toBe(true)
+    expect(local.list.some((control) => control.props.href !== undefined)).toBe(false)
     expect(local.find('Subtitles/captions').props.disabled).toBe(true)
   })
 

@@ -2,6 +2,7 @@ import type { GuideFilter, MultiviewMode, UserPreferences } from '../types/prefe
 import { asSleepMinutes, DEFAULT_SLEEP_MINUTES } from '../state/sleep.ts'
 import { clamp } from '../utils/time.ts'
 import { clampGuideSplit } from '../view/guide-mode.ts'
+import { DEFAULT_FAVOURITES } from './default-favourites.ts'
 import { asShortcuts, DEFAULT_SHORTCUTS } from '../view/info-shortcuts.ts'
 
 export const PREFERENCES_KEY = 'retrotv.preferences.v1'
@@ -39,7 +40,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   previousChannelNumber: null,
   volume: 80,
   muted: false,
-  favouriteChannelNumbers: [],
+  favouriteChannelNumbers: [...DEFAULT_FAVOURITES],
   guideFilter: 'all',
   guideSplit: 0.5,
   multiviewMode: '1',
@@ -55,6 +56,8 @@ function clampVolume(value: unknown): number {
 }
 
 function asFilter(value: unknown): GuideFilter {
+  // The Guide no longer has a TVN-only tab; All lists those channels.
+  if (value === 'retrotv') return 'all'
   return typeof value === 'string' && FILTERS.includes(value as GuideFilter) ? (value as GuideFilter) : 'all'
 }
 
@@ -67,18 +70,28 @@ function asNumbers(value: unknown): number[] {
   return value.filter((item) => Number.isInteger(item) && item >= 1 && item < 100000)
 }
 
+/**
+ * Whether this browser has ever saved preferences. A saved record always carries the favourites, so
+ * this is what separates a new viewer from one whose Favourites are deliberately empty.
+ */
+export function preferencesSaved(): boolean {
+  try {
+    return localStorage.getItem(PREFERENCES_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
 export function loadPreferences(): UserPreferences {
+  // Something was saved but cannot be read: the viewer's favourites are unknown, not unset.
+  const unreadable = (): UserPreferences => ({ ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [], multiviewChannels: [] })
   try {
     const raw = localStorage.getItem(PREFERENCES_KEY)
-    if (!raw) return { ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [], multiviewChannels: [] }
+    if (raw === null) return { ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [...DEFAULT_FAVOURITES], multiviewChannels: [] }
     const parsed: unknown = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') {
-      return { ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [], multiviewChannels: [] }
-    }
+    if (!parsed || typeof parsed !== 'object') return unreadable()
     const record = parsed as Partial<UserPreferences>
-    if (record.version !== 1 && record.version !== 2) {
-      return { ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [], multiviewChannels: [] }
-    }
+    if (record.version !== 1 && record.version !== 2) return unreadable()
     return {
       version: 2,
       lastChannelNumber:
@@ -101,7 +114,7 @@ export function loadPreferences(): UserPreferences {
       infoShortcuts: asShortcuts(record.infoShortcuts),
     }
   } catch {
-    return { ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [], multiviewChannels: [] }
+    return unreadable()
   }
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { channelByNumber, channels, listChannels, randomChannel, shippedChannel } from '../data/catalogue.ts'
-import { channelMatchesFilter } from '../data/network.ts'
+import { channelMatchesFilter, inFavouriteOrder } from '../data/network.ts'
 import { installCuratedEdits, installUserCatalogue, subscribeCatalogue } from '../data/user-overlay.ts'
 import {
   GUIDE_EXTEND_MS,
@@ -44,7 +44,8 @@ import { probeStream } from '../player/stream.ts'
 import { isLiveStreamChannel } from '../dynamic/stream.ts'
 import { editorScope } from '../view/channel-edit.ts'
 import { loadOverrides, setVideoOverride, subscribeOverrides, videoOverride } from '../services/overrides.ts'
-import { loadPreferences, savePreferences } from '../services/preferences.ts'
+import { loadPreferences, preferencesSaved, savePreferences } from '../services/preferences.ts'
+import { placeStarterFavourites, starterFavouriteSources } from '../services/default-favourites.ts'
 import {
   assignShortcut,
   DEFAULT_SHORTCUTS,
@@ -135,6 +136,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   ensureDefaultNetwork()
   beginScheduleBootstrap()
   const [starterDue] = useState(() => claimStarterInstall())
+  const [favouritesSeeded] = useState(() => !preferencesSaved())
   const stored = useRef(loadPreferences()).current
   const initialNumber = channelByNumber(stored.lastChannelNumber)?.number ?? 1
   const initialPrevious =
@@ -258,7 +260,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [guideZoom, setGuideZoomState] = useState(1)
   const setGuideZoom = useCallback((zoom: number) => setGuideZoomState(clampZoom(zoom)), [])
   const guideChannels = useMemo(() => {
-    return listChannels().filter((item) => channelMatchesFilter(item, guideFilter, favourites))
+    const listed = listChannels().filter((item) => channelMatchesFilter(item, guideFilter, favourites))
+    return guideFilter === 'favourites' ? inFavouriteOrder(listed, favourites) : listed
   }, [catalogueVersion, favourites, guideFilter])
   const visibleChannels = useMemo(
     () => searchGuideChannels(guideChannels, guideQuery, (item, needle) => item.origin === 'session' && searchSession(needle).length > 0),
@@ -716,15 +719,20 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
     if (videoId) void recordPlaybackFailure(videoId, detail || 'playback failed')
-    // A publisher refusal is permanent: rebuild the User Network without that video and retune in place.
-    if (videoId && channel.origin === 'user-import' && isRefusalCode(detail) && learnRefusal(videoId)) {
+    // A publisher refusal is permanent: schedule without that video and retune in place.
+    if (!videoId || !isRefusalCode(detail) || !learnRefusal(videoId)) return
+    if (channel.origin === 'user-import') {
       void loadStoredSources().then((sources) => {
         const built = channelsFromSources(migrateLegacyUserNumbers(sources).sources, { refused: refusedVideos(), archive: uploaderArchive })
         installUserCatalogue(built.channels, built.programmes)
         loadedKey.current = ''
         syncLive(Date.now())
       })
+      return
     }
+    republishLibrary()
+    loadedKey.current = ''
+    syncLive(Date.now())
   }, [syncLive])
 
   const focusGuide = useCallback((nextChannel: number, timeMs: number) => {
@@ -1106,10 +1114,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
         const number =
           command.channelNumber ??
           (guideOpenRef.current ? cursorRef.current.channelNumber : channelRef.current)
+        // Favourites keep the viewer's order: a new one joins the end.
         setFavourites((current) =>
-          current.includes(number)
-            ? current.filter((item) => item !== number)
-            : [...current, number].sort((a, b) => a - b),
+          current.includes(number) ? current.filter((item) => item !== number) : [...current, number],
         )
         break
       }
@@ -1424,10 +1431,18 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const starterRanRef = useRef(false)
   useEffect(() => {
-    if (startupPhase !== 'ready' || !starterDue || starterRanRef.current) return
+    if (startupPhase !== 'ready' || (!starterDue && !favouritesSeeded) || starterRanRef.current) return
     starterRanRef.current = true
-    void loadTestChannels(true).catch(() => undefined)
-  }, [startupPhase, starterDue, loadTestChannels])
+    const installed = starterDue ? loadTestChannels(true).catch(() => undefined) : Promise.resolve()
+    if (!favouritesSeeded) return
+    void installed
+      .then(async () => {
+        const expected = starterFavouriteSources(await readStarterTemplate(), uploaderIdFor)
+        const sources = migrateLegacyUserNumbers(await loadStoredSources()).sources
+        setFavourites((current) => placeStarterFavourites(current, expected, sources))
+      })
+      .catch(() => undefined)
+  }, [startupPhase, starterDue, favouritesSeeded, loadTestChannels])
 
   const removeStarterNetwork = useCallback(async () => {
     const ids = starterIds(await readStarterTemplate())

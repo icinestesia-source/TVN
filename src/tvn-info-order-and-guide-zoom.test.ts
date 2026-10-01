@@ -62,9 +62,9 @@ function bar(overrides: Partial<Parameters<typeof InfoActions>[0]> = {}) {
 }
 
 describe('information controls: the 3×3 pad round GUIDE', () => {
-  it('1. renders REMOTE ↑|CH+ ↗ / ← GUIDE → / TVN ↓|CH− R with the accessible names', () => {
+  it('1. renders REMOTE ↑|CH+ ⛶ / ← GUIDE → / TVN ↓|CH− R with the accessible names', () => {
     const { list } = bar()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '↗', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
     const named = Object.fromEntries(list.map((control) => [control.label, control.props['aria-label']]))
     expect(named['↑']).toBe('Previous watched channel')
     expect(named['CH+']).toBe('Channel up')
@@ -112,18 +112,14 @@ describe('information controls: the 3×3 pad round GUIDE', () => {
     expect(sent).toEqual(['guide', 'channel-up', 'channel-down'])
   })
 
-  it('7. ↗ keeps the original-source link and its rules, top right', () => {
+  it('7. Fullscreen takes the top-right corner; originals open from the Channel Editor programme lists', () => {
     const { list } = bar()
-    const original = list.find((control) => control.label === '↗')!
-    expect(list[3]).toBe(original)
-    expect(original.props).toMatchObject({ className: 'info-square info-corner is-source info-original', target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Open original source' })
-    expect(String(original.props.href)).toContain('abcdefghijk')
-    const source = read('src/components/InfoActions.tsx')
-    expect(source).toContain('const original = creditFor(channel, programme, { library: mediaLibrary(), register: EMPTY_REGISTER }).originalUrl')
-    // A local card has no original: the ↗ key stays in place, disabled, with no link.
-    const card = bar({ programme: { id: 'card', title: 'Card', durationSeconds: 60 } as Programme }).list.find((c) => c.label === '↗')!
-    expect(card.props.href).toBeUndefined()
-    expect(card.props.disabled).toBe(true)
+    expect(list[3].props).toMatchObject({ className: 'info-square info-corner is-fullscreen', 'aria-label': 'Fullscreen' })
+    expect(list.some((control) => control.props.href !== undefined)).toBe(false)
+    const editor = read('src/components/ChannelEditor.tsx')
+    expect(editor).toContain('href: watchUrl(programme.videoId)')
+    expect(editor).toContain('<OriginalLink video={video} />')
+    expect(editor).toMatch(/target="_blank"\s+rel="noopener noreferrer"/)
   })
 })
 

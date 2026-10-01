@@ -92,7 +92,7 @@ export function guideFilterForChannel(
   const network: GuideFilter =
     channel.number >= 1001 || channel.origin === 'user-import' || channel.origin === 'user-created'
       ? 'user'
-      : 'retrotv'
+      : 'all'
   if (channelMatchesFilter(channel, network, favourites)) return network
   if (channelMatchesFilter(channel, 'all', favourites)) return 'all'
   return network

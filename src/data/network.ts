@@ -106,6 +106,13 @@ export function channelMatchesFilter(
   return category === wanted
 }
 
+/** The Favourites view lists channels in the viewer's order rather than by number. */
+export function inFavouriteOrder<T extends { number: number }>(channels: readonly T[], favourites: readonly number[]): T[] {
+  const rank = new Map(favourites.map((number, index) => [number, index]))
+  const at = (channel: T) => rank.get(channel.number) ?? favourites.length
+  return [...channels].sort((a, b) => at(a) - at(b))
+}
+
 export function rangeForNumber(number: number): string {
   if (number === 0 || number === 1000) return 'reserved'
   if (number >= USER_NUMBER_START) return 'user'

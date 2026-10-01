@@ -114,7 +114,7 @@ describe('the Channel Editor', () => {
     const html = render(user, { name: 'Alpha', sources: [source] })
     expect(html).toMatch(/<button type="button" class="tab editor-expand" aria-expanded="false" aria-label="Show the details of Alpha"[^>]*>\+<\/button>/)
     const editor = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
-    expect(editor).toContain("if (source.kind !== 'tvn') return source.videos ?? []")
+    expect(editor).toContain("if (source.kind !== 'tvn') return (source.videos ?? []).map((video) => ({ ...video, href: watchUrl(video.id) }))")
     expect(editor).toMatch(/onClick=\{\(\) => toggleOpen\(source\.id\)\}/)
   })
 

@@ -169,7 +169,9 @@ describe('the bundled starter network', () => {
     claimStarterInstall(store)
     setStarterState('installed', store)
     expect(claimStarterInstall(store)).toBe(false)
-    expect(read('src/state/TvProvider.tsx')).toMatch(/if \(startupPhase !== 'ready' \|\| !starterDue \|\| starterRanRef\.current\) return/)
+    const provider = read('src/state/TvProvider.tsx')
+    expect(provider).toMatch(/if \(startupPhase !== 'ready' \|\| \(!starterDue && !favouritesSeeded\) \|\| starterRanRef\.current\) return/)
+    expect(provider).toMatch(/starterDue \? loadTestChannels\(true\)/)
   })
 
   it('16–17. the Channel Editor, ADD and rescan still work on starter channels', async () => {

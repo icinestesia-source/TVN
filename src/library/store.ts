@@ -7,6 +7,7 @@ import { userLibraryMode } from './mode.ts'
 import { reconcileLibrary } from './ingest.ts'
 import type { ImportPhase, ImportSession, IngestCounts, IngestReport, LibraryMedia, MediaEdit, SourceRecord } from './types.ts'
 import type { ParsedExport } from '../services/channels-import.ts'
+import { isRefusedVideo } from '../services/embed-refusals.ts'
 
 type PhaseCallback = (phase: ImportPhase, counts?: IngestCounts) => void
 
@@ -60,7 +61,8 @@ function directorCopy(item: LibraryMedia): LibraryMedia {
 }
 
 function publish(): void {
-  const directed = media.filter(forDirector).map(directorCopy)
+  // A video whose publisher refuses embedded playback stays in the library but is never scheduled.
+  const directed = media.filter((item) => forDirector(item) && !isRefusedVideo(item.externalId)).map(directorCopy)
   setMediaLibrary([...defaultNetworkItems(), ...directed])
   for (const listener of listeners) listener()
 }

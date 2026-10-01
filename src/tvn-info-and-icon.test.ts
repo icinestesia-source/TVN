@@ -101,7 +101,7 @@ describe('the programme bar in a narrow window', () => {
     const start = css.indexOf('.guide-info.is-programme {')
     const block = css.slice(start, css.indexOf('.guide-info.is-programme .info-kicker', start))
     expect(block).not.toMatch(/@media|@container/)
-    expect(readFileSync('src/components/Guide.tsx', 'utf8')).toContain('<footer className="guide-info is-programme">')
+    expect(readFileSync('src/components/Guide.tsx', 'utf8')).toContain('<footer className="guide-info is-programme" {...handlers}')
   })
 })
 

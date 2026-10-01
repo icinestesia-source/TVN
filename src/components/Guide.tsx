@@ -33,6 +33,7 @@ import { historyActions, InfoActions, type HistoryActions } from './InfoActions.
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { AddChannelForm, GuideActions, SessionImportTools, UserNetworkTools } from './GuideAdd.tsx'
 import { ChannelEditor } from './ChannelEditor.tsx'
+import { useEditPress } from './use-edit-press.ts'
 import { createLongPress, editorScope } from '../view/channel-edit.ts'
 import { isLiveStream } from '../dynamic/stream.ts'
 import { manualAiring } from '../player/manual.ts'
@@ -158,7 +159,10 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const addInput = useRef<HTMLInputElement>(null)
   // IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
   const tool = tv.guideTool && tv.guideTool.cursor === tv.guideCursor ? tv.guideTool.kind : null
-  const picked = manualAiring(tv.channel.number, now) !== null
+  const manual = manualAiring(tv.channel.number, now)
+  const picked = manual !== null
+  // What the watched channel is playing: a programme picked from the Guide sits at its own slot, otherwise the airing one.
+  const playingSlot: PlayingSlot = manual ? (manual.slot ? { startMs: manual.slot.startMs } : null) : 'airing'
   const editScope = focusedChannel ? editorScope(focusedChannel) : null
 
   // ADD goes straight to the ADD CHANNEL row at the foot of the User Network, ready for a link.
@@ -382,8 +386,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {(
             [
               ['all', 'All'],
-              ['retrotv', 'TVN'],
-              ['user', 'User'],
+              ['user', 'TVN'],
               ['favourites', 'Favourites'],
             ] as const
           ).map(([filter, label]) => (
@@ -547,6 +550,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       key={channel.id}
                       channel={channel}
                       slots={slotsById.get(channel.id) ?? []}
+                      playing={channel.number === tv.channel.number ? playingSlot : null}
                       windowStart={startMs}
                       pxPerMinute={pxPerMinute}
                       now={now}
@@ -607,6 +611,11 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           history={historyActions(tv)}
           corners={cornerActions(tv)}
           channels={channelActions(tv)}
+          onEdit={
+            focusedChannel && editScope
+              ? () => tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: focusedChannel.number })
+              : undefined
+          }
         />
       )}
     </section>
@@ -686,9 +695,13 @@ function ChannelCell({
   )
 }
 
+/** The slot the watched channel is playing: the airing one, a picked one's place in the schedule, or none in view. */
+type PlayingSlot = 'airing' | { startMs: number } | null
+
 function ProgrammeRow({
   channel,
   slots,
+  playing,
   windowStart,
   pxPerMinute,
   now,
@@ -700,6 +713,8 @@ function ProgrammeRow({
 }: {
   channel: Channel
   slots: readonly GuideSlot<Programme>[]
+  /** Only for the channel being watched. */
+  playing: PlayingSlot
   windowStart: number
   pxPerMinute: number
   now: number
@@ -723,10 +738,11 @@ function ProgrammeRow({
         )
         const flags = programmeFlags(slot.startMs, slot.endMs, now, cursorTime)
         const holding = !hasPicture(slot.programme)
+        const isPlaying = playing === 'airing' ? flags.airing : playing !== null && playing.startMs === slot.startMs
         return (
           <div
             key={`${slot.programme.id}-${slot.startMs}`}
-            className={`prog${flags.airing ? ' is-live' : ''}${flags.past ? ' is-past' : ''}${flags.selected ? ' is-focused' : ''}${holding ? ' is-holding' : ''}`}
+            className={`prog${flags.airing ? ' is-live' : ''}${isPlaying ? ' is-playing' : ''}${flags.past ? ' is-past' : ''}${flags.selected ? ' is-focused' : ''}${holding ? ' is-holding' : ''}`}
             style={{ left: frame.left, width: frame.width, paddingLeft: inset }}
             role="button"
             tabIndex={-1}
@@ -765,6 +781,7 @@ function ProgrammePanel({
   history,
   corners,
   channels,
+  onEdit,
 }: {
   channel: Channel | null
   slot: GuideSlot<Programme> | null
@@ -779,7 +796,10 @@ function ProgrammePanel({
   history: HistoryActions
   corners: CornerActions
   channels: ChannelActions
+  /** Present when the channel can be edited: a right-click or a hold on the bar, apart from its buttons, opens its editor. */
+  onEdit?: () => void
 }) {
+  const { handlers } = useEditPress(onEdit)
   if (!channel || !slot) {
     return (
       <footer className="guide-info">
@@ -793,7 +813,7 @@ function ProgrammePanel({
   const alert = (note === 'later' && later) || (note === 'ended' && !live && !later)
 
   return (
-    <footer className="guide-info is-programme">
+    <footer className="guide-info is-programme" {...handlers} onPointerLeave={handlers.onPointerCancel}>
       <ProgrammeInfo
         channel={channel}
         programme={slot.programme}

@@ -395,6 +395,18 @@ span.editor-expand { border-color: transparent; }
 .editor-lineup li.is-on-air .editor-lineup-now { color: var(--gold); }
 .editor-lineup li.is-on-air .editor-video-title { color: var(--gold); }
 
+.editor-link {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  letter-spacing: 0;
+  font-size: 13px;
+  text-decoration: none;
+}
+
 .editor-move {
   width: 30px;
   height: 26px;
@@ -837,6 +849,13 @@ span.editor-expand { border-color: transparent; }
 }
 
 .prog.is-past { opacity: 0.62; }
+
+/* What the watched channel is playing now: framed and lettered in yellow; the gold cursor fills it when on it. */
+.prog.is-playing {
+  color: var(--gold);
+  box-shadow: inset 0 0 0 2px var(--gold);
+  opacity: 1;
+}
 
 .prog.is-focused {
   z-index: 2;

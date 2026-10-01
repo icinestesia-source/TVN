@@ -606,7 +606,10 @@ describe('one information bar, in the Guide and over the picture', () => {
   })
 
   it('over the picture, a right-click, a hold or E opens the Channel Editor where the bar sits', () => {
-    expect(overlay).toMatch(/onContextMenu=\{\(event: MouseEvent<HTMLElement>\) => \{\s*if \(!editable\) return\s*event\.preventDefault\(\)\s*press\.opened\(\)\s*edit\(\)/)
+    expect(overlay).toContain("useEditPress(editable ? () => tv.dispatch({ type: 'guide-tool', tool: 'edit' }) : undefined)")
+    expect(overlay).toContain('{...handlers}')
+    const press = readFileSync('src/components/use-edit-press.ts', 'utf8')
+    expect(press).toMatch(/onContextMenu: \(event: MouseEvent<HTMLElement>\) => \{\s*if \(!editRef\.current \|\| inPad\(event\.target\)\) return\s*event\.preventDefault\(\)\s*press\.opened\(\)\s*editRef\.current\(\)/)
     expect(screen).toContain('{tv.screenEdit !== null ? <ScreenEditor /> : info ? <NowNextOverlay')
     expect(provider).toContain("if (kind === 'edit' && !guideOpenRef.current) {")
     expect(provider).toContain('if (screenEditRef.current !== null && !SCREEN_EDIT_COMMANDS.has(command.type)) return')

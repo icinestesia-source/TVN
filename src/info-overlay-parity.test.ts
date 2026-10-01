@@ -7,6 +7,7 @@ import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
 import type { TvCommand } from './types/input.ts'
 import { padProps } from './info-pad.fixture.ts'
+import { fullscreenAvailable } from './view/info-shortcuts.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const guide = read('src/components/Guide.tsx')
@@ -38,7 +39,7 @@ describe('one information bar, in the Guide and over the picture', () => {
     const markup = render(historyActions(tv))
     expect(markup).toMatch(/^<div class="info-actions info-pad has-history" role="group" aria-label="Programme controls">/)
     const labels = [...markup.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Remote', '↑', 'CH+', '↗', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
+    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
   })
 
   it('has no Guide-only rule for the actions: the one-line rule and the narrow-width rule apply to both', () => {
@@ -60,7 +61,9 @@ describe('one information bar, in the Guide and over the picture', () => {
 
   it('disables ↑ where there is no history, and MULTI holds ↓’s place until there is somewhere forward to go', () => {
     const markup = render(historyActions({ canGoBack: false, canGoForward: false, multiviewMode: '1', dispatch: () => undefined }))
-    expect(markup.match(/disabled=""/g)?.length).toBe(1)
+    expect(markup).toMatch(/disabled=""[^>]*aria-label="Previous watched channel"/)
+    // Fullscreen is the only other key that can be disabled, where the browser has no fullscreen.
+    expect(markup.match(/disabled=""/g)?.length).toBe(fullscreenAvailable() ? 1 : 2)
     expect(markup).toContain('aria-label="Multi View"')
     expect(markup).not.toContain('Next watched channel')
   })

@@ -1,6 +1,4 @@
 import type { KeyboardEvent } from 'react'
-import { creditFor, EMPTY_REGISTER } from '../credits/provenance.ts'
-import { mediaLibrary } from '../director/library.ts'
 import type { TvContextValue } from '../state/tv-context.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
@@ -50,26 +48,7 @@ const cornerHold = createLongPress(() => holdAction())
 function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutContext) {
   const available = shortcut.available(context)
   const className = `info-square info-corner is-${shortcut.id}`
-  if (shortcut.kind === 'link') {
-    const href = available ? shortcut.href(context) : null
-    if (href) {
-      return (
-        <a
-          key={at}
-          className={`${className} info-original`}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={shortcut.name}
-          aria-label={shortcut.name}
-          onKeyDown={keepKey}
-        >
-          {shortcut.label}
-        </a>
-      )
-    }
-  }
-  const action = available && shortcut.kind === 'action' ? shortcut : null
+  const action = available ? shortcut : null
   const pressed = action?.pressed?.(context)
   const hold = action?.hold
   if (hold) holdAction = () => hold(context)
@@ -126,16 +105,15 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
  * The gold Guide key in the centre keeps the size of the Watch key it replaced, and its corners hold the
  * viewer's shortcuts:
  *
- *   REMOTE  ↑ CH+  ↗
+ *   REMOTE  ↑ CH+  ⛶
  *   ←      GUIDE   →
  *   TVN     ↓ CH−  R
  *
  * ↑ and ↓ move back and forward through the channels watched; until ↑ has been used there is nowhere
  * forward to go, so ↓'s place holds MULTI. CH+ and CH− share their cells and step along the channel numbers. ← and → step back and forth along the channel's programmes (in the Guide they move
- * its cursor), and ↗ opens the programme where its provider hosts it, when TVN has that address on record.
+ * its cursor).
  */
 export function InfoActions({
-  channel,
   programme,
   onPrev,
   onNext,
@@ -155,10 +133,7 @@ export function InfoActions({
   /** CH+ and CH−, beside ↑ and ↓. */
   channels: ChannelActions
 }) {
-  // The original address comes from the programme's own record; local files and TVN cards have none.
-  const original = creditFor(channel, programme, { library: mediaLibrary(), register: EMPTY_REGISTER }).originalUrl
   const context: ShortcutContext = {
-    original: original ?? null,
     captionsAvailable: captionsAvailable(programme),
     fullscreenAvailable: fullscreenAvailable(),
     subtitles: corners.subtitles,

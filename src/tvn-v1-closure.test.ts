@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { ChannelEditor } from './components/ChannelEditor.tsx'
 import { InfoActions } from './components/InfoActions.tsx'
+import type { ChannelEdit } from './services/channel-editor.ts'
 import { padProps } from './info-pad.fixture.ts'
 import { channelByNumber, listChannels } from './data/catalogue.ts'
 import { installUserCatalogue } from './data/user-overlay.ts'
@@ -20,7 +22,6 @@ import { createStartupRestore } from './state/startup-channel.ts'
 import { resolveStartupTuning } from './state/startup.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './state/history.ts'
 import type { Channel } from './types/channel.ts'
-import type { Programme } from './types/programme.ts'
 import { compactTracks, gridRows, MIN_EMBED_PX, MULTI_PLAYBACK, multiviewLayout, surfTile, tileEmbeds } from './view/multiview.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
@@ -217,40 +218,44 @@ describe('Multi View', () => {
 })
 
 describe('Open original', () => {
-  const render = (channel: Channel, programme: Programme) =>
-    renderToStaticMarkup(createElement(InfoActions, { channel, programme, onPrev: () => {}, onNext: () => {}, ...padProps() }))
   const shipped = channelByNumber(225)!
+  const editor = (edit: ChannelEdit) =>
+    renderToStaticMarkup(
+      createElement(ChannelEditor, {
+        channel: { ...shipped, number: 1001, origin: 'user-import' } as Channel,
+        scope: 'user',
+        initial: edit,
+        onLoad: async () => edit,
+        onSave: async () => '',
+        onRescan: async () => ({ edit, message: '' }),
+        onDelete: async () => '',
+        onClose: () => {},
+      }),
+    )
 
-  it('follows Next and opens the YouTube original', () => {
+  it('is no longer a key on the pad: Fullscreen holds that corner', () => {
     const programme = broadcast(shipped, T).current.programme
-    const html = render(shipped, programme)
-    expect(html).toContain(`href="https://www.youtube.com/watch?v=${programme.videoId}"`)
-    expect(html).toContain('aria-label="Open original source"')
-    expect(html).toContain('title="Open original source"')
-    expect(html).toContain('target="_blank" rel="noopener noreferrer"')
-    expect(html.indexOf('>Next<')).toBeLessThan(html.indexOf('Open original'))
-    expect(html).toContain('>↗</a>')
+    const html = renderToStaticMarkup(createElement(InfoActions, { channel: shipped, programme, onPrev: () => {}, onNext: () => {}, ...padProps() }))
+    expect(html).not.toContain('href=')
+    expect(html).not.toContain('Open original source')
+    expect(html).toContain('aria-label="Fullscreen"')
   })
 
-  it('opens a direct stream at its recorded address', () => {
-    const html = render({ ...shipped, number: 1001 } as Channel, { id: 's', title: 'Radio', durationSeconds: 60, liveStream: { url: 'https://radio.example.com/live.mp3', format: 'audio' } } as unknown as Programme)
-    expect(html).toContain('href="https://radio.example.com/live.mp3"')
-  })
-
-  it('links nowhere for Channel 000 files and for programmes with no recorded address: the key stays, disabled', () => {
-    const session = render({ ...shipped, number: 0, origin: 'session' } as Channel, { id: 'f', title: 'holiday.mp4', durationSeconds: 60 } as Programme)
-    const card = render(shipped, { id: 'c', title: 'Closedown', durationSeconds: 60 } as Programme)
-    for (const html of [session, card]) {
-      expect(html).not.toContain('<a ')
-      expect(html).not.toContain('href=')
-      expect(html).toMatch(/<button type="button" class="info-square info-corner is-source" disabled=""[^>]*aria-label="Open original source"/)
+  it('opens each YouTube programme from the Channel Editor list, in a new tab', () => {
+    const edit: ChannelEdit = {
+      name: 'Mine',
+      sources: [{ id: 's1', kind: 'youtube', url: 'https://www.youtube.com/@maker', label: 'Maker', enabled: true, videos: [
+        { id: 'abcdefghijk', title: 'Film', durationSec: 600 },
+        { id: 'local-file-1', title: 'Home video', durationSec: 60 },
+      ] }],
     }
-  })
-
-  it('reads provenance only: no lookups and no creator text', () => {
-    const source = read('src/components/InfoActions.tsx')
-    expect(source).toContain('creditFor(channel, programme, { library: mediaLibrary(), register: EMPTY_REGISTER }).originalUrl')
-    expect(source).not.toMatch(/fetch\(|loadRegister|creator/)
+    const html = editor(edit)
+    expect(html).toContain('href="https://www.youtube.com/watch?v=abcdefghijk"')
+    expect(html).toContain('aria-label="Open Film on YouTube"')
+    expect(html).toContain('target="_blank" rel="noopener noreferrer"')
+    // An id that is not a YouTube video id links nowhere; its space stays.
+    expect(html).not.toContain('Open Home video on YouTube')
+    expect(html.match(/editor-link/g)?.length).toBe(2)
   })
 })
 
@@ -325,7 +330,7 @@ describe('viewing history: Back and Forward', () => {
     expect(html).toMatch(/<button type="button" class="info-square info-pad-multi" aria-pressed="false" title="Multi View" aria-label="Multi View">Multi<\/button>/)
   })
 
-  it('orders the pad REMOTE ↑|CH+ ↗ / ← GUIDE → / TVN ↓|CH− R as one unwrapped group', () => {
+  it('orders the pad REMOTE ↑|CH+ ⛶ / ← GUIDE → / TVN ↓|CH− R as one unwrapped group', () => {
     const shipped = channelByNumber(225)!
     const html = renderToStaticMarkup(
       createElement(InfoActions, {
@@ -337,7 +342,7 @@ describe('viewing history: Back and Forward', () => {
       }),
     )
     const labels = [...html.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Remote', '↑', 'CH+', '↗', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
+    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
     expect(html).toContain('class="info-actions info-pad has-history"')
     const css = read('src/styles/guide.css')
     expect(css).toMatch(/\.info-actions\.has-history \{\s*flex-wrap: nowrap;/)

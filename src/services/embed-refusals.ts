@@ -1,7 +1,7 @@
 /**
  * Videos whose publisher refuses playback in an embedded player (YouTube errors 100, 101 and 150).
- * The shipped list is checked when the built-in user network is prepared; the learned list is
- * what this browser has seen refused since. Neither needs a key at runtime.
+ * The shipped lists (User Network and curated catalogue) are read at startup; the learned list is
+ * what this browser has seen refused since. Refused videos never air. Neither needs a key at runtime.
  */
 const LEARNED_KEY = 'tvn.embed-refused.v1'
 export const PLAYBACK_PATH = '/user-network/playback.json'
@@ -39,18 +39,30 @@ export function parsePlaybackManifest(value: unknown): string[] {
   return Array.isArray(list) ? list.filter((id): id is string => typeof id === 'string') : []
 }
 
-/** A missing or unreadable list leaves playback to the runtime refusals alone. */
+/** The curated catalogue's list, found by loading each video in an embedded player (scripts/embed_probe.mjs). */
+export const CURATED_PLAYBACK_PATH = '/independent/playback.json'
+
+/** A missing or unreadable list leaves playback to the other list and the runtime refusals. */
 export async function loadShippedRefusals(read: typeof fetch = fetch): Promise<void> {
-  try {
-    const response = await read(PLAYBACK_PATH)
-    if (response.ok) setShippedRefusals(parsePlaybackManifest(await response.json()))
-  } catch {
-    /* offline or not shipped */
-  }
+  const lists = await Promise.all(
+    [PLAYBACK_PATH, CURATED_PLAYBACK_PATH].map(async (path) => {
+      try {
+        const response = await read(path)
+        return response.ok ? parsePlaybackManifest(await response.json()) : []
+      } catch {
+        return [] /* offline or not shipped */
+      }
+    }),
+  )
+  setShippedRefusals(lists.flat())
 }
 
 export function refusedVideos(): ReadonlySet<string> {
   return new Set([...shipped, ...learnedSet()])
+}
+
+export function isRefusedVideo(videoId: string): boolean {
+  return shipped.has(videoId) || learnedSet().has(videoId)
 }
 
 /** True when the video was not already known to be refused. */

@@ -21,12 +21,12 @@ describe('guide navigation', () => {
   it('opens on the tuned channel even when the current filter hides it', () => {
     const retro = { number: 317, enabled: true, origin: 'default' as const }
     const user = { number: 1004, enabled: true, origin: 'user-import' as const }
-    expect(guideFilterForChannel(retro, 'user', [])).toBe('retrotv')
+    expect(guideFilterForChannel(retro, 'user', [])).toBe('all')
     expect(guideFilterForChannel(user, 'retrotv', [])).toBe('user')
     expect(guideFilterForChannel(user, 'user', [])).toBe('user')
     expect(guideFilterForChannel(user, 'all', [])).toBe('all')
     expect(guideFilterForChannel(user, 'favourites', [1004])).toBe('favourites')
-    expect(guideFilterForChannel(retro, 'favourites', [])).toBe('retrotv')
+    expect(guideFilterForChannel(retro, 'favourites', [])).toBe('all')
   })
 
   it('keeps the time anchor when moving to the next channel', () => {

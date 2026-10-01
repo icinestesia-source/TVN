@@ -1,0 +1,37 @@
+{
+  "checked": "2026-10-01",
+  "videos": 759,
+  "embedRefused": [],
+  "suspectedRefused": [
+    "R8kc1_Nusrs",
+    "zXVoG3z8CMo",
+    "9M7sI3TjtKE"
+  ],
+  "states": {
+    "UNTESTED": 120841,
+    "PLAYABLE": 756,
+    "SUSPECTED_REFUSED": 3,
+    "CONFIRMED_REFUSED": 0,
+    "TIMEOUT": 0,
+    "INCONCLUSIVE": 0
+  },
+  "probe": {
+    "method": "Each video loaded muted in the public YouTube embedded player; no API key. Refusals confirmed by an isolated recheck beside a playing control video.",
+    "runs": [
+      {
+        "id": "legacy-batch-2026-10-01",
+        "startedAt": 1790881680000,
+        "endedAt": 1790882880000,
+        "args": {
+          "channels": [
+            225
+          ],
+          "workers": 12,
+          "note": "First batch probe. Its first 759 results were kept; everything after YouTube began throttling (refusals and timeouts on almost every video) was discarded. R8kc1_Nusrs and zXVoG3z8CMo also refused in a separate single-player check minutes later, without a control in the same session, so all refusals remain suspected until an isolated recheck."
+        },
+        "trips": 1,
+        "observed": 759
+      }
+    ]
+  }
+}

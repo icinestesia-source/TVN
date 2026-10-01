@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { watchUrl } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
 import type { ChannelEdit } from '../services/channel-editor.ts'
@@ -50,13 +51,44 @@ function onAirVideo(channel: Channel, now: number): string | null {
   }
 }
 
+interface ListedVideo {
+  id: string
+  title: string
+  durationSec: number
+  /** The provider's own page for it, when its id is a YouTube video id. */
+  href?: string
+}
+
 /** What a source holds, from its last scan: nothing is fetched to show it. */
-function sourceProgrammes(source: ChannelSource, number: number): { id: string; title: string; durationSec: number }[] {
-  if (source.kind !== 'tvn') return source.videos ?? []
+function sourceProgrammes(source: ChannelSource, number: number): ListedVideo[] {
+  if (source.kind !== 'tvn') return (source.videos ?? []).map((video) => ({ ...video, href: watchUrl(video.id) }))
   const shipped = shippedChannel(number)
   return shipped
-    ? shippedProgrammes(shipped.id).map((programme) => ({ id: programme.id, title: programme.title, durationSec: programme.durationSeconds }))
+    ? shippedProgrammes(shipped.id).map((programme) => ({
+        id: programme.id,
+        title: programme.title,
+        durationSec: programme.durationSeconds,
+        href: watchUrl(programme.videoId),
+      }))
     : []
+}
+
+/** Opens a programme where its provider hosts it; a programme with no address keeps the space empty. */
+function OriginalLink({ video }: { video: ListedVideo }) {
+  if (!video.href) return <span className="editor-link" aria-hidden="true" />
+  return (
+    <a
+      className="tab editor-link"
+      href={video.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Open original"
+      aria-label={`Open ${video.title} on YouTube`}
+      onKeyDown={keepKey}
+    >
+      ↗
+    </a>
+  )
 }
 
 /**
@@ -273,6 +305,7 @@ export function ChannelEditor({
                           <li key={video.id}>
                             <span className="editor-video-title">{video.title}</span>
                             <span className="editor-video-length">{formatDuration(video.durationSec)}</span>
+                            <OriginalLink video={video} />
                           </li>
                         ))}
                       </ol>
@@ -347,6 +380,7 @@ export function ChannelEditor({
                       <span className="editor-video-title">{video.title}</span>
                       {video.id === onAir ? <span className="editor-lineup-now">On air</span> : null}
                       <span className="editor-video-length">{formatDuration(video.durationSec)}</span>
+                      <OriginalLink video={{ ...video, href: watchUrl(video.id) }} />
                       <button
                         type="button"
                         className="tab editor-move"
