@@ -5,7 +5,7 @@ import { manualAiring, onScreen, stepFrom } from '../player/manual.ts'
 import { hasPicture } from '../session/session-channel.ts'
 import { useClock } from '../utils/use-clock.ts'
 import { createLongPress, editorScope } from '../view/channel-edit.ts'
-import { InfoActions } from './InfoActions.tsx'
+import { historyActions, InfoActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 
 /**
@@ -75,12 +75,7 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
         onTune={tv.screenAction}
         onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}
         onNext={steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}
-        history={{
-          canBack: tv.canGoBack,
-          canForward: tv.canGoForward,
-          onBack: () => tv.dispatch({ type: 'history-back' }),
-          onForward: () => tv.dispatch({ type: 'history-forward' }),
-        }}
+        history={historyActions(tv)}
       />
       {credit ? <p className="info-credit">Demonstration picture · {credit}</p> : null}
     </aside>

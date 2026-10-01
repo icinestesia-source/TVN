@@ -341,7 +341,8 @@ describe('viewing history: Back and Forward', () => {
     const css = read('src/styles/guide.css')
     expect(css).toMatch(/\.info-actions\.has-history \{\s*flex-wrap: nowrap;/)
     expect(css).toContain('.guide-info.is-programme > .info-actions.has-history { flex: 0 0 auto; }')
-    expect(read('src/components/NowNextOverlay.tsx')).toContain("onBack: () => tv.dispatch({ type: 'history-back' })")
+    expect(read('src/components/InfoActions.tsx')).toContain("onBack: () => tv.dispatch({ type: 'history-back' })")
+    expect(read('src/components/NowNextOverlay.tsx')).toContain('history={historyActions(tv)}')
   })
 
   it('every tune records through the one commit point; Back and Forward aim the cursor; Multi View focus does not record', () => {
@@ -370,6 +371,6 @@ describe('viewing history: Back and Forward', () => {
     const provider = read('src/state/TvProvider.tsx')
     expect(provider).toMatch(/case 'last-channel': \{\s+const previous = previousRef\.current/)
     expect(read('src/components/NowNextOverlay.tsx')).toContain('onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}')
-    expect(read('src/components/Guide.tsx')).toContain('<InfoActions key={channel.number} channel={channel} programme={slot.programme} live={live} onTune={onTune} onPrev={onPrev} onNext={onNext} />')
+    expect(read('src/components/Guide.tsx')).toContain('<InfoActions key={channel.number} channel={channel} programme={slot.programme} live={live} onTune={onTune} onPrev={onPrev} onNext={onNext} history={history} />')
   })
 })

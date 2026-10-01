@@ -165,6 +165,34 @@ describe('the bundled starter network', () => {
     expect(read('src/components/GuideAdd.tsx')).toContain("key('Channel list', () => listInput.current?.click())")
   })
 
+  it('an existing viewer adds it deliberately from Guide → Add → Add starter network, whatever the marker says', () => {
+    const guide = read('src/components/Guide.tsx')
+    const add = read('src/components/GuideAdd.tsx')
+    expect(add).toContain("action('Add', tool === 'add', () => onTool('add'))")
+    expect(guide).toContain('onLoadTest={tv.loadTestChannels}')
+    expect(add).toContain("key('Add starter network', () => void run(onLoadTest))")
+    expect(guide).toContain('<TestChannelsButton onLoad={tv.loadTestChannels} />')
+    const provider = read('src/state/TvProvider.tsx')
+    const load = provider.slice(provider.indexOf('const loadTestChannels = useCallback('), provider.indexOf('const starterRanRef'))
+    expect(load).toMatch(/if \(automatic && existing\.length > 0\)/)
+    expect(load).not.toMatch(/starterState\(|claimStarterInstall/)
+    for (const state of ['skipped', 'removed'] as const) {
+      const store = memoryStore({ 'retrotv.preferences.v1': '{}' })
+      setStarterState(state, store)
+      expect(claimStarterInstall(store)).toBe(false)
+    }
+  })
+
+  it('an existing viewer with no user channels gets exactly 1001–1081; one with channels keeps them and gets the rest after', () => {
+    expect(install([]).added).toEqual(STARTER)
+    const mine = [own('yt:UCmine0000000000000000001', 'Mine', 1001), own('yt:UCmine0000000000000000002', 'Mine too', 1040)]
+    const plan = install(mine)
+    expect(plan.sources.slice(0, 2)).toEqual(mine)
+    expect(plan.added[0]).toBe(1041)
+    expect(plan.added).toHaveLength(81)
+    expect(new Set(plan.sources.map((source) => source.channelNumber)).size).toBe(plan.sources.length)
+  })
+
   it('ships the template in the release build input', () => {
     for (const file of BUILT_IN_CATALOGUE_FILES) expect(read(`public${file.path}`).length).toBeGreaterThan(100_000)
   })

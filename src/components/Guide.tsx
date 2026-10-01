@@ -19,7 +19,7 @@ import type { GuideSlot } from '../types/schedule.ts'
 import type { Programme } from '../types/programme.ts'
 import { useClock } from '../utils/use-clock.ts'
 import { hasPicture, searchSession, SESSION_CHANNEL } from '../session/session-channel.ts'
-import { InfoActions } from './InfoActions.tsx'
+import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { AddChannelForm, GuideActions, SessionImportTools, UserNetworkTools } from './GuideAdd.tsx'
 import { ChannelEditor } from './ChannelEditor.tsx'
@@ -523,6 +523,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onTune={() => tv.activateGuide()}
           onPrev={precedingSlot ? () => tv.dispatch({ type: 'nav', direction: 'left' }) : undefined}
           onNext={followingSlot ? () => tv.dispatch({ type: 'nav', direction: 'right' }) : undefined}
+          history={historyActions(tv)}
         />
       )}
     </section>
@@ -679,6 +680,7 @@ function ProgrammePanel({
   onTune,
   onPrev,
   onNext,
+  history,
 }: {
   channel: Channel | null
   slot: GuideSlot<Programme> | null
@@ -691,6 +693,7 @@ function ProgrammePanel({
   onPrev?: () => void
   /** Moves the Guide on to the next programme. */
   onNext?: () => void
+  history: HistoryActions
 }) {
   if (!channel || !slot) {
     return (
@@ -715,7 +718,7 @@ function ProgrammePanel({
         alert={alert}
         next={next ? { title: next.programme.title, startMs: next.startMs, endMs: next.endMs } : undefined}
       />
-      <InfoActions key={channel.number} channel={channel} programme={slot.programme} live={live} onTune={onTune} onPrev={onPrev} onNext={onNext} />
+      <InfoActions key={channel.number} channel={channel} programme={slot.programme} live={live} onTune={onTune} onPrev={onPrev} onNext={onNext} history={history} />
     </footer>
   )
 }

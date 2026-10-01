@@ -3,8 +3,21 @@ import { creditFor, EMPTY_REGISTER } from '../credits/provenance.ts'
 import { mediaLibrary } from '../director/library.ts'
 import { isLiveStream } from '../dynamic/stream.ts'
 import { hasPicture, isSessionProgramme } from '../session/session-channel.ts'
+import type { TvContextValue } from '../state/tv-context.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
+
+export type HistoryActions = { canBack: boolean; canForward: boolean; onBack: () => void; onForward: () => void }
+
+/** ← and → through the channels watched this session, the same in the Guide and over the picture. */
+export function historyActions(tv: Pick<TvContextValue, 'canGoBack' | 'canGoForward' | 'dispatch'>): HistoryActions {
+  return {
+    canBack: tv.canGoBack,
+    canForward: tv.canGoForward,
+    onBack: () => tv.dispatch({ type: 'history-back' }),
+    onForward: () => tv.dispatch({ type: 'history-forward' }),
+  }
+}
 
 /** Enter and Space press the control rather than reaching the television (and tuning or confirming). */
 function keepKey(event: KeyboardEvent<HTMLElement>) {
@@ -14,8 +27,8 @@ function keepKey(event: KeyboardEvent<HTMLElement>) {
 /**
  * The information bar's actions, the same in the Guide and over the picture: the gold Watch (or Listen,
  * Play, Play now) only for what can be played, Prev and Next to step back and forth along the channel,
- * and ↗ to open the programme where its provider hosts it, when TVN has that address on record. Over the
- * picture, ← and → go back and forward through the channels watched, never along the channel numbers.
+ * and ↗ to open the programme where its provider hosts it, when TVN has that address on record. ← and →
+ * go back and forward through the channels watched, never along the channel numbers.
  */
 export function InfoActions({
   channel,
@@ -35,8 +48,8 @@ export function InfoActions({
   onPrev?: () => void
   /** Goes on to the programme after this one on the channel. */
   onNext?: () => void
-  /** Back and Forward through the channels watched this session; over the picture only. */
-  history?: { canBack: boolean; canForward: boolean; onBack: () => void; onForward: () => void }
+  /** Back and Forward through the channels watched this session. */
+  history?: HistoryActions
 }) {
   const imported = isSessionProgramme(programme)
   const playable = hasPicture(programme)
