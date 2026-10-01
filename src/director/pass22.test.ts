@@ -101,8 +101,11 @@ describe('Pass 22 final 000–999 completion', () => {
   })
 
   it('points each redundant slot at a channel that is on air', () => {
-    const redundant = v42.records.filter((row) => row.outcome === 'INTENTIONALLY_UNAVAILABLE')
+    // A slot re-decided later (769 became Indian Cooking in TVN 1.0.8) is judged by the latest map instead.
+    const latest = new Map(v43.records.map((row) => [row.number, row]))
+    const redundant = v42.records.filter((row) => row.outcome === 'INTENTIONALLY_UNAVAILABLE' && latest.get(row.number)?.outcome !== 'ACTIVATED')
     expect(redundant.length).toBeGreaterThan(0)
+    expect(latest.get(769)).toMatchObject({ outcome: 'ACTIVATED', decidedIn: '1.0.8', statusAfter: manifest.get(769)?.status })
     for (const row of redundant) {
       expect(row.statusAfter, `${row.number}`).toBe('DELIBERATELY_UNAVAILABLE')
       expect(ON_AIR, `${row.number} -> ${row.redirect}`).toContain(manifest.get(row.redirect!)?.status)

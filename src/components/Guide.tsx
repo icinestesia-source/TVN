@@ -151,8 +151,11 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       : null
 
   const searching = tv.guideQuery.trim() !== ''
-  const userNumbers = listChannels().filter((channel) => channel.number >= USER_NUMBER_START).map((channel) => channel.number)
-  const nextNumber = userNumbers.length > 0 ? Math.max(...userNumbers) + 1 : USER_NUMBER_START
+  const userChannels = listChannels().filter((channel) => channel.number >= USER_NUMBER_START)
+  const userNumbers = userChannels.map((channel) => channel.number)
+  // A new channel fills the lowest empty slot before opening a number after the last.
+  const nextNumber =
+    userChannels.find((channel) => channel.emptySlot)?.number ?? (userNumbers.length > 0 ? Math.max(...userNumbers) + 1 : USER_NUMBER_START)
   // The Add Channel row closes the list wherever the whole User Network is listed.
   const addRow = !searching && (tv.guideFilter === 'all' || tv.guideFilter === 'user')
   const rowCount = tv.visibleChannels.length + (addRow ? 1 : 0)
@@ -408,6 +411,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           picked={picked}
           onNow={() => tv.dispatch({ type: 'guide-now' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
+          onExport={tv.exportUserNetwork}
         />
         <button type="button" className="tab guide-close" onClick={() => tv.dispatch({ type: 'cancel' })}>
           Close

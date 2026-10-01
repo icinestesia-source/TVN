@@ -233,7 +233,7 @@ describe('tuning', () => {
     const keeping = [...provider.matchAll(/requestTune\([^)]*, true\)/g)]
     expect(keeping).toHaveLength(1)
     const dispatch = provider.slice(provider.indexOf("case 'channel-up':"), provider.indexOf("case 'confirm':"))
-    expect(dispatch).toMatch(/requestTune\(stepTarget\(tuned\(\), pending, command\.type === 'channel-up' \? 1 : -1\)\)/)
+    expect(dispatch).toMatch(/const target = stepTarget\(tuned\(\), pending, command\.type === 'channel-up' \? 1 : -1, \{ filter: guideFilter, favourites \}\)\s+if \(target === null\) flash\(emptyUniverseNote\(guideFilter\)\)\s+else requestTune\(target\)/)
     expect(dispatch).toMatch(/if \(picked\) requestTune\(picked\.number\)/)
     expect(dispatch).toMatch(/requestTune\(previous\)/)
     const numeric = provider.slice(provider.indexOf('commitNumericRef.current = () =>'), provider.indexOf('bootRef.current = () =>'))

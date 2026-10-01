@@ -358,7 +358,7 @@ describe('viewing history: Back and Forward', () => {
     expect(provider).toMatch(/historyNavRef\.current = step\.index\s+requestTune\(step\.channelNumber\)/)
     expect(provider.match(/commitChannel\(\{ channelNumber: heard, previousNumber: previousRef\.current \}, false\)/g)?.length).toBe(3)
     // Random and Surf tune through requestTune, so their destinations are recorded like any other.
-    expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomChannel\(channelRef\.current\)\s+if \(picked\) requestTune\(picked\.number\)/)
+    expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
     expect(provider).toMatch(/if \(multiviewRef\.current === '1'\) \{\s+const picked = randomChannel\(channelRef\.current\)\s+if \(picked\) requestTune\(picked\.number\)/)
   })
 

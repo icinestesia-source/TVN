@@ -4,14 +4,14 @@ Generated from the shipped catalogue (119627 programmes, 56714 h). Full records:
 
 | Status | Channels |
 |---|---|
-| DELIBERATELY_UNAVAILABLE | 63 |
+| DELIBERATELY_UNAVAILABLE | 62 |
 | EXCLUDED | 21 |
 | GENERATED | 6 |
 | NEEDS_AUDIO_PROVIDER | 49 |
 | NEEDS_CONTENT | 39 |
 | NEEDS_LIVE_PROVIDER | 29 |
 | PLAYABLE | 248 |
-| PLAYABLE_STRONG | 491 |
+| PLAYABLE_STRONG | 492 |
 | PLAYABLE_THIN | 53 |
 | RETROTV_ORIGINAL | 1 |
 
@@ -786,7 +786,7 @@ Generated from the shipped catalogue (119627 programmes, 56714 h). Full records:
 | 766 | Tiny Homes | lifestyle | PLAYABLE_STRONG | 300 | 62.4 | Exploring Alternatives | None required; keep differentiated. |
 | 767 | Property Life | lifestyle | PLAYABLE | 42 | 13 | Ben Felix | None required; keep differentiated. |
 | 768 | Organisation | lifestyle | PLAYABLE_STRONG | 300 | 86.5 | Clutterbug | None required; keep differentiated. |
-| 769 | Home Extra | lifestyle | DELIBERATELY_UNAVAILABLE | 0 | 0 |  | None; redundant slot, off air by policy. |
+| 769 | Indian Cooking | lifestyle | PLAYABLE_STRONG | 170 | 24.6 | Manjula's Kitchen | None required; keep differentiated. |
 | 770 | Travel | lifestyle | PLAYABLE_STRONG | 260 | 28.8 | Rick Steves' Europe | None required; keep differentiated. |
 | 771 | World Travel | lifestyle | PLAYABLE | 242 | 23.8 | Lonely Planet | None required; keep differentiated. |
 | 772 | City Breaks | lifestyle | PLAYABLE_STRONG | 299 | 66.2 | Wolters World | None required; keep differentiated. |

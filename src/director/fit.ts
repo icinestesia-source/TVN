@@ -35,6 +35,7 @@ const HOME_ONLY_CHANNELS = new Set([
   37, 85, 111, 116, 118, 129, 141, 145, 188, 189, 190, 654, 143, 184, 187, 192, 233, 290, 304, 306, 390, 391, 397, 407, 418, 424, 434, 440, 449, 563, 628, 469, 610, 612, 624, 625, 626, 662, 675, 697, 717, 725, 726, 749, 764, 767, 778, 819, 837, 838, 882,
   27, 84, 88, 89, 90, 292, 139,
   19, 61, 78, 564, 800,
+  769,
   ...DYNAMIC_CHANNELS,
 ])
 
@@ -873,6 +874,8 @@ const CURATED_REUSE: Readonly<Record<number, readonly string[]>> = {
   78: ['src_bbc_archive', 'src_this_morning'],
   800: ['src_8bit_guy', 'src_92ny_books', 'src_american_theatre_wing', 'src_british_museum', 'src_chicago_film_archives', 'src_cruising_the_cut', 'src_eevblog', 'src_huntley_architecture', 'src_huntley_industrial', 'src_huntley_motoring', 'src_huntley_transport', 'src_national_gallery', 'src_network_rail', 'src_oceanliner_designs', 'src_severn_valley', 'src_tv_academy_interviews', 'src_us_national_archives'],
   564: ['src_aerosmith', 'src_arctic_monkeys', 'src_beach_boys', 'src_bee_gees', 'src_blur', 'src_bon_jovi', 'src_def_leppard', 'src_foo_fighters', 'src_guns_n_roses', 'src_imagine_dragons', 'src_insideout', 'src_jimmy_eat_world', 'src_khruangbin', 'src_kiss', 'src_motley_crue', 'src_my_bloody_valentine', 'src_my_chemical_romance', 'src_nine_inch_nails', 'src_nirvana', 'src_nuclear_blast', 'src_oasis', 'src_pearl_jam', 'src_rem', 'src_rhcp', 'src_rolling_stones', 'src_sigur_ros', 'src_smashing_pumpkins', 'src_soundgarden', 'src_the_beatles', 'src_the_cure', 'src_the_specials', 'src_vevo_2000s', 'src_vevo_80s', 'src_vevo_90s', 'src_vevo_abba', 'src_vevo_blondie', 'src_vevo_bob_marley', 'src_vevo_classics', 'src_zero_7'],
+  // TVN 1.0.8: Indian Cooking takes Manjula's Kitchen's Indian dishes (scripts/indian_cooking_routes.py); the rest stays on 714
+  769: ['src_manjulas_kitchen'],
   // pass 21: each rolling channel takes the publishers its provider config names
   ...Object.fromEntries(DYNAMIC_CHANNELS.flatMap((number) => {
     const sources = dynamicChannel(number)?.rolling?.sources
@@ -1006,16 +1009,25 @@ const FILM_RULES: Theme[] = [
 const TRAILER = /trailers?\b|teaser/i
 
 /**
+ * Indian Cooking (769): the title names an Indian dish or regional cuisine and is not a Western or fusion recipe.
+ * Keep identical to scripts/indian_cooking_routes.py, which chooses 769's programmes with it.
+ */
+const NOT_INDIAN = String.raw`\b(?:pizzas?|pasta|enchiladas?|tacos?|mexican|falafel|tapas|bruschetta|(?<!milk )(?<!lentil )cakes?|cheesecakes?|mousse|cookies?|brownies?|muffins?|pies?|lemonade|krispies|baklava|scalloped|sandwich(?:es)?|burgers?|tofu|bowls?|noodles|avocado|jalapenos?|ricotta|tots|fusion|truffles?)\b`
+const INDIAN_DISH = String.raw`\b(?:indian|punjabi|gujarati|rajasthani|maharashtrian|bengali|hyderabadi|sindhi|bihari|mumbai|kashmiri|samosas?|parathas?|paranthas?|puris?|poori|kachori|chaat|chat|dal|daal|dosas?|idli|uttapam|vadas?|wada|pakoras?|pakoda|bhaji|pav|naan|roti|kulcha|bhatura|battura|chole|chana|rajma|paneer|kofta|korma|biryani|briyani|pulao|khichdi|kadhi|sambar|rasam|chutney|raita|halwa|burfi|barfi|ladoo|laddu|peda|jalebi|jamun|rasgulla|ras ?malai|kheer|phirni|kulfi|falooda|malpua|gujiy?a|kalakand|mithai|chum chum|cham cham|mathri|namak (?:para|pare|paare)|shakk?ar para|gur para|chakli|chivda|poha|bhel|dhokla|muthia|khandvi|thepla|bhakarwadi|litti|chokha|sabzi|sabji|aloo|alu|gobi|gobhi|matt?ar|palak|methi|bhindi|baingan|bharta|karela|arbi|saag|masala|tikki|tikka|makhani|makhana|thandai|lassi|panjiri|mohan thal|puran poli|khaja|chiroti|frankie|kathi|upma|sheera|sooji|suji|rava|besan|nimki|namkeen|gatte|dahi|chawal|cheela|curry|kokum|shakar kandi|sev|boondi|balu ?shahi|handvo|modak)\b`
+export const INDIAN_COOKING_TITLE = new RegExp(`^(?!.*${NOT_INDIAN}).*${INDIAN_DISH}`, 'i')
+
+/**
  * Subject channels whose name alone is ambiguous ("\bcat" matches Catching, Cathedral, Catskinner). The title must
  * be about the subject for every source, dedicated or not. Cats means domestic cats: not big cats, the musical,
  * Cat's Eye, Doja Cat, "Save the Cat" or cat-shaped antiques. Fortnite means programmes about Fortnite, not news
- * round-ups or titles that only mention it.
+ * round-ups or titles that only mention it. Indian Cooking means Indian dishes, not every recipe a cook publishes.
  */
 export const SUBJECT_TITLES: readonly { channel: RegExp; title: RegExp }[] = [
   {
     channel: /^cats$/i,
     title: /^(?!.*(?:\bbig cats?\b|\bwild cats?\b|\b(?:lions?|tigers?|leopards?|jaguars?|cheetahs?|cougars?|pumas?|lynx|ocelots?|langurs?|servals?|pallas'?s cat)\b|\btiger cub|cats the musical|cats musical|\bcats\s*\(19|jellicle|cat'?s eye|doja cat|save the cat|cat in the hat|cat'?s meow|\bbronze\b|figurines?|porcelain|appraisal|\bca\. ?1\d{3}\b)).*\b(?:cats?|kittens?|kitty|kitties|felines?)\b/i,
   },
+  { channel: /^indian cooking$/i, title: INDIAN_COOKING_TITLE },
   { channel: /^fortnite$/i, title: /^(?!.*(?:\band more\b|\bnews\b|fortnite kid|fortnite\?|\bfrom fortnite\b)).*\bfortnite\b/i },
 ]
 

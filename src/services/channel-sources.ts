@@ -31,6 +31,8 @@ export interface SourceStatus {
   checkedAt: number
 }
 
+export type YouTubeSourceType = 'channel' | 'playlist'
+
 export interface ChannelSource {
   /** Stable within its channel. */
   id: string
@@ -41,6 +43,8 @@ export interface ChannelSource {
   enabled: boolean
   /** Identity the resolver found: a YouTube channel or playlist id, or an imported list's name. */
   ref?: string
+  /** For a YouTube source: a channel's uploads, or one playlist and nothing else. */
+  youtube?: YouTubeSourceType
   /** The scheduled programmes this source contributed at its last scan. */
   videos?: ImportedVideo[]
   status?: SourceStatus
@@ -135,14 +139,28 @@ export function sourceStatusText(source: ChannelSource, siblings: readonly Chann
   if (state === 'unavailable') return 'Unavailable'
   if (state === 'unsupported') return 'This browser cannot play this stream'
   if (source.kind === 'youtube') {
-    const playlist = source.ref ? !source.ref.startsWith('UC') : /youtube\.com\/playlist\?/i.test(source.url)
-    const what = playlist ? 'YouTube playlist' : 'YouTube uploader'
+    const what = youTubeSourceType(source) === 'playlist' ? 'YouTube playlist' : 'YouTube uploader'
     return state === 'unchecked' ? `${what} · not scanned yet` : `${what} · ${source.status?.playable ?? source.videos?.length ?? 0} playable`
   }
   if (source.kind === 'collection') return `Imported list · ${source.videos?.length ?? 0} programmes`
   const label = SOURCE_TYPES[source.kind].label
   if (state === 'unchecked') return `${label} · not checked yet`
   return source.kind.endsWith('-hls') ? `${label} · verified` : `${label} · online`
+}
+
+/** The stored type when there is one; older sources are read from their id or address. */
+export function youTubeSourceType(source: Pick<ChannelSource, 'ref' | 'url' | 'youtube'>): YouTubeSourceType {
+  if (source.youtube) return source.youtube
+  if (source.ref) return source.ref.startsWith('UC') ? 'channel' : 'playlist'
+  return /[?&]list=(?:PL|OL|UU|FL)/i.test(source.url) ? 'playlist' : 'channel'
+}
+
+/** The address TVN rescans: the resolved channel or playlist itself, never the video or handle first pasted. */
+export function canonicalYouTubeUrl(source: Pick<ChannelSource, 'ref' | 'url' | 'youtube'>): string {
+  if (!source.ref) return source.url
+  return youTubeSourceType(source) === 'playlist'
+    ? `https://www.youtube.com/playlist?list=${source.ref}`
+    : `https://www.youtube.com/channel/${source.ref}`
 }
 
 const YOUTUBE_HOST = /^(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)$/i

@@ -36,7 +36,7 @@ import {
   type StoredSource,
 } from '../services/channels-import.ts'
 import { lookUpChannel } from '../services/add-channel.ts'
-import { addChannelSource, planTestChannels, removeUserChannels as withoutUserChannels } from '../services/user-network.ts'
+import { addChannelSource, clearUserChannel, planTestChannels, removeUserChannels as withoutUserChannels } from '../services/user-network.ts'
 import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, type ChannelEdit } from '../services/channel-editor.ts'
 import type { ChannelSource } from '../services/channel-sources.ts'
 import { buildCuratedEdit, clearCuratedEdit, curatedEditOf, loadCuratedEdit, loadCuratedEdits, saveCuratedEdit } from '../services/curated-edits.ts'
@@ -55,6 +55,7 @@ import {
   type ShortcutId,
 } from '../view/info-shortcuts.ts'
 import { loadStoredSources, saveStoredSources } from '../services/user-db.ts'
+import { buildUserNetworkExport, downloadText, exportFilename, serialiseUserNetworkExport } from '../services/user-network-export.ts'
 import { isRefusalCode, learnRefusal, refusedVideos } from '../services/embed-refusals.ts'
 import { uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
 import type { Channel } from '../types/channel.ts'
@@ -66,7 +67,7 @@ import { nextSleepMinutes, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
 import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
-import { commitTuned, stepTarget, type Tuned } from './tuning.ts'
+import { commitTuned, emptyUniverseNote, randomTarget, stepTarget, type Tuned } from './tuning.ts'
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
 import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, type StartupPhase } from './startup.ts'
@@ -902,7 +903,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       case 'channel-up':
       case 'channel-down': {
         const pending = tuningRef.current ? pendingNumberRef.current : null
-        requestTune(stepTarget(tuned(), pending, command.type === 'channel-up' ? 1 : -1))
+        const target = stepTarget(tuned(), pending, command.type === 'channel-up' ? 1 : -1, { filter: guideFilter, favourites })
+        if (target === null) flash(emptyUniverseNote(guideFilter))
+        else requestTune(target)
         break
       }
       case 'surf':
@@ -913,8 +916,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
         else if (multiviewRef.current === '1') screenStep(command.direction)
         break
       case 'random-channel': {
-        const picked = randomChannel(channelRef.current)
+        const picked = randomTarget(channelRef.current, { filter: guideFilter, favourites })
         if (picked) requestTune(picked.number)
+        else flash(emptyUniverseNote(guideFilter))
         break
       }
       case 'digit-back':
@@ -1469,6 +1473,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
+  const exportUserNetwork = useCallback(async () => {
+    const now = new Date()
+    const document = buildUserNetworkExport(await loadStoredSources(), now, uploaderIdFor)
+    downloadText(exportFilename(now), serialiseUserNetworkExport(document))
+    const count = document.channels.length
+    return `EXPORTED ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'}`
+  }, [])
+
   /** The editor's scope for this channel number, checked again on every action rather than trusted from the view. */
   const scopeOf = (number: number) => {
     const target = channelByNumber(number)
@@ -1507,7 +1519,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const rescanChannelEdit = useCallback(
     async (number: number, edit: ChannelEdit) => {
       const { scope, shipped } = scopeOf(number)
-      const deps = { resolveYouTube: (url: string) => lookUpChannel(url), probeStream: (source: ChannelSource) => probeStream(source) }
+      const deps = {
+        resolveYouTube: (url: string) => lookUpChannel(url, fetch, { fresh: true }),
+        probeStream: (source: ChannelSource) => probeStream(source),
+        uploaderOf: uploaderIdFor,
+      }
       const now = Date.now()
       if (scope === 'curated') {
         const sources = await rescanSources(edit.sources, deps, now)
@@ -1541,16 +1557,18 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const deleteUserChannel = useCallback(
     async (number: number) => {
       if (scopeOf(number).scope !== 'user') throw new Error('Only your own channels can be deleted')
-      const listed = visibleRef.current.map((item) => item.number)
-      const at = listed.indexOf(number)
-      const neighbour = listed[at + 1] ?? listed[at - 1] ?? null
-      const message = await removeUserChannels([number])
+      // The number stays as an empty slot, so the Guide cursor stays on it and nothing renumbers.
+      const result = clearUserChannel(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, Date.now())
+      if (result.status === 'missing') throw new Error('That channel is no longer in your User Network')
       closeGuideTool()
-      if (neighbour !== null && channelByNumber(neighbour)) focusGuide(neighbour, cursorRef.current.timeMs)
-      return message
+      if (result.status === 'already-empty') return `${number} IS ALREADY EMPTY`
+      await saveStoredSources(result.sources)
+      installSources(result.sources)
+      if (channelByNumber(number)) focusGuide(number, cursorRef.current.timeMs)
+      return `${number} CLEARED · THE NUMBER IS KEPT AS AN EMPTY CHANNEL`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [focusGuide, removeUserChannels],
+    [focusGuide, installSources],
   )
 
   /**
@@ -1760,6 +1778,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,
+      exportUserNetwork,
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
@@ -1781,6 +1800,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,
+      exportUserNetwork,
       activateGuide,
       channel,
       debugOpen,

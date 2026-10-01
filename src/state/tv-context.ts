@@ -124,6 +124,8 @@ export interface TvContextValue {
   removeStarterNetwork: () => Promise<string>
   /** Deliberately remove the given user channels, or all of them. */
   removeUserChannels: (numbers: 'all' | readonly number[]) => Promise<string>
+  /** Download the User Network (1001+) as tvn-user-network-v1 JSON. Reads only: nothing is changed. */
+  exportUserNetwork: () => Promise<string>
   /**
    * The Channel Editor, for one channel at a time. A 1001+ channel is read from and saved to the User
    * Network; a curated channel's change is kept in this browser, over the shipped channel.
@@ -132,7 +134,7 @@ export interface TvContextValue {
   saveChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<string>
   /** Re-resolve this channel's enabled sources and rebuild its inventory and schedule; no other channel is touched. */
   rescanChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
-  /** Delete one user channel (after the editor's confirmation). */
+  /** Clear one user channel (after the editor's confirmation); its number stays as an empty slot. */
   deleteUserChannel: (channelNumber: number) => Promise<string>
   /** Drops the viewer's change to a curated channel, so it is exactly as TVN ships it again. */
   restoreCuratedChannel: (channelNumber: number) => Promise<string>

@@ -4,9 +4,9 @@
  "pass": "23",
  "channels": 39,
  "outcomes": {
-  "ACTIVATED": 7,
+  "ACTIVATED": 8,
   "RIGHTS_BLOCKED": 10,
-  "INTENTIONALLY_UNAVAILABLE": 18,
+  "INTENTIONALLY_UNAVAILABLE": 17,
   "UNRESOLVED": 29,
   "GENERATED_PRESENTATION": 6,
   "RETROTV_ORIGINAL": 1
@@ -697,16 +697,17 @@
   },
   {
    "number": 769,
-   "name": "Home Extra",
+   "name": "Indian Cooking",
    "category": "lifestyle",
-   "decidedIn": "22",
-   "outcome": "INTENTIONALLY_UNAVAILABLE",
-   "subtype": "DUPLICATE_FRONT_DOOR",
-   "reason": "Overflow slot of the home family; 750 Home carries the identity.",
-   "statusAfter": "DELIBERATELY_UNAVAILABLE",
-   "programmesAfter": 0,
-   "hoursAfter": 0,
-   "redirect": 750
+   "decidedIn": "1.0.8",
+   "outcome": "ACTIVATED",
+   "subtype": "ORIGINAL_REQUIRED",
+   "reason": "Indian Cooking: the redundant Home Extra slot re-purposed; 170 Indian-dish programmes chosen from Manjula's Kitchen (already in the catalogue on 714 Vegetarian), bounded below the duplicate threshold.",
+   "statusAfter": "PLAYABLE_STRONG",
+   "programmesAfter": 170,
+   "hoursAfter": 24.6,
+   "statusBefore": "DELIBERATELY_UNAVAILABLE",
+   "mechanism": "curated route (scripts/indian_cooking_routes.py)"
   },
   {
    "number": 799,

@@ -418,14 +418,18 @@ export function channelById(id: string): Channel | undefined {
  * Any other on-air channel, curated or user; the current one only when it is the sole choice.
  * The session channel is private media, so surfing never lands on it.
  */
-export function randomChannel(current: number, random: () => number = Math.random): Channel | undefined {
-  const onAir = listChannels().filter((channel) => channel.enabled && channel.origin !== 'session' && isOnAir(channel))
+export function randomChannel(
+  current: number,
+  random: () => number = Math.random,
+  among: readonly Channel[] = listChannels(),
+): Channel | undefined {
+  const onAir = among.filter((channel) => channel.enabled && channel.origin !== 'session' && !channel.emptySlot && isOnAir(channel))
   const choices = onAir.length > 1 ? onAir.filter((channel) => channel.number !== current) : onAir
   return choices[Math.floor(random() * choices.length)]
 }
 
 export function adjacentChannel(number: number, delta: number): Channel {
-  const enabled = listChannels().filter((channel) => channel.enabled && isOnAir(channel))
+  const enabled = listChannels().filter((channel) => channel.enabled && !channel.emptySlot && isOnAir(channel))
   if (enabled.length === 0) {
     const fallback = listChannels().filter((channel) => channel.enabled)
     const index = fallback.findIndex((channel) => channel.number === number)

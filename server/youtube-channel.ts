@@ -14,6 +14,8 @@ export interface ResolvedVideo {
 
 export interface ResolvedChannel {
   channelId: string
+  /** What the link named: a whole channel's uploads, or one playlist and nothing else. */
+  sourceType: 'youtube-channel' | 'youtube-playlist'
   title: string
   videos: ResolvedVideo[]
   scanned: number
@@ -60,11 +62,17 @@ export function parseChannelInput(raw: string): ChannelInput | null {
   }
   const host = url.hostname.toLowerCase().replace(/^(www|m|music)\./, '')
   const parts = url.pathname.split('/').filter(Boolean)
-  if (host === 'youtu.be') return parts[0] && VIDEO_ID.test(parts[0]) ? { kind: 'video', id: parts[0] } : null
+  const list = url.searchParams.get('list')
+  const playlist = list && PLAYLIST_ID.test(list) ? list : null
+  if (host === 'youtu.be') {
+    if (!parts[0] || !VIDEO_ID.test(parts[0])) return null
+    return playlist ? { kind: 'playlist', id: playlist } : { kind: 'video', id: parts[0] }
+  }
   if (host !== 'youtube.com') return null
   const v = url.searchParams.get('v')
-  const list = url.searchParams.get('list')
-  if (parts[0] === 'playlist' && list && PLAYLIST_ID.test(list)) return { kind: 'playlist', id: list }
+  if (parts[0] === 'playlist' && playlist) return { kind: 'playlist', id: playlist }
+  // A watch link that carries a real playlist means the playlist; mixes (RD…) and Watch Later fall back to the video.
+  if (parts[0] === 'watch' && playlist) return { kind: 'playlist', id: playlist }
   if (parts[0] === 'watch' && v && VIDEO_ID.test(v)) return { kind: 'video', id: v }
   if (['shorts', 'live', 'embed', 'v'].includes(parts[0] ?? '') && parts[1] && VIDEO_ID.test(parts[1])) return { kind: 'video', id: parts[1] }
   if (parts[0] === 'channel' && parts[1] && CHANNEL_ID.test(parts[1])) return { kind: 'channel', id: parts[1] }
@@ -200,7 +208,7 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch): P
     if (listed.length === 0) throw new ChannelError(404, 'That playlist has no videos TVN can schedule')
     const kept = await embeddableVideos(listed, read)
     if (kept.videos.length === 0) throw new ChannelError(422, 'That playlist does not allow its videos to play outside YouTube')
-    return { channelId: input.id, title: playlistTitleFrom(data) ?? input.id, videos: kept.videos, scanned: listed.length, refused: kept.refused }
+    return { channelId: input.id, sourceType: 'youtube-playlist', title: playlistTitleFrom(data) ?? input.id, videos: kept.videos, scanned: listed.length, refused: kept.refused }
   }
   let channelId: string | null = input.kind === 'channel' ? input.id : null
   let title: string | null = null
@@ -220,7 +228,7 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch): P
 
   const { videos, refused } = await embeddableVideos(listed, read)
   if (videos.length === 0) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
-  return { channelId, title: title ?? channelId, videos, scanned: listed.length, refused }
+  return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos, scanned: listed.length, refused }
 }
 
 /** The first KEEP listed videos whose publishers allow embedded playback. */
@@ -250,13 +258,21 @@ export async function handleChannelRequest(url: URL, read: typeof fetch = fetch)
   }
 }
 
+/**
+ * Answers may be cached for a quarter of an hour, except an explicit RESCAN (a `refresh` parameter) and
+ * failures: a viewer asking to refresh a channel must get YouTube's current list, not a remembered one.
+ */
+export function channelCacheControl(url: URL, status: number): string {
+  return status === 200 && !url.searchParams.has('refresh') ? 'public, max-age=900' : 'no-store'
+}
+
 /** Connect-style middleware for the Vite development and preview servers. */
 export function channelMiddleware(request: IncomingMessage, response: ServerResponse): void {
   const url = new URL((request as IncomingMessage & { originalUrl?: string }).originalUrl ?? request.url ?? '/', 'http://localhost')
   void handleChannelRequest(url).then(({ status, body }) => {
     response.statusCode = status
     response.setHeader('content-type', 'application/json')
-    response.setHeader('cache-control', status === 200 ? 'public, max-age=900' : 'no-store')
+    response.setHeader('cache-control', channelCacheControl(url, status))
     response.end(JSON.stringify(body))
   })
 }

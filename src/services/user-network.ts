@@ -1,5 +1,5 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
-import type { ImportedVideo, ParsedExport, StoredSource } from './channels-import.ts'
+import { emptySlotRecord, firstEmptySlot, type ImportedVideo, type ParsedExport, type StoredSource } from './channels-import.ts'
 import { refreshOrigin } from './channel-sources.ts'
 
 /**
@@ -11,6 +11,8 @@ export const ADDED_PREFIX = 'yt:'
 
 export interface AddedChannel {
   channelId: string
+  /** Whether the link named a channel's uploads or one playlist; inferred from the id when the lookup does not say. */
+  sourceType?: 'youtube-channel' | 'youtube-playlist'
   title: string
   videos: readonly ImportedVideo[]
 }
@@ -25,7 +27,19 @@ export function nextUserNumber(sources: readonly StoredSource[]): number | null 
   return next < USER_NUMBER_LIMIT ? next : null
 }
 
+/**
+ * The number a new channel takes: the lowest empty slot (whose placeholder record is removed from
+ * `sources` here), otherwise the number after the last user channel. A populated channel is never taken.
+ */
+export function claimUserNumber(sources: StoredSource[]): number | null {
+  const slot = firstEmptySlot(sources)
+  if (!slot) return nextUserNumber(sources)
+  sources.splice(sources.indexOf(slot), 1)
+  return slot.channelNumber
+}
+
 function uploaderIdOf(source: StoredSource, uploaderOf: UploaderOf): string | null {
+  if (source.emptySlot) return null
   return source.id.startsWith(ADDED_PREFIX) ? source.id.slice(ADDED_PREFIX.length) : uploaderOf(source.name)
 }
 
@@ -43,18 +57,19 @@ export function addChannelSource(
     Object.assign(same, refreshOrigin(same, { kind: 'youtube', ref: channel.channelId }, channel.videos, now))
     same.updatedAt = now
     if (same.channelNumber === null) {
-      same.channelNumber = nextUserNumber(sources)
+      same.channelNumber = claimUserNumber(sources)
       same.automatic = same.channelNumber !== null
     }
     return { sources, number: same.channelNumber, status: 'updated' }
   }
   const twin = sources.find((source) => source.channelNumber !== null && uploaderIdOf(source, uploaderOf) === channel.channelId)
   if (twin) return { sources, number: twin.channelNumber, status: 'duplicate' }
-  const number = nextUserNumber(sources)
+  const number = claimUserNumber(sources)
   if (number === null) return { sources, number: null, status: 'full' }
   sources.push({
     id,
     name: channel.title,
+    sourceType: channel.sourceType ?? (channel.channelId.startsWith('UC') ? 'youtube-channel' : 'youtube-playlist'),
     videos: channel.videos.map((video) => ({ ...video })),
     channelNumber: number,
     inLibrary: false,
@@ -76,7 +91,7 @@ export function planTestChannels(
 ): { sources: StoredSource[]; added: number[]; skipped: number } {
   const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
   const ids = new Set(sources.map((source) => source.id))
-  const names = new Set(sources.map((source) => source.name.trim().toLowerCase()))
+  const names = new Set(sources.filter((source) => !source.emptySlot).map((source) => source.name.trim().toLowerCase()))
   const uploaders = new Set(sources.map((source) => uploaderIdOf(source, uploaderOf)).filter((id): id is string => id !== null))
   const added: number[] = []
   let skipped = 0
@@ -86,7 +101,7 @@ export function planTestChannels(
       skipped += 1
       continue
     }
-    const number = nextUserNumber(sources)
+    const number = claimUserNumber(sources)
     if (number === null) break
     sources.push({
       id: incoming.id,
@@ -130,4 +145,23 @@ export function removeUserChannels(existing: readonly StoredSource[], numbers: '
   if (numbers === 'all') return []
   const drop = new Set(numbers)
   return existing.filter((source) => source.channelNumber === null || !drop.has(source.channelNumber)).map((source) => ({ ...source, videos: source.videos.slice() }))
+}
+
+/**
+ * Clear one user channel: its sources, programmes and running order go, its number stays as an empty
+ * slot the viewer can edit or fill, and no other channel moves. Favourites name channels by number, so a
+ * favourite on this number stays and comes back to life when the slot is filled.
+ */
+export function clearUserChannel(
+  existing: readonly StoredSource[],
+  channelNumber: number,
+  now: number,
+): { sources: StoredSource[]; status: 'cleared' | 'already-empty' | 'missing' } {
+  if (channelNumber < USER_NUMBER_START || channelNumber >= USER_NUMBER_LIMIT) return { sources: existing.map((source) => ({ ...source, videos: source.videos.slice() })), status: 'missing' }
+  const at = existing.findIndex((source) => source.channelNumber === channelNumber)
+  const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
+  if (at < 0) return { sources, status: 'missing' }
+  if (existing[at].emptySlot) return { sources, status: 'already-empty' }
+  sources[at] = emptySlotRecord(channelNumber, now)
+  return { sources, status: 'cleared' }
 }

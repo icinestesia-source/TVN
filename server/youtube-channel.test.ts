@@ -134,7 +134,10 @@ describe('a playlist as a channel source', () => {
 
   it('reads a public playlist link, and not mixes or personal lists', () => {
     expect(parseChannelInput(`https://www.youtube.com/playlist?list=${LIST}`)).toEqual({ kind: 'playlist', id: LIST })
-    expect(parseChannelInput(`https://www.youtube.com/watch?v=Bu9SOZwn2Oo&list=${LIST}`)).toEqual({ kind: 'video', id: 'Bu9SOZwn2Oo' })
+    // A watch link inside a playlist names the playlist (TVN 1.0.8); a mix or Watch Later falls back to the video.
+    expect(parseChannelInput(`https://www.youtube.com/watch?v=Bu9SOZwn2Oo&list=${LIST}`)).toEqual({ kind: 'playlist', id: LIST })
+    expect(parseChannelInput('https://www.youtube.com/watch?v=Bu9SOZwn2Oo&list=RDBu9SOZwn2Oo')).toEqual({ kind: 'video', id: 'Bu9SOZwn2Oo' })
+    expect(parseChannelInput('https://www.youtube.com/watch?v=Bu9SOZwn2Oo&list=WL')).toEqual({ kind: 'video', id: 'Bu9SOZwn2Oo' })
     expect(parseChannelInput('https://www.youtube.com/playlist?list=RDabcdefghij1234')).toBeNull()
     expect(parseChannelInput('https://www.youtube.com/playlist?list=WL')).toBeNull()
   })

@@ -64,6 +64,15 @@
   margin-left: auto;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .tv.is-integrated .guide-brand { min-width: 0; }
 .tv.is-integrated .tab { min-width: 0; padding: 0 10px; }
 .tv.is-integrated .guide-top { flex-wrap: nowrap; overflow: hidden; }
@@ -104,12 +113,21 @@
   width: 96px;
 }
 
-.tv.is-integrated.is-narrow .guide-actions {
-  flex: 1 1 100%;
+.tv.is-narrow .guide-top {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.tv.is-narrow .guide-actions {
+  flex: 1 1 auto;
   margin-left: 0;
 }
 
-.tv.is-integrated.is-narrow .guide-actions .tab {
+.tv.is-narrow .guide-actions + .guide-close {
+  flex: none;
+}
+
+.tv.is-narrow .guide-actions .tab {
   flex: 1;
 }
 

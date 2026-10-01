@@ -19,19 +19,37 @@ function viewerMessage(caught: unknown, fallback: string): string {
   return message && message.length <= 90 && !/[<>{}]/.test(message) ? message.toUpperCase() : fallback
 }
 
-/** NOW, IMPORT and ADD: ordinary Guide actions beside SEARCH. IMPORT and ADD open in the Guide itself. */
+/** NOW, IMPORT, ADD and EXPORT: ordinary Guide actions beside SEARCH. IMPORT and ADD open in the Guide itself; EXPORT downloads a file. */
 export function GuideActions({
   tool,
   picked,
   onNow,
   onTool,
+  onExport,
 }: {
   tool: GuideTool | null
   /** A programme chosen in the Guide is playing; NOW returns to air. */
   picked: boolean
   onNow: () => void
   onTool: (tool: GuideTool) => void
+  /** Download the User Network as a file; the answer is a short line for the viewer. */
+  onExport?: () => Promise<string>
 }) {
+  const [exporting, setExporting] = useState(false)
+  const [exported, setExported] = useState<string | null>(null)
+  const runExport = () => {
+    if (!onExport || exporting) return
+    setExporting(true)
+    onExport()
+      .then((message) => setExported(message))
+      .catch((caught: unknown) => setExported(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE EXPORTED')))
+      .finally(() => setExporting(false))
+  }
+  useEffect(() => {
+    if (!exported) return
+    const timer = setTimeout(() => setExported(null), 4000)
+    return () => clearTimeout(timer)
+  }, [exported])
   const action = (label: string, on: boolean, run: () => void, title?: string) => (
     <button type="button" className={on ? 'tab is-on' : 'tab'} aria-pressed={on} title={title} onKeyDown={keepKey} onClick={run}>
       {label}
@@ -42,6 +60,14 @@ export function GuideActions({
       {action('Now', picked, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
       {action('Import', tool === 'import', () => onTool('import'))}
       {action('Add', tool === 'add', () => onTool('add'))}
+      {onExport
+        ? action(exporting ? 'Exporting…' : exported ? 'Exported' : 'Export', false, runExport, exported ?? 'Download your User Network (1001+) as a JSON file')
+        : null}
+      {exported ? (
+        <span className="visually-hidden" role="status">
+          {exported}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -84,8 +110,8 @@ export function AddChannelForm({
         type="url"
         inputMode="url"
         value={link}
-        placeholder="Paste a YouTube channel or video link"
-        aria-label={nextNumber ? `YouTube link for channel ${nextNumber}` : 'YouTube channel link'}
+        placeholder="Paste a YouTube channel, playlist or video link"
+        aria-label={nextNumber ? `YouTube link for channel ${nextNumber}` : 'YouTube channel or playlist link'}
         autoComplete="off"
         spellCheck={false}
         disabled={busy}

@@ -421,14 +421,6 @@
    "redirect": 700,
    "reason": "Overflow slot of the food family; 700 Food carries the identity."
   },
-  "769": {
-   "class": "INTENTIONALLY_UNAVAILABLE",
-   "subtype": "DUPLICATE_FRONT_DOOR",
-   "title": "See 750 Home",
-   "caption": "THIS SERVICE IS NOW ON 750",
-   "redirect": 750,
-   "reason": "Overflow slot of the home family; 750 Home carries the identity."
-  },
   "799": {
    "class": "INTENTIONALLY_UNAVAILABLE",
    "subtype": "DUPLICATE_FRONT_DOOR",

@@ -7,8 +7,8 @@
   },
   "channels": 1000,
   "totals": {
-    "DELIBERATELY_UNAVAILABLE": 63,
-    "PLAYABLE_STRONG": 491,
+    "DELIBERATELY_UNAVAILABLE": 62,
+    "PLAYABLE_STRONG": 492,
     "PLAYABLE": 248,
     "PLAYABLE_THIN": 53,
     "EXCLUDED": 21,
@@ -37325,15 +37325,17 @@
     {
       "number": 769,
       "displayNumber": "769",
-      "name": "Home Extra",
+      "name": "Indian Cooking",
       "category": "lifestyle",
-      "identity": "Home Extra: the lifestyle channel for home extra programming.",
-      "scope": "Programmes whose titles name \"Home Extra\", from routed lifestyle publishers.",
-      "distinction": "specialist channel. No programming to overlap.",
+      "identity": "Indian Cooking: the lifestyle channel for Indian home cooking.",
+      "scope": "Indian dishes and regional cuisines from Manjula's Kitchen, chosen programme by programme (scripts/indian_cooking_routes.py); Western and fusion recipes stay on 714 Vegetarian.",
+      "distinction": "Shares under 60% of 714 Vegetarian's Manjula's Kitchen programmes: only Indian dishes, never pizza, pasta, cakes or other non-Indian recipes.",
       "sourceStrategy": "SOURCE_ROUTED",
-      "anchorSources": [],
+      "anchorSources": [
+        "Manjula's Kitchen"
+      ],
       "secondarySources": [],
-      "eligibility": "Programmes whose titles name \"Home Extra\", from routed lifestyle publishers.",
+      "eligibility": "Titles naming an Indian dish or regional cuisine (fit.ts INDIAN_COOKING_TITLE), from the programmes routed to 769; other publishers do not air here.",
       "exclusions": [
         "religious programming, preaching and worship (major musical, artistic and historical works are not excluded for their terminology)",
         "space programming",
@@ -37343,19 +37345,19 @@
         "user media (1001+) never feeds 000–999",
         "British Pathé (805), KOFA (114) and Orbital Bacon (225) owned catalogues"
       ],
-      "programmes": 0,
-      "hours": 0,
-      "sources": {},
-      "status": "DELIBERATELY_UNAVAILABLE",
-      "reason": "Overflow slot of the home family; 750 Home carries the identity. Redundant slot; viewers are pointed to 750.",
-      "nextStep": "None; redundant slot, off air by policy.",
+      "programmes": 170,
+      "hours": 24.6,
+      "sources": {
+        "src_manjulas_kitchen": {
+          "programmes": 170,
+          "hours": 24.6
+        }
+      },
+      "status": "PLAYABLE_STRONG",
+      "reason": "170 distinct programmes, 24.6 h.",
+      "nextStep": "None required; keep differentiated.",
       "inGuide": true,
-      "tier": "Specialist",
-      "blocker": {
-        "class": "INTENTIONALLY_UNAVAILABLE",
-        "subtype": "DUPLICATE_FRONT_DOOR",
-        "redirect": 750
-      }
+      "tier": "Specialist"
     },
     {
       "number": 770,

@@ -1,12 +1,13 @@
-import { handleChannelRequest } from '../../server/youtube-channel.ts'
+import { channelCacheControl, handleChannelRequest } from '../../server/youtube-channel.ts'
 
 export default async (request: Request): Promise<Response> => {
-  const { status, body } = await handleChannelRequest(new URL(request.url))
+  const url = new URL(request.url)
+  const { status, body } = await handleChannelRequest(url)
   return new Response(JSON.stringify(body), {
     status,
     headers: {
       'content-type': 'application/json',
-      'cache-control': status === 200 ? 'public, max-age=900' : 'no-store',
+      'cache-control': channelCacheControl(url, status),
     },
   })
 }

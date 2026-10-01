@@ -1,5 +1,13 @@
 import type { ImportedVideo, StoredSource } from './channels-import.ts'
-import { inOrder, inventoryOf, isStreamSource, liveStreamOf, SOURCE_TYPES, type ChannelSource } from './channel-sources.ts'
+import {
+  canonicalYouTubeUrl,
+  inOrder,
+  inventoryOf,
+  isStreamSource,
+  liveStreamOf,
+  SOURCE_TYPES,
+  type ChannelSource,
+} from './channel-sources.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 
 /**
@@ -21,10 +29,21 @@ export function keptOrder(sources: readonly ChannelSource[], order: readonly str
 }
 
 export interface RescanDeps {
-  /** TVN's keyless lookup: a YouTube channel, @handle, video (for its uploader) or playlist. */
-  resolveYouTube(url: string): Promise<{ channelId: string; title: string; videos: readonly ImportedVideo[] }>
+  /**
+   * TVN's keyless lookup: a YouTube channel, @handle, video (for its uploader) or playlist. A rescan must
+   * pass straight through to YouTube (no cached answer), or it would only replay the last scan.
+   */
+  resolveYouTube(url: string): Promise<{ channelId: string; sourceType?: 'youtube-channel' | 'youtube-playlist'; title: string; videos: readonly ImportedVideo[] }>
   /** Whether this browser can open the stream now. */
   probeStream(source: ChannelSource): Promise<'online' | 'unavailable' | 'unsupported'>
+  /** The YouTube channel an imported list came from, when TVN knows it; such a list is refreshed from that channel. */
+  uploaderOf?(listName: string): string | null
+}
+
+/** A rescanned list: the uploader's current programmes first, then everything it already had that they do not repeat. */
+function mergedFresh(fresh: readonly ImportedVideo[], kept: readonly ImportedVideo[] = []): ImportedVideo[] {
+  const seen = new Set(fresh.map((video) => video.id))
+  return [...fresh.map((video) => ({ ...video })), ...kept.filter((video) => !seen.has(video.id)).map((video) => ({ ...video }))]
 }
 
 const copySource = (source: ChannelSource): ChannelSource => ({
@@ -41,7 +60,8 @@ export function sourcesOf(record: StoredSource): ChannelSource[] {
   if (record.id.startsWith(ADDED_PREFIX)) {
     const ref = record.id.slice(ADDED_PREFIX.length)
     const url = ref.startsWith('UC') ? `https://www.youtube.com/channel/${ref}` : `https://www.youtube.com/playlist?list=${ref}`
-    return [{ id: 's1', kind: 'youtube', url, label: record.name, enabled: true, ref, videos, status }]
+    const youtube = record.sourceType === 'youtube-playlist' || (!record.sourceType && !ref.startsWith('UC')) ? 'playlist' : 'channel'
+    return [{ id: 's1', kind: 'youtube', url, label: record.name, enabled: true, ref, youtube, videos, status }]
   }
   const list = record.listName ?? record.name
   return [{ id: 's1', kind: 'collection', url: '', label: list, enabled: true, ref: list, videos, status }]
@@ -57,8 +77,21 @@ export function cleanName(name: string, fallback: string): string {
 
 function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredSource {
   const sources = edit.sources.map(copySource)
-  const { runningOrder: _previous, ...rest } = record
+  const { runningOrder: _previous, emptySlot: _empty, ...rest } = record
   const order = keptOrder(sources, edit.order)
+  if (record.emptySlot) {
+    // A slot stays empty until it has a source; the first source's title names it unless the viewer typed a name.
+    if (sources.length === 0) return { ...record, name: cleanName(edit.name, record.name), updatedAt: now }
+    const named = edit.name.trim() && edit.name.trim() !== record.name ? edit.name : sources.find((source) => source.label)?.label ?? record.name
+    return {
+      ...rest,
+      name: cleanName(named, record.name),
+      channelSources: sources,
+      videos: inventoryOf(sources),
+      ...(order ? { runningOrder: order } : {}),
+      updatedAt: now,
+    }
+  }
   return {
     ...rest,
     name: cleanName(edit.name, record.name),
@@ -94,6 +127,9 @@ function hostOf(url: string): string {
 /**
  * Re-resolve the enabled sources of one channel. A disabled source is left exactly as it was; a
  * YouTube source that cannot be read keeps what it had, so a passing failure never empties a channel.
+ * A YouTube source is looked up again at its canonical channel or playlist address and replaced by what
+ * YouTube lists now. An imported list whose uploader TVN knows is refreshed from that uploader, keeping
+ * the programmes it already had; an imported list with no known uploader has nothing to ask and stays.
  */
 export async function rescanSources(sources: readonly ChannelSource[], deps: RescanDeps, now: number): Promise<ChannelSource[]> {
   return Promise.all(
@@ -101,12 +137,30 @@ export async function rescanSources(sources: readonly ChannelSource[], deps: Res
       const source = copySource(original)
       if (!source.enabled) return source
       if (source.kind === 'tvn') return { ...source, status: { state: 'ready', checkedAt: now } }
-      if (source.kind === 'collection') return { ...source, status: { state: 'ready', playable: source.videos?.length ?? 0, checkedAt: now } }
+      if (source.kind === 'collection') {
+        const uploader = source.ref ? deps.uploaderOf?.(source.ref) : null
+        if (!uploader) return { ...source, status: { state: 'ready', playable: source.videos?.length ?? 0, checkedAt: now } }
+        try {
+          const found = await deps.resolveYouTube(`https://www.youtube.com/channel/${uploader}`)
+          const videos = mergedFresh(found.videos, source.videos)
+          return { ...source, videos, status: { state: 'ready', playable: videos.length, checkedAt: now } }
+        } catch {
+          return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
+        }
+      }
       if (source.kind === 'youtube') {
         try {
-          const found = await deps.resolveYouTube(source.url)
+          const found = await deps.resolveYouTube(canonicalYouTubeUrl(source))
           const videos = found.videos.map((video) => ({ ...video }))
-          return { ...source, ref: found.channelId, label: found.title || source.label, videos, status: { state: 'ready', playable: videos.length, checkedAt: now } }
+          const youtube = found.sourceType === 'youtube-playlist' ? 'playlist' : found.sourceType === 'youtube-channel' ? 'channel' : source.youtube
+          return {
+            ...source,
+            ref: found.channelId,
+            ...(youtube ? { youtube } : {}),
+            label: found.title || source.label,
+            videos,
+            status: { state: 'ready', playable: videos.length, checkedAt: now },
+          }
         } catch {
           return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
         }

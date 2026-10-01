@@ -42,6 +42,35 @@ export interface StoredSource {
   listName?: string
   /** The viewer's own running order (video ids); without it TVN arranges the channel itself. */
   runningOrder?: string[]
+  /** How an added channel was named: one YouTube channel's uploads, or one playlist and nothing else. */
+  sourceType?: 'youtube-channel' | 'youtube-playlist'
+  /** A cleared user channel: the number is kept, nothing airs, and the next added channel fills it. */
+  emptySlot?: true
+}
+
+export const EMPTY_SLOT_PREFIX = 'slot:'
+export const EMPTY_SLOT_NAME = 'Empty channel'
+
+/** The record a cleared user channel leaves behind: same number, no sources, ready to be filled again. */
+export function emptySlotRecord(channelNumber: number, now: number): StoredSource {
+  return {
+    id: `${EMPTY_SLOT_PREFIX}${channelNumber}`,
+    name: EMPTY_SLOT_NAME,
+    videos: [],
+    channelNumber,
+    inLibrary: false,
+    automatic: true,
+    updatedAt: now,
+    channelSources: [],
+    emptySlot: true,
+  }
+}
+
+/** The lowest empty slot, which a new channel takes before any higher number. */
+export function firstEmptySlot(sources: readonly StoredSource[]): StoredSource | undefined {
+  return sources
+    .filter((source) => source.emptySlot && source.channelNumber !== null)
+    .sort((a, b) => (a.channelNumber ?? 0) - (b.channelNumber ?? 0))[0]
 }
 
 export interface ImportMode {
@@ -287,6 +316,17 @@ export function planImport(
   let created = 0
   let updated = 0
   let unassigned = 0
+  // A cleared channel's number is filled before a new one is opened; the slot record gives way to the channel.
+  const claim = (): number | null => {
+    const slot = firstEmptySlot([...byId.values()])
+    if (slot) {
+      byId.delete(slot.id)
+      return slot.channelNumber
+    }
+    const number = allocateUserNumber(taken)
+    if (number !== null) taken.add(number)
+    return number
+  }
 
   for (const incoming of parsed.sources) {
     const current = byId.get(incoming.id)
@@ -299,12 +339,9 @@ export function planImport(
       if (mode.automatic) {
         current.automatic = true
         if (current.channelNumber === null) {
-          const number = allocateUserNumber(taken)
+          const number = claim()
           if (number === null) unassigned += 1
-          else {
-            current.channelNumber = number
-            taken.add(number)
-          }
+          else current.channelNumber = number
         }
       }
       updated += 1
@@ -313,9 +350,8 @@ export function planImport(
 
     let channelNumber: number | null = null
     if (mode.automatic) {
-      channelNumber = allocateUserNumber(taken)
+      channelNumber = claim()
       if (channelNumber === null) unassigned += 1
-      else taken.add(channelNumber)
     }
     byId.set(incoming.id, {
       id: incoming.id,
@@ -377,6 +413,12 @@ export function channelsFromSources(
       sources: [{ kind: 'youtube-channel', id: source.id, label: source.name }],
       scheduleMode: 'loop',
       phaseOffsetSeconds: phaseFor(source.id),
+    }
+
+    if (source.emptySlot) {
+      channels.push({ ...base, name: EMPTY_SLOT_NAME, shortName: '··', logo: '··', description: `Empty user channel ${number}. Add a source in the Guide to fill it.`, emptySlot: true })
+      programmes.set(id, [emptySlotProgramme(id)])
+      continue
     }
 
     const live = source.channelSources ? liveStreamOf(source.channelSources) : null
@@ -471,6 +513,22 @@ function liveStreamProgramme(channelId: string, name: string, live: NonNullable<
     sourceRef: `stream:${live.source.id}`,
     creator: live.source.label || undefined,
     liveStream: { ...live.stream },
+  }
+}
+
+function emptySlotProgramme(channelId: string): Programme {
+  return {
+    id: `${channelId}-empty`,
+    title: EMPTY_SLOT_NAME,
+    description: 'This user channel is empty. Its number is kept for the next channel you add.',
+    videoId: null,
+    durationSeconds: 1800,
+    channelId,
+    category: 'User',
+    source: 'imported',
+    kind: 'programme',
+    playbackMode: 'linear',
+    caption: 'EMPTY USER CHANNEL · ADD A SOURCE IN THE GUIDE',
   }
 }
 

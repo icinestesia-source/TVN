@@ -263,7 +263,7 @@ describe('information overlay: 3×3 control pad', () => {
     press('Random channel')
     expect(sent).toEqual([{ type: 'random-channel' }])
     expect(find('Random channel').label).toBe('R')
-    expect(provider).toMatch(/case 'random-channel': \{\s*const picked = randomChannel\(channelRef\.current\)\s*if \(picked\) requestTune\(picked\.number\)/)
+    expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
     expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
   })
 
