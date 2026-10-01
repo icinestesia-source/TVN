@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it } from 'vitest'
-import { channelByNumber, listChannels } from './data/catalogue.ts'
+import { adjacentChannel, channelByNumber, listChannels } from './data/catalogue.ts'
+import { channelMatchesFilter } from './data/network.ts'
 import { BUILT_IN_CATALOGUE_FILES } from './data/user-network/bootstrap.ts'
-import { claimStarterInstall, hasEarlierState, setStarterState, STARTER_KEY, starterIds, starterState, withoutStarter } from './data/user-network/starter.ts'
+import { claimStarterInstall, setStarterState, STARTER_KEY, starterIds, starterState, withoutStarter } from './data/user-network/starter.ts'
 import { installUserCatalogue } from './data/user-overlay.ts'
 import { applyChannelEdit, editOf, rescanChannel } from './services/channel-editor.ts'
 import { channelsFromSources, mergeParsedExports, parseChannelsExport, type StoredSource } from './services/channels-import.ts'
@@ -30,6 +31,26 @@ function memoryStore(seed: Record<string, string> = {}) {
 }
 
 const install = (existing: readonly StoredSource[] = []) => planTestChannels(existing, template, 5, uploaderIdFor)
+
+/** One startup as the provider runs it: claim the marker, then the automatic install once ready. */
+function startup(store: ReturnType<typeof memoryStore>, existing: readonly StoredSource[]) {
+  if (!claimStarterInstall(store) || starterState(store) !== 'pending') return { sources: existing.slice(), added: [] as number[], skipped: 0 }
+  const plan = install(existing)
+  setStarterState('installed', store)
+  return plan
+}
+
+/** Guide → Add → Add starter network. */
+function restore(store: ReturnType<typeof memoryStore>, existing: readonly StoredSource[]) {
+  const plan = install(existing)
+  setStarterState('installed', store)
+  return plan
+}
+
+const showUser = (sources: readonly StoredSource[]) => {
+  const built = channelsFromSources(sources)
+  installUserCatalogue(built.channels, built.programmes)
+}
 
 function own(id: string, name: string, number: number): StoredSource {
   return { id, name, videos: [{ id: `${id.replace(/\W/g, '').slice(0, 8).padEnd(8, 'x')}001`, title: name, durationSec: 900 }], channelNumber: number, inLibrary: false, automatic: true, updatedAt: 1 }
@@ -128,18 +149,16 @@ describe('the bundled starter network', () => {
     expect(added).toMatchObject({ status: 'added', number: 1082 })
   })
 
-  it('13. an existing viewer is never populated on upgrade, even with an empty User Network', () => {
-    for (const key of ['retrotv.preferences.v1', 'tvn.notice.v1', 'tvn.surf.v1', 'retrotv.builtin-catalogues.v1']) {
+  it('13. an existing viewer with settings, history or favourites but no 1001+ is populated on upgrade', () => {
+    for (const key of ['retrotv.preferences.v1', 'tvn.notice.v1', 'tvn.surf.v1', 'retrotv.builtin-catalogues.v1', 'retrotv.favourites.v1']) {
       const store = memoryStore({ [key]: '1' })
-      expect(hasEarlierState(store)).toBe(true)
-      expect(claimStarterInstall(store)).toBe(false)
-      expect(starterState(store)).toBe('skipped')
-      expect(claimStarterInstall(store)).toBe(false)
+      const result = startup(store, [])
+      expect(result.added).toEqual(STARTER)
+      expect(starterState(store)).toBe('installed')
     }
-    expect(hasEarlierState(memoryStore({ 'other.site': 'x' }))).toBe(false)
     const provider = read('src/state/TvProvider.tsx')
-    expect(provider).toMatch(/if \(automatic && existing\.length > 0\) \{\s*setStarterState\('skipped'\)/)
-    expect(provider.indexOf('claimStarterInstall()')).toBeLessThan(provider.indexOf('loadPreferences()'))
+    expect(provider).not.toMatch(/existing\.length > 0/)
+    expect(provider).not.toMatch(/setStarterState\('skipped'\)/)
   })
 
   it('14–15. / and /tvn share one User Network and one marker; changing route never reinstalls', () => {
@@ -174,13 +193,10 @@ describe('the bundled starter network', () => {
     expect(guide).toContain('<TestChannelsButton onLoad={tv.loadTestChannels} />')
     const provider = read('src/state/TvProvider.tsx')
     const load = provider.slice(provider.indexOf('const loadTestChannels = useCallback('), provider.indexOf('const starterRanRef'))
-    expect(load).toMatch(/if \(automatic && existing\.length > 0\)/)
-    expect(load).not.toMatch(/starterState\(|claimStarterInstall/)
-    for (const state of ['skipped', 'removed'] as const) {
-      const store = memoryStore({ 'retrotv.preferences.v1': '{}' })
-      setStarterState(state, store)
-      expect(claimStarterInstall(store)).toBe(false)
-    }
+    // Only the automatic install consults the marker; the deliberate one always runs and marks it installed.
+    expect(load).toContain("if (automatic && starterState() !== 'pending') return ''")
+    expect(load).toContain("setStarterState('installed')")
+    expect(load).not.toMatch(/claimStarterInstall/)
   })
 
   it('an existing viewer with no user channels gets exactly 1001–1081; one with channels keeps them and gets the rest after', () => {
@@ -195,5 +211,109 @@ describe('the bundled starter network', () => {
 
   it('ships the template in the release build input', () => {
     for (const file of BUILT_IN_CATALOGUE_FILES) expect(read(`public${file.path}`).length).toBeGreaterThan(100_000)
+  })
+})
+
+describe('1001+ is part of every installation unless the viewer removed it', () => {
+  it('R1. a fresh viewer gets 1001–1081', () => {
+    const store = memoryStore()
+    expect(startup(store, []).added).toEqual(STARTER)
+    expect(starterState(store)).toBe('installed')
+  })
+
+  it('R2. a browser marked skipped by 1.0.1–1.0.3 is migrated once and receives the starter network', () => {
+    const store = memoryStore({ [STARTER_KEY]: 'skipped', 'retrotv.preferences.v1': '{}' })
+    expect(claimStarterInstall(store)).toBe(true)
+    expect(starterState(store)).toBe('pending')
+    const first = startup(store, [])
+    expect(first.added).toEqual(STARTER)
+    expect(starterState(store)).toBe('installed')
+    expect(startup(store, first.sources).added).toEqual([])
+  })
+
+  it('R3. an interrupted migration stays pending and completes on the next startup', () => {
+    const store = memoryStore({ [STARTER_KEY]: 'skipped' })
+    expect(claimStarterInstall(store)).toBe(true)
+    expect(starterState(store)).toBe('pending')
+    expect(startup(store, []).added).toEqual(STARTER)
+  })
+
+  it('R4. a viewer’s own channels survive untouched and the starter set follows them, duplicates skipped', () => {
+    const store = memoryStore({ [STARTER_KEY]: 'skipped' })
+    const mine = own('yt:UCmine0000000000000000001', 'Mine', 1001)
+    const edited = { ...install().sources[4], name: 'My copy', channelNumber: 1002 }
+    const result = startup(store, [mine, edited])
+    expect(result.sources.slice(0, 2)).toEqual([mine, edited])
+    expect(result.skipped).toBe(1)
+    expect(result.added).toEqual(Array.from({ length: 80 }, (_, index) => 1003 + index))
+    expect(new Set(result.sources.map((source) => source.id)).size).toBe(result.sources.length)
+    expect(new Set(result.sources.map((source) => source.channelNumber)).size).toBe(result.sources.length)
+  })
+
+  it('R5. Remove starter removes only the starter channels; Remove all removes every user channel; both record removed', () => {
+    const tools = read('src/components/GuideAdd.tsx')
+    expect(tools).toContain('Remove the starter network from this browser? Your other channels stay.')
+    expect(tools).toContain('Remove all {userChannels} user channels from this browser?')
+    const mine = own('yt:UCmine0000000000000000001', 'Mine', 1082)
+    const sources = [...install().sources, mine]
+    expect(withoutStarter(sources, starterIds(template))).toEqual([mine])
+    expect(removeUserChannels(sources, 'all')).toEqual([])
+    const provider = read('src/state/TvProvider.tsx')
+    expect(provider).toMatch(/const removeStarterNetwork = useCallback\(async \(\) => \{[\s\S]*?withoutStarter\(existing, ids\)[\s\S]*?setStarterState\('removed'\)/)
+    expect(provider).toContain("if (numbers === 'all') setStarterState('removed')")
+    // Deleting one channel is not removing the User Network.
+    const single = provider.slice(provider.indexOf('const removeUserChannels = useCallback('), provider.indexOf('/** The editor'))
+    expect(single.match(/setStarterState/g)).toHaveLength(1)
+  })
+
+  it('R6–R7. after removal neither a reload, an update, nor either route brings it back', () => {
+    for (const before of ['installed', 'skipped', 'pending'] as const) {
+      const store = memoryStore({ [STARTER_KEY]: before })
+      setStarterState('removed', store)
+      for (let visit = 0; visit < 3; visit += 1) expect(startup(store, []).added).toEqual([])
+      expect(starterState(store)).toBe('removed')
+    }
+    expect(read('src/data/user-network/starter.ts')).not.toMatch(/pathname|entryMode|location/)
+  })
+
+  it('R8. a deliberate restore brings it back collision-safely and marks it installed', () => {
+    const store = memoryStore({ [STARTER_KEY]: 'removed' })
+    const mine = own('yt:UCmine0000000000000000001', 'Mine', 1001)
+    const back = restore(store, [mine])
+    expect(back.sources[0]).toEqual(mine)
+    expect(back.added).toEqual(STARTER.map((number) => number + 1))
+    expect(starterState(store)).toBe('installed')
+    expect(startup(store, back.sources).added).toEqual([])
+  })
+
+  it('R9–R12. ALL lists 001–999 and 1001+, 1001 tunes, CH+/CH− cross 999→1001, 1000 stays unused', () => {
+    showUser(startup(memoryStore({ [STARTER_KEY]: 'skipped' }), []).sources)
+    const all = listChannels().filter((channel) => channelMatchesFilter(channel, 'all', []))
+    const numbers = all.map((channel) => channel.number)
+    expect(numbers.filter((number) => number >= 1001)).toEqual(STARTER)
+    expect(numbers.filter((number) => number >= 1 && number <= 999).length).toBeGreaterThan(700)
+    expect(numbers).not.toContain(1000)
+    expect(channelByNumber(1001)?.origin).toBe('user-import')
+    expect(channelByNumber(1000)).toBeUndefined()
+    const lastCurated = listChannels().filter((channel) => channel.enabled && channel.number <= 999).at(-1)!
+    expect(adjacentChannel(lastCurated.number, 1).number).toBe(1001)
+    expect(adjacentChannel(1001, -1).number).toBe(lastCurated.number)
+  })
+
+  it('R13. repeated reloads and migrations never duplicate a starter channel', () => {
+    const store = memoryStore({ [STARTER_KEY]: 'skipped' })
+    let sources = startup(store, []).sources
+    for (let visit = 0; visit < 5; visit += 1) {
+      setStarterState('skipped', store)
+      sources = startup(store, sources).sources
+    }
+    expect(sources).toHaveLength(81)
+    expect(sources.map((source) => source.channelNumber)).toEqual(STARTER)
+  })
+
+  it('R15. channel 000 remains session-only with the starter network installed', () => {
+    showUser(install().sources)
+    expect(channelByNumber(SESSION_CHANNEL_NUMBER)?.origin).toBe('session')
+    expect(install().sources.some((source) => source.channelNumber !== null && source.channelNumber < 1001)).toBe(false)
   })
 })

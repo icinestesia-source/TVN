@@ -4,19 +4,18 @@ import type { ParsedExport, StoredSource } from '../../services/channels-import.
  * The bundled starter User Network (1001–1081): the template is the shipped catalogue files and is
  * never written to; once installed, the channels are the viewer's own stored sources like any other.
  *
- * pending   claimed for a fresh viewer, installed once startup is ready (retried if interrupted)
+ * pending   due: installed after the viewer's own channels once startup is ready (retried if interrupted)
  * installed the starter set was installed, automatically or on request
- * removed   the viewer removed it; it never returns unless they add it again
- * skipped   a viewer with earlier TVN state; their User Network is left exactly as it is
+ * removed   the viewer removed it with Remove starter or Remove all; it never returns unless they add it again
+ * skipped   written by TVN 1.0.1–1.0.3 for browsers with earlier TVN state; not an opt-out, so it becomes pending
  */
 export const STARTER_KEY = 'tvn.starter-network.v1'
 
 export type StarterState = 'pending' | 'installed' | 'removed' | 'skipped'
 
-type Store = Pick<Storage, 'getItem' | 'setItem' | 'key'> & { readonly length: number }
+type Store = Pick<Storage, 'getItem' | 'setItem'>
 
 const STATES: readonly StarterState[] = ['pending', 'installed', 'removed', 'skipped']
-const TVN_PREFIXES = ['tvn.', 'retrotv.']
 
 function browserStore(): Store | null {
   try {
@@ -43,31 +42,16 @@ export function setStarterState(state: StarterState, store: Store | null = brows
   }
 }
 
-/** Any setting TVN has ever saved in this browser means the viewer is not new. */
-export function hasEarlierState(store: Store): boolean {
-  for (let index = 0; index < store.length; index += 1) {
-    const key = store.key(index)
-    if (key && TVN_PREFIXES.some((prefix) => key.startsWith(prefix))) return true
-  }
-  return false
-}
-
 /**
- * Decide, before anything is saved this visit, whether the starter set is due. A genuinely new viewer
- * claims it ('pending'); a viewer with earlier TVN state and no marker is recorded as 'skipped'.
+ * Whether the starter set is due this visit. Every browser gets it, new or upgrading, unless it is
+ * already installed or the viewer removed it; only an explicit removal is an opt-out.
  */
 export function claimStarterInstall(store: Store | null = browserStore()): boolean {
   if (!store) return false
   const state = starterState(store)
-  if (state === 'pending') return true
-  if (state !== null) return false
-  try {
-    const fresh = !hasEarlierState(store)
-    setStarterState(fresh ? 'pending' : 'skipped', store)
-    return fresh
-  } catch {
-    return false
-  }
+  if (state === 'installed' || state === 'removed') return false
+  if (state !== 'pending') setStarterState('pending', store)
+  return starterState(store) === 'pending'
 }
 
 export function starterIds(template: ParsedExport): Set<string> {

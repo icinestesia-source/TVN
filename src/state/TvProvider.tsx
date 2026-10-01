@@ -26,7 +26,7 @@ import { loadUserLibraryMode, setUserLibraryMode, userLibraryMode } from '../lib
 import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary } from '../library/store.ts'
 import { guideSlots } from '../services/broadcast.ts'
 import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
-import { claimStarterInstall, setStarterState, starterIds, withoutStarter } from '../data/user-network/starter.ts'
+import { claimStarterInstall, setStarterState, starterIds, starterState, withoutStarter } from '../data/user-network/starter.ts'
 import {
   channelsFromSources,
   migrateLegacyUserNumbers,
@@ -1394,12 +1394,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** Add the starter network after the viewer's own channels; anything already present is left as it is. */
   const loadTestChannels = useCallback(
     async (automatic = false) => {
+      if (automatic && starterState() !== 'pending') return ''
       const parsed = await readStarterTemplate()
       const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
-      if (automatic && existing.length > 0) {
-        setStarterState('skipped')
-        return ''
-      }
       await ingestParsed(parsed, { filename: BUILT_IN_CATALOGUE_ID })
       const plan = planTestChannels(existing, parsed, Date.now(), uploaderIdFor)
       if (plan.added.length > 0) await saveStoredSources(plan.sources)

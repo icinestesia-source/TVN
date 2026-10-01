@@ -174,7 +174,7 @@ function readStoredFingerprint(): string | null {
 /**
  * The User Network is the viewer's own. Whatever this browser has stored is loaded exactly as it is,
  * including channels an earlier TVN installed from the bundled catalogues. Nothing is installed here:
- * the starter network reaches a new viewer only through the provider, once, after startup is ready.
+ * the starter network reaches each viewer only through the provider, once, after startup is ready.
  */
 export async function bootstrapUserNetwork(): Promise<BootstrapResult> {
   const started = performance.now()
