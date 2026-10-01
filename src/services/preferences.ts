@@ -2,6 +2,7 @@ import type { GuideFilter, MultiviewMode, UserPreferences } from '../types/prefe
 import { asSleepMinutes, DEFAULT_SLEEP_MINUTES } from '../state/sleep.ts'
 import { clamp } from '../utils/time.ts'
 import { clampGuideSplit } from '../view/guide-mode.ts'
+import { asShortcuts, DEFAULT_SHORTCUTS } from '../view/info-shortcuts.ts'
 
 export const PREFERENCES_KEY = 'retrotv.preferences.v1'
 
@@ -46,6 +47,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   multiviewChannels: [],
   subtitles: false,
   sleepMinutes: DEFAULT_SLEEP_MINUTES,
+  infoShortcuts: DEFAULT_SHORTCUTS,
 }
 
 function clampVolume(value: unknown): number {
@@ -96,6 +98,7 @@ export function loadPreferences(): UserPreferences {
       multiviewChannels: asNumbers(record.multiviewChannels),
       subtitles: record.subtitles === true,
       sleepMinutes: asSleepMinutes(record.sleepMinutes),
+      infoShortcuts: asShortcuts(record.infoShortcuts),
     }
   } catch {
     return { ...DEFAULT_PREFERENCES, favouriteChannelNumbers: [], multiviewChannels: [] }

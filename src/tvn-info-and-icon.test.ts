@@ -3,11 +3,13 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { InfoActions } from './components/InfoActions.tsx'
+import { padProps } from './info-pad.fixture.ts'
 import { ProgrammeInfo } from './components/ProgrammeInfo.tsx'
 import { channelByNumber } from './data/catalogue.ts'
 import { clearManual, onScreen, selectProgramme, stepFrom } from './player/manual.ts'
 import { LoadingRing, STARTUP_COPY, StartupScreen } from './components/StartupScreen.tsx'
 import type { Channel } from './types/channel.ts'
+import type { TvCommand } from './types/input.ts'
 import type { Programme } from './types/programme.ts'
 
 describe('the Guide information bar', () => {
@@ -23,12 +25,15 @@ describe('Next on the information bar', () => {
   const channel = { number: 12, name: 'Twelve', origin: 'default' } as Channel
   const programme = { id: 'p', title: 'Film', videoId: 'abcdefghijk', durationSeconds: 1800, playback: 'seekable-recorded' } as Programme
   const actions = (onPrev?: () => void, onNext?: () => void) =>
-    renderToStaticMarkup(createElement(InfoActions, { channel, programme, live: true, onTune: () => {}, onPrev, onNext }))
+    renderToStaticMarkup(createElement(InfoActions, { channel, programme, onPrev, onNext, ...padProps() }))
 
-  it('reads ← Watch →, each step only when there is a programme to step to', () => {
-    expect(actions(() => {}, () => {})).toMatch(/aria-label="Previous programme"[^>]*>←<\/button><button[^>]*>Watch<\/button><button[^>]*aria-label="Next programme"[^>]*>→<\/button>/)
-    expect(actions(undefined, () => {})).not.toContain('Previous programme')
-    expect(actions(() => {})).not.toContain('Next programme')
+  it('reads ← Guide →, each step usable only when there is a programme to step to', () => {
+    expect(actions(() => {}, () => {})).toMatch(/aria-label="Previous programme"[^>]*>←<\/button><button[^>]*>Guide<\/button><button[^>]*aria-label="Next programme"[^>]*>→<\/button>/)
+    const disabled = (markup: string, label: string) => markup.match(new RegExp(`<button[^>]*aria-label="${label}"[^>]*>`))![0].includes('disabled=""')
+    expect(disabled(actions(undefined, () => {}), 'Previous programme')).toBe(true)
+    expect(disabled(actions(() => {}), 'Next programme')).toBe(true)
+    expect(disabled(actions(() => {}, () => {}), 'Previous programme')).toBe(false)
+    expect(disabled(actions(() => {}, () => {}), 'Next programme')).toBe(false)
   })
 
   it('moves the Guide back and forth, and over the picture plays the programme either side from its start', () => {
@@ -55,41 +60,63 @@ describe('Next on the information bar', () => {
   })
 })
 
-describe('the channel type', () => {
-  it('sits on the time line after the status, not on a line of its own', () => {
-    const start = Date.UTC(2026, 8, 30, 12, 0)
-    const markup = renderToStaticMarkup(
+describe('the time line', () => {
+  const start = Date.UTC(2026, 8, 30, 12, 0)
+  const line = (now: number, programme: Partial<Programme> = {}) =>
+    renderToStaticMarkup(
       createElement(ProgrammeInfo, {
         channel: { number: 7, name: 'Seven', origin: 'default', category: 'News' } as Channel,
-        programme: { id: 'n', title: 'Bulletin', videoId: 'abcdefghijk', durationSeconds: 1800, programmeType: 'unclassified' } as Programme,
+        programme: { id: 'n', title: 'Bulletin', videoId: 'abcdefghijk', durationSeconds: 1800, programmeType: 'unclassified', ...programme } as Programme,
         startMs: start,
         endMs: start + 1_800_000,
-        now: start + 60_000,
+        now,
       }),
     )
-    expect(markup).toMatch(/<p class="info-time">[\s\S]*?On air<\/span><span class="info-meta"><span class="info-sep" aria-hidden="true">•<\/span>News<\/span><\/p>/)
-    expect(markup).not.toContain('<p class="info-meta">')
+
+  it('ends at the clock: no ON AIR, no channel type, no creator or tags after it', () => {
+    const airing = line(start + 60_000)
+    expect(airing).not.toContain('On air')
+    expect(airing).not.toContain('info-status')
+    expect(airing).not.toContain('News')
+    expect(airing).not.toContain('info-meta')
+    expect(airing).toMatch(/<p class="info-time"><span>[^<]+<\/span><span>[^<]+<\/span><span>[^<]+<\/span><\/p>/)
+  })
+
+  it('still names the exceptions, and never repeats the creator, type or tags', () => {
+    expect(line(start - 60_000)).toContain('>Later</span>')
+    expect(line(start + 3_600_000)).toContain('>Already broadcast</span>')
+    const credited = line(start + 60_000, { creator: 'Maker', programmeType: 'documentary', tags: ['Bulletin'] } as Partial<Programme>)
+    expect(credited).not.toMatch(/Maker|documentary|info-meta/)
+    expect(credited.match(/Bulletin/g)).toHaveLength(1)
+    expect(readFileSync('src/styles/guide.css', 'utf8')).not.toMatch(/\.info-meta|\.info-sep/)
   })
 })
 
 describe('the programme bar in a narrow window', () => {
-  it('wraps the actions under the details only when both do not fit, with no width breakpoint', () => {
+  it('keeps the details beside the pad at every width, the pad spanning every row, with no width breakpoint', () => {
     const css = readFileSync('src/styles/guide.css', 'utf8')
-    expect(css).toMatch(/\.guide-info\.is-programme \{\s*display: flex;\s*flex-wrap: wrap;/)
-    expect(css).toMatch(/\.guide-info\.is-programme > \.info-main \{\s*flex: 1 1 20rem;\s*min-width: 0;/)
-    expect(css).toMatch(/\.info-actions \{[^}]*flex-wrap: wrap;/)
-    const block = css.slice(css.indexOf('.guide-info.is-programme {'), css.indexOf('.info-credit {'))
+    expect(css).toMatch(/\.guide-info\.is-programme \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1fr\) auto;/)
+    expect(css).toMatch(/\.guide-info\.is-programme > \.info-main \{\s*grid-column: 1;\s*grid-row: 1;\s*min-width: 0;/)
+    expect(css).toMatch(/\.guide-info\.is-programme > \.info-actions \{\s*grid-column: 2;\s*grid-row: 1 \/ -1;\s*align-self: center;/)
+    const start = css.indexOf('.guide-info.is-programme {')
+    const block = css.slice(start, css.indexOf('.guide-info.is-programme .info-kicker', start))
     expect(block).not.toMatch(/@media|@container/)
     expect(readFileSync('src/components/Guide.tsx', 'utf8')).toContain('<footer className="guide-info is-programme">')
   })
 })
 
 describe('the Guide button', () => {
-  it('keeps its name and turns gold while the Guide is open', () => {
+  it('is the pad’s centre key: it opens the Guide, and inside the Guide it closes it', () => {
+    const sent: TvCommand[] = []
+    const channel = { number: 12, name: 'Twelve', origin: 'default' } as Channel
+    const programme = { id: 'p', title: 'Film', videoId: 'abcdefghijk', durationSeconds: 1800 } as Programme
+    const markup = renderToStaticMarkup(createElement(InfoActions, { channel, programme, ...padProps({ sent }) }))
+    expect(markup).toMatch(/<button[^>]*class="tune-key info-pad-guide"[^>]*aria-label="Guide"[^>]*>Guide<\/button>/)
+    expect(readFileSync('src/components/InfoActions.tsx', 'utf8')).toContain("onClick={() => corners.dispatch({ type: 'guide' })}")
+    expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(/case 'guide':\s*if \(guideModeRef\.current === 'closed'\) openGuide\('expanded'\)\s*else \{\s*closeGuide\(\)/)
     const remote = readFileSync('src/components/TouchRemote.tsx', 'utf8')
-    expect(remote).not.toContain('Close guide')
-    expect(remote).toContain("className={tv.guideOpen ? 'guide-key is-on' : 'guide-key'}")
-    expect(readFileSync('src/styles/stage2.css', 'utf8')).toMatch(/\.remote-bar \.guide-key\.is-on,\s*\.remote-bar \.tvn-key\.is-on \{ color: var\(--gold\)/)
+    expect(remote).not.toContain('remote-bar')
+    expect(remote).not.toContain('guide-key')
   })
 })
 

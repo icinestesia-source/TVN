@@ -6,6 +6,7 @@ import { screenFace } from './app/screen-face.ts'
 import { ChannelEditor } from './components/ChannelEditor.tsx'
 import { GuideActions } from './components/GuideAdd.tsx'
 import { InfoActions } from './components/InfoActions.tsx'
+import { padProps } from './info-pad.fixture.ts'
 import { channelByNumber, channels, programmesFor, shippedChannel } from './data/catalogue.ts'
 import { installCuratedEdits, installUserCatalogue } from './data/user-overlay.ts'
 import { commandFromGamepad } from './input/gamepad.ts'
@@ -571,42 +572,36 @@ describe('existing Guide interactions', () => {
 describe('one information bar, in the Guide and over the picture', () => {
   const overlay = readFileSync('src/components/NowNextOverlay.tsx', 'utf8')
   const screen = readFileSync('src/app/TvScreen.tsx', 'utf8')
-  const bar = (programme: Partial<import('./types/programme.ts').Programme>, live: boolean, extra: Record<string, unknown> = {}) =>
+  const bar = (programme: Partial<import('./types/programme.ts').Programme>, channel: Partial<Channel> = {}) =>
     renderToStaticMarkup(
       createElement(InfoActions, {
-        channel: { ...channels[0], number: 5 } as Channel,
+        channel: { ...channels[0], number: 5, ...channel } as Channel,
         programme: { id: 'p', title: 'T', videoId: 'abcdefghijk', durationSeconds: 600, channelId: 'c', category: 'x', source: 'imported', kind: 'programme', playbackMode: 'linear', ...programme } as import('./types/programme.ts').Programme,
-        live,
-        onTune: () => {},
-        ...extra,
+        ...padProps(),
       }),
     )
 
   it('both bars use the same actions', () => {
     expect(guide).toContain('<InfoActions')
     expect(overlay).toContain('<InfoActions')
-    expect(overlay).toContain('onTune={tv.screenAction}')
+    for (const source of [guide, overlay]) {
+      expect(source).toContain('corners={cornerActions(tv)}')
+      expect(source).toContain('channels={channelActions(tv)}')
+    }
+    expect(overlay).toContain('history={historyActions(tv)}')
   })
 
-  it('the gold Watch shows only while a programme is airing, and From start has given way to Prev', () => {
-    const airing = bar({}, true)
-    expect(airing).toMatch(/class="tune-key"[^>]*>Watch</)
+  it('the gold centre key is always Guide, and From start has given way to Prev', () => {
+    const airing = bar({})
+    expect(airing).toMatch(/class="tune-key info-pad-guide"[^>]*>Guide</)
     expect(airing).not.toContain('From start')
     expect(airing).not.toContain('to edit')
     expect(airing).not.toContain('Remove')
-    const later = bar({}, false)
-    expect(later).not.toContain('Watch')
-    expect(later).toMatch(/class="tune-key"[^>]*>Play</)
-    const radio = renderToStaticMarkup(
-      createElement(InfoActions, {
-        channel: { ...channels[0], number: 5, mediaKind: 'audio' } as Channel,
-        programme: { id: 'l', title: 'R', videoId: null, durationSeconds: 0, channelId: 'c', category: 'x', source: 'imported', kind: 'programme', playbackMode: 'linear', liveStream: { url: 'https://r.example/live', format: 'direct' } } as import('./types/programme.ts').Programme,
-        live: true,
-        onTune: () => {},
-      }),
-    )
-    expect(radio).toContain('>Listen<')
-    expect(radio).not.toContain('>Prev<')
+    expect(airing).not.toContain('>Watch<')
+    expect(airing).not.toContain('>Play<')
+    const radio = bar({ videoId: null, durationSeconds: 0, liveStream: { url: 'https://r.example/live', format: 'direct' } }, { mediaKind: 'audio' })
+    expect(radio).toMatch(/class="tune-key info-pad-guide"[^>]*>Guide</)
+    expect(radio).not.toContain('>Listen<')
     expect(radio).not.toContain('to edit')
   })
 

@@ -1,3 +1,5 @@
+import type { ShortcutAssignment } from '../view/info-shortcuts.ts'
+
 export type GuideFilter =
   | 'all'
   | 'retrotv'
@@ -41,4 +43,6 @@ export interface UserPreferences {
   subtitles: boolean
   /** Idle minutes before RetroTV stops streaming; 0 is off. */
   sleepMinutes: number
+  /** The actions in the corners of the information overlay's control pad. */
+  infoShortcuts: ShortcutAssignment
 }

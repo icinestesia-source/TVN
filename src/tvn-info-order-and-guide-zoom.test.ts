@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { historyActions, InfoActions } from './components/InfoActions.tsx'
+import { InfoActions } from './components/InfoActions.tsx'
+import { padProps } from './info-pad.fixture.ts'
 import { ROW_HEIGHT, openScrollLeft, slotFrame, timeX, trackWidthPx } from './epg/geometry.ts'
 import {
   GUIDE_ZOOM_MAX,
@@ -50,11 +51,9 @@ function bar(overrides: Partial<Parameters<typeof InfoActions>[0]> = {}) {
   const tree = InfoActions({
     channel,
     programme,
-    live: true,
-    onTune: () => calls.push('watch'),
     onPrev: () => calls.push('previous programme'),
     onNext: () => calls.push('next programme'),
-    history: historyActions({ canGoBack: true, canGoForward: true, dispatch: (command) => void sent.push(command.type) }),
+    ...padProps({ sent: { push: (command: TvCommand) => sent.push(command.type) } as unknown as TvCommand[] }),
     ...overrides,
   })
   const list = controls(tree)
@@ -62,15 +61,18 @@ function bar(overrides: Partial<Parameters<typeof InfoActions>[0]> = {}) {
   return { list, sent, calls, press }
 }
 
-describe('information controls: ↑ ← WATCH → ↓ ↗', () => {
-  it('1. renders exactly ↑ ← WATCH → ↓ ↗ with the accessible names', () => {
+describe('information controls: the 3×3 pad round GUIDE', () => {
+  it('1. renders REMOTE ↑|CH+ ↗ / ← GUIDE → / TVN ↓|CH− R with the accessible names', () => {
     const { list } = bar()
-    expect(list.map((control) => control.label)).toEqual(['↑', '←', 'Watch', '→', '↓', '↗'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '↗', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
     const named = Object.fromEntries(list.map((control) => [control.label, control.props['aria-label']]))
-    expect(named['↑']).toMatch(/^Channel up/)
+    expect(named['↑']).toBe('Previous watched channel')
+    expect(named['CH+']).toBe('Channel up')
     expect(named['←']).toBe('Previous programme')
+    expect(named['Guide']).toBe('Guide')
     expect(named['→']).toBe('Next programme')
-    expect(named['↓']).toMatch(/^Channel down/)
+    expect(named['↓']).toBe('Next watched channel')
+    expect(named['CH−']).toBe('Channel down')
   })
 
   it('2. ↑ goes back to the previously watched channel', () => {
@@ -101,25 +103,27 @@ describe('information controls: ↑ ← WATCH → ↓ ↗', () => {
     expect(guide).toContain("onNext={followingSlot ? () => tv.dispatch({ type: 'nav', direction: 'right' }) : undefined}")
   })
 
-  it('6. WATCH keeps its action and its gold key', () => {
-    const { list, calls, press } = bar()
-    expect(list.find((control) => control.label === 'Watch')!.props.className).toBe('tune-key')
-    press('Watch')
-    expect(calls).toEqual(['watch'])
-    expect(guide).toContain('onTune={() => tv.activateGuide()}')
+  it('6. GUIDE is the gold centre key and sends the Guide command, and CH+ and CH− step the channel numbers', () => {
+    const { list, sent, press } = bar()
+    expect(list.find((control) => control.label === 'Guide')!.props.className).toBe('tune-key info-pad-guide')
+    press('Guide')
+    press('CH+')
+    press('CH−')
+    expect(sent).toEqual(['guide', 'channel-up', 'channel-down'])
   })
 
-  it('7. ↗ keeps the original-source link and its rules, last in the row', () => {
+  it('7. ↗ keeps the original-source link and its rules, top right', () => {
     const { list } = bar()
     const original = list.find((control) => control.label === '↗')!
-    expect(list.at(-1)).toBe(original)
-    expect(original.props).toMatchObject({ className: 'info-square info-original', target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Open original' })
+    expect(list[3]).toBe(original)
+    expect(original.props).toMatchObject({ className: 'info-square info-corner is-source info-original', target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Open original source' })
     expect(String(original.props.href)).toContain('abcdefghijk')
     const source = read('src/components/InfoActions.tsx')
     expect(source).toContain('const original = creditFor(channel, programme, { library: mediaLibrary(), register: EMPTY_REGISTER }).originalUrl')
-    expect(source).toMatch(/\{original \? \(\s*<a\s+className="info-square info-original"/)
-    // A local card has no original: no ↗.
-    expect(bar({ programme: { id: 'card', title: 'Card', durationSeconds: 60 } as Programme }).list.map((c) => c.label)).not.toContain('↗')
+    // A local card has no original: the ↗ key stays in place, disabled, with no link.
+    const card = bar({ programme: { id: 'card', title: 'Card', durationSeconds: 60 } as Programme }).list.find((c) => c.label === '↗')!
+    expect(card.props.href).toBeUndefined()
+    expect(card.props.disabled).toBe(true)
   })
 })
 
@@ -277,7 +281,7 @@ describe('Guide timeline zoom', () => {
     expect(guide).toContain('onFocus={(timeMs) => tv.focusGuide(channel.number, timeMs)}')
     expect(guide).toContain('onActivate={() => tv.activateGuide()}')
     expect(guide).toContain("onTune={() => tv.dispatch({ type: 'tune', channelNumber: channel.number })}")
-    expect(guide).toMatch(/<InfoActions [^>]*onPrev=\{onPrev\} onNext=\{onNext\} history=\{history\} \/>/)
+    expect(guide).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}\s+history=\{history\}\s+corners=\{corners\}\s+channels=\{channels\}\s+\/>/)
   })
 })
 

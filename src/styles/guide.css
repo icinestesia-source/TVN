@@ -47,13 +47,8 @@
 
 @media (max-width: 640px) {
   :root {
-    --info-bottom: calc(var(--dock) + 42px);
     --info-right: var(--dock);
   }
-}
-
-.tv:not(.is-integrated) .remote-bar {
-  z-index: 41;
 }
 
 @keyframes guide-rise {
@@ -1013,7 +1008,7 @@ span.editor-expand { border-color: transparent; }
   gap: 8px;
 }
 
-/* With Back and Forward the six controls are one group: never wrapped apart, dropped below the details whole. */
+/* The pad is one group: never wrapped apart. */
 .info-actions.has-history {
   flex-wrap: nowrap;
   max-width: none;
@@ -1054,24 +1049,133 @@ span.editor-expand { border-color: transparent; }
   cursor: default;
 }
 
-/* A programme's bar keeps its actions beside the details while both fit, and drops them below when it is too narrow. */
+/*
+ * The actions are a 3×3 remote pad built around the gold Guide key, which keeps the tune key's own size:
+ * the ↑|CH+ and ↓|CH− rows take its width, ← and → its height, and the corners close the rectangle.
+ */
+.info-pad {
+  --pad-side: 40px;
+  --pad-edge: 30px;
+  --watch-min: 92px;
+  display: grid;
+  grid-template-columns: var(--pad-side) minmax(var(--watch-min), auto) var(--pad-side);
+  grid-template-rows: var(--pad-edge) auto var(--pad-edge);
+  gap: 4px;
+}
+
+.info-pad > .info-square {
+  width: auto;
+  height: auto;
+  justify-self: stretch;
+  align-self: stretch;
+}
+
+/* ↑ and CH+ (↓ and CH−) share one Guide-wide cell, half each. */
+.info-pad-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  min-width: 0;
+  justify-self: stretch;
+  align-self: stretch;
+}
+
+.info-pad-split > .info-square {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.info-pad-split > .info-pad-channel {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.info-pad-split > .info-pad-multi {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.info-pad-split > .info-pad-multi.is-on {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.info-pad > .tune-key {
+  justify-self: center;
+  align-self: center;
+}
+
+.info-pad > .is-fullscreen { font-size: 17px; }
+
+.info-pad > .is-remote,
+.info-pad > .is-tvn,
+.info-pad > .is-captions,
+.info-pad > .is-random {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.info-pad > .is-remote {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.info-pad > .is-tvn {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.info-pad > .info-corner.is-on {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+@media (max-width: 420px) {
+  .info-pad { --watch-min: 72px; }
+}
+
+/*
+ * A programme's bar: the details on the left, the pad on the right at every width, spanning every row so
+ * the Guide key always sits on the bar's vertical centre, however many lines the details take.
+ */
 .guide-info.is-programme {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  row-gap: 0;
+  align-items: center;
+  /* The top rule drawn inside, so it takes no room and the centre is the box's centre. */
+  border-top: 0;
+  box-shadow: inset 0 1px 0 #1d4c78;
 }
 
 .guide-info.is-programme > .info-main {
-  flex: 1 1 20rem;
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
 }
 
 .guide-info.is-programme > .info-actions {
-  flex: 0 1 auto;
+  grid-column: 2;
+  grid-row: 1 / -1;
   align-self: center;
-  margin-left: auto;
 }
 
-.guide-info.is-programme > .info-credit { flex: 1 1 100%; }
+.guide-info.is-programme > .info-credit {
+  grid-column: 1;
+  grid-row: 2;
+  margin-top: 4px;
+}
 
 .guide-info.is-programme .info-kicker,
 .guide-info.is-programme .info-time { flex-wrap: wrap; }
@@ -1106,25 +1210,6 @@ span.editor-expand { border-color: transparent; }
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
-
-.info-meta {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-family: var(--font-ui);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.info-time .info-meta {
-  min-width: 0;
-  margin: 4px 0 0 -6px;
-}
-
-.info-sep { margin-right: 6px; }
 
 .info-net {
   margin-right: 8px;

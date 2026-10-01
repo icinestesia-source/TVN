@@ -1,105 +1,28 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { openAbout } from '../legal/about-store.ts'
 import { sleepLabel } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
 import { useTv } from '../state/tv-context.ts'
-import { createLongPress } from '../view/channel-edit.ts'
+import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
+import { closeTvnSettings, useTvnSettingsOpen } from '../view/tvn-settings-store.ts'
 
 const KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-/** Matches how long the information bar stays up. */
-const CONTROLS_MS = 6000
 
+/**
+ * The remote and the TVN settings, opened from the information overlay's REMOTE and TVN keys (a hold or a
+ * right-click on TVN opens the settings).
+ */
 export function TouchRemote() {
   const tv = useTv()
-  const barRef = useRef<HTMLDivElement>(null)
-  const [pointerNear, setPointerNear] = useState(false)
-  const [focused, setFocused] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const openSettings = () => {
-    if (tv.remoteOpen) tv.dispatch({ type: 'remote' })
-    setSettingsOpen(true)
-  }
-  const openRef = useRef(openSettings)
-  openRef.current = openSettings
-  const press = useMemo(() => createLongPress(() => openRef.current()), [])
+  const settingsOpen = useTvnSettingsOpen()
 
-  // Moving the mouse or touching the screen brings the buttons back, like the information bar.
+  // The remote and the settings share a place; the one opened last takes it.
   useEffect(() => {
-    let timer = 0
-    const show = () => {
-      setPointerNear(true)
-      window.clearTimeout(timer)
-      timer = window.setTimeout(() => setPointerNear(false), CONTROLS_MS)
-    }
-    const events = ['pointermove', 'pointerdown', 'touchstart'] as const
-    for (const name of events) window.addEventListener(name, show, { passive: true })
-    return () => {
-      for (const name of events) window.removeEventListener(name, show)
-      window.clearTimeout(timer)
-    }
-  }, [])
-
-  const shown = tv.overlay === 'info' || tv.guideOpen || tv.remoteOpen || settingsOpen || pointerNear || focused
-
-  // The information bar shares this row and stretches up to the first button, whatever the buttons read.
-  useLayoutEffect(() => {
-    const bar = barRef.current
-    if (!bar) return
-    const root = document.documentElement
-    const apply = () => root.style.setProperty('--dock-w', `${bar.offsetWidth}px`)
-    apply()
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(apply)
-    observer?.observe(bar)
-    return () => observer?.disconnect()
-  }, [])
+    if (tv.remoteOpen) closeTvnSettings()
+  }, [tv.remoteOpen])
 
   return (
     <>
-      <div
-        className={shown ? 'remote-bar' : 'remote-bar is-hidden'}
-        ref={barRef}
-        onFocus={() => setFocused(true)}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
-        }}
-      >
-        <button
-          type="button"
-          className={tv.guideOpen ? 'guide-key is-on' : 'guide-key'}
-          aria-pressed={tv.guideOpen}
-          onClick={() => tv.dispatch({ type: 'guide' })}
-        >
-          Guide
-        </button>
-        <button type="button" onClick={() => tv.dispatch({ type: 'multiview' })}>
-          Multi
-        </button>
-        <button type="button" onClick={() => tv.dispatch({ type: 'remote' })}>
-          Remote
-        </button>
-        <button
-          type="button"
-          className={tv.surfing ? 'tvn-key is-on' : 'tvn-key'}
-          aria-pressed={tv.surfing}
-          aria-haspopup="dialog"
-          title="Surf random channels · right-click or hold for TVN settings"
-          onPointerDown={(event) => press.down(event)}
-          onPointerMove={(event) => press.move(event)}
-          onPointerUp={press.up}
-          onPointerCancel={press.cancel}
-          onPointerLeave={press.cancel}
-          onContextMenu={(event) => {
-            event.preventDefault()
-            press.opened()
-            openSettings()
-          }}
-          onClick={() => {
-            if (!press.swallowClick()) tv.toggleSurf()
-          }}
-        >
-          TVN
-        </button>
-      </div>
       {settingsOpen ? (
         <section
           className="remote-panel tvn-settings"
@@ -108,7 +31,7 @@ export function TouchRemote() {
           onKeyDown={(event) => {
             if (event.key !== 'Escape') return
             event.stopPropagation()
-            setSettingsOpen(false)
+            closeTvnSettings()
           }}
         >
           <p className="tvn-settings-head">TVN settings</p>
@@ -137,11 +60,32 @@ export function TouchRemote() {
             />
             <output>{tv.surfRange.maxSeconds} s</output>
           </label>
+          <fieldset className="tvn-shortcuts">
+            <legend className="tvn-settings-head">Information Overlay shortcuts</legend>
+            {CORNERS.map((corner) => (
+              <label key={corner} className="tvn-shortcut">
+                <span>{CORNER_LABELS[corner]}</span>
+                <select
+                  value={tv.infoShortcuts[corner]}
+                  onChange={(event) => tv.setInfoShortcut(corner, event.target.value as ShortcutId)}
+                >
+                  {SHORTCUT_IDS.map((id) => (
+                    <option key={id} value={id}>
+                      {SHORTCUTS[id].name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <button type="button" className="tvn-shortcuts-reset" onClick={tv.resetInfoShortcuts}>
+              Reset to defaults
+            </button>
+          </fieldset>
           <button
             type="button"
             className="tvn-about-link"
             onClick={() => {
-              setSettingsOpen(false)
+              closeTvnSettings()
               openAbout()
             }}
           >
@@ -151,7 +95,7 @@ export function TouchRemote() {
             <button type="button" aria-pressed={tv.surfing} onClick={tv.toggleSurf}>
               {tv.surfing ? 'Stop surf' : 'Start surf'}
             </button>
-            <button type="button" className="remote-close" onClick={() => setSettingsOpen(false)}>
+            <button type="button" className="remote-close" onClick={() => closeTvnSettings()}>
               Close
             </button>
           </div>
@@ -172,14 +116,17 @@ export function TouchRemote() {
             <button type="button" onClick={() => tv.dispatch({ type: 'random-channel' })}>
               Random
             </button>
+            <button type="button" onClick={() => tv.dispatch({ type: 'multiview' })}>
+              Multi
+            </button>
           </div>
           <div className="remote-row">
-        <button type="button" onClick={() => tv.dispatch({ type: 'info' })}>
-          Info
-        </button>
-        <button type="button" onClick={() => tv.dispatch({ type: 'user-channels' })}>
-          User
-        </button>
+            <button type="button" onClick={() => tv.dispatch({ type: 'info' })}>
+              Info
+            </button>
+            <button type="button" onClick={() => tv.dispatch({ type: 'user-channels' })}>
+              User
+            </button>
             <button type="button" onClick={() => tv.dispatch({ type: 'favourite' })}>
               Fav
             </button>

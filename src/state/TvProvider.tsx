@@ -45,6 +45,14 @@ import { isLiveStreamChannel } from '../dynamic/stream.ts'
 import { editorScope } from '../view/channel-edit.ts'
 import { loadOverrides, setVideoOverride, subscribeOverrides, videoOverride } from '../services/overrides.ts'
 import { loadPreferences, savePreferences } from '../services/preferences.ts'
+import {
+  assignShortcut,
+  DEFAULT_SHORTCUTS,
+  fullscreenAvailable,
+  type Corner,
+  type ShortcutAssignment,
+  type ShortcutId,
+} from '../view/info-shortcuts.ts'
 import { loadStoredSources, saveStoredSources } from '../services/user-db.ts'
 import { isRefusalCode, learnRefusal, refusedVideos } from '../services/embed-refusals.ts'
 import { uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
@@ -189,6 +197,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const surfingRef = useRef(surfing)
   const [surfHops, setSurfHops] = useState(0)
   const [surfRange, setSurfRangeState] = useState<SurfRange>(() => loadSurfRange())
+  const [infoShortcuts, setInfoShortcuts] = useState<ShortcutAssignment>(stored.infoShortcuts)
   const noticeSeen = useNoticeAcknowledged()
 
   const playerRef = useRef<PlayerHandle | null>(null)
@@ -1090,8 +1099,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
         break
       }
       case 'fullscreen':
-        if (document.fullscreenElement) void document.exitFullscreen()
-        else void document.documentElement.requestFullscreen()
+        if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
+        else if (fullscreenAvailable(document)) void document.documentElement.requestFullscreen().catch(() => {})
         break
       case 'favourite': {
         const number =
@@ -1584,6 +1593,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
     setSurfRangeState(next)
   }, [])
 
+  const setInfoShortcut = useCallback((corner: Corner, id: ShortcutId) => {
+    setInfoShortcuts((current) => assignShortcut(current, corner, id))
+  }, [])
+
+  const resetInfoShortcuts = useCallback(() => setInfoShortcuts({ ...DEFAULT_SHORTCUTS }), [])
+
   // Surfing hops without counting as the viewer's activity, so SLEEP still ends an unattended session.
   useEffect(() => {
     // A first visit stays on its first channel until the welcome notice is dismissed.
@@ -1633,11 +1648,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
       multiviewChannels: tiles,
       subtitles,
       sleepMinutes,
+      infoShortcuts,
     })
   }, [
     audioFocus,
     channelNumber,
     sleepMinutes,
+    infoShortcuts,
     favourites,
     guideFilter,
     guideSplit,
@@ -1707,6 +1724,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       toggleSurf,
       surfRange,
       setSurfRange,
+      infoShortcuts,
+      setInfoShortcut,
+      resetInfoShortcuts,
       screenEdit,
       screenAction,
       screenStep,
@@ -1784,6 +1804,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       toggleSurf,
       surfRange,
       setSurfRange,
+      infoShortcuts,
+      setInfoShortcut,
+      resetInfoShortcuts,
       screenEdit,
       screenAction,
       screenStep,

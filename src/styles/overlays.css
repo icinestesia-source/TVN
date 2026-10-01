@@ -250,8 +250,9 @@
   right: var(--info-right);
   bottom: var(--info-bottom);
   z-index: 20;
+  /* Even above and below, so the pad's Guide key sits on the bar's vertical centre. */
   padding-top: 10px;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   animation: info-bar-in 220ms ease-out;
 }
 
@@ -301,15 +302,24 @@
 }
 
 .info-next .info-net {
+  flex: none;
   color: var(--gold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
+/* One line: the title gives way (…) so NEXT and its time always fit whole. */
 .info-next-title {
+  flex: 0 1 auto;
+  min-width: 0;
   color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-next-time {
+  flex: none;
   white-space: nowrap;
 }
 

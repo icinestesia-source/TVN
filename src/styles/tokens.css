@@ -28,16 +28,11 @@
   --guide-ruler: #091420;
   --guide-holding: #121a22;
   --safe: 28px;
-  /*
-   * The bottom row: the information bar on the left, stretching up to the control buttons (GUIDE, MULTI,
-   * REMOTE, SLEEP) on the right. --dock-w is the buttons' measured width.
-   */
+  /* The bottom row: the information bar, across the picture; its control pad carries the controls. */
   --dock: 10px;
-  --dock-w: 300px;
-  --dock-gap: 10px;
-  /* Distance from the bottom edge to the information bar; the bar rides above the buttons on narrow screens. */
+  /* Distance from the bottom edge to the information bar. */
   --info-bottom: var(--dock);
-  --info-right: calc(var(--dock) + var(--dock-w) + var(--dock-gap));
+  --info-right: var(--safe);
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-text);

@@ -4,6 +4,7 @@ import type { Channel } from '../types/channel.ts'
 import type { TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import type { GuideMode } from '../view/guide-mode.ts'
+import type { Corner, ShortcutAssignment, ShortcutId } from '../view/info-shortcuts.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
 import type { ChannelEdit } from '../services/channel-editor.ts'
 
@@ -79,6 +80,11 @@ export interface TvContextValue {
   surfRange: import('./surf.ts').SurfRange
   /** A TVN setting; `moved` is the end the viewer changed, which wins if the two cross. */
   setSurfRange: (range: import('./surf.ts').SurfRange, moved?: 'min' | 'max') => void
+  /** The actions in the corners of the information overlay's control pad, a saved setting. */
+  infoShortcuts: ShortcutAssignment
+  /** Puts an action in a corner, swapping it with the corner's current action. */
+  setInfoShortcut: (corner: Corner, id: ShortcutId) => void
+  resetInfoShortcuts: () => void
   /** The channel being edited over the picture, outside the Guide; null when none is. */
   screenEdit: number | null
   /** The information bar's Watch over the picture: the channel at NOW. */

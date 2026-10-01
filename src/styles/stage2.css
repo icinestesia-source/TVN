@@ -120,7 +120,6 @@
 }
 
 .import-actions button,
-.remote-bar button,
 .remote-panel button {
   min-height: 40px;
 }
@@ -241,7 +240,6 @@
 }
 
 .mv-pages button,
-.remote-bar button,
 .remote-panel button,
 .import-head button,
 .import-actions button {
@@ -253,35 +251,6 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-size: 14px;
-}
-
-.remote-bar {
-  position: fixed;
-  right: 10px;
-  bottom: 10px;
-  z-index: 28;
-  display: flex;
-  gap: 6px;
-  transition: opacity 220ms ease-out, transform 220ms ease-out;
-}
-
-/* Fades out with the information bar; hidden buttons cannot be tabbed to or pressed. */
-.remote-bar.is-hidden {
-  opacity: 0;
-  transform: translateY(12px);
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 320ms ease-in, transform 320ms ease-in, visibility 0s linear 320ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .remote-bar,
-  .remote-bar.is-hidden { transition: none; }
-}
-
-.tv.is-integrated .remote-bar {
-  right: auto;
-  left: 10px;
 }
 
 .remote-panel,
@@ -366,9 +335,6 @@
 .remote-foot button { flex: 1; }
 .remote-foot .remote-close { margin-top: 0; }
 
-.remote-bar .tvn-key { -webkit-touch-callout: none; user-select: none; }
-.remote-bar .guide-key.is-on,
-.remote-bar .tvn-key.is-on { color: var(--gold); border-color: var(--gold); }
 
 .tvn-settings { display: grid; gap: 10px; }
 .tvn-settings-head {
@@ -392,6 +358,31 @@
 .tvn-range input { width: 100%; accent-color: var(--gold); }
 .tvn-range output { text-align: right; font-variant-numeric: tabular-nums; }
 .tvn-settings .remote-foot { margin-top: 2px; }
+.tvn-shortcuts { display: grid; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.tvn-shortcuts legend { padding: 0; margin-bottom: 4px; font-size: 14px; }
+.tvn-shortcut {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  font-family: var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.tvn-shortcut select {
+  min-width: 0;
+  height: 32px;
+  padding: 0 6px;
+  background: #0b1c30;
+  border: 1px solid #1d4c78;
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.tvn-shortcut select:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.tvn-shortcuts-reset { justify-self: start; }
 
 .radio {
   position: absolute;
@@ -504,10 +495,6 @@
   .guide-brand { min-width: 0; }
   .guide-actions { flex: none; }
   .guide-actions .tab { flex: none; min-width: 0; padding: 0 8px; min-height: 40px; height: 40px; }
-  .tv.is-integrated.is-narrow .remote-bar {
-    top: calc(min(42vh, 320px) - 52px);
-    bottom: auto;
-  }
   .guide-info.is-compact {
     padding: 4px 8px;
   }

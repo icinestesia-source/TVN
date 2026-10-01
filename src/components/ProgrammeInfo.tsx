@@ -46,12 +46,9 @@ export function ProgrammeInfo({
   const later = now < startMs
   const elapsed = Math.min(programme.durationSeconds, Math.max(0, (now - startMs) / 1000))
   const description = shownDescription(programme)
-  const source = programme.creator || (channel.number >= 1001 ? channel.name : '')
-  const subject = programme.tags?.filter(Boolean).join(', ')
   const label = networkLabel(channel)
-  const meta = [source, programme.programmeType === 'unclassified' ? null : programme.programmeType, subject, channel.category]
-    .filter(Boolean)
-    .join(' · ')
+  // Airing now is what the bar shows by default, so it goes unsaid; only the exceptions are named.
+  const status = picked ? 'From Guide · Now returns to air' : stream ? 'Live' : live ? null : later ? 'Later' : 'Already broadcast'
 
   return (
     <div className="info-main">
@@ -70,22 +67,14 @@ export function ProgrammeInfo({
             {formatElapsed(elapsed)} / {formatElapsed(programme.durationSeconds)}
           </span>
         ) : null}
-        <span className={alert ? 'info-status is-alert' : 'info-status'}>
-          {picked ? 'From Guide · Now returns to air' : stream ? 'Live' : live ? 'On air' : later ? 'Later' : 'Already broadcast'}
-        </span>
-        {meta ? (
-          <span className="info-meta">
-            <span className="info-sep" aria-hidden="true">•</span>
-            {meta}
-          </span>
-        ) : null}
+        {status ? <span className={alert ? 'info-status is-alert' : 'info-status'}>{status}</span> : null}
       </p>
       {description ? <p className="info-desc">{description}</p> : null}
       {next && !stream ? (
         <p className="info-next">
           <span className="info-net">Next</span>
           <span className="info-next-title">{next.title}</span>
-          <span>{formatRange(next.startMs, next.endMs)}</span>
+          <span className="info-next-time">{formatRange(next.startMs, next.endMs)}</span>
         </p>
       ) : null}
     </div>

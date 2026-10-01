@@ -63,35 +63,23 @@ describe('sleep timer', () => {
 })
 
 describe('bottom controls', () => {
-  it('TVN follows REMOTE; SLEEP sits in the remote after PAUSE and shows the setting', () => {
+  it('no buttons sit on the player; SLEEP sits in the remote after PAUSE and shows the setting, and Multi joins the first row', () => {
     const value = { guideOpen: false, remoteOpen: false, sleepMinutes: 60, muted: false, paused: false, surfing: false, dispatch: () => {} } as unknown as TvContextValue
     const markup = renderToStaticMarkup(createElement(TvContext.Provider, { value }, createElement(TouchRemote)))
-    const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Guide', 'Multi', 'Remote', 'TVN'])
+    expect(markup).toBe('')
     const remote = renderToStaticMarkup(createElement(TvContext.Provider, { value: { ...value, remoteOpen: true } }, createElement(TouchRemote)))
     const remoteLabels = [...remote.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
+    expect(remoteLabels.slice(0, 5)).toEqual(['CH+', 'CH−', 'Last', 'Random', 'Multi'])
     expect(remoteLabels.slice(-4)).toEqual(['Close', 'Credits', 'Pause', 'Sleep 60'])
   })
 
   it('TVN surfs on a click and opens its settings on a right-click or a hold, never both', () => {
-    const remote = readFileSync('src/components/TouchRemote.tsx', 'utf8')
-    expect(remote).toContain('if (!press.swallowClick()) tv.toggleSurf()')
-    expect(remote).toMatch(/onContextMenu=\{\(event\) => \{\s*event\.preventDefault\(\)\s*press\.opened\(\)\s*openSettings\(\)/)
-    const value = { guideOpen: false, remoteOpen: false, sleepMinutes: 60, surfing: true, dispatch: () => {} } as unknown as TvContextValue
-    const markup = renderToStaticMarkup(createElement(TvContext.Provider, { value }, createElement(TouchRemote)))
-    expect(markup).toContain('class="tvn-key is-on"')
-    expect(markup).toContain('aria-pressed="true"')
-  })
-
-  it('the buttons show with the information bar and fade out with it', () => {
-    const render = (overrides: Partial<TvContextValue>) => {
-      const value = { guideOpen: false, remoteOpen: false, sleepMinutes: 60, overlay: 'none', dispatch: () => {}, ...overrides } as unknown as TvContextValue
-      return renderToStaticMarkup(createElement(TvContext.Provider, { value }, createElement(TouchRemote)))
-    }
-    expect(render({})).toContain('class="remote-bar is-hidden"')
-    expect(render({ overlay: 'info' })).toContain('class="remote-bar"')
-    expect(render({ guideOpen: true })).toContain('class="remote-bar"')
-    expect(readFileSync('src/styles/stage2.css', 'utf8')).toMatch(/\.remote-bar\.is-hidden \{[^}]*opacity: 0;[^}]*visibility: hidden;/)
+    const shortcuts = readFileSync('src/view/info-shortcuts.ts', 'utf8')
+    expect(shortcuts).toMatch(/tvn: \{[^}]*run: \(context\) => context\.dispatch\(\{ type: 'surf' \}\),\s*pressed: \(context\) => context\.surfing,\s*hold: \(context\) => context\.openSettings\(\),/)
+    const pad = readFileSync('src/components/InfoActions.tsx', 'utf8')
+    expect(pad).toContain('if (hold && cornerHold.swallowClick()) return')
+    expect(pad).toMatch(/onContextMenu=\{\s*hold\s*\? \(event\) => \{\s*event\.preventDefault\(\)\s*event\.stopPropagation\(\)\s*cornerHold\.opened\(\)\s*hold\(context\)/)
+    expect(readFileSync('src/styles/stage2.css', 'utf8')).not.toContain('.remote-bar')
   })
 })
 
@@ -138,8 +126,14 @@ describe('INFO display', () => {
     )
     expect(markup).toContain('class="info-main"')
     expect(markup).toContain('Home Film')
-    expect(markup).toContain('On air')
+    expect(markup).not.toContain('On air')
+    expect(markup).not.toContain('info-status')
     expect(markup).toMatch(/class="info-next"[\s\S]*Second Film/)
+    expect(markup).toMatch(/<span class="info-next-title">Second Film<\/span><span class="info-next-time">[^<]+<\/span>/)
+    const css = readFileSync('src/styles/overlays.css', 'utf8')
+    expect(css).toMatch(/\.info-next \.info-net \{\s*flex: none;/)
+    expect(css).toMatch(/\.info-next-title \{\s*flex: 0 1 auto;\s*min-width: 0;[^}]*white-space: nowrap;/)
+    expect(css).toMatch(/\.info-next-time \{\s*flex: none;\s*white-space: nowrap;/)
 
     const overlay = readFileSync('src/components/NowNextOverlay.tsx', 'utf8')
     expect(overlay).toContain("'guide-info is-programme info-bar'")

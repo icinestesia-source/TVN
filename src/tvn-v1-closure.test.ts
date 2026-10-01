@@ -3,6 +3,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { InfoActions } from './components/InfoActions.tsx'
+import { padProps } from './info-pad.fixture.ts'
 import { channelByNumber, listChannels } from './data/catalogue.ts'
 import { installUserCatalogue } from './data/user-overlay.ts'
 import { resetDirector } from './director/director.ts'
@@ -217,15 +218,15 @@ describe('Multi View', () => {
 
 describe('Open original', () => {
   const render = (channel: Channel, programme: Programme) =>
-    renderToStaticMarkup(createElement(InfoActions, { channel, programme, live: true, onTune: () => {}, onPrev: () => {}, onNext: () => {} }))
+    renderToStaticMarkup(createElement(InfoActions, { channel, programme, onPrev: () => {}, onNext: () => {}, ...padProps() }))
   const shipped = channelByNumber(225)!
 
   it('follows Next and opens the YouTube original', () => {
     const programme = broadcast(shipped, T).current.programme
     const html = render(shipped, programme)
     expect(html).toContain(`href="https://www.youtube.com/watch?v=${programme.videoId}"`)
-    expect(html).toContain('aria-label="Open original"')
-    expect(html).toContain('title="Open original"')
+    expect(html).toContain('aria-label="Open original source"')
+    expect(html).toContain('title="Open original source"')
     expect(html).toContain('target="_blank" rel="noopener noreferrer"')
     expect(html.indexOf('>Next<')).toBeLessThan(html.indexOf('Open original'))
     expect(html).toContain('>↗</a>')
@@ -236,11 +237,14 @@ describe('Open original', () => {
     expect(html).toContain('href="https://radio.example.com/live.mp3"')
   })
 
-  it('is absent for Channel 000 files and for programmes with no recorded address', () => {
+  it('links nowhere for Channel 000 files and for programmes with no recorded address: the key stays, disabled', () => {
     const session = render({ ...shipped, number: 0, origin: 'session' } as Channel, { id: 'f', title: 'holiday.mp4', durationSeconds: 60 } as Programme)
-    expect(session).not.toContain('Open original')
     const card = render(shipped, { id: 'c', title: 'Closedown', durationSeconds: 60 } as Programme)
-    expect(card).not.toContain('Open original')
+    for (const html of [session, card]) {
+      expect(html).not.toContain('<a ')
+      expect(html).not.toContain('href=')
+      expect(html).toMatch(/<button type="button" class="info-square info-corner is-source" disabled=""[^>]*aria-label="Open original source"/)
+    }
   })
 
   it('reads provenance only: no lookups and no creator text', () => {
@@ -302,7 +306,7 @@ describe('viewing history: Back and Forward', () => {
     expect(commitHistory(history, 417, null)).toBe(history)
   })
 
-  it('a fresh session has nowhere to go: both disabled, both still in place', () => {
+  it('a fresh session has nowhere to go: ↑ disabled in place, and MULTI holds ↓’s place', () => {
     const history = walk(225)
     expect(canGoBack(history)).toBe(false)
     expect(canGoForward(history)).toBe(false)
@@ -311,33 +315,30 @@ describe('viewing history: Back and Forward', () => {
       createElement(InfoActions, {
         channel: shipped,
         programme: broadcast(shipped, T).current.programme,
-        live: true,
-        onTune: () => {},
         onPrev: () => {},
         onNext: () => {},
-        history: { canBack: false, canForward: false, onBack: () => {}, onForward: () => {} },
+        ...padProps({ canBack: false, canForward: false }),
       }),
     )
-    expect(html).toMatch(/<button type="button" class="info-square" disabled="" title="Channel up — back to the previous watched channel"/)
-    expect(html).toMatch(/<button type="button" class="info-square" disabled="" title="Channel down — forward to the next watched channel"/)
+    expect(html).toMatch(/<button type="button" class="info-square info-pad-up" disabled="" title="Previous watched channel"/)
+    expect(html).not.toContain('Next watched channel')
+    expect(html).toMatch(/<button type="button" class="info-square info-pad-multi" aria-pressed="false" title="Multi View" aria-label="Multi View">Multi<\/button>/)
   })
 
-  it('orders the group ↑ ← Watch → ↓ ↗ as one unwrapped group', () => {
+  it('orders the pad REMOTE ↑|CH+ ↗ / ← GUIDE → / TVN ↓|CH− R as one unwrapped group', () => {
     const shipped = channelByNumber(225)!
     const html = renderToStaticMarkup(
       createElement(InfoActions, {
         channel: shipped,
         programme: broadcast(shipped, T).current.programme,
-        live: true,
-        onTune: () => {},
         onPrev: () => {},
         onNext: () => {},
-        history: { canBack: true, canForward: true, onBack: () => {}, onForward: () => {} },
+        ...padProps(),
       }),
     )
     const labels = [...html.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels).toEqual(['↑', '←', 'Watch', '→', '↓', '↗'])
-    expect(html).toContain('class="info-actions has-history"')
+    expect(labels).toEqual(['Remote', '↑', 'CH+', '↗', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
+    expect(html).toContain('class="info-actions info-pad has-history"')
     const css = read('src/styles/guide.css')
     expect(css).toMatch(/\.info-actions\.has-history \{\s*flex-wrap: nowrap;/)
     expect(css).toContain('.guide-info.is-programme > .info-actions.has-history { flex: 0 0 auto; }')
@@ -371,6 +372,6 @@ describe('viewing history: Back and Forward', () => {
     const provider = read('src/state/TvProvider.tsx')
     expect(provider).toMatch(/case 'last-channel': \{\s+const previous = previousRef\.current/)
     expect(read('src/components/NowNextOverlay.tsx')).toContain('onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}')
-    expect(read('src/components/Guide.tsx')).toContain('<InfoActions key={channel.number} channel={channel} programme={slot.programme} live={live} onTune={onTune} onPrev={onPrev} onNext={onNext} history={history} />')
+    expect(read('src/components/Guide.tsx')).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}\s+history=\{history\}/)
   })
 })
