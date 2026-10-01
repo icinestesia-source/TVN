@@ -1,0 +1,138 @@
+import { createContext, useContext, type RefObject } from 'react'
+import type { Channel } from '../types/channel.ts'
+import type { TvCommand } from '../types/input.ts'
+import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
+import type { GuideMode } from '../view/guide-mode.ts'
+import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
+import type { ChannelEdit } from '../services/channel-editor.ts'
+
+export interface GuideCursor {
+  channelNumber: number
+  timeMs: number
+}
+
+export type OverlayMode = 'none' | 'info' | 'volume'
+export type GuideNote = 'later' | 'ended' | null
+
+/** An IMPORT or ADD opened in the Guide. It stands while the Guide cursor is still the one it placed. */
+export interface GuideToolState {
+  kind: import('../types/input.ts').GuideTool
+  cursor: GuideCursor
+}
+
+export interface TvContextValue {
+  channel: Channel
+  previousChannel: Channel | null
+  /** Back and Forward through the channels watched this session are available. */
+  canGoBack: boolean
+  canGoForward: boolean
+  visibleChannels: readonly Channel[]
+  volume: number
+  muted: boolean
+  paused: boolean
+  subtitles: boolean
+  favourites: readonly number[]
+  guideFilter: GuideFilter
+  /** Narrows the listed guide rows only; tuning, favourites and airing ignore it. */
+  guideQuery: string
+  setGuideQuery: (query: string) => void
+  guideOpen: boolean
+  guideMode: GuideMode
+  guideSplit: number
+  multiviewMode: MultiviewMode
+  tiles: readonly number[]
+  audioFocus: number
+  multiviewPage: number
+  guideTool: GuideToolState | null
+  remoteOpen: boolean
+  /** The credit roll fills the picture; the channel keeps its place and is not retuned. */
+  credits: boolean
+  guideCursor: GuideCursor
+  guideWindow: { startMs: number; endMs: number }
+  guideNote: GuideNote
+  tuningNumber: number | null
+  numeric: string
+  overlay: OverlayMode
+  playerStatus: PlayerStatus
+  playerDetail: string
+  notice: string | null
+  debugOpen: boolean
+  hintsOn: boolean
+  /** The television and its controls are live only once this is 'ready'. */
+  startupPhase: import('./startup.ts').StartupPhase
+  /** 0–100, from the loading steps completed so far. */
+  startupProgress: number
+  /** Idle minutes before streaming stops; 0 is off. */
+  sleepMinutes: number
+  /** Streaming has stopped for inactivity; any key, click or touch wakes the television. */
+  asleep: boolean
+  wake: () => void
+  /** TVN surf: random channels, each after a random wait within `surfRange`. */
+  surfing: boolean
+  toggleSurf: () => void
+  surfRange: import('./surf.ts').SurfRange
+  /** A TVN setting; `moved` is the end the viewer changed, which wins if the two cross. */
+  setSurfRange: (range: import('./surf.ts').SurfRange, moved?: 'min' | 'max') => void
+  /** The channel being edited over the picture, outside the Guide; null when none is. */
+  screenEdit: number | null
+  /** The information bar's Watch over the picture: the channel at NOW. */
+  screenAction: () => void
+  /** The information bar's Prev (-1) and Next (1) over the picture: that programme, from its start. */
+  screenStep: (direction: -1 | 1) => void
+  /** Keeps the information bar up while the pointer is on it. */
+  holdInfo: (held: boolean) => void
+  dispatch: (command: TvCommand) => void
+  syncLive: (nowMs: number) => void
+  onPlayerReady: () => void
+  onPlayerStatus: (status: PlayerStatus, detail?: string) => void
+  playerRef: RefObject<PlayerHandle | null>
+  focusGuide: (channelNumber: number, timeMs: number) => void
+  /**
+   * The Guide's select. On air: tune in (or, fromStart, play it from its beginning). Any other playable
+   * programme plays from its beginning without touching the schedule. Channel 000 keeps Play Now.
+   */
+  activateGuide: (options?: { fromStart?: boolean }) => void
+  extendGuide: (edge: 'start' | 'end') => void
+  applyImport: (
+    parsed: import('../services/channels-import.ts').ParsedExport,
+    mode: { library: boolean; automatic: boolean },
+    options?: {
+      filename?: string
+      onPhase?: (
+        phase: import('../library/types.ts').ImportPhase,
+        counts?: import('../library/types.ts').IngestCounts,
+      ) => void
+    },
+  ) => Promise<void>
+  /** Add a YouTube channel from a channel or video link as the last user channel (or refresh it if present). */
+  addChannel: (link: string) => Promise<{ number: number | null; message: string }>
+  /** Install the bundled TVN test channels after the viewer's own, skipping any already present. */
+  loadTestChannels: () => Promise<string>
+  /** Deliberately remove the given user channels, or all of them. */
+  removeUserChannels: (numbers: 'all' | readonly number[]) => Promise<string>
+  /**
+   * The Channel Editor, for one channel at a time. A 1001+ channel is read from and saved to the User
+   * Network; a curated channel's change is kept in this browser, over the shipped channel.
+   */
+  openChannelEdit: (channelNumber: number) => Promise<ChannelEdit | null>
+  saveChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<string>
+  /** Re-resolve this channel's enabled sources and rebuild its inventory and schedule; no other channel is touched. */
+  rescanChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
+  /** Delete one user channel (after the editor's confirmation). */
+  deleteUserChannel: (channelNumber: number) => Promise<string>
+  /** Drops the viewer's change to a curated channel, so it is exactly as TVN ships it again. */
+  restoreCuratedChannel: (channelNumber: number) => Promise<string>
+  setSourceOverride: (channelNumber: number, videoId: string | null) => void
+  /** Play Now on the session channel: this imported programme starts from the beginning. */
+  playSession: (programmeId: string) => void
+  /** Makes channel 000 from these files, replacing it. Resolves with the viewer-facing outcome ('' if superseded). */
+  importSession: (files: readonly File[]) => Promise<string>
+}
+
+export const TvContext = createContext<TvContextValue | null>(null)
+
+export function useTv(): TvContextValue {
+  const value = useContext(TvContext)
+  if (!value) throw new Error('useTv must be used inside the television')
+  return value
+}

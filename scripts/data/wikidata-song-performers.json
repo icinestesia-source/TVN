@@ -1,0 +1,6169 @@
+{
+ "Q113990798": [
+  {
+   "performer": "Q58381",
+   "label": "Duran Duran",
+   "group": true
+  }
+ ],
+ "Q149443": [
+  {
+   "performer": "Q153056",
+   "label": "Destiny's Child",
+   "group": true
+  }
+ ],
+ "Q149454": [
+  {
+   "performer": "Q153056",
+   "label": "Destiny's Child",
+   "group": true
+  }
+ ],
+ "Q149244": [
+  {
+   "performer": "Q153056",
+   "label": "Destiny's Child",
+   "group": true
+  }
+ ],
+ "Q127152": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q128596": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q128984": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q1004855": [
+  {
+   "performer": "Q795279",
+   "label": "B2K",
+   "group": true
+  },
+  {
+   "performer": "Q216936",
+   "label": "Sean Combs",
+   "group": false
+  }
+ ],
+ "Q1242247": [
+  {
+   "performer": "Q1128045",
+   "label": "Crowded House",
+   "group": true
+  },
+  {
+   "performer": "Q83493",
+   "label": "Susan Boyle",
+   "group": false
+  }
+ ],
+ "Q127311": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q163226": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q151755": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q151760": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q1045517": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q1027829": [
+  {
+   "performer": "Q357418",
+   "label": "Massive Attack",
+   "group": true
+  },
+  {
+   "performer": "Q289569",
+   "label": "Elizabeth Fraser",
+   "group": false
+  }
+ ],
+ "Q158551": [
+  {
+   "performer": "Q977526",
+   "label": "Cutting Crew",
+   "group": true
+  }
+ ],
+ "Q1351488": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q1358464": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q1353121": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q1533387": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q1093259": [
+  {
+   "performer": "Q240767",
+   "label": "Limp Bizkit",
+   "group": true
+  }
+ ],
+ "Q1165771": [
+  {
+   "performer": "Q185144",
+   "label": "Europe",
+   "group": true
+  },
+  {
+   "performer": "Q103279901",
+   "label": "Trombo Combo",
+   "group": true
+  }
+ ],
+ "Q1136101": [
+  {
+   "performer": "Q142701",
+   "label": "Pearl Jam",
+   "group": true
+  }
+ ],
+ "Q1096788": [
+  {
+   "performer": "Q202741",
+   "label": "Blondie",
+   "group": true
+  }
+ ],
+ "Q1368114": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q1444709": [
+  {
+   "performer": "Q151012",
+   "label": "Genesis",
+   "group": true
+  }
+ ],
+ "Q1461284": [
+  {
+   "performer": "Q142701",
+   "label": "Pearl Jam",
+   "group": true
+  }
+ ],
+ "Q1529213": [
+  {
+   "performer": "Q151012",
+   "label": "Genesis",
+   "group": true
+  }
+ ],
+ "Q1529432": [
+  {
+   "performer": "Q151012",
+   "label": "Genesis",
+   "group": true
+  },
+  {
+   "performer": "Q131366",
+   "label": "Disturbed",
+   "group": true
+  }
+ ],
+ "Q1070349": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q1522773": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q1352181": [
+  {
+   "performer": "Q133405",
+   "label": "Bee Gees",
+   "group": true
+  }
+ ],
+ "Q1163830": [
+  {
+   "performer": "Q489801",
+   "label": "INXS",
+   "group": true
+  }
+ ],
+ "Q1419817": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q1419711": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q1419733": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q1421893": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q1421663": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q1418336": [
+  {
+   "performer": "Q157448",
+   "label": "A-Teens",
+   "group": true
+  },
+  {
+   "performer": "Q10466042",
+   "label": "Dalasinfoniettan",
+   "group": true
+  },
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  },
+  {
+   "performer": "Q228747",
+   "label": "Julie Walters",
+   "group": false
+  },
+  {
+   "performer": "Q3807908",
+   "label": "Jenny Galloway",
+   "group": false
+  }
+ ],
+ "Q1714785": [
+  {
+   "performer": "Q202741",
+   "label": "Blondie",
+   "group": true
+  }
+ ],
+ "Q1737747": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q1573223": [
+  {
+   "performer": "Q133405",
+   "label": "Bee Gees",
+   "group": true
+  }
+ ],
+ "Q1121052": [
+  {
+   "performer": "Q742804",
+   "label": "TLC",
+   "group": true
+  }
+ ],
+ "Q1587664": [
+  {
+   "performer": "Q207706",
+   "label": "Eurythmics",
+   "group": true
+  }
+ ],
+ "Q1659871": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q1526754": [
+  {
+   "performer": "Q850540",
+   "label": "Milli Vanilli",
+   "group": true
+  },
+  {
+   "performer": "Q1066063",
+   "label": "Charles Shaw",
+   "group": false
+  }
+ ],
+ "Q1490448": [
+  {
+   "performer": "Q744087",
+   "label": "Wham!",
+   "group": true
+  }
+ ],
+ "Q1408525": [
+  {
+   "performer": "Q742804",
+   "label": "TLC",
+   "group": true
+  }
+ ],
+ "Q1407660": [
+  {
+   "performer": "Q742804",
+   "label": "TLC",
+   "group": true
+  }
+ ],
+ "Q1136945": [
+  {
+   "performer": "Q2525354",
+   "label": "Bob Marley & The Wailers",
+   "group": true
+  }
+ ],
+ "Q10972854": [
+  {
+   "performer": "Q142636",
+   "label": "The Chicks",
+   "group": true
+  }
+ ],
+ "Q1074676": [
+  {
+   "performer": "Q10535567",
+   "label": "Ingmar Nordströms",
+   "group": true
+  },
+  {
+   "performer": "Q10668108",
+   "label": "Simons",
+   "group": true
+  },
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  },
+  {
+   "performer": "Q16187266",
+   "label": "Louise Plowright",
+   "group": false
+  },
+  {
+   "performer": "Q12003",
+   "label": "Cher",
+   "group": false
+  }
+ ],
+ "Q11704563": [
+  {
+   "performer": "Q151012",
+   "label": "Genesis",
+   "group": true
+  }
+ ],
+ "Q12071561": [
+  {
+   "performer": "Q175097",
+   "label": "3 Doors Down",
+   "group": true
+  }
+ ],
+ "Q11987482": [
+  {
+   "performer": "Q768621",
+   "label": "Hanson",
+   "group": true
+  }
+ ],
+ "Q13416759": [
+  {
+   "performer": "Q642988",
+   "label": "Jimmy Eat World",
+   "group": true
+  }
+ ],
+ "Q14388505": [
+  {
+   "performer": "Q170599",
+   "label": "Arctic Monkeys",
+   "group": true
+  }
+ ],
+ "Q16160797": [
+  {
+   "performer": "Q170599",
+   "label": "Arctic Monkeys",
+   "group": true
+  }
+ ],
+ "Q17035890": [
+  {
+   "performer": "Q170599",
+   "label": "Arctic Monkeys",
+   "group": true
+  }
+ ],
+ "Q17029692": [
+  {
+   "performer": "Q483828",
+   "label": "Sigur Rós",
+   "group": true
+  }
+ ],
+ "Q16953573": [
+  {
+   "performer": "Q483828",
+   "label": "Sigur Rós",
+   "group": true
+  }
+ ],
+ "Q17019325": [
+  {
+   "performer": "Q661962",
+   "label": "Az Yet",
+   "group": true
+  }
+ ],
+ "Q17092313": [
+  {
+   "performer": "Q1071154",
+   "label": "Finger Eleven",
+   "group": true
+  }
+ ],
+ "Q16997683": [
+  {
+   "performer": "Q1761622",
+   "label": "The Greg Kihn Band",
+   "group": true
+  }
+ ],
+ "Q16955159": [
+  {
+   "performer": "Q1679412",
+   "label": "SWV",
+   "group": true
+  }
+ ],
+ "Q101252387": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q102393266": [
+  {
+   "performer": "Q857965",
+   "label": "Alien Ant Farm",
+   "group": true
+  }
+ ],
+ "Q104666811": [
+  {
+   "performer": "Q2525354",
+   "label": "Bob Marley & The Wailers",
+   "group": true
+  }
+ ],
+ "Q103845122": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q104841465": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q104621855": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q104879668": [
+  {
+   "performer": "Q498460",
+   "label": "My Dying Bride",
+   "group": true
+  }
+ ],
+ "Q105064162": [
+  {
+   "performer": "Q720369",
+   "label": "Liquid Tension Experiment",
+   "group": true
+  }
+ ],
+ "Q108443596": [
+  {
+   "performer": "Q2525354",
+   "label": "Bob Marley & The Wailers",
+   "group": true
+  }
+ ],
+ "Q105961104": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q106158297": [
+  {
+   "performer": "Q720369",
+   "label": "Liquid Tension Experiment",
+   "group": true
+  }
+ ],
+ "Q106625577": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q107410867": [
+  {
+   "performer": "Q1547803",
+   "label": "Leprous",
+   "group": true
+  }
+ ],
+ "Q108669195": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q109177366": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q109997097": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  },
+  {
+   "performer": "Q1345338",
+   "label": "Tyler Bates",
+   "group": false
+  }
+ ],
+ "Q111724609": [
+  {
+   "performer": "Q774774",
+   "label": "Haken",
+   "group": true
+  }
+ ],
+ "Q111271165": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q111997547": [
+  {
+   "performer": "Q257615",
+   "label": "Soilwork",
+   "group": true
+  }
+ ],
+ "Q112964497": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q114701019": [
+  {
+   "performer": "Q268612",
+   "label": "Riverside",
+   "group": true
+  }
+ ],
+ "Q116701288": [
+  {
+   "performer": "Q648949",
+   "label": "Overkill",
+   "group": true
+  }
+ ],
+ "Q123913879": [
+  {
+   "performer": "Q2357594",
+   "label": "Reik",
+   "group": true
+  }
+ ],
+ "Q124789427": [
+  {
+   "performer": "Q1135315",
+   "label": "Survivor",
+   "group": true
+  }
+ ],
+ "Q124788772": [
+  {
+   "performer": "Q151012",
+   "label": "Genesis",
+   "group": true
+  }
+ ],
+ "Q125634935": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q126361156": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q131935463": [
+  {
+   "performer": "Q182151",
+   "label": "Majestica",
+   "group": true
+  }
+ ],
+ "Q135208851": [
+  {
+   "performer": "Q213388",
+   "label": "Aqua",
+   "group": true
+  }
+ ],
+ "Q136698182": [
+  {
+   "performer": "Q11764258",
+   "label": "Lunatic Soul",
+   "group": true
+  }
+ ],
+ "Q140782544": [
+  {
+   "performer": "Q54555985",
+   "label": "Khruangbin",
+   "group": true
+  }
+ ],
+ "Q135405534": [
+  {
+   "performer": "Q11647",
+   "label": "Nine Inch Nails",
+   "group": true
+  }
+ ],
+ "Q129012936": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q122285084": [
+  {
+   "performer": "Q11036",
+   "label": "The Rolling Stones",
+   "group": true
+  }
+ ],
+ "Q122075339": [
+  {
+   "performer": "Q11895",
+   "label": "Guns N' Roses",
+   "group": true
+  }
+ ],
+ "Q118875898": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q113555546": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q111448992": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q111095866": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q110814799": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q108353207": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  }
+ ],
+ "Q108353876": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  }
+ ],
+ "Q107126122": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  }
+ ],
+ "Q107125612": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  }
+ ],
+ "Q15123297": [
+  {
+   "performer": "Q19057",
+   "label": "The Specials",
+   "group": true
+  }
+ ],
+ "Q1131308": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  }
+ ],
+ "Q1129976": [
+  {
+   "performer": "Q11649",
+   "label": "Nirvana",
+   "group": true
+  }
+ ],
+ "Q1130059": [
+  {
+   "performer": "Q11649",
+   "label": "Nirvana",
+   "group": true
+  }
+ ],
+ "Q1131812": [
+  {
+   "performer": "Q396",
+   "label": "U2",
+   "group": true
+  }
+ ],
+ "Q129424": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q1582240": [
+  {
+   "performer": "Q125121",
+   "label": "Aretha Franklin",
+   "group": false
+  },
+  {
+   "performer": "Q130311",
+   "label": "George Michael",
+   "group": false
+  }
+ ],
+ "Q1393546": [
+  {
+   "performer": "Q130311",
+   "label": "George Michael",
+   "group": false
+  }
+ ],
+ "Q113193841": [
+  {
+   "performer": "Q151231",
+   "label": "Annie Lennox",
+   "group": false
+  }
+ ],
+ "Q1401482": [
+  {
+   "performer": "Q154222",
+   "label": "Craig David",
+   "group": false
+  }
+ ],
+ "Q1165271": [
+  {
+   "performer": "Q154222",
+   "label": "Craig David",
+   "group": false
+  }
+ ],
+ "Q131310715": [
+  {
+   "performer": "Q155412",
+   "label": "Toni Braxton",
+   "group": false
+  }
+ ],
+ "Q1507073": [
+  {
+   "performer": "Q155700",
+   "label": "Q155700",
+   "group": false
+  },
+  {
+   "performer": "Q215300",
+   "label": "Jordin Sparks",
+   "group": false
+  }
+ ],
+ "Q104856092": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q1482820": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q1408771": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q1318345": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q1230492": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q1116206": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  },
+  {
+   "performer": "Q187844",
+   "label": "Q187844",
+   "group": false
+  }
+ ],
+ "Q116033705": [
+  {
+   "performer": "Q183519",
+   "label": "Leona Lewis",
+   "group": false
+  }
+ ],
+ "Q16035296": [
+  {
+   "performer": "Q183519",
+   "label": "Leona Lewis",
+   "group": false
+  }
+ ],
+ "Q16035060": [
+  {
+   "performer": "Q189758",
+   "label": "Marvin Gaye",
+   "group": false
+  }
+ ],
+ "Q1607241": [
+  {
+   "performer": "Q192410",
+   "label": "Jennifer Hudson",
+   "group": false
+  }
+ ],
+ "Q101001013": [
+  {
+   "performer": "Q193338",
+   "label": "Danny Elfman",
+   "group": false
+  }
+ ],
+ "Q1646081": [
+  {
+   "performer": "Q194333",
+   "label": "Billy Joel",
+   "group": false
+  }
+ ],
+ "Q1635376": [
+  {
+   "performer": "Q202550",
+   "label": "Dido",
+   "group": false
+  }
+ ],
+ "Q1321185": [
+  {
+   "performer": "Q206112",
+   "label": "Willie Nelson",
+   "group": false
+  }
+ ],
+ "Q113396061": [
+  {
+   "performer": "Q218042",
+   "label": "Jessie Ware",
+   "group": false
+  }
+ ],
+ "Q16995061": [
+  {
+   "performer": "Q229430",
+   "label": "Reba McEntire",
+   "group": false
+  }
+ ],
+ "Q139787600": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  }
+ ],
+ "Q1324540": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  },
+  {
+   "performer": "Q233229",
+   "label": "Keyshia Cole",
+   "group": false
+  }
+ ],
+ "Q1411617": [
+  {
+   "performer": "Q232214",
+   "label": "Julieta Venegas",
+   "group": false
+  }
+ ],
+ "Q1163850": [
+  {
+   "performer": "Q232214",
+   "label": "Julieta Venegas",
+   "group": false
+  }
+ ],
+ "Q1592454": [
+  {
+   "performer": "Q236318",
+   "label": "Faith Evans",
+   "group": false
+  },
+  {
+   "performer": "Q2248393",
+   "label": "Kelly Price",
+   "group": false
+  },
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q130636324": [
+  {
+   "performer": "Q256732",
+   "label": "Martina McBride",
+   "group": false
+  }
+ ],
+ "Q17008498": [
+  {
+   "performer": "Q282964",
+   "label": "Lacy J. Dalton",
+   "group": false
+  }
+ ],
+ "Q17039138": [
+  {
+   "performer": "Q297831",
+   "label": "Rick Ross",
+   "group": false
+  }
+ ],
+ "Q108110215": [
+  {
+   "performer": "Q310894",
+   "label": "Bobby McFerrin",
+   "group": false
+  }
+ ],
+ "Q113510225": [
+  {
+   "performer": "Q311306",
+   "label": "Luther Vandross",
+   "group": false
+  }
+ ],
+ "Q17019559": [
+  {
+   "performer": "Q316454",
+   "label": "Don Henley",
+   "group": false
+  }
+ ],
+ "Q113534426": [
+  {
+   "performer": "Q360501",
+   "label": "Paul Young",
+   "group": false
+  }
+ ],
+ "Q101171571": [
+  {
+   "performer": "Q360501",
+   "label": "Paul Young",
+   "group": false
+  }
+ ],
+ "Q131335455": [
+  {
+   "performer": "Q437551",
+   "label": "Eric Carmen",
+   "group": false
+  }
+ ],
+ "Q1174391": [
+  {
+   "performer": "Q440676",
+   "label": "Blu Cantrell",
+   "group": false
+  }
+ ],
+ "Q16170526": [
+  {
+   "performer": "Q464208",
+   "label": "Lorrie Morgan",
+   "group": false
+  }
+ ],
+ "Q17011484": [
+  {
+   "performer": "Q707446",
+   "label": "Rick Springfield",
+   "group": false
+  }
+ ],
+ "Q16163528": [
+  {
+   "performer": "Q892294",
+   "label": "Bone Crusher",
+   "group": false
+  }
+ ],
+ "Q16160676": [
+  {
+   "performer": "Q924232",
+   "label": "Vince Gill",
+   "group": false
+  }
+ ],
+ "Q1394529": [
+  {
+   "performer": "Q971027",
+   "label": "Norman Greenbaum",
+   "group": false
+  }
+ ],
+ "Q16846187": [
+  {
+   "performer": "Q1077266",
+   "label": "Joe",
+   "group": false
+  }
+ ],
+ "Q17030057": [
+  {
+   "performer": "Q2393563",
+   "label": "Johnny Gill",
+   "group": false
+  }
+ ],
+ "Q112075432": [
+  {
+   "performer": "Q3626966",
+   "label": "Harry Styles",
+   "group": false
+  }
+ ],
+ "Q104631958": [
+  {
+   "performer": "Q3626966",
+   "label": "Harry Styles",
+   "group": false
+  }
+ ],
+ "Q135971288": [
+  {
+   "performer": "Q7396400",
+   "label": "Sabrina Carpenter",
+   "group": false
+  }
+ ],
+ "Q123152736": [
+  {
+   "performer": "Q15059490",
+   "label": "Madison Beer",
+   "group": false
+  }
+ ],
+ "Q16995998": [
+  {
+   "performer": "Q15123969",
+   "label": "Sam Smith",
+   "group": false
+  }
+ ],
+ "Q125482649": [
+  {
+   "performer": "Q16233232",
+   "label": "Hozier",
+   "group": false
+  }
+ ],
+ "Q139759351": [
+  {
+   "performer": "Q96217225",
+   "label": "Holly Humberstone",
+   "group": false
+  }
+ ],
+ "Q111908370": [
+  {
+   "performer": "Q111538577",
+   "label": "Charlie Griffiths",
+   "group": false
+  }
+ ],
+ "Q111538932": [
+  {
+   "performer": "Q111538577",
+   "label": "Charlie Griffiths",
+   "group": false
+  }
+ ],
+ "Q113630190": [
+  {
+   "performer": "Q113023532",
+   "label": "Stephen Sanchez",
+   "group": false
+  }
+ ],
+ "Q140570624": [
+  {
+   "performer": "Q131631266",
+   "label": "Sienna Spiro",
+   "group": false
+  }
+ ],
+ "Q139073659": [
+  {
+   "performer": "Q131631266",
+   "label": "Sienna Spiro",
+   "group": false
+  }
+ ],
+ "Q1581438": [
+  {
+   "performer": "Q1545",
+   "label": "Cyndi Lauper",
+   "group": false
+  }
+ ],
+ "Q174195": [
+  {
+   "performer": "Q2599",
+   "label": "Paul McCartney",
+   "group": false
+  }
+ ],
+ "Q131748499": [
+  {
+   "performer": "Q2632",
+   "label": "Ringo Starr",
+   "group": false
+  }
+ ],
+ "Q113625345": [
+  {
+   "performer": "Q2808",
+   "label": "Elton John",
+   "group": false
+  },
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q107654239": [
+  {
+   "performer": "Q2831",
+   "label": "Michael Jackson",
+   "group": false
+  }
+ ],
+ "Q106786258": [
+  {
+   "performer": "Q2831",
+   "label": "Michael Jackson",
+   "group": false
+  }
+ ],
+ "Q14651": [
+  {
+   "performer": "Q2831",
+   "label": "Michael Jackson",
+   "group": false
+  }
+ ],
+ "Q102046738": [
+  {
+   "performer": "Q5105",
+   "label": "Céline Dion",
+   "group": false
+  }
+ ],
+ "Q1145539": [
+  {
+   "performer": "Q5950",
+   "label": "James Brown",
+   "group": false
+  }
+ ],
+ "Q1413876": [
+  {
+   "performer": "Q11617",
+   "label": "Aaliyah",
+   "group": false
+  }
+ ],
+ "Q124354355": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q158585": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q155016": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q108805763": [
+  {
+   "performer": "Q23215",
+   "label": "Adele",
+   "group": false
+  }
+ ],
+ "Q1067069": [
+  {
+   "performer": "Q26625",
+   "label": "Marc Anthony",
+   "group": false
+  },
+  {
+   "performer": "Q40715",
+   "label": "Jennifer Lopez",
+   "group": false
+  }
+ ],
+ "Q131315584": [
+  {
+   "performer": "Q30449",
+   "label": "Avril Lavigne",
+   "group": false
+  }
+ ],
+ "Q114018789": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q114016860": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q1514054": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q1408181": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q1406320": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q1406003": [
+  {
+   "performer": "Q40096",
+   "label": "Will Smith",
+   "group": false
+  }
+ ],
+ "Q108252897": [
+  {
+   "performer": "Q40715",
+   "label": "Jennifer Lopez",
+   "group": false
+  }
+ ],
+ "Q1510270": [
+  {
+   "performer": "Q40715",
+   "label": "Jennifer Lopez",
+   "group": false
+  },
+  {
+   "performer": "Q52440",
+   "label": "LL Cool J",
+   "group": false
+  }
+ ],
+ "Q1503404": [
+  {
+   "performer": "Q40715",
+   "label": "Jennifer Lopez",
+   "group": false
+  }
+ ],
+ "Q1067049": [
+  {
+   "performer": "Q40715",
+   "label": "Jennifer Lopez",
+   "group": false
+  }
+ ],
+ "Q155512": [
+  {
+   "performer": "Q42493",
+   "label": "Katy Perry",
+   "group": false
+  }
+ ],
+ "Q1446508": [
+  {
+   "performer": "Q44857",
+   "label": "John Legend",
+   "group": false
+  }
+ ],
+ "Q2349439": [
+  {
+   "performer": "Q55641",
+   "label": "Spice Girls",
+   "group": true
+  }
+ ],
+ "Q2471051": [
+  {
+   "performer": "Q55641",
+   "label": "Spice Girls",
+   "group": true
+  }
+ ],
+ "Q194812": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q246377": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q246092": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q1981958": [
+  {
+   "performer": "Q1777698",
+   "label": "Evanescence",
+   "group": true
+  }
+ ],
+ "Q2069502": [
+  {
+   "performer": "Q1358683",
+   "label": "Wilson Phillips",
+   "group": true
+  }
+ ],
+ "Q1748161": [
+  {
+   "performer": "Q1334471",
+   "label": "Mr. Mister",
+   "group": true
+  }
+ ],
+ "Q1753319": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q1753330": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q2068199": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q1993527": [
+  {
+   "performer": "Q486825",
+   "label": "Three Days Grace",
+   "group": true
+  }
+ ],
+ "Q1998768": [
+  {
+   "performer": "Q486825",
+   "label": "Three Days Grace",
+   "group": true
+  }
+ ],
+ "Q1780906": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q1930570": [
+  {
+   "performer": "Q483828",
+   "label": "Sigur Rós",
+   "group": true
+  }
+ ],
+ "Q1915709": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q1883108": [
+  {
+   "performer": "Q483828",
+   "label": "Sigur Rós",
+   "group": true
+  }
+ ],
+ "Q1782865": [
+  {
+   "performer": "Q483828",
+   "label": "Sigur Rós",
+   "group": true
+  }
+ ],
+ "Q1751744": [
+  {
+   "performer": "Q499971",
+   "label": "La Oreja de Van Gogh",
+   "group": true
+  }
+ ],
+ "Q2086249": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  },
+  {
+   "performer": "Q41076",
+   "label": "Q41076",
+   "group": false
+  }
+ ],
+ "Q2081303": [
+  {
+   "performer": "Q153056",
+   "label": "Destiny's Child",
+   "group": true
+  }
+ ],
+ "Q1888554": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2262714": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2605307": [
+  {
+   "performer": "Q483828",
+   "label": "Sigur Rós",
+   "group": true
+  }
+ ],
+ "Q2252951": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q2253094": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q2267212": [
+  {
+   "performer": "Q142701",
+   "label": "Pearl Jam",
+   "group": true
+  }
+ ],
+ "Q2312992": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2593467": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q2287361": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2309248": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2307076": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2307230": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2307022": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2306475": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  },
+  {
+   "performer": "Q287309",
+   "label": "Kate Pierson",
+   "group": false
+  }
+ ],
+ "Q2306442": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2544408": [
+  {
+   "performer": "Q493710",
+   "label": "Savage Garden",
+   "group": true
+  }
+ ],
+ "Q2336485": [
+  {
+   "performer": "Q185144",
+   "label": "Europe",
+   "group": true
+  },
+  {
+   "performer": "Q10466042",
+   "label": "Dalasinfoniettan",
+   "group": true
+  }
+ ],
+ "Q2323852": [
+  {
+   "performer": "Q133405",
+   "label": "Bee Gees",
+   "group": true
+  }
+ ],
+ "Q2260730": [
+  {
+   "performer": "Q240767",
+   "label": "Limp Bizkit",
+   "group": true
+  }
+ ],
+ "Q2454549": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2152397": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q2454199": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q2602582": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2484305": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q2577045": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2561736": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2563216": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2563080": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2566005": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2360547": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q2414767": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2617695": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2620654": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2538856": [
+  {
+   "performer": "Q178095",
+   "label": "The Police",
+   "group": true
+  }
+ ],
+ "Q2604122": [
+  {
+   "performer": "Q238263",
+   "label": "4 Non Blondes",
+   "group": true
+  },
+  {
+   "performer": "Q180453",
+   "label": "Q180453",
+   "group": false
+  }
+ ],
+ "Q2324211": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q2316091": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q2567858": [
+  {
+   "performer": "Q202041",
+   "label": "Jamiroquai",
+   "group": true
+  }
+ ],
+ "Q2480796": [
+  {
+   "performer": "Q124179",
+   "label": "Kiss",
+   "group": true
+  }
+ ],
+ "Q2306319": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2527634": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q2599560": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2294922": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2531291": [
+  {
+   "performer": "Q142701",
+   "label": "Pearl Jam",
+   "group": true
+  }
+ ],
+ "Q2530911": [
+  {
+   "performer": "Q142701",
+   "label": "Pearl Jam",
+   "group": true
+  }
+ ],
+ "Q2555550": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q2574121": [
+  {
+   "performer": "Q152066",
+   "label": "Take That",
+   "group": true
+  }
+ ],
+ "Q2563251": [
+  {
+   "performer": "Q133405",
+   "label": "Bee Gees",
+   "group": true
+  }
+ ],
+ "Q2537050": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2539410": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2571921": [
+  {
+   "performer": "Q153056",
+   "label": "Destiny's Child",
+   "group": true
+  }
+ ],
+ "Q2291165": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q2267706": [
+  {
+   "performer": "Q484311",
+   "label": "Keane",
+   "group": true
+  }
+ ],
+ "Q2469139": [
+  {
+   "performer": "Q178095",
+   "label": "The Police",
+   "group": true
+  }
+ ],
+ "Q2120849": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2105774": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2457643": [
+  {
+   "performer": "Q153056",
+   "label": "Destiny's Child",
+   "group": true
+  }
+ ],
+ "Q2304745": [
+  {
+   "performer": "Q742804",
+   "label": "TLC",
+   "group": true
+  }
+ ],
+ "Q2707880": [
+  {
+   "performer": "Q124179",
+   "label": "Kiss",
+   "group": true
+  }
+ ],
+ "Q2715167": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2659767": [
+  {
+   "performer": "Q133405",
+   "label": "Bee Gees",
+   "group": true
+  }
+ ],
+ "Q2598738": [
+  {
+   "performer": "Q873413",
+   "label": "Daughtry",
+   "group": true
+  }
+ ],
+ "Q2204587": [
+  {
+   "performer": "Q707161",
+   "label": "The Weather Girls",
+   "group": true
+  }
+ ],
+ "Q2633017": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2625263": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q2721759": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2722230": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2630128": [
+  {
+   "performer": "Q308816",
+   "label": "Creed",
+   "group": true
+  }
+ ],
+ "Q2713436": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q2616520": [
+  {
+   "performer": "Q642988",
+   "label": "Jimmy Eat World",
+   "group": true
+  }
+ ],
+ "Q2706519": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2706964": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2697051": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2703070": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2633296": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q2628725": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q18668595": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q18758156": [
+  {
+   "performer": "Q485811",
+   "label": "Fall Out Boy",
+   "group": true
+  },
+  {
+   "performer": "Q41173",
+   "label": "Demi Lovato",
+   "group": false
+  }
+ ],
+ "Q2610528": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q2530573": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q2336912": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q2273964": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  },
+  {
+   "performer": "Q15615",
+   "label": "Q15615",
+   "group": false
+  }
+ ],
+ "Q2265331": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q1991449": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q1857071": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q1784211": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  },
+  {
+   "performer": "Q276170",
+   "label": "Alejandro Sanz",
+   "group": false
+  }
+ ],
+ "Q1780500": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  },
+  {
+   "performer": "Q202663",
+   "label": "Q202663",
+   "group": false
+  }
+ ],
+ "Q1775611": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q2231337": [
+  {
+   "performer": "Q44857",
+   "label": "John Legend",
+   "group": false
+  }
+ ],
+ "Q2069614": [
+  {
+   "performer": "Q44857",
+   "label": "John Legend",
+   "group": false
+  }
+ ],
+ "Q18209857": [
+  {
+   "performer": "Q542490",
+   "label": "Groove Theory",
+   "group": true
+  }
+ ],
+ "Q19057146": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q19573333": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q19893654": [
+  {
+   "performer": "Q142636",
+   "label": "The Chicks",
+   "group": true
+  }
+ ],
+ "Q21061722": [
+  {
+   "performer": "Q191915",
+   "label": "Zero 7",
+   "group": true
+  }
+ ],
+ "Q22043074": [
+  {
+   "performer": "Q1678447",
+   "label": "Jagged Edge",
+   "group": true
+  }
+ ],
+ "Q26945287": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q25218660": [
+  {
+   "performer": "Q19057",
+   "label": "The Specials",
+   "group": true
+  }
+ ],
+ "Q24025215": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2698087": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2637260": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2619535": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q2527642": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2477412": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2454853": [
+  {
+   "performer": "Q17140",
+   "label": "Backstreet Boys",
+   "group": true
+  }
+ ],
+ "Q2337556": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2336466": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2302917": [
+  {
+   "performer": "Q17140",
+   "label": "Backstreet Boys",
+   "group": true
+  }
+ ],
+ "Q2292015": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2290612": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2291269": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2234335": [
+  {
+   "performer": "Q17140",
+   "label": "Backstreet Boys",
+   "group": true
+  }
+ ],
+ "Q2068337": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2070565": [
+  {
+   "performer": "Q17140",
+   "label": "Backstreet Boys",
+   "group": true
+  }
+ ],
+ "Q2010095": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q2001920": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q1764046": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q268440": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q210485": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q219425": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q184259": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q256714": [
+  {
+   "performer": "Q152453",
+   "label": "Keri Hilson",
+   "group": false
+  },
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  },
+  {
+   "performer": "Q15935",
+   "label": "Q15935",
+   "group": false
+  }
+ ],
+ "Q1995326": [
+  {
+   "performer": "Q161877",
+   "label": "Q161877",
+   "group": false
+  },
+  {
+   "performer": "Q309843",
+   "label": "Ja Rule",
+   "group": false
+  }
+ ],
+ "Q25218885": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q25218881": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2569943": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2552835": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2551142": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2436385": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2419638": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2352615": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2351703": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2306386": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  },
+  {
+   "performer": "Q294979",
+   "label": "Kelis",
+   "group": false
+  }
+ ],
+ "Q2236784": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2064876": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q1954563": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q19875767": [
+  {
+   "performer": "Q177131",
+   "label": "Mario",
+   "group": false
+  }
+ ],
+ "Q2322948": [
+  {
+   "performer": "Q183519",
+   "label": "Leona Lewis",
+   "group": false
+  }
+ ],
+ "Q2573111": [
+  {
+   "performer": "Q184249",
+   "label": "Kelly Rowland",
+   "group": false
+  },
+  {
+   "performer": "Q239464",
+   "label": "Eve",
+   "group": false
+  }
+ ],
+ "Q18692874": [
+  {
+   "performer": "Q188426",
+   "label": "Roy Orbison",
+   "group": false
+  }
+ ],
+ "Q2517476": [
+  {
+   "performer": "Q189758",
+   "label": "Marvin Gaye",
+   "group": false
+  }
+ ],
+ "Q18890272": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q18763621": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q18163746": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  },
+  {
+   "performer": "Q602779",
+   "label": "Q602779",
+   "group": false
+  }
+ ],
+ "Q2711715": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2625802": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2561292": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2444681": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2444659": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2444648": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2444606": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q1986195": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q1985594": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2604661": [
+  {
+   "performer": "Q202550",
+   "label": "Dido",
+   "group": false
+  }
+ ],
+ "Q2137081": [
+  {
+   "performer": "Q215300",
+   "label": "Jordin Sparks",
+   "group": false
+  }
+ ],
+ "Q2552843": [
+  {
+   "performer": "Q228860",
+   "label": "Colbie Caillat",
+   "group": false
+  }
+ ],
+ "Q2292924": [
+  {
+   "performer": "Q232214",
+   "label": "Julieta Venegas",
+   "group": false
+  }
+ ],
+ "Q1761593": [
+  {
+   "performer": "Q294979",
+   "label": "Kelis",
+   "group": false
+  }
+ ],
+ "Q2389029": [
+  {
+   "performer": "Q313578",
+   "label": "Vanilla Ice",
+   "group": false
+  }
+ ],
+ "Q2026497": [
+  {
+   "performer": "Q346036",
+   "label": "Keith Whitley",
+   "group": false
+  }
+ ],
+ "Q2687802": [
+  {
+   "performer": "Q356745",
+   "label": "Billy Ocean",
+   "group": false
+  }
+ ],
+ "Q1872480": [
+  {
+   "performer": "Q356745",
+   "label": "Billy Ocean",
+   "group": false
+  }
+ ],
+ "Q18153259": [
+  {
+   "performer": "Q449908",
+   "label": "Chayanne",
+   "group": false
+  }
+ ],
+ "Q24727810": [
+  {
+   "performer": "Q474045",
+   "label": "Celia Cruz",
+   "group": false
+  }
+ ],
+ "Q1777263": [
+  {
+   "performer": "Q483507",
+   "label": "Kelly Clarkson",
+   "group": false
+  }
+ ],
+ "Q25218173": [
+  {
+   "performer": "Q707446",
+   "label": "Rick Springfield",
+   "group": false
+  }
+ ],
+ "Q20875493": [
+  {
+   "performer": "Q1077266",
+   "label": "Joe",
+   "group": false
+  }
+ ],
+ "Q18009351": [
+  {
+   "performer": "Q15123969",
+   "label": "Sam Smith",
+   "group": false
+  }
+ ],
+ "Q2299957": [
+  {
+   "performer": "Q1545",
+   "label": "Cyndi Lauper",
+   "group": false
+  }
+ ],
+ "Q2112460": [
+  {
+   "performer": "Q2599",
+   "label": "Paul McCartney",
+   "group": false
+  }
+ ],
+ "Q2560178": [
+  {
+   "performer": "Q2808",
+   "label": "Elton John",
+   "group": false
+  }
+ ],
+ "Q229553": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q19345": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q2069166": [
+  {
+   "performer": "Q26695",
+   "label": "Lionel Richie",
+   "group": false
+  }
+ ],
+ "Q2304718": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q2302046": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q2301672": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q2714479": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q2712031": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q55773367": [
+  {
+   "performer": "Q170599",
+   "label": "Arctic Monkeys",
+   "group": true
+  }
+ ],
+ "Q56424229": [
+  {
+   "performer": "Q268612",
+   "label": "Riverside",
+   "group": true
+  }
+ ],
+ "Q56682760": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q56823511": [
+  {
+   "performer": "Q774774",
+   "label": "Haken",
+   "group": true
+  }
+ ],
+ "Q29413169": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q4658222": [
+  {
+   "performer": "Q19057",
+   "label": "The Specials",
+   "group": true
+  },
+  {
+   "performer": "Q734195",
+   "label": "Dandy Livingstone",
+   "group": false
+  },
+  {
+   "performer": "Q954614",
+   "label": "Rico Rodriguez",
+   "group": false
+  }
+ ],
+ "Q3666645": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q3293037": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  },
+  {
+   "performer": "Q1203",
+   "label": "John Lennon",
+   "group": false
+  }
+ ],
+ "Q2813861": [
+  {
+   "performer": "Q11036",
+   "label": "The Rolling Stones",
+   "group": true
+  }
+ ],
+ "Q2777801": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q571722": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  },
+  {
+   "performer": "Q157448",
+   "label": "A-Teens",
+   "group": true
+  }
+ ],
+ "Q544782": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q523345": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q521899": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q485907": [
+  {
+   "performer": "Q11649",
+   "label": "Nirvana",
+   "group": true
+  }
+ ],
+ "Q369076": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q338796": [
+  {
+   "performer": "Q17140",
+   "label": "Backstreet Boys",
+   "group": true
+  },
+  {
+   "performer": "Q880318",
+   "label": "Black Ingvars",
+   "group": true
+  }
+ ],
+ "Q300385": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q4928860": [
+  {
+   "performer": "Q115956",
+   "label": "Paola del Medico",
+   "group": false
+  },
+  {
+   "performer": "Q188426",
+   "label": "Roy Orbison",
+   "group": false
+  },
+  {
+   "performer": "Q229375",
+   "label": "Linda Ronstadt",
+   "group": false
+  },
+  {
+   "performer": "Q2134234",
+   "label": "Piet Veerman",
+   "group": false
+  }
+ ],
+ "Q3752965": [
+  {
+   "performer": "Q125121",
+   "label": "Aretha Franklin",
+   "group": false
+  }
+ ],
+ "Q3045853": [
+  {
+   "performer": "Q131433",
+   "label": "Shania Twain",
+   "group": false
+  }
+ ],
+ "Q2857850": [
+  {
+   "performer": "Q131433",
+   "label": "Shania Twain",
+   "group": false
+  }
+ ],
+ "Q2723602": [
+  {
+   "performer": "Q131433",
+   "label": "Shania Twain",
+   "group": false
+  }
+ ],
+ "Q2722400": [
+  {
+   "performer": "Q131433",
+   "label": "Shania Twain",
+   "group": false
+  }
+ ],
+ "Q3936446": [
+  {
+   "performer": "Q154222",
+   "label": "Craig David",
+   "group": false
+  },
+  {
+   "performer": "Q483203",
+   "label": "Sting",
+   "group": false
+  }
+ ],
+ "Q4811822": [
+  {
+   "performer": "Q155079",
+   "label": "Q155079",
+   "group": false
+  },
+  {
+   "performer": "Q229379",
+   "label": "Lil' Kim",
+   "group": false
+  },
+  {
+   "performer": "Q233229",
+   "label": "Keyshia Cole",
+   "group": false
+  }
+ ],
+ "Q3337709": [
+  {
+   "performer": "Q155079",
+   "label": "Q155079",
+   "group": false
+  },
+  {
+   "performer": "Q267070",
+   "label": "Jazmine Sullivan",
+   "group": false
+  }
+ ],
+ "Q3790200": [
+  {
+   "performer": "Q155412",
+   "label": "Toni Braxton",
+   "group": false
+  }
+ ],
+ "Q3247624": [
+  {
+   "performer": "Q162202",
+   "label": "Q162202",
+   "group": false
+  },
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q28451926": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q3132139": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2935736": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2762184": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q2722509": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q5190470": [
+  {
+   "performer": "Q177131",
+   "label": "Mario",
+   "group": false
+  }
+ ],
+ "Q4959306": [
+  {
+   "performer": "Q177131",
+   "label": "Mario",
+   "group": false
+  },
+  {
+   "performer": "Q206032",
+   "label": "Q206032",
+   "group": false
+  },
+  {
+   "performer": "Q652020",
+   "label": "Q652020",
+   "group": false
+  }
+ ],
+ "Q276431": [
+  {
+   "performer": "Q183519",
+   "label": "Leona Lewis",
+   "group": false
+  },
+  {
+   "performer": "Q2420983",
+   "label": "Sanna Nielsen",
+   "group": false
+  }
+ ],
+ "Q5157963": [
+  {
+   "performer": "Q184697",
+   "label": "Gloria Estefan",
+   "group": false
+  }
+ ],
+ "Q4488789": [
+  {
+   "performer": "Q184697",
+   "label": "Gloria Estefan",
+   "group": false
+  }
+ ],
+ "Q48797630": [
+  {
+   "performer": "Q188426",
+   "label": "Roy Orbison",
+   "group": false
+  }
+ ],
+ "Q4022983": [
+  {
+   "performer": "Q188426",
+   "label": "Roy Orbison",
+   "group": false
+  }
+ ],
+ "Q3281536": [
+  {
+   "performer": "Q188426",
+   "label": "Roy Orbison",
+   "group": false
+  }
+ ],
+ "Q56088104": [
+  {
+   "performer": "Q189758",
+   "label": "Marvin Gaye",
+   "group": false
+  }
+ ],
+ "Q30610053": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q4162296": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2727410": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q2725862": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q4732053": [
+  {
+   "performer": "Q194333",
+   "label": "Billy Joel",
+   "group": false
+  }
+ ],
+ "Q3792112": [
+  {
+   "performer": "Q200586",
+   "label": "Sheryl Crow",
+   "group": false
+  }
+ ],
+ "Q539119": [
+  {
+   "performer": "Q202550",
+   "label": "Dido",
+   "group": false
+  }
+ ],
+ "Q5306580": [
+  {
+   "performer": "Q202801",
+   "label": "Vanessa Williams",
+   "group": false
+  }
+ ],
+ "Q4738478": [
+  {
+   "performer": "Q206112",
+   "label": "Willie Nelson",
+   "group": false
+  }
+ ],
+ "Q5296955": [
+  {
+   "performer": "Q214226",
+   "label": "Lauryn Hill",
+   "group": false
+  }
+ ],
+ "Q3772648": [
+  {
+   "performer": "Q215215",
+   "label": "John Mayer",
+   "group": false
+  },
+  {
+   "performer": "Q286022",
+   "label": "Common",
+   "group": false
+  },
+  {
+   "performer": "Q15935",
+   "label": "Q15935",
+   "group": false
+  }
+ ],
+ "Q5288093": [
+  {
+   "performer": "Q229430",
+   "label": "Reba McEntire",
+   "group": false
+  },
+  {
+   "performer": "Q13561737",
+   "label": "Linda Davis",
+   "group": false
+  }
+ ],
+ "Q3299911": [
+  {
+   "performer": "Q231259",
+   "label": "Billy Ray Cyrus",
+   "group": false
+  },
+  {
+   "performer": "Q10292333",
+   "label": "Grönwalls",
+   "group": true
+  }
+ ],
+ "Q368746": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  }
+ ],
+ "Q4753612": [
+  {
+   "performer": "Q232214",
+   "label": "Julieta Venegas",
+   "group": false
+  },
+  {
+   "performer": "Q2506085",
+   "label": "Coti",
+   "group": false
+  }
+ ],
+ "Q3567884": [
+  {
+   "performer": "Q233377",
+   "label": "Amerie",
+   "group": false
+  }
+ ],
+ "Q3111517": [
+  {
+   "performer": "Q233377",
+   "label": "Amerie",
+   "group": false
+  }
+ ],
+ "Q2813523": [
+  {
+   "performer": "Q233377",
+   "label": "Amerie",
+   "group": false
+  }
+ ],
+ "Q3371315": [
+  {
+   "performer": "Q234017",
+   "label": "Tammy Wynette",
+   "group": false
+  }
+ ],
+ "Q4742723": [
+  {
+   "performer": "Q251287",
+   "label": "Waylon Jennings",
+   "group": false
+  }
+ ],
+ "Q4655657": [
+  {
+   "performer": "Q256732",
+   "label": "Martina McBride",
+   "group": false
+  }
+ ],
+ "Q391559": [
+  {
+   "performer": "Q311256",
+   "label": "Richard Marx",
+   "group": false
+  },
+  {
+   "performer": "Q10664578",
+   "label": "Scotts",
+   "group": true
+  }
+ ],
+ "Q4053094": [
+  {
+   "performer": "Q315547",
+   "label": "Keith Urban",
+   "group": false
+  }
+ ],
+ "Q4729622": [
+  {
+   "performer": "Q316454",
+   "label": "Don Henley",
+   "group": false
+  }
+ ],
+ "Q3935743": [
+  {
+   "performer": "Q318792",
+   "label": "Chingy",
+   "group": false
+  }
+ ],
+ "Q4655436": [
+  {
+   "performer": "Q320264",
+   "label": "Clint Black",
+   "group": false
+  }
+ ],
+ "Q5291513": [
+  {
+   "performer": "Q346036",
+   "label": "Keith Whitley",
+   "group": false
+  }
+ ],
+ "Q289679": [
+  {
+   "performer": "Q356745",
+   "label": "Billy Ocean",
+   "group": false
+  }
+ ],
+ "Q5089084": [
+  {
+   "performer": "Q366584",
+   "label": "George Strait",
+   "group": false
+  }
+ ],
+ "Q5029131": [
+  {
+   "performer": "Q379548",
+   "label": "Peabo Bryson",
+   "group": false
+  }
+ ],
+ "Q5177206": [
+  {
+   "performer": "Q380927",
+   "label": "Alan Jackson",
+   "group": false
+  }
+ ],
+ "Q5087833": [
+  {
+   "performer": "Q380927",
+   "label": "Alan Jackson",
+   "group": false
+  }
+ ],
+ "Q3015508": [
+  {
+   "performer": "Q464232",
+   "label": "Pam Tillis",
+   "group": false
+  }
+ ],
+ "Q28225453": [
+  {
+   "performer": "Q474045",
+   "label": "Celia Cruz",
+   "group": false
+  }
+ ],
+ "Q300486": [
+  {
+   "performer": "Q483507",
+   "label": "Kelly Clarkson",
+   "group": false
+  }
+ ],
+ "Q5291891": [
+  {
+   "performer": "Q548449",
+   "label": "Paul Carrack",
+   "group": false
+  }
+ ],
+ "Q4050916": [
+  {
+   "performer": "Q651231",
+   "label": "Boyz II Men",
+   "group": false
+  }
+ ],
+ "Q3894959": [
+  {
+   "performer": "Q670308",
+   "label": "Kany García",
+   "group": false
+  }
+ ],
+ "Q3787284": [
+  {
+   "performer": "Q670308",
+   "label": "Kany García",
+   "group": false
+  }
+ ],
+ "Q3733320": [
+  {
+   "performer": "Q670308",
+   "label": "Kany García",
+   "group": false
+  }
+ ],
+ "Q5275282": [
+  {
+   "performer": "Q705458",
+   "label": "Ginuwine",
+   "group": false
+  }
+ ],
+ "Q5899890": [
+  {
+   "performer": "Q719841",
+   "label": "Ricardo Arjona",
+   "group": false
+  }
+ ],
+ "Q28453064": [
+  {
+   "performer": "Q781634",
+   "label": "Steve Earle",
+   "group": false
+  }
+ ],
+ "Q5168829": [
+  {
+   "performer": "Q781634",
+   "label": "Steve Earle",
+   "group": false
+  }
+ ],
+ "Q5574903": [
+  {
+   "performer": "Q924232",
+   "label": "Vince Gill",
+   "group": false
+  }
+ ],
+ "Q5306781": [
+  {
+   "performer": "Q1166988",
+   "label": "Daryl Hall",
+   "group": false
+  }
+ ],
+ "Q56056001": [
+  {
+   "performer": "Q1378643",
+   "label": "Maxwell",
+   "group": false
+  },
+  {
+   "performer": "Q636",
+   "label": "Kate Bush",
+   "group": false
+  }
+ ],
+ "Q432461": [
+  {
+   "performer": "Q3435367",
+   "label": "Robert Hazard",
+   "group": false
+  },
+  {
+   "performer": "Q1545",
+   "label": "Cyndi Lauper",
+   "group": false
+  }
+ ],
+ "Q5694844": [
+  {
+   "performer": "Q5326118",
+   "label": "Earl Thomas Conley",
+   "group": false
+  }
+ ],
+ "Q39045470": [
+  {
+   "performer": "Q12404804",
+   "label": "Jesca Hoop",
+   "group": false
+  }
+ ],
+ "Q3326906": [
+  {
+   "performer": "Q130377956",
+   "label": "Jabba",
+   "group": false
+  },
+  {
+   "performer": "Q1669590",
+   "label": "Nina Sky",
+   "group": true
+  }
+ ],
+ "Q56070897": [
+  {
+   "performer": "Q2808",
+   "label": "Elton John",
+   "group": false
+  }
+ ],
+ "Q472648": [
+  {
+   "performer": "Q2831",
+   "label": "Michael Jackson",
+   "group": false
+  }
+ ],
+ "Q300973": [
+  {
+   "performer": "Q2831",
+   "label": "Michael Jackson",
+   "group": false
+  }
+ ],
+ "Q380181": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q379751": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q3085511": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q3040219": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q2728376": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q576798": [
+  {
+   "performer": "Q34424",
+   "label": "Shakira",
+   "group": false
+  }
+ ],
+ "Q553053": [
+  {
+   "performer": "Q40715",
+   "label": "Jennifer Lopez",
+   "group": false
+  }
+ ],
+ "Q3044209": [
+  {
+   "performer": "Q42775",
+   "label": "Johnny Cash",
+   "group": false
+  }
+ ],
+ "Q3495978": [
+  {
+   "performer": "Q43874",
+   "label": "Eddie Murphy",
+   "group": false
+  }
+ ],
+ "Q48504": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q48465": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q418833": [
+  {
+   "performer": "Q55641",
+   "label": "Spice Girls",
+   "group": true
+  }
+ ],
+ "Q32503": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  }
+ ],
+ "Q420372": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q430243": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q276728": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q421783": [
+  {
+   "performer": "Q174817",
+   "label": "Soundgarden",
+   "group": true
+  }
+ ],
+ "Q582848": [
+  {
+   "performer": "Q869604",
+   "label": "Crazy Town",
+   "group": true
+  }
+ ],
+ "Q371676": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q531377": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q536730": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q545871": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q3109342": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q3084166": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q3084148": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q3136614": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q3041685": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q2978316": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q2962282": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q3006550": [
+  {
+   "performer": "Q464749",
+   "label": "Journey",
+   "group": true
+  }
+ ],
+ "Q2744279": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q2888839": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q2733678": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q2727021": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q2722237": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q3062274": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q3045412": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3566945": [
+  {
+   "performer": "Q1679412",
+   "label": "SWV",
+   "group": true
+  }
+ ],
+ "Q3279112": [
+  {
+   "performer": "Q142636",
+   "label": "The Chicks",
+   "group": true
+  }
+ ],
+ "Q3321305": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3297049": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3297053": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3309073": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3309062": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3307997": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3186244": [
+  {
+   "performer": "Q184217",
+   "label": "The Smashing Pumpkins",
+   "group": true
+  }
+ ],
+ "Q3464618": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q3637361": [
+  {
+   "performer": "Q259254",
+   "label": "Bon Jovi",
+   "group": true
+  }
+ ],
+ "Q3634123": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q3312293": [
+  {
+   "performer": "Q486830",
+   "label": "Audioslave",
+   "group": true
+  }
+ ],
+ "Q3646397": [
+  {
+   "performer": "Q151012",
+   "label": "Genesis",
+   "group": true
+  }
+ ],
+ "Q3617501": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q3509814": [
+  {
+   "performer": "Q261341",
+   "label": "The Highwaymen",
+   "group": true
+  }
+ ],
+ "Q3302048": [
+  {
+   "performer": "Q382890",
+   "label": "Oasis",
+   "group": true
+  }
+ ],
+ "Q3881273": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q3993337": [
+  {
+   "performer": "Q339671",
+   "label": "Next",
+   "group": true
+  }
+ ],
+ "Q3698791": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q4019475": [
+  {
+   "performer": "Q523449",
+   "label": "The Calling",
+   "group": true
+  }
+ ],
+ "Q3975809": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q3282165": [
+  {
+   "performer": "Q841042",
+   "label": "My Bloody Valentine",
+   "group": true
+  }
+ ],
+ "Q3939771": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q3993052": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q4025536": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q4020746": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q5169678": [
+  {
+   "performer": "Q873384",
+   "label": "Santana",
+   "group": true
+  },
+  {
+   "performer": "Q584066",
+   "label": "Maná",
+   "group": true
+  }
+ ],
+ "Q4882766": [
+  {
+   "performer": "Q929683",
+   "label": "Brooks & Dunn",
+   "group": true
+  }
+ ],
+ "Q4345833": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q4943831": [
+  {
+   "performer": "Q929683",
+   "label": "Brooks & Dunn",
+   "group": true
+  }
+ ],
+ "Q4980576": [
+  {
+   "performer": "Q175097",
+   "label": "3 Doors Down",
+   "group": true
+  }
+ ],
+ "Q5469425": [
+  {
+   "performer": "Q1661305",
+   "label": "Jodeci",
+   "group": true
+  }
+ ],
+ "Q4670670": [
+  {
+   "performer": "Q910354",
+   "label": "Wisin & Yandel",
+   "group": true
+  }
+ ],
+ "Q5582741": [
+  {
+   "performer": "Q1678447",
+   "label": "Jagged Edge",
+   "group": true
+  }
+ ],
+ "Q4822327": [
+  {
+   "performer": "Q308816",
+   "label": "Creed",
+   "group": true
+  }
+ ],
+ "Q4875500": [
+  {
+   "performer": "Q464749",
+   "label": "Journey",
+   "group": true
+  }
+ ],
+ "Q5265261": [
+  {
+   "performer": "Q191915",
+   "label": "Zero 7",
+   "group": true
+  }
+ ],
+ "Q5564351": [
+  {
+   "performer": "Q464749",
+   "label": "Journey",
+   "group": true
+  }
+ ],
+ "Q5478960": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q5441408": [
+  {
+   "performer": "Q420023",
+   "label": "Tony! Toni! Toné!",
+   "group": true
+  }
+ ],
+ "Q5350482": [
+  {
+   "performer": "Q483828",
+   "label": "Sigur Rós",
+   "group": true
+  }
+ ],
+ "Q5583258": [
+  {
+   "performer": "Q142636",
+   "label": "The Chicks",
+   "group": true
+  }
+ ],
+ "Q5291642": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q5583218": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q4729118": [
+  {
+   "performer": "Q1282543",
+   "label": "K-Ci & JoJo",
+   "group": true
+  }
+ ],
+ "Q5583321": [
+  {
+   "performer": "Q616239",
+   "label": "Scandal",
+   "group": true
+  }
+ ],
+ "Q5441434": [
+  {
+   "performer": "Q873413",
+   "label": "Daughtry",
+   "group": true
+  }
+ ],
+ "Q5244954": [
+  {
+   "performer": "Q1028918",
+   "label": "Camila",
+   "group": true
+  }
+ ],
+ "Q5441437": [
+  {
+   "performer": "Q3571048",
+   "label": "Xscape",
+   "group": true
+  }
+ ],
+ "Q4544888": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q4763040": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q5028918": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q5284918": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q5441440": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q5755151": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q27536525": [
+  {
+   "performer": "Q642988",
+   "label": "Jimmy Eat World",
+   "group": true
+  }
+ ],
+ "Q28737603": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q29883870": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q30599689": [
+  {
+   "performer": "Q202741",
+   "label": "Blondie",
+   "group": true
+  }
+ ],
+ "Q30599308": [
+  {
+   "performer": "Q202741",
+   "label": "Blondie",
+   "group": true
+  }
+ ],
+ "Q30610241": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q37816163": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q41994980": [
+  {
+   "performer": "Q124179",
+   "label": "Kiss",
+   "group": true
+  }
+ ],
+ "Q53602347": [
+  {
+   "performer": "Q170599",
+   "label": "Arctic Monkeys",
+   "group": true
+  }
+ ],
+ "Q55773334": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q607626": [
+  {
+   "performer": "Q641858",
+   "label": "Yeah Yeah Yeahs",
+   "group": true
+  }
+ ],
+ "Q753881": [
+  {
+   "performer": "Q742804",
+   "label": "TLC",
+   "group": true
+  }
+ ],
+ "Q80111": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q733931": [
+  {
+   "performer": "Q880318",
+   "label": "Black Ingvars",
+   "group": true
+  },
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q729317": [
+  {
+   "performer": "Q841042",
+   "label": "My Bloody Valentine",
+   "group": true
+  }
+ ],
+ "Q721559": [
+  {
+   "performer": "Q133405",
+   "label": "Bee Gees",
+   "group": true
+  }
+ ],
+ "Q735761": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q707034": [
+  {
+   "performer": "Q126826",
+   "label": "Aerosmith",
+   "group": true
+  }
+ ],
+ "Q627582": [
+  {
+   "performer": "Q174817",
+   "label": "Soundgarden",
+   "group": true
+  }
+ ],
+ "Q632342": [
+  {
+   "performer": "Q183048",
+   "label": "The Beach Boys",
+   "group": true
+  }
+ ],
+ "Q601631": [
+  {
+   "performer": "Q178095",
+   "label": "The Police",
+   "group": true
+  }
+ ],
+ "Q834969": [
+  {
+   "performer": "Q464749",
+   "label": "Journey",
+   "group": true
+  }
+ ],
+ "Q637068": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q830365": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q625383": [
+  {
+   "performer": "Q157448",
+   "label": "A-Teens",
+   "group": true
+  },
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  },
+  {
+   "performer": "Q189226",
+   "label": "Amanda Seyfried",
+   "group": false
+  },
+  {
+   "performer": "Q441279",
+   "label": "Pandora",
+   "group": false
+  },
+  {
+   "performer": "Q969376",
+   "label": "Siobhán McCarthy",
+   "group": false
+  },
+  {
+   "performer": "Q12003",
+   "label": "Cher",
+   "group": false
+  }
+ ],
+ "Q761937": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q919886": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q842176": [
+  {
+   "performer": "Q183048",
+   "label": "The Beach Boys",
+   "group": true
+  }
+ ],
+ "Q592382": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q592626": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q650265": [
+  {
+   "performer": "Q485820",
+   "label": "Blur",
+   "group": true
+  }
+ ],
+ "Q646791": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q638815": [
+  {
+   "performer": "Q483718",
+   "label": "Foo Fighters",
+   "group": true
+  }
+ ],
+ "Q908980": [
+  {
+   "performer": "Q183048",
+   "label": "The Beach Boys",
+   "group": true
+  }
+ ],
+ "Q870786": [
+  {
+   "performer": "Q157448",
+   "label": "A-Teens",
+   "group": true
+  },
+  {
+   "performer": "Q10668108",
+   "label": "Simons",
+   "group": true
+  },
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  },
+  {
+   "performer": "Q81520",
+   "label": "Pierce Brosnan",
+   "group": false
+  },
+  {
+   "performer": "Q16187266",
+   "label": "Louise Plowright",
+   "group": false
+  },
+  {
+   "performer": "Q873",
+   "label": "Q873",
+   "group": false
+  },
+  {
+   "performer": "Q12003",
+   "label": "Cher",
+   "group": false
+  }
+ ],
+ "Q913320": [
+  {
+   "performer": "Q153056",
+   "label": "Destiny's Child",
+   "group": true
+  }
+ ],
+ "Q901366": [
+  {
+   "performer": "Q2525354",
+   "label": "Bob Marley & The Wailers",
+   "group": true
+  }
+ ],
+ "Q6532404": [
+  {
+   "performer": "Q2294786",
+   "label": "Sly Fox",
+   "group": true
+  }
+ ],
+ "Q7208434": [
+  {
+   "performer": "Q2894589",
+   "label": "Bell Biv DeVoe",
+   "group": true
+  }
+ ],
+ "Q5966771": [
+  {
+   "performer": "Q1679412",
+   "label": "SWV",
+   "group": true
+  }
+ ],
+ "Q5977993": [
+  {
+   "performer": "Q1617129",
+   "label": "Hi-Five",
+   "group": true
+  }
+ ],
+ "Q7714306": [
+  {
+   "performer": "Q3571048",
+   "label": "Xscape",
+   "group": true
+  }
+ ],
+ "Q6925132": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q5976440": [
+  {
+   "performer": "Q1135315",
+   "label": "Survivor",
+   "group": true
+  }
+ ],
+ "Q7249807": [
+  {
+   "performer": "Q2445127",
+   "label": "Naked Eyes",
+   "group": true
+  }
+ ],
+ "Q6532256": [
+  {
+   "performer": "Q3121507",
+   "label": "Guy",
+   "group": true
+  }
+ ],
+ "Q7997165": [
+  {
+   "performer": "Q3571048",
+   "label": "Xscape",
+   "group": true
+  }
+ ],
+ "Q7883784": [
+  {
+   "performer": "Q3571048",
+   "label": "Xscape",
+   "group": true
+  }
+ ],
+ "Q7492108": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q7561181": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q5990992": [
+  {
+   "performer": "Q929683",
+   "label": "Brooks & Dunn",
+   "group": true
+  },
+  {
+   "performer": "Q229430",
+   "label": "Reba McEntire",
+   "group": false
+  }
+ ],
+ "Q7723470": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q7677691": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q7685000": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q6316086": [
+  {
+   "performer": "Q3571048",
+   "label": "Xscape",
+   "group": true
+  }
+ ],
+ "Q7782601": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q6090823": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q6091961": [
+  {
+   "performer": "Q420023",
+   "label": "Tony! Toni! Toné!",
+   "group": true
+  }
+ ],
+ "Q7962171": [
+  {
+   "performer": "Q1678447",
+   "label": "Jagged Edge",
+   "group": true
+  }
+ ],
+ "Q7094246": [
+  {
+   "performer": "Q841042",
+   "label": "My Bloody Valentine",
+   "group": true
+  }
+ ],
+ "Q7113450": [
+  {
+   "performer": "Q873413",
+   "label": "Daughtry",
+   "group": true
+  }
+ ],
+ "Q6691114": [
+  {
+   "performer": "Q276463",
+   "label": "The Psychedelic Furs",
+   "group": true
+  }
+ ],
+ "Q8056665": [
+  {
+   "performer": "Q1679412",
+   "label": "SWV",
+   "group": true
+  }
+ ],
+ "Q6671807": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q6843813": [
+  {
+   "performer": "Q1028918",
+   "label": "Camila",
+   "group": true
+  }
+ ],
+ "Q7012069": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q7091181": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  }
+ ],
+ "Q6802956": [
+  {
+   "performer": "Q910354",
+   "label": "Wisin & Yandel",
+   "group": true
+  },
+  {
+   "performer": "Q13894852",
+   "label": "Nesty",
+   "group": false
+  }
+ ],
+ "Q6878119": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q7977130": [
+  {
+   "performer": "Q1260713",
+   "label": "Dru Hill",
+   "group": true
+  }
+ ],
+ "Q7249816": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q6739022": [
+  {
+   "performer": "Q613838",
+   "label": "Inner Circle",
+   "group": true
+  },
+  {
+   "performer": "Q440676",
+   "label": "Blu Cantrell",
+   "group": false
+  }
+ ],
+ "Q6692571": [
+  {
+   "performer": "Q650374",
+   "label": "Loverboy",
+   "group": true
+  }
+ ],
+ "Q7744289": [
+  {
+   "performer": "Q483285",
+   "label": "My Chemical Romance",
+   "group": true
+  }
+ ],
+ "Q7859254": [
+  {
+   "performer": "Q182890",
+   "label": "Def Leppard",
+   "group": true
+  }
+ ],
+ "Q6807819": [
+  {
+   "performer": "Q1208723",
+   "label": "Diamond Rio",
+   "group": true
+  }
+ ],
+ "Q7855734": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q7284457": [
+  {
+   "performer": "Q1679412",
+   "label": "SWV",
+   "group": true
+  }
+ ],
+ "Q7249760": [
+  {
+   "performer": "Q1678447",
+   "label": "Jagged Edge",
+   "group": true
+  }
+ ],
+ "Q7812799": [
+  {
+   "performer": "Q1028918",
+   "label": "Camila",
+   "group": true
+  }
+ ],
+ "Q8057589": [
+  {
+   "performer": "Q142636",
+   "label": "The Chicks",
+   "group": true
+  }
+ ],
+ "Q8037349": [
+  {
+   "performer": "Q207706",
+   "label": "Eurythmics",
+   "group": true
+  }
+ ],
+ "Q5916801": [
+  {
+   "performer": "Q2357594",
+   "label": "Reik",
+   "group": true
+  }
+ ],
+ "Q7321912": [
+  {
+   "performer": "Q1430509",
+   "label": "Miami Sound Machine",
+   "group": true
+  },
+  {
+   "performer": "Q184697",
+   "label": "Gloria Estefan",
+   "group": false
+  }
+ ],
+ "Q5967089": [
+  {
+   "performer": "Q2140332",
+   "label": "Alabama",
+   "group": true
+  }
+ ],
+ "Q7458913": [
+  {
+   "performer": "Q910354",
+   "label": "Wisin & Yandel",
+   "group": true
+  }
+ ],
+ "Q7977445": [
+  {
+   "performer": "Q339671",
+   "label": "Next",
+   "group": true
+  },
+  {
+   "performer": "Q457622",
+   "label": "Deborah Cox",
+   "group": false
+  }
+ ],
+ "Q8056483": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q7092948": [
+  {
+   "performer": "Q1208723",
+   "label": "Diamond Rio",
+   "group": true
+  }
+ ],
+ "Q9292174": [
+  {
+   "performer": "Q308816",
+   "label": "Creed",
+   "group": true
+  }
+ ],
+ "Q9293883": [
+  {
+   "performer": "Q134969",
+   "label": "R.E.M.",
+   "group": true
+  }
+ ],
+ "Q60693916": [
+  {
+   "performer": "Q162586",
+   "label": "Dream Theater",
+   "group": true
+  }
+ ],
+ "Q62055223": [
+  {
+   "performer": "Q484427",
+   "label": "The Cure",
+   "group": true
+  }
+ ],
+ "Q64157868": [
+  {
+   "performer": "Q1777698",
+   "label": "Evanescence",
+   "group": true
+  }
+ ],
+ "Q64760272": [
+  {
+   "performer": "Q391348",
+   "label": "Imagine Dragons",
+   "group": true
+  },
+  {
+   "performer": "Q166164",
+   "label": "Elisa",
+   "group": false
+  }
+ ],
+ "Q85804232": [
+  {
+   "performer": "Q142701",
+   "label": "Pearl Jam",
+   "group": true
+  }
+ ],
+ "Q95082630": [
+  {
+   "performer": "Q774774",
+   "label": "Haken",
+   "group": true
+  }
+ ],
+ "Q9304239": [
+  {
+   "performer": "Q19057",
+   "label": "The Specials",
+   "group": true
+  }
+ ],
+ "Q951728": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q950748": [
+  {
+   "performer": "Q18233",
+   "label": "ABBA",
+   "group": true
+  }
+ ],
+ "Q910487": [
+  {
+   "performer": "Q11649",
+   "label": "Nirvana",
+   "group": true
+  },
+  {
+   "performer": "Q102317934",
+   "label": "Geneviève Racette",
+   "group": false
+  }
+ ],
+ "Q835013": [
+  {
+   "performer": "Q11895",
+   "label": "Guns N' Roses",
+   "group": true
+  }
+ ],
+ "Q832799": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q842168": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q843032": [
+  {
+   "performer": "Q11895",
+   "label": "Guns N' Roses",
+   "group": true
+  }
+ ],
+ "Q763311": [
+  {
+   "performer": "Q17140",
+   "label": "Backstreet Boys",
+   "group": true
+  }
+ ],
+ "Q729815": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q737257": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q739530": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q617040": [
+  {
+   "performer": "Q17140",
+   "label": "Backstreet Boys",
+   "group": true
+  }
+ ],
+ "Q607742": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q75397": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q939406": [
+  {
+   "performer": "Q121507",
+   "label": "Q121507",
+   "group": false
+  },
+  {
+   "performer": "Q239464",
+   "label": "Eve",
+   "group": false
+  }
+ ],
+ "Q935373": [
+  {
+   "performer": "Q121507",
+   "label": "Q121507",
+   "group": false
+  },
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  }
+ ],
+ "Q942781": [
+  {
+   "performer": "Q130311",
+   "label": "George Michael",
+   "group": false
+  }
+ ],
+ "Q930634": [
+  {
+   "performer": "Q131324",
+   "label": "Janet Jackson",
+   "group": false
+  }
+ ],
+ "Q654263": [
+  {
+   "performer": "Q131324",
+   "label": "Janet Jackson",
+   "group": false
+  }
+ ],
+ "Q593415": [
+  {
+   "performer": "Q150916",
+   "label": "Jon Bon Jovi",
+   "group": false
+  }
+ ],
+ "Q838274": [
+  {
+   "performer": "Q155412",
+   "label": "Toni Braxton",
+   "group": false
+  }
+ ],
+ "Q726178": [
+  {
+   "performer": "Q155412",
+   "label": "Toni Braxton",
+   "group": false
+  }
+ ],
+ "Q725966": [
+  {
+   "performer": "Q155412",
+   "label": "Toni Braxton",
+   "group": false
+  }
+ ],
+ "Q612069": [
+  {
+   "performer": "Q155412",
+   "label": "Toni Braxton",
+   "group": false
+  }
+ ],
+ "Q6521192": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  },
+  {
+   "performer": "Q297831",
+   "label": "Rick Ross",
+   "group": false
+  }
+ ],
+ "Q945932": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  },
+  {
+   "performer": "Q342447",
+   "label": "Jeezy",
+   "group": false
+  }
+ ],
+ "Q744297": [
+  {
+   "performer": "Q165911",
+   "label": "Usher",
+   "group": false
+  },
+  {
+   "performer": "Q193676",
+   "label": "Q193676",
+   "group": false
+  },
+  {
+   "performer": "Q294449",
+   "label": "Q294449",
+   "group": false
+  }
+ ],
+ "Q9006530": [
+  {
+   "performer": "Q168992",
+   "label": "Jessica Simpson",
+   "group": false
+  }
+ ],
+ "Q7897316": [
+  {
+   "performer": "Q171905",
+   "label": "Jamie Foxx",
+   "group": false
+  },
+  {
+   "performer": "Q193676",
+   "label": "Q193676",
+   "group": false
+  }
+ ],
+ "Q6316516": [
+  {
+   "performer": "Q177131",
+   "label": "Mario",
+   "group": false
+  }
+ ],
+ "Q5917583": [
+  {
+   "performer": "Q177131",
+   "label": "Mario",
+   "group": false
+  }
+ ],
+ "Q5985214": [
+  {
+   "performer": "Q179257",
+   "label": "Q179257",
+   "group": false
+  },
+  {
+   "performer": "Q361683",
+   "label": "Omarion",
+   "group": false
+  }
+ ],
+ "Q7130346": [
+  {
+   "performer": "Q183092",
+   "label": "Merle Haggard",
+   "group": false
+  },
+  {
+   "performer": "Q206112",
+   "label": "Willie Nelson",
+   "group": false
+  }
+ ],
+ "Q73532607": [
+  {
+   "performer": "Q184697",
+   "label": "Gloria Estefan",
+   "group": false
+  }
+ ],
+ "Q5903634": [
+  {
+   "performer": "Q184697",
+   "label": "Gloria Estefan",
+   "group": false
+  }
+ ],
+ "Q7491885": [
+  {
+   "performer": "Q188426",
+   "label": "Roy Orbison",
+   "group": false
+  }
+ ],
+ "Q65090712": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q7773896": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  },
+  {
+   "performer": "Q221155",
+   "label": "Q221155",
+   "group": false
+  },
+  {
+   "performer": "Q320190",
+   "label": "Q320190",
+   "group": false
+  }
+ ],
+ "Q6506134": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q913550": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  },
+  {
+   "performer": "Q7160153",
+   "label": "Peedi Peedi",
+   "group": false
+  }
+ ],
+ "Q770482": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q663477": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q644657": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q596384": [
+  {
+   "performer": "Q193710",
+   "label": "Ne-Yo",
+   "group": false
+  }
+ ],
+ "Q7782798": [
+  {
+   "performer": "Q206112",
+   "label": "Willie Nelson",
+   "group": false
+  }
+ ],
+ "Q7457459": [
+  {
+   "performer": "Q206112",
+   "label": "Willie Nelson",
+   "group": false
+  },
+  {
+   "performer": "Q544387",
+   "label": "Ray Charles",
+   "group": false
+  }
+ ],
+ "Q7997497": [
+  {
+   "performer": "Q229430",
+   "label": "Reba McEntire",
+   "group": false
+  }
+ ],
+ "Q7990964": [
+  {
+   "performer": "Q229430",
+   "label": "Reba McEntire",
+   "group": false
+  }
+ ],
+ "Q7745914": [
+  {
+   "performer": "Q229430",
+   "label": "Reba McEntire",
+   "group": false
+  }
+ ],
+ "Q7502983": [
+  {
+   "performer": "Q229445",
+   "label": "Robyn",
+   "group": false
+  }
+ ],
+ "Q66624629": [
+  {
+   "performer": "Q230445",
+   "label": "Sara Bareilles",
+   "group": false
+  }
+ ],
+ "Q7491839": [
+  {
+   "performer": "Q231259",
+   "label": "Billy Ray Cyrus",
+   "group": false
+  }
+ ],
+ "Q791987": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  }
+ ],
+ "Q775248": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  }
+ ],
+ "Q730246": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  }
+ ],
+ "Q729810": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  }
+ ],
+ "Q592446": [
+  {
+   "performer": "Q231487",
+   "label": "Monica",
+   "group": false
+  }
+ ],
+ "Q738474": [
+  {
+   "performer": "Q232085",
+   "label": "Lil Mama",
+   "group": false
+  },
+  {
+   "performer": "Q30449",
+   "label": "Avril Lavigne",
+   "group": false
+  }
+ ],
+ "Q8057131": [
+  {
+   "performer": "Q233229",
+   "label": "Keyshia Cole",
+   "group": false
+  }
+ ],
+ "Q5978775": [
+  {
+   "performer": "Q233229",
+   "label": "Keyshia Cole",
+   "group": false
+  }
+ ],
+ "Q7876216": [
+  {
+   "performer": "Q233541",
+   "label": "Lisa Lopes",
+   "group": false
+  },
+  {
+   "performer": "Q1241173",
+   "label": "Donell Jones",
+   "group": false
+  }
+ ],
+ "Q890210": [
+  {
+   "performer": "Q239464",
+   "label": "Eve",
+   "group": false
+  },
+  {
+   "performer": "Q483379",
+   "label": "Gwen Stefani",
+   "group": false
+  }
+ ],
+ "Q7003938": [
+  {
+   "performer": "Q251287",
+   "label": "Waylon Jennings",
+   "group": false
+  }
+ ],
+ "Q5978230": [
+  {
+   "performer": "Q256732",
+   "label": "Martina McBride",
+   "group": false
+  }
+ ],
+ "Q7142763": [
+  {
+   "performer": "Q270765",
+   "label": "Mary Chapin Carpenter",
+   "group": false
+  }
+ ],
+ "Q8056742": [
+  {
+   "performer": "Q302860",
+   "label": "Aaron Tippin",
+   "group": false
+  }
+ ],
+ "Q6546056": [
+  {
+   "performer": "Q310580",
+   "label": "David Cook",
+   "group": false
+  }
+ ],
+ "Q7236543": [
+  {
+   "performer": "Q311306",
+   "label": "Luther Vandross",
+   "group": false
+  }
+ ],
+ "Q7062070": [
+  {
+   "performer": "Q316454",
+   "label": "Don Henley",
+   "group": false
+  }
+ ],
+ "Q6407672": [
+  {
+   "performer": "Q320264",
+   "label": "Clint Black",
+   "group": false
+  }
+ ],
+ "Q62592310": [
+  {
+   "performer": "Q335629",
+   "label": "Devin Townsend",
+   "group": false
+  }
+ ],
+ "Q5966538": [
+  {
+   "performer": "Q346036",
+   "label": "Keith Whitley",
+   "group": false
+  }
+ ],
+ "Q7311689": [
+  {
+   "performer": "Q380927",
+   "label": "Alan Jackson",
+   "group": false
+  },
+  {
+   "performer": "Q26923588",
+   "label": "Donna Taggart",
+   "group": false
+  }
+ ],
+ "Q6658952": [
+  {
+   "performer": "Q380927",
+   "label": "Alan Jackson",
+   "group": false
+  }
+ ],
+ "Q6649151": [
+  {
+   "performer": "Q380927",
+   "label": "Alan Jackson",
+   "group": false
+  }
+ ],
+ "Q6090039": [
+  {
+   "performer": "Q380927",
+   "label": "Alan Jackson",
+   "group": false
+  },
+  {
+   "performer": "Q726071",
+   "label": "Jimmy Buffett",
+   "group": false
+  }
+ ],
+ "Q6532455": [
+  {
+   "performer": "Q434682",
+   "label": "Deniece Williams",
+   "group": false
+  }
+ ],
+ "Q940753": [
+  {
+   "performer": "Q451958",
+   "label": "Jadakiss",
+   "group": false
+  },
+  {
+   "performer": "Q728494",
+   "label": "Styles P",
+   "group": false
+  },
+  {
+   "performer": "Q40715",
+   "label": "Jennifer Lopez",
+   "group": false
+  }
+ ],
+ "Q7773874": [
+  {
+   "performer": "Q462289",
+   "label": "Rosanne Cash",
+   "group": false
+  }
+ ],
+ "Q7457510": [
+  {
+   "performer": "Q462289",
+   "label": "Rosanne Cash",
+   "group": false
+  }
+ ],
+ "Q7379676": [
+  {
+   "performer": "Q462289",
+   "label": "Rosanne Cash",
+   "group": false
+  }
+ ],
+ "Q5976932": [
+  {
+   "performer": "Q462289",
+   "label": "Rosanne Cash",
+   "group": false
+  }
+ ],
+ "Q7859246": [
+  {
+   "performer": "Q463983",
+   "label": "Tanya Tucker",
+   "group": false
+  }
+ ],
+ "Q7491896": [
+  {
+   "performer": "Q464251",
+   "label": "Trisha Yearwood",
+   "group": false
+  }
+ ],
+ "Q7711074": [
+  {
+   "performer": "Q467526",
+   "label": "Kenny Chesney",
+   "group": false
+  }
+ ],
+ "Q7492073": [
+  {
+   "performer": "Q467526",
+   "label": "Kenny Chesney",
+   "group": false
+  }
+ ],
+ "Q7491809": [
+  {
+   "performer": "Q467526",
+   "label": "Kenny Chesney",
+   "group": false
+  }
+ ],
+ "Q6803074": [
+  {
+   "performer": "Q467526",
+   "label": "Kenny Chesney",
+   "group": false
+  }
+ ],
+ "Q5917705": [
+  {
+   "performer": "Q467526",
+   "label": "Kenny Chesney",
+   "group": false
+  }
+ ],
+ "Q868569": [
+  {
+   "performer": "Q483507",
+   "label": "Kelly Clarkson",
+   "group": false
+  }
+ ],
+ "Q7977514": [
+  {
+   "performer": "Q509285",
+   "label": "Deana Carter",
+   "group": false
+  }
+ ],
+ "Q7622507": [
+  {
+   "performer": "Q509285",
+   "label": "Deana Carter",
+   "group": false
+  }
+ ],
+ "Q7621540": [
+  {
+   "performer": "Q558582",
+   "label": "Ronnie Milsap",
+   "group": false
+  }
+ ],
+ "Q7502655": [
+  {
+   "performer": "Q559819",
+   "label": "Toby Keith",
+   "group": false
+  }
+ ],
+ "Q944096": [
+  {
+   "performer": "Q708231",
+   "label": "Baby Bash",
+   "group": false
+  },
+  {
+   "performer": "Q3298809",
+   "label": "Frankie J",
+   "group": false
+  }
+ ],
+ "Q846802": [
+  {
+   "performer": "Q781634",
+   "label": "Steve Earle",
+   "group": false
+  }
+ ],
+ "Q7882897": [
+  {
+   "performer": "Q908933",
+   "label": "Donna Summer",
+   "group": false
+  }
+ ],
+ "Q5979050": [
+  {
+   "performer": "Q924232",
+   "label": "Vince Gill",
+   "group": false
+  }
+ ],
+ "Q7242296": [
+  {
+   "performer": "Q1378643",
+   "label": "Maxwell",
+   "group": false
+  }
+ ],
+ "Q6545526": [
+  {
+   "performer": "Q1378643",
+   "label": "Maxwell",
+   "group": false
+  }
+ ],
+ "Q6944772": [
+  {
+   "performer": "Q2393563",
+   "label": "Johnny Gill",
+   "group": false
+  }
+ ],
+ "Q8034547": [
+  {
+   "performer": "Q2748803",
+   "label": "Iggy Azalea",
+   "group": false
+  }
+ ],
+ "Q6818175": [
+  {
+   "performer": "Q6363428",
+   "label": "Pebbles",
+   "group": false
+  }
+ ],
+ "Q67152460": [
+  {
+   "performer": "Q1545",
+   "label": "Cyndi Lauper",
+   "group": false
+  }
+ ],
+ "Q668071": [
+  {
+   "performer": "Q2831",
+   "label": "Michael Jackson",
+   "group": false
+  }
+ ],
+ "Q614076": [
+  {
+   "performer": "Q6096",
+   "label": "Snoop Dogg",
+   "group": false
+  },
+  {
+   "performer": "Q14313",
+   "label": "Q14313",
+   "group": false
+  }
+ ],
+ "Q788139": [
+  {
+   "performer": "Q11617",
+   "label": "Aaliyah",
+   "group": false
+  }
+ ],
+ "Q869842": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q753945": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q683419": [
+  {
+   "performer": "Q11975",
+   "label": "Britney Spears",
+   "group": false
+  }
+ ],
+ "Q857189": [
+  {
+   "performer": "Q30449",
+   "label": "Avril Lavigne",
+   "group": false
+  }
+ ],
+ "Q65115254": [
+  {
+   "performer": "Q34389",
+   "label": "Whitney Houston",
+   "group": false
+  }
+ ],
+ "Q966129": [
+  {
+   "performer": "Q486688",
+   "label": "Mötley Crüe",
+   "group": true
+  }
+ ],
+ "Q989857": [
+  {
+   "performer": "Q1052139",
+   "label": "The Roots",
+   "group": true
+  }
+ ],
+ "Q959812": [
+  {
+   "performer": "Q1299",
+   "label": "The Beatles",
+   "group": true
+  }
+ ],
+ "Q970993": [
+  {
+   "performer": "Q10708",
+   "label": "Red Hot Chili Peppers",
+   "group": true
+  }
+ ],
+ "Q953100": [
+  {
+   "performer": "Q155412",
+   "label": "Toni Braxton",
+   "group": false
+  }
+ ],
+ "Q98847": [
+  {
+   "performer": "Q2831",
+   "label": "Michael Jackson",
+   "group": false
+  }
+ ]
+}

@@ -1,0 +1,44 @@
+export type GuideFilter =
+  | 'all'
+  | 'retrotv'
+  | 'dormant'
+  | 'favourites'
+  | 'user'
+  | 'main'
+  | 'films'
+  | 'entertainment'
+  | 'sport'
+  | 'history'
+  | 'music'
+  | 'business'
+  | 'lifestyle'
+  | 'specialist'
+  | 'live-world'
+  | 'news'
+  | 'radio'
+  | 'documentary'
+  | 'geography'
+  | 'law'
+  | 'science'
+
+export type MultiviewMode = '1' | '2' | '4' | '9'
+
+export interface UserPreferences {
+  version: 1 | 2
+  lastChannelNumber: number
+  previousChannelNumber: number | null
+  /** 0–100 */
+  volume: number
+  muted: boolean
+  favouriteChannelNumbers: number[]
+  guideFilter: GuideFilter
+  /** Share of the desktop width given to the picture while the guide is docked. */
+  guideSplit: number
+  multiviewMode: MultiviewMode
+  audioFocusIndex: number
+  multiviewChannels: number[]
+  /** YouTube captions on the programmes that provide them; off unless the viewer turns them on. */
+  subtitles: boolean
+  /** Idle minutes before RetroTV stops streaming; 0 is off. */
+  sleepMinutes: number
+}

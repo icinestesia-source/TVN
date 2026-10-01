@@ -1,0 +1,6947 @@
+{
+  "start": "2026-09-28",
+  "days": 7,
+  "channels": [
+    {
+      "number": 500,
+      "name": "Music",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 674,
+      "poolHours": 85,
+      "poolTopSource": 0.79,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 663,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "7DN2z_mJ20U",
+          "count": 4,
+          "title": "Cullen Omori - Cinnamon (Live on KEXP)"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_kexp",
+            "hours": 130.54,
+            "share": 0.78
+          },
+          {
+            "key": "src_vevo",
+            "hours": 37.37,
+            "share": 0.22
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 586,
+        "top": [
+          {
+            "key": "vevo",
+            "hours": 9.29,
+            "share": 0.06
+          },
+          {
+            "key": "strand of oaks",
+            "hours": 2.87,
+            "share": 0.02
+          },
+          {
+            "key": "src_vevo",
+            "hours": 2.74,
+            "share": 0.02
+          },
+          {
+            "key": "angel olsen",
+            "hours": 2.2,
+            "share": 0.01
+          },
+          {
+            "key": "idles",
+            "hours": 2.19,
+            "share": 0.01
+          },
+          {
+            "key": "gogol bordello",
+            "hours": 2.18,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 501,
+      "name": "Rock",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 229,
+      "poolHours": 294.5,
+      "poolTopSource": 1,
+      "aired7d": 167.12,
+      "fallback7d": 0.88,
+      "uniqueAired": 129,
+      "maxAirings": 9,
+      "mostAired": [
+        {
+          "id": "I6AHU4sUpD4",
+          "count": 9,
+          "title": "5 Seconds of Summer - Rock Out With Your Socks Out (Vevo Tour Exposed)"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_rockpalast",
+            "hours": 164.59,
+            "share": 0.98
+          },
+          {
+            "key": "src_vevo",
+            "hours": 2.54,
+            "share": 0.02
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 127,
+        "top": [
+          {
+            "key": "dritte wahl live",
+            "hours": 3.03,
+            "share": 0.02
+          },
+          {
+            "key": "new model army live (ii)",
+            "hours": 2.51,
+            "share": 0.01
+          },
+          {
+            "key": "new model army live",
+            "hours": 2.35,
+            "share": 0.01
+          },
+          {
+            "key": "nektar live",
+            "hours": 1.98,
+            "share": 0.01
+          },
+          {
+            "key": "wacken festival 2009 live",
+            "hours": 1.98,
+            "share": 0.01
+          },
+          {
+            "key": "madrugada live",
+            "hours": 1.98,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 502,
+      "name": "Alternative",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 819,
+      "poolHours": 113.1,
+      "poolTopSource": 0.42,
+      "aired7d": 167.87,
+      "fallback7d": 0.13,
+      "uniqueAired": 798,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "h2ObYOA8bd0",
+          "count": 4,
+          "title": "Thom Yorke - From the Basement"
+        }
+      ],
+      "sources": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_radiohead",
+            "hours": 73.1,
+            "share": 0.44
+          },
+          {
+            "key": "src_smashing_pumpkins",
+            "hours": 33.76,
+            "share": 0.2
+          },
+          {
+            "key": "src_foo_fighters",
+            "hours": 29.94,
+            "share": 0.18
+          },
+          {
+            "key": "src_rem",
+            "hours": 24.47,
+            "share": 0.15
+          },
+          {
+            "key": "src_rhcp",
+            "hours": 6.6,
+            "share": 0.04
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 83,
+        "top": [
+          {
+            "key": "radiohead",
+            "hours": 67.11,
+            "share": 0.4
+          },
+          {
+            "key": "foo fighters",
+            "hours": 21.32,
+            "share": 0.13
+          },
+          {
+            "key": "r.e.m.",
+            "hours": 20.09,
+            "share": 0.12
+          },
+          {
+            "key": "src_smashing_pumpkins",
+            "hours": 10.41,
+            "share": 0.06
+          },
+          {
+            "key": "a farewell to zero",
+            "hours": 6.64,
+            "share": 0.04
+          },
+          {
+            "key": "the smashing pumpkins",
+            "hours": 6.58,
+            "share": 0.04
+          }
+        ]
+      }
+    },
+    {
+      "number": 503,
+      "name": "Indie",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 338,
+      "poolHours": 56.6,
+      "poolTopSource": 1,
+      "aired7d": 167.74,
+      "fallback7d": 0.26,
+      "uniqueAired": 336,
+      "maxAirings": 6,
+      "mostAired": [
+        {
+          "id": "Zugkmpjwg0A",
+          "count": 6,
+          "title": "Sub Pop For The Record with Deep Sea Diver"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_sub_pop",
+            "hours": 167.74,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 76,
+        "top": [
+          {
+            "key": "iron",
+            "hours": 15.27,
+            "share": 0.09
+          },
+          {
+            "key": "pissed jeans",
+            "hours": 12.5,
+            "share": 0.07
+          },
+          {
+            "key": "father john misty",
+            "hours": 10,
+            "share": 0.06
+          },
+          {
+            "key": "hot snakes",
+            "hours": 7.86,
+            "share": 0.05
+          },
+          {
+            "key": "the afghan whigs",
+            "hours": 7.84,
+            "share": 0.05
+          },
+          {
+            "key": "rolling blackouts coastal fever",
+            "hours": 6.15,
+            "share": 0.04
+          }
+        ]
+      }
+    },
+    {
+      "number": 504,
+      "name": "Metal",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 216,
+      "poolHours": 60.8,
+      "poolTopSource": 1,
+      "aired7d": 167.69,
+      "fallback7d": 0.31,
+      "uniqueAired": 216,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "I4D97QaWe2E",
+          "count": 4,
+          "title": "FLESHGOD APOCALYPSE - Live Fan Q&A with Francesco Paoli, Paolo Rossi, Francesco Ferrini"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_nuclear_blast",
+            "hours": 167.69,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 86,
+        "top": [
+          {
+            "key": "src_nuclear_blast",
+            "hours": 54.44,
+            "share": 0.32
+          },
+          {
+            "key": "dimmu borgir",
+            "hours": 21.78,
+            "share": 0.13
+          },
+          {
+            "key": "blind guardian",
+            "hours": 14.93,
+            "share": 0.09
+          },
+          {
+            "key": "fleshgod apocalypse",
+            "hours": 6.71,
+            "share": 0.04
+          },
+          {
+            "key": "pain",
+            "hours": 5.41,
+            "share": 0.03
+          },
+          {
+            "key": "as i lay dying",
+            "hours": 4.91,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 505,
+      "name": "Punk",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 301,
+      "poolHours": 38.1,
+      "poolTopSource": 1,
+      "aired7d": 167.84,
+      "fallback7d": 0.16,
+      "uniqueAired": 300,
+      "maxAirings": 65,
+      "mostAired": [
+        {
+          "id": "CtvxPhXB50Y",
+          "count": 65,
+          "title": "Remo Drive - \"Dead Man\" (Full Album Stream)"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_epitaph",
+            "hours": 167.69,
+            "share": 1
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.15,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 70,
+        "top": [
+          {
+            "key": "src_epitaph",
+            "hours": 40.38,
+            "share": 0.24
+          },
+          {
+            "key": "converge",
+            "hours": 13.11,
+            "share": 0.08
+          },
+          {
+            "key": "architects",
+            "hours": 11.23,
+            "share": 0.07
+          },
+          {
+            "key": "danny elfman",
+            "hours": 7.76,
+            "share": 0.05
+          },
+          {
+            "key": "remo drive",
+            "hours": 7.23,
+            "share": 0.04
+          },
+          {
+            "key": "parkway drive",
+            "hours": 7.11,
+            "share": 0.04
+          }
+        ]
+      }
+    },
+    {
+      "number": 506,
+      "name": "Grunge",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 696,
+      "poolHours": 58.6,
+      "poolTopSource": 0.32,
+      "aired7d": 167.93,
+      "fallback7d": 0.07,
+      "uniqueAired": 688,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "HpCfvrQ5sPg",
+          "count": 4,
+          "title": "Gone - Late Show With David Letterman - Pearl Jam"
+        }
+      ],
+      "sources": {
+        "distinct": 18,
+        "top": [
+          {
+            "key": "src_pearl_jam",
+            "hours": 53.42,
+            "share": 0.32
+          },
+          {
+            "key": "src_alice_in_chains",
+            "hours": 21.36,
+            "share": 0.13
+          },
+          {
+            "key": "src_mudhoney",
+            "hours": 17.54,
+            "share": 0.1
+          },
+          {
+            "key": "src_nirvana",
+            "hours": 16.67,
+            "share": 0.1
+          },
+          {
+            "key": "src_soundgarden",
+            "hours": 13.24,
+            "share": 0.08
+          },
+          {
+            "key": "src_stone_temple_pilots",
+            "hours": 9.71,
+            "share": 0.06
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 149,
+        "top": [
+          {
+            "key": "alice in chains",
+            "hours": 20.17,
+            "share": 0.12
+          },
+          {
+            "key": "nirvana",
+            "hours": 17.35,
+            "share": 0.1
+          },
+          {
+            "key": "pearl jam",
+            "hours": 15,
+            "share": 0.09
+          },
+          {
+            "key": "mudhoney",
+            "hours": 11.97,
+            "share": 0.07
+          },
+          {
+            "key": "soundgarden",
+            "hours": 8.4,
+            "share": 0.05
+          },
+          {
+            "key": "mad season",
+            "hours": 7.96,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 507,
+      "name": "Britpop",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 419,
+      "poolHours": 48.9,
+      "poolTopSource": 0.38,
+      "aired7d": 167.96,
+      "fallback7d": 0.04,
+      "uniqueAired": 415,
+      "maxAirings": 64,
+      "mostAired": [
+        {
+          "id": "1NTPbPYM-FQ",
+          "count": 64,
+          "title": "Blur - Bang (Official Music Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 8,
+        "top": [
+          {
+            "key": "src_suede",
+            "hours": 59.1,
+            "share": 0.35
+          },
+          {
+            "key": "src_manics",
+            "hours": 25.71,
+            "share": 0.15
+          },
+          {
+            "key": "src_oasis",
+            "hours": 23.99,
+            "share": 0.14
+          },
+          {
+            "key": "src_blur",
+            "hours": 18.88,
+            "share": 0.11
+          },
+          {
+            "key": "src_manics_vevo",
+            "hours": 14.21,
+            "share": 0.08
+          },
+          {
+            "key": "src_supergrass",
+            "hours": 10.67,
+            "share": 0.06
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 13,
+        "top": [
+          {
+            "key": "suede",
+            "hours": 56.76,
+            "share": 0.34
+          },
+          {
+            "key": "manic street preachers",
+            "hours": 37.11,
+            "share": 0.22
+          },
+          {
+            "key": "oasis",
+            "hours": 23.99,
+            "share": 0.14
+          },
+          {
+            "key": "blur",
+            "hours": 17.08,
+            "share": 0.1
+          },
+          {
+            "key": "supergrass",
+            "hours": 10.47,
+            "share": 0.06
+          },
+          {
+            "key": "the verve",
+            "hours": 8.08,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 508,
+      "name": "New Wave",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 266,
+      "poolHours": 42,
+      "poolTopSource": 0.39,
+      "aired7d": 167.9,
+      "fallback7d": 0.1,
+      "uniqueAired": 264,
+      "maxAirings": 60,
+      "mostAired": [
+        {
+          "id": "kO2jW4_oze4",
+          "count": 60,
+          "title": "New Order - Sub-culture (Live at Alexandra Palace 2018)"
+        }
+      ],
+      "sources": {
+        "distinct": 8,
+        "top": [
+          {
+            "key": "src_new_order",
+            "hours": 66.91,
+            "share": 0.4
+          },
+          {
+            "key": "src_duran_duran",
+            "hours": 53.22,
+            "share": 0.32
+          },
+          {
+            "key": "src_depeche_mode",
+            "hours": 24.34,
+            "share": 0.14
+          },
+          {
+            "key": "src_tears_for_fears_vevo",
+            "hours": 7.51,
+            "share": 0.04
+          },
+          {
+            "key": "src_human_league",
+            "hours": 5.3,
+            "share": 0.03
+          },
+          {
+            "key": "src_vevo",
+            "hours": 4.11,
+            "share": 0.02
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 34,
+        "top": [
+          {
+            "key": "duran duran",
+            "hours": 43.66,
+            "share": 0.26
+          },
+          {
+            "key": "src_new_order",
+            "hours": 31.92,
+            "share": 0.19
+          },
+          {
+            "key": "new order",
+            "hours": 31.6,
+            "share": 0.19
+          },
+          {
+            "key": "depeche mode",
+            "hours": 19.24,
+            "share": 0.11
+          },
+          {
+            "key": "src_duran_duran",
+            "hours": 9.56,
+            "share": 0.06
+          },
+          {
+            "key": "tears for fears",
+            "hours": 7.51,
+            "share": 0.04
+          }
+        ]
+      }
+    },
+    {
+      "number": 509,
+      "name": "Goth",
+      "status": "PLAYABLE",
+      "programmes": 141,
+      "poolHours": 17.8,
+      "poolTopSource": 0.57,
+      "aired7d": 167.92,
+      "fallback7d": 0.08,
+      "uniqueAired": 141,
+      "maxAirings": 67,
+      "mostAired": [
+        {
+          "id": "QXSQ8vt_EBc",
+          "count": 67,
+          "title": "She Wants Revenge - Must Be the One"
+        }
+      ],
+      "sources": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_the_cure",
+            "hours": 91.34,
+            "share": 0.54
+          },
+          {
+            "key": "src_the_cult",
+            "hours": 52.82,
+            "share": 0.31
+          },
+          {
+            "key": "src_siouxsie_vevo",
+            "hours": 15.23,
+            "share": 0.09
+          },
+          {
+            "key": "src_she_wants_revenge_vevo",
+            "hours": 7.86,
+            "share": 0.05
+          },
+          {
+            "key": "src_bauhaus",
+            "hours": 0.67,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 9,
+        "top": [
+          {
+            "key": "the cure",
+            "hours": 88.41,
+            "share": 0.53
+          },
+          {
+            "key": "the cult",
+            "hours": 37.59,
+            "share": 0.22
+          },
+          {
+            "key": "siouxsie and the banshees",
+            "hours": 15.23,
+            "share": 0.09
+          },
+          {
+            "key": "src_the_cult",
+            "hours": 14.15,
+            "share": 0.08
+          },
+          {
+            "key": "she wants revenge",
+            "hours": 7.86,
+            "share": 0.05
+          },
+          {
+            "key": "src_the_cure",
+            "hours": 2.93,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 510,
+      "name": "Shoegaze",
+      "status": "PLAYABLE",
+      "programmes": 136,
+      "poolHours": 13.9,
+      "poolTopSource": 0.46,
+      "aired7d": 167.82,
+      "fallback7d": 0.18,
+      "uniqueAired": 136,
+      "maxAirings": 22,
+      "mostAired": [
+        {
+          "id": "7h_t8a1fXKs",
+          "count": 22,
+          "title": "Ride - Walk On Water (Mark Radcliffe live session)"
+        }
+      ],
+      "sources": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_ride",
+            "hours": 80.32,
+            "share": 0.48
+          },
+          {
+            "key": "src_diiv",
+            "hours": 37.94,
+            "share": 0.23
+          },
+          {
+            "key": "src_my_bloody_valentine",
+            "hours": 22.42,
+            "share": 0.13
+          },
+          {
+            "key": "src_slowdive",
+            "hours": 16.44,
+            "share": 0.1
+          },
+          {
+            "key": "src_cocteau_twins",
+            "hours": 10.7,
+            "share": 0.06
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 29,
+        "top": [
+          {
+            "key": "ride",
+            "hours": 65.58,
+            "share": 0.39
+          },
+          {
+            "key": "slowdive",
+            "hours": 16.44,
+            "share": 0.1
+          },
+          {
+            "key": "diiv",
+            "hours": 14.27,
+            "share": 0.09
+          },
+          {
+            "key": "my bloody valentine",
+            "hours": 12.8,
+            "share": 0.08
+          },
+          {
+            "key": "cocteau twins",
+            "hours": 10.7,
+            "share": 0.06
+          },
+          {
+            "key": "src_diiv",
+            "hours": 10.24,
+            "share": 0.06
+          }
+        ]
+      }
+    },
+    {
+      "number": 511,
+      "name": "Progressive",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 298,
+      "poolHours": 55.2,
+      "poolTopSource": 1,
+      "aired7d": 167.78,
+      "fallback7d": 0.22,
+      "uniqueAired": 296,
+      "maxAirings": 9,
+      "mostAired": [
+        {
+          "id": "nr8I0iNGojw",
+          "count": 9,
+          "title": "Jonas Lindberg & The Other Sides - Meet the Band"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_insideout",
+            "hours": 167.78,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 75,
+        "top": [
+          {
+            "key": "src_insideout",
+            "hours": 13.41,
+            "share": 0.08
+          },
+          {
+            "key": "steve hackett",
+            "hours": 8.05,
+            "share": 0.05
+          },
+          {
+            "key": "dream theater",
+            "hours": 7.05,
+            "share": 0.04
+          },
+          {
+            "key": "riverside",
+            "hours": 6.62,
+            "share": 0.04
+          },
+          {
+            "key": "haken",
+            "hours": 6.6,
+            "share": 0.04
+          },
+          {
+            "key": "lonely robot",
+            "hours": 5.78,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 512,
+      "name": "Classic Rock",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 467,
+      "poolHours": 94.7,
+      "poolTopSource": 0.27,
+      "aired7d": 167.83,
+      "fallback7d": 0.17,
+      "uniqueAired": 456,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "IT614fWNoWU",
+          "count": 4,
+          "title": "1969-01-17 | The Jimi Hendrix Experience: Live In Frankfurt '69"
+        }
+      ],
+      "sources": {
+        "distinct": 9,
+        "top": [
+          {
+            "key": "src_jimi_hendrix",
+            "hours": 53.44,
+            "share": 0.32
+          },
+          {
+            "key": "src_pink_floyd",
+            "hours": 27.17,
+            "share": 0.16
+          },
+          {
+            "key": "src_bruce_springsteen",
+            "hours": 22.44,
+            "share": 0.13
+          },
+          {
+            "key": "src_tom_petty",
+            "hours": 20.36,
+            "share": 0.12
+          },
+          {
+            "key": "src_eric_clapton",
+            "hours": 14.89,
+            "share": 0.09
+          },
+          {
+            "key": "src_led_zeppelin",
+            "hours": 12.91,
+            "share": 0.08
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 53,
+        "top": [
+          {
+            "key": "pink floyd",
+            "hours": 21.57,
+            "share": 0.13
+          },
+          {
+            "key": "led zeppelin",
+            "hours": 12.91,
+            "share": 0.08
+          },
+          {
+            "key": "bruce springsteen",
+            "hours": 12.7,
+            "share": 0.08
+          },
+          {
+            "key": "src_bruce_springsteen",
+            "hours": 9.74,
+            "share": 0.06
+          },
+          {
+            "key": "eric clapton",
+            "hours": 9.37,
+            "share": 0.06
+          },
+          {
+            "key": "jimi hendrix",
+            "hours": 8.93,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 513,
+      "name": "Hard Rock",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 1208,
+      "poolHours": 117.8,
+      "poolTopSource": 0.28,
+      "aired7d": 167.81,
+      "fallback7d": 0.19,
+      "uniqueAired": 1174,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "V5nG2HNjqAY",
+          "count": 4,
+          "title": "KISSONLINE EXCLUSIVE: Tommy and Eric solos in Prince George"
+        }
+      ],
+      "sources": {
+        "distinct": 9,
+        "top": [
+          {
+            "key": "src_def_leppard",
+            "hours": 45,
+            "share": 0.27
+          },
+          {
+            "key": "src_kiss",
+            "hours": 38.45,
+            "share": 0.23
+          },
+          {
+            "key": "src_bon_jovi",
+            "hours": 23.09,
+            "share": 0.14
+          },
+          {
+            "key": "src_acdc",
+            "hours": 21.02,
+            "share": 0.13
+          },
+          {
+            "key": "src_aerosmith",
+            "hours": 17.59,
+            "share": 0.1
+          },
+          {
+            "key": "src_guns_n_roses",
+            "hours": 12.64,
+            "share": 0.08
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 109,
+        "top": [
+          {
+            "key": "def leppard",
+            "hours": 33.47,
+            "share": 0.2
+          },
+          {
+            "key": "src_kiss",
+            "hours": 22.86,
+            "share": 0.14
+          },
+          {
+            "key": "ac/dc",
+            "hours": 19.92,
+            "share": 0.12
+          },
+          {
+            "key": "bon jovi",
+            "hours": 12.79,
+            "share": 0.08
+          },
+          {
+            "key": "kiss",
+            "hours": 11.57,
+            "share": 0.07
+          },
+          {
+            "key": "guns n' roses",
+            "hours": 9.61,
+            "share": 0.06
+          }
+        ]
+      }
+    },
+    {
+      "number": 514,
+      "name": "Blues",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 284,
+      "poolHours": 59.2,
+      "poolTopSource": 0.57,
+      "aired7d": 167.85,
+      "fallback7d": 0.15,
+      "uniqueAired": 278,
+      "maxAirings": 5,
+      "mostAired": [
+        {
+          "id": "qvOMYu5EeHs",
+          "count": 5,
+          "title": "B.B. King - Nobody Loves Me But My Mother (Live)"
+        }
+      ],
+      "sources": {
+        "distinct": 6,
+        "top": [
+          {
+            "key": "src_joe_bonamassa",
+            "hours": 101.43,
+            "share": 0.6
+          },
+          {
+            "key": "src_beth_hart",
+            "hours": 21.03,
+            "share": 0.13
+          },
+          {
+            "key": "src_bb_king",
+            "hours": 17.61,
+            "share": 0.1
+          },
+          {
+            "key": "src_gary_clark_jr",
+            "hours": 14.94,
+            "share": 0.09
+          },
+          {
+            "key": "src_keb_mo",
+            "hours": 12.24,
+            "share": 0.07
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.61,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 47,
+        "top": [
+          {
+            "key": "src_joe_bonamassa",
+            "hours": 58.86,
+            "share": 0.35
+          },
+          {
+            "key": "beth hart",
+            "hours": 15.3,
+            "share": 0.09
+          },
+          {
+            "key": "joe bonamassa official",
+            "hours": 13.62,
+            "share": 0.08
+          },
+          {
+            "key": "b.b. king",
+            "hours": 12.01,
+            "share": 0.07
+          },
+          {
+            "key": "gary clark jr.",
+            "hours": 11.23,
+            "share": 0.07
+          },
+          {
+            "key": "joe bonamassa",
+            "hours": 9.17,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 515,
+      "name": "Jazz",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 127,
+      "poolHours": 102.2,
+      "poolTopSource": 1,
+      "aired7d": 167.82,
+      "fallback7d": 0.18,
+      "uniqueAired": 127,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "BqObO3Pqx_U",
+          "count": 4,
+          "title": "2013 NEA Jazz Masters Ceremony -- The Vault at JAZZ"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_jalc",
+            "hours": 167.4,
+            "share": 1
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.42,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 24,
+        "top": [
+          {
+            "key": "src_jalc",
+            "hours": 145.51,
+            "share": 0.87
+          },
+          {
+            "key": "jazz intersections",
+            "hours": 7.66,
+            "share": 0.05
+          },
+          {
+            "key": "jerome jennings: solidarity",
+            "hours": 3.93,
+            "share": 0.02
+          },
+          {
+            "key": "jazz congress 2021: masterclass",
+            "hours": 2.07,
+            "share": 0.01
+          },
+          {
+            "key": "jazz congress 2021: jon hendricks at 100",
+            "hours": 1.33,
+            "share": 0.01
+          },
+          {
+            "key": "wynton marsalis's spaces",
+            "hours": 1.3,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 516,
+      "name": "Soul",
+      "status": "PLAYABLE",
+      "programmes": 176,
+      "poolHours": 22.3,
+      "poolTopSource": 0.98,
+      "aired7d": 167.96,
+      "fallback7d": 0.04,
+      "uniqueAired": 176,
+      "maxAirings": 36,
+      "mostAired": [
+        {
+          "id": "BVmm5fy1u9s",
+          "count": 36,
+          "title": "Iconic Group Salt-N-Pepa & Spinderella Recount Their Rise To Fame In The Late 80s | Ladies Night"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_soul_train",
+            "hours": 165.12,
+            "share": 0.98
+          },
+          {
+            "key": "src_kexp",
+            "hours": 2.84,
+            "share": 0.02
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 42,
+        "top": [
+          {
+            "key": "src_soul_train",
+            "hours": 126.24,
+            "share": 0.75
+          },
+          {
+            "key": "full american soul season 2 episode 5 fan reaction!",
+            "hours": 2.86,
+            "share": 0.02
+          },
+          {
+            "key": "big daddy kane looks back",
+            "hours": 2.8,
+            "share": 0.02
+          },
+          {
+            "key": "saigon soul revival",
+            "hours": 2.48,
+            "share": 0.01
+          },
+          {
+            "key": "fans watch",
+            "hours": 2.48,
+            "share": 0.01
+          },
+          {
+            "key": "full episode",
+            "hours": 2.47,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 517,
+      "name": "Funk",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 169,
+      "poolHours": 40.7,
+      "poolTopSource": 0.57,
+      "aired7d": 167.89,
+      "fallback7d": 0.11,
+      "uniqueAired": 169,
+      "maxAirings": 15,
+      "mostAired": [
+        {
+          "id": "A4qcImNLdjA",
+          "count": 15,
+          "title": "Lucy Woodward & Snarky Puppy - \"I Don't Know\" @ Evening Muse"
+        }
+      ],
+      "sources": {
+        "distinct": 4,
+        "top": [
+          {
+            "key": "src_vulf",
+            "hours": 94.02,
+            "share": 0.56
+          },
+          {
+            "key": "src_lettuce",
+            "hours": 69.29,
+            "share": 0.41
+          },
+          {
+            "key": "src_snarky_puppy",
+            "hours": 4.16,
+            "share": 0.02
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.42,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 23,
+        "top": [
+          {
+            "key": "src_vulf",
+            "hours": 74.99,
+            "share": 0.45
+          },
+          {
+            "key": "🥬 lettuce",
+            "hours": 47.51,
+            "share": 0.28
+          },
+          {
+            "key": "🥬 lettuce (live)",
+            "hours": 12.74,
+            "share": 0.08
+          },
+          {
+            "key": "src_lettuce",
+            "hours": 8.33,
+            "share": 0.05
+          },
+          {
+            "key": "vulfmon",
+            "hours": 7.22,
+            "share": 0.04
+          },
+          {
+            "key": "klezmer klezmer klezmer",
+            "hours": 3.97,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 518,
+      "name": "Disco",
+      "status": "PLAYABLE",
+      "programmes": 153,
+      "poolHours": 11.7,
+      "poolTopSource": 0.57,
+      "aired7d": 167.86,
+      "fallback7d": 0.14,
+      "uniqueAired": 153,
+      "maxAirings": 145,
+      "mostAired": [
+        {
+          "id": "8T_Rot3Vh54",
+          "count": 145,
+          "title": "CHIC feat. Nile Rodgers - Everybody Dance (BBC In Concert, Oct 30th 2017)"
+        }
+      ],
+      "sources": {
+        "distinct": 3,
+        "top": [
+          {
+            "key": "src_gloria_gaynor",
+            "hours": 92.01,
+            "share": 0.55
+          },
+          {
+            "key": "src_nile_rodgers",
+            "hours": 54.59,
+            "share": 0.33
+          },
+          {
+            "key": "src_bee_gees",
+            "hours": 21.26,
+            "share": 0.13
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 10,
+        "top": [
+          {
+            "key": "gloria gaynor",
+            "hours": 75.42,
+            "share": 0.45
+          },
+          {
+            "key": "chic",
+            "hours": 44.63,
+            "share": 0.27
+          },
+          {
+            "key": "bee gees",
+            "hours": 21.26,
+            "share": 0.13
+          },
+          {
+            "key": "src_gloria_gaynor",
+            "hours": 13.68,
+            "share": 0.08
+          },
+          {
+            "key": "src_nile_rodgers",
+            "hours": 6.79,
+            "share": 0.04
+          },
+          {
+            "key": "nile rodgers",
+            "hours": 2,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 519,
+      "name": "R&B",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 638,
+      "poolHours": 61.8,
+      "poolTopSource": 0.52,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 629,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "g5wh-kROHm8",
+          "count": 4,
+          "title": "Alicia Keys - Try Sleeping with a Broken Heart (Live from iTunes Festival, London, 2012)"
+        }
+      ],
+      "sources": {
+        "distinct": 4,
+        "top": [
+          {
+            "key": "src_alicia_keys",
+            "hours": 85.49,
+            "share": 0.51
+          },
+          {
+            "key": "src_ne_yo",
+            "hours": 38.37,
+            "share": 0.23
+          },
+          {
+            "key": "src_brandy",
+            "hours": 22.17,
+            "share": 0.13
+          },
+          {
+            "key": "src_usher",
+            "hours": 21.89,
+            "share": 0.13
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 59,
+        "top": [
+          {
+            "key": "alicia keys",
+            "hours": 42.31,
+            "share": 0.25
+          },
+          {
+            "key": "src_alicia_keys",
+            "hours": 33.56,
+            "share": 0.2
+          },
+          {
+            "key": "ne-yo",
+            "hours": 23.43,
+            "share": 0.14
+          },
+          {
+            "key": "usher",
+            "hours": 17.34,
+            "share": 0.1
+          },
+          {
+            "key": "src_brandy",
+            "hours": 11.89,
+            "share": 0.07
+          },
+          {
+            "key": "brandy",
+            "hours": 8.94,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 520,
+      "name": "Hip-Hop",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 357,
+      "poolHours": 69.1,
+      "poolTopSource": 0.6,
+      "aired7d": 167.87,
+      "fallback7d": 0.13,
+      "uniqueAired": 354,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "jjfZe-QGMe8",
+          "count": 4,
+          "title": "Sean Paul's Dutty Freestyle ft Chi Ching Ching, Kemar Highcon, Ras Ajai, Fambo, Sukuward, Farenizzi"
+        }
+      ],
+      "sources": {
+        "distinct": 6,
+        "top": [
+          {
+            "key": "src_1xtra_hiphop",
+            "hours": 98.03,
+            "share": 0.58
+          },
+          {
+            "key": "src_hot97",
+            "hours": 26.54,
+            "share": 0.16
+          },
+          {
+            "key": "src_wu_tang_clan",
+            "hours": 22.69,
+            "share": 0.14
+          },
+          {
+            "key": "src_run_the_jewels",
+            "hours": 11.32,
+            "share": 0.07
+          },
+          {
+            "key": "src_public_enemy",
+            "hours": 8.07,
+            "share": 0.05
+          },
+          {
+            "key": "src_vevo",
+            "hours": 1.22,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 91,
+        "top": [
+          {
+            "key": "src_hot97",
+            "hours": 19.93,
+            "share": 0.12
+          },
+          {
+            "key": "src_1xtra_hiphop",
+            "hours": 19.3,
+            "share": 0.11
+          },
+          {
+            "key": "fire in the booth",
+            "hours": 19.22,
+            "share": 0.11
+          },
+          {
+            "key": "charlie sloth rap up",
+            "hours": 14.1,
+            "share": 0.08
+          },
+          {
+            "key": "src_wu_tang_clan",
+            "hours": 13.51,
+            "share": 0.08
+          },
+          {
+            "key": "#gimmegrime",
+            "hours": 12.04,
+            "share": 0.07
+          }
+        ]
+      }
+    },
+    {
+      "number": 521,
+      "name": "Electronic",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 169,
+      "poolHours": 258.6,
+      "poolTopSource": 1,
+      "aired7d": 164.07,
+      "fallback7d": 3.93,
+      "uniqueAired": 107,
+      "maxAirings": 1,
+      "mostAired": [
+        {
+          "id": "AtZxg-OC5ho",
+          "count": 1,
+          "title": "Charlotte de Witte @ Dour Festival 2017 in Belgium for Cercle"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_cercle",
+            "hours": 164.07,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_cercle",
+            "hours": 159.68,
+            "share": 0.97
+          },
+          {
+            "key": "roscius live @ musée national des arts asiatiques",
+            "hours": 1.38,
+            "share": 0.01
+          },
+          {
+            "key": "indira paganotto",
+            "hours": 1.3,
+            "share": 0.01
+          },
+          {
+            "key": "cercle: the first show",
+            "hours": 0.94,
+            "share": 0.01
+          },
+          {
+            "key": "cercle story",
+            "hours": 0.76,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 522,
+      "name": "House",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 310.3,
+      "poolTopSource": 1,
+      "aired7d": 164.36,
+      "fallback7d": 3.64,
+      "uniqueAired": 158,
+      "maxAirings": 1,
+      "mostAired": [
+        {
+          "id": "nZ_G6oaQuDs",
+          "count": 1,
+          "title": "Mark Knight - Live at Toolroom Miami 2024 [House/Tech House]"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_toolroom",
+            "hours": 164.36,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 77,
+        "top": [
+          {
+            "key": "src_toolroom",
+            "hours": 49.11,
+            "share": 0.3
+          },
+          {
+            "key": "toolroom",
+            "hours": 16.61,
+            "share": 0.1
+          },
+          {
+            "key": "toolroom family",
+            "hours": 14.99,
+            "share": 0.09
+          },
+          {
+            "key": "mark knight",
+            "hours": 3.13,
+            "share": 0.02
+          },
+          {
+            "key": "gym",
+            "hours": 3.04,
+            "share": 0.02
+          },
+          {
+            "key": "toolroom killer cuts 2022",
+            "hours": 2.56,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 523,
+      "name": "Techno",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 138,
+      "poolHours": 176.4,
+      "poolTopSource": 0.95,
+      "aired7d": 167.57,
+      "fallback7d": 0.43,
+      "uniqueAired": 125,
+      "maxAirings": 6,
+      "mostAired": [
+        {
+          "id": "VspVQiG6hj8",
+          "count": 6,
+          "title": "The Art Of Production: Rrose - Techno Psychoacoustics"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_mixmag",
+            "hours": 158.77,
+            "share": 0.95
+          },
+          {
+            "key": "src_resident_advisor",
+            "hours": 8.8,
+            "share": 0.05
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 28,
+        "top": [
+          {
+            "key": "src_mixmag",
+            "hours": 133.9,
+            "share": 0.8
+          },
+          {
+            "key": "src_resident_advisor",
+            "hours": 4.95,
+            "share": 0.03
+          },
+          {
+            "key": "sven väth",
+            "hours": 1.56,
+            "share": 0.01
+          },
+          {
+            "key": "tiga techno set",
+            "hours": 1.5,
+            "share": 0.01
+          },
+          {
+            "key": "maceo ple",
+            "hours": 1.49,
+            "share": 0.01
+          },
+          {
+            "key": "anetha",
+            "hours": 1.47,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 524,
+      "name": "Ambient",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 234,
+      "poolHours": 24.5,
+      "poolTopSource": 1,
+      "aired7d": 167.93,
+      "fallback7d": 0.07,
+      "uniqueAired": 231,
+      "maxAirings": 130,
+      "mostAired": [
+        {
+          "id": "QnRoXdEJU08",
+          "count": 130,
+          "title": "Hammock - Disappear Like the Morning... (Raising Your Voice... Trying to Stop an Echo) HQ"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_hammock",
+            "hours": 167.93,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 10,
+        "top": [
+          {
+            "key": "hammock",
+            "hours": 138.51,
+            "share": 0.82
+          },
+          {
+            "key": "src_hammock",
+            "hours": 22.98,
+            "share": 0.14
+          },
+          {
+            "key": "\"e",
+            "hours": 2.43,
+            "share": 0.01
+          },
+          {
+            "key": "\"the house where we grew up\"",
+            "hours": 1.05,
+            "share": 0.01
+          },
+          {
+            "key": "rhian sheehan",
+            "hours": 0.64,
+            "share": 0
+          },
+          {
+            "key": "hammock / anton belov",
+            "hours": 0.61,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 525,
+      "name": "Classical",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 247.5,
+      "poolTopSource": 1,
+      "aired7d": 166.22,
+      "fallback7d": 1.78,
+      "uniqueAired": 190,
+      "maxAirings": 1,
+      "mostAired": [
+        {
+          "id": "GB3zR_X25UU",
+          "count": 1,
+          "title": "Schostakowitsch: 7. Sinfonie (»Leningrader«) ∙ hr-Sinfonieorchester ∙ Klaus Mäkelä"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_hr_symphony",
+            "hours": 166.22,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 20,
+        "top": [
+          {
+            "key": "src_hr_symphony",
+            "hours": 150.21,
+            "share": 0.9
+          },
+          {
+            "key": "frankfurt radio symphony live: europa open air 2026",
+            "hours": 2.25,
+            "share": 0.01
+          },
+          {
+            "key": "ligeti 100",
+            "hours": 2.03,
+            "share": 0.01
+          },
+          {
+            "key": "wagner: die walküre",
+            "hours": 1.15,
+            "share": 0.01
+          },
+          {
+            "key": "strawinsky: der feuervogel",
+            "hours": 0.9,
+            "share": 0.01
+          },
+          {
+            "key": "smetana: má vlast",
+            "hours": 0.87,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 526,
+      "name": "Opera",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 77,
+      "poolHours": 105.8,
+      "poolTopSource": 1,
+      "aired7d": 166.16,
+      "fallback7d": 1.84,
+      "uniqueAired": 77,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "sseru1aByyE",
+          "count": 4,
+          "title": "MACBETH Verdi – Opernfestspiele Heidenheim"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_operavision",
+            "hours": 166.16,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 68,
+        "top": [
+          {
+            "key": "il trionfo dell'onore alessandro scarlatti",
+            "hours": 11.55,
+            "share": 0.07
+          },
+          {
+            "key": "fidelio beethoven",
+            "hours": 9.18,
+            "share": 0.06
+          },
+          {
+            "key": "macbeth verdi",
+            "hours": 9.08,
+            "share": 0.05
+          },
+          {
+            "key": "the bartered bride smetana",
+            "hours": 8.31,
+            "share": 0.05
+          },
+          {
+            "key": "oper on fire",
+            "hours": 6.52,
+            "share": 0.04
+          },
+          {
+            "key": "medusa iain bell",
+            "hours": 6.41,
+            "share": 0.04
+          }
+        ]
+      }
+    },
+    {
+      "number": 527,
+      "name": "Folk",
+      "status": "PLAYABLE",
+      "programmes": 101,
+      "poolHours": 11,
+      "poolTopSource": 1,
+      "aired7d": 167.93,
+      "fallback7d": 0.07,
+      "uniqueAired": 101,
+      "maxAirings": 21,
+      "mostAired": [
+        {
+          "id": "D4j-y5AK7bc",
+          "count": 21,
+          "title": "BEHIND THE WALLS: John C. Reilly and Friends \"Mule Skinner Blues\"~ Newport Folk Fest 2014"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_newport_folk",
+            "hours": 167.93,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 15,
+        "top": [
+          {
+            "key": "src_newport_folk",
+            "hours": 149.2,
+            "share": 0.89
+          },
+          {
+            "key": "joni mitchell",
+            "hours": 4.01,
+            "share": 0.02
+          },
+          {
+            "key": "jobi riccio",
+            "hours": 2,
+            "share": 0.01
+          },
+          {
+            "key": "newport revival",
+            "hours": 1.6,
+            "share": 0.01
+          },
+          {
+            "key": "newport folk festival 2019",
+            "hours": 1.53,
+            "share": 0.01
+          },
+          {
+            "key": "behind the walls",
+            "hours": 1.52,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 528,
+      "name": "Country",
+      "status": "PLAYABLE",
+      "programmes": 101,
+      "poolHours": 14,
+      "poolTopSource": 0.99,
+      "aired7d": 167.77,
+      "fallback7d": 0.23,
+      "uniqueAired": 101,
+      "maxAirings": 14,
+      "mostAired": [
+        {
+          "id": "uCcFS08OtRQ",
+          "count": 14,
+          "title": "Opry 100: A Live Celebration Official Red Carpet Livestream"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_opry",
+            "hours": 167.33,
+            "share": 1
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.44,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 58,
+        "top": [
+          {
+            "key": "src_opry",
+            "hours": 96.23,
+            "share": 0.57
+          },
+          {
+            "key": "opry",
+            "hours": 13.63,
+            "share": 0.08
+          },
+          {
+            "key": "opry live",
+            "hours": 13.53,
+            "share": 0.08
+          },
+          {
+            "key": "got it from my momma",
+            "hours": 5.06,
+            "share": 0.03
+          },
+          {
+            "key": "steve earle",
+            "hours": 1.86,
+            "share": 0.01
+          },
+          {
+            "key": "lauren alaina's opry member induction",
+            "hours": 1.74,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 529,
+      "name": "Reggae",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 389.7,
+      "poolTopSource": 1,
+      "aired7d": 165.21,
+      "fallback7d": 2.79,
+      "uniqueAired": 121,
+      "maxAirings": 1,
+      "mostAired": [
+        {
+          "id": "g5DXidBJy8Y",
+          "count": 1,
+          "title": "Jamaica Jazz & Blues"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_vp_records",
+            "hours": 165.21,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 30,
+        "top": [
+          {
+            "key": "src_vp_records",
+            "hours": 71.78,
+            "share": 0.43
+          },
+          {
+            "key": "vp happy hour",
+            "hours": 22.94,
+            "share": 0.14
+          },
+          {
+            "key": "dj session",
+            "hours": 11.4,
+            "share": 0.07
+          },
+          {
+            "key": "vp records happy hour",
+            "hours": 10.74,
+            "share": 0.06
+          },
+          {
+            "key": "live dj session",
+            "hours": 4.11,
+            "share": 0.02
+          },
+          {
+            "key": "soundman session ii",
+            "hours": 3.28,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 530,
+      "name": "Ska",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 297,
+      "poolHours": 28,
+      "poolTopSource": 0.43,
+      "aired7d": 167.9,
+      "fallback7d": 0.1,
+      "uniqueAired": 294,
+      "maxAirings": 156,
+      "mostAired": [
+        {
+          "id": "2WvB1WZ9W70",
+          "count": 156,
+          "title": "The Specials - It's Up To You (Live At The Moonlight Club, May 1979)"
+        }
+      ],
+      "sources": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_madness",
+            "hours": 63.53,
+            "share": 0.38
+          },
+          {
+            "key": "src_the_specials",
+            "hours": 44,
+            "share": 0.26
+          },
+          {
+            "key": "src_the_beat",
+            "hours": 24.43,
+            "share": 0.15
+          },
+          {
+            "key": "src_toots",
+            "hours": 21.32,
+            "share": 0.13
+          },
+          {
+            "key": "src_the_selecter",
+            "hours": 14.63,
+            "share": 0.09
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 28,
+        "top": [
+          {
+            "key": "src_madness",
+            "hours": 42.08,
+            "share": 0.25
+          },
+          {
+            "key": "the specials",
+            "hours": 41.59,
+            "share": 0.25
+          },
+          {
+            "key": "madness",
+            "hours": 18.78,
+            "share": 0.11
+          },
+          {
+            "key": "toots",
+            "hours": 16.63,
+            "share": 0.1
+          },
+          {
+            "key": "the beat",
+            "hours": 11.58,
+            "share": 0.07
+          },
+          {
+            "key": "the selecter",
+            "hours": 9.89,
+            "share": 0.06
+          }
+        ]
+      }
+    },
+    {
+      "number": 531,
+      "name": "World Music",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 288,
+      "poolHours": 76.7,
+      "poolTopSource": 0.82,
+      "aired7d": 167.88,
+      "fallback7d": 0.12,
+      "uniqueAired": 283,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "n3ofMaHWIuQ",
+          "count": 4,
+          "title": "Trenchtown Rock | Afro Fiesta | Playing For Change | Live Outside"
+        }
+      ],
+      "sources": {
+        "distinct": 6,
+        "top": [
+          {
+            "key": "src_playing_for_change",
+            "hours": 140.41,
+            "share": 0.84
+          },
+          {
+            "key": "src_tinariwen",
+            "hours": 17.78,
+            "share": 0.11
+          },
+          {
+            "key": "src_angelique_kidjo",
+            "hours": 6.82,
+            "share": 0.04
+          },
+          {
+            "key": "src_songhoy_blues",
+            "hours": 1.74,
+            "share": 0.01
+          },
+          {
+            "key": "src_vevo",
+            "hours": 0.65,
+            "share": 0
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.49,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 150,
+        "top": [
+          {
+            "key": "tinariwen",
+            "hours": 15.32,
+            "share": 0.09
+          },
+          {
+            "key": "mana maoli collective live from hawai'i",
+            "hours": 9.16,
+            "share": 0.05
+          },
+          {
+            "key": "peace through music",
+            "hours": 8.73,
+            "share": 0.05
+          },
+          {
+            "key": "src_playing_for_change",
+            "hours": 8.38,
+            "share": 0.05
+          },
+          {
+            "key": "clarence bekker live from barcelona",
+            "hours": 5.11,
+            "share": 0.03
+          },
+          {
+            "key": "mel semé live from mint bar",
+            "hours": 4.53,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 532,
+      "name": "Latin",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 58.8,
+      "poolTopSource": 1,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 293,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "b2wTyMvPk5E",
+          "count": 4,
+          "title": "Draco Rosa | Persona del Año 2013 - Ensayos"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_latin_grammys",
+            "hours": 167.91,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 94,
+        "top": [
+          {
+            "key": "src_latin_grammys",
+            "hours": 137.58,
+            "share": 0.82
+          },
+          {
+            "key": "conferencia de prensa",
+            "hours": 4.59,
+            "share": 0.03
+          },
+          {
+            "key": "cobertura completa",
+            "hours": 2.88,
+            "share": 0.02
+          },
+          {
+            "key": "nominaciones",
+            "hours": 1.9,
+            "share": 0.01
+          },
+          {
+            "key": "1800 segundos con los mejores nuevos artistas",
+            "hours": 1.84,
+            "share": 0.01
+          },
+          {
+            "key": "alfombra roja persona del año 2025: la gran noche de raphael",
+            "hours": 1.24,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 533,
+      "name": "Afrobeat",
+      "status": "PLAYABLE",
+      "programmes": 46,
+      "poolHours": 9,
+      "poolTopSource": 1,
+      "aired7d": 167.82,
+      "fallback7d": 0.18,
+      "uniqueAired": 46,
+      "maxAirings": 21,
+      "mostAired": [
+        {
+          "id": "r-s2wYxFlfA",
+          "count": 21,
+          "title": "AFRO NATION x 1WAY TAKEOVER LIVE MIX 🇵🇹 FULL SET 🔥 EP 1"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_afro_nation",
+            "hours": 167.82,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 10,
+        "top": [
+          {
+            "key": "src_afro_nation",
+            "hours": 144.11,
+            "share": 0.86
+          },
+          {
+            "key": "compozers live",
+            "hours": 14.48,
+            "share": 0.09
+          },
+          {
+            "key": "lighter tod",
+            "hours": 1.93,
+            "share": 0.01
+          },
+          {
+            "key": "bisa kdei",
+            "hours": 1.49,
+            "share": 0.01
+          },
+          {
+            "key": "slim kofi",
+            "hours": 1.18,
+            "share": 0.01
+          },
+          {
+            "key": "eugy",
+            "hours": 1.14,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 534,
+      "name": "Dance",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 352,
+      "poolHours": 620.6,
+      "poolTopSource": 0.62,
+      "aired7d": 167.74,
+      "fallback7d": 0.26,
+      "uniqueAired": 94,
+      "maxAirings": 46,
+      "mostAired": [
+        {
+          "id": "ITeUJdd6A-k",
+          "count": 46,
+          "title": "Surfer Blood - Demon Dance (Live on KEXP)"
+        }
+      ],
+      "sources": {
+        "distinct": 3,
+        "top": [
+          {
+            "key": "src_tomorrowland",
+            "hours": 98.62,
+            "share": 0.59
+          },
+          {
+            "key": "src_anjunabeats",
+            "hours": 64.69,
+            "share": 0.39
+          },
+          {
+            "key": "src_kexp",
+            "hours": 4.42,
+            "share": 0.03
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 60,
+        "top": [
+          {
+            "key": "src_anjunabeats",
+            "hours": 41.41,
+            "share": 0.25
+          },
+          {
+            "key": "tomorrowland 2015",
+            "hours": 6.97,
+            "share": 0.04
+          },
+          {
+            "key": "src_tomorrowland",
+            "hours": 5.53,
+            "share": 0.03
+          },
+          {
+            "key": "tomorrowland belgium 2017",
+            "hours": 4.71,
+            "share": 0.03
+          },
+          {
+            "key": "tomorrowland brasil 2016",
+            "hours": 4.03,
+            "share": 0.02
+          },
+          {
+            "key": "armin van buuren",
+            "hours": 3.05,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 535,
+      "name": "Drum & Bass",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 306,
+      "poolHours": 42.1,
+      "poolTopSource": 0.99,
+      "aired7d": 167.82,
+      "fallback7d": 0.18,
+      "uniqueAired": 303,
+      "maxAirings": 21,
+      "mostAired": [
+        {
+          "id": "G3jLw2nawtw",
+          "count": 21,
+          "title": "Stay-C - Russian Doll"
+        }
+      ],
+      "sources": {
+        "distinct": 3,
+        "top": [
+          {
+            "key": "src_ukf_dnb",
+            "hours": 166.21,
+            "share": 0.99
+          },
+          {
+            "key": "src_vevo",
+            "hours": 1.32,
+            "share": 0.01
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.29,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 185,
+        "top": [
+          {
+            "key": "src_ukf_dnb",
+            "hours": 42.47,
+            "share": 0.25
+          },
+          {
+            "key": "apparition",
+            "hours": 9.21,
+            "share": 0.05
+          },
+          {
+            "key": "bcee",
+            "hours": 3.4,
+            "share": 0.02
+          },
+          {
+            "key": "workforce",
+            "hours": 2.97,
+            "share": 0.02
+          },
+          {
+            "key": "halogenix",
+            "hours": 2.96,
+            "share": 0.02
+          },
+          {
+            "key": "spectrasoul",
+            "hours": 2.61,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 536,
+      "name": "Trip-Hop",
+      "status": "PLAYABLE",
+      "programmes": 113,
+      "poolHours": 10.9,
+      "poolTopSource": 0.5,
+      "aired7d": 167.76,
+      "fallback7d": 0.24,
+      "uniqueAired": 113,
+      "maxAirings": 21,
+      "mostAired": [
+        {
+          "id": "U_OKigBRqBI",
+          "count": 21,
+          "title": "Zero 7 - Destiny (Official Video) ft. Sia, Sophie Barker"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_zero_7",
+            "hours": 85.75,
+            "share": 0.51
+          },
+          {
+            "key": "src_massive_attack",
+            "hours": 82.02,
+            "share": 0.49
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 6,
+        "top": [
+          {
+            "key": "zero 7",
+            "hours": 65.11,
+            "share": 0.39
+          },
+          {
+            "key": "massive attack",
+            "hours": 60.2,
+            "share": 0.36
+          },
+          {
+            "key": "swim surreal",
+            "hours": 20.64,
+            "share": 0.12
+          },
+          {
+            "key": "audioghost68",
+            "hours": 17.13,
+            "share": 0.1
+          },
+          {
+            "key": "src_massive_attack",
+            "hours": 3,
+            "share": 0.02
+          },
+          {
+            "key": "massive attack / tom waits",
+            "hours": 1.69,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 537,
+      "name": "Industrial",
+      "status": "PLAYABLE",
+      "programmes": 114,
+      "poolHours": 13.7,
+      "poolTopSource": 1,
+      "aired7d": 167.87,
+      "fallback7d": 0.13,
+      "uniqueAired": 114,
+      "maxAirings": 14,
+      "mostAired": [
+        {
+          "id": "1SaFRqFnRQQ",
+          "count": 14,
+          "title": "NIN: The Fragile live from on stage, Adelaide 2.28.09 [HD]"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_nine_inch_nails",
+            "hours": 167.87,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 9,
+        "top": [
+          {
+            "key": "src_nine_inch_nails",
+            "hours": 90.21,
+            "share": 0.54
+          },
+          {
+            "key": "nine inch nails",
+            "hours": 69.33,
+            "share": 0.41
+          },
+          {
+            "key": "trent reznor inducts the cure",
+            "hours": 2.29,
+            "share": 0.01
+          },
+          {
+            "key": "trent reznor",
+            "hours": 2.01,
+            "share": 0.01
+          },
+          {
+            "key": "nine inch nails alumni",
+            "hours": 0.88,
+            "share": 0.01
+          },
+          {
+            "key": "street sweeper sc w/trent reznor",
+            "hours": 0.86,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 538,
+      "name": "Emo",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 471,
+      "poolHours": 48,
+      "poolTopSource": 0.3,
+      "aired7d": 167.86,
+      "fallback7d": 0.14,
+      "uniqueAired": 466,
+      "maxAirings": 17,
+      "mostAired": [
+        {
+          "id": "lcZzzSuG-Vw",
+          "count": 17,
+          "title": "Jimmy Eat World - Byebyelove"
+        }
+      ],
+      "sources": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_jimmy_eat_world",
+            "hours": 47.26,
+            "share": 0.28
+          },
+          {
+            "key": "src_fall_out_boy",
+            "hours": 44.81,
+            "share": 0.27
+          },
+          {
+            "key": "src_my_chemical_romance",
+            "hours": 41.39,
+            "share": 0.25
+          },
+          {
+            "key": "src_dashboard_confessional",
+            "hours": 19.62,
+            "share": 0.12
+          },
+          {
+            "key": "src_paramore",
+            "hours": 14.79,
+            "share": 0.09
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 16,
+        "top": [
+          {
+            "key": "fall out boy",
+            "hours": 36.75,
+            "share": 0.22
+          },
+          {
+            "key": "my chemical romance",
+            "hours": 33.08,
+            "share": 0.2
+          },
+          {
+            "key": "jimmy eat world",
+            "hours": 29.26,
+            "share": 0.17
+          },
+          {
+            "key": "src_dashboard_confessional",
+            "hours": 11.8,
+            "share": 0.07
+          },
+          {
+            "key": "src_jimmy_eat_world",
+            "hours": 10.52,
+            "share": 0.06
+          },
+          {
+            "key": "paramore",
+            "hours": 8.21,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 539,
+      "name": "Post-Rock",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 156,
+      "poolHours": 43.4,
+      "poolTopSource": 1,
+      "aired7d": 167.93,
+      "fallback7d": 0.07,
+      "uniqueAired": 156,
+      "maxAirings": 6,
+      "mostAired": [
+        {
+          "id": "TRl3M-rZOS8",
+          "count": 6,
+          "title": "Sigur Rós - 180 sekúndur fyrir sólarupprás (recycled by Curver)"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_sigur_ros",
+            "hours": 167.93,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 20,
+        "top": [
+          {
+            "key": "sigur rós",
+            "hours": 134.09,
+            "share": 0.8
+          },
+          {
+            "key": "src_sigur_ros",
+            "hours": 19.63,
+            "share": 0.12
+          },
+          {
+            "key": "gloomy holiday",
+            "hours": 5.9,
+            "share": 0.04
+          },
+          {
+            "key": "the art of meditation",
+            "hours": 2.2,
+            "share": 0.01
+          },
+          {
+            "key": "riceboy sleeps",
+            "hours": 0.93,
+            "share": 0.01
+          },
+          {
+            "key": "sigur rós: frakkur",
+            "hours": 0.65,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 540,
+      "name": "1950s",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 808,
+      "poolHours": 38,
+      "poolTopSource": 1,
+      "aired7d": 167.92,
+      "fallback7d": 0.08,
+      "uniqueAired": 799,
+      "maxAirings": 45,
+      "mostAired": [
+        {
+          "id": "16KpYJ-YTvM",
+          "count": 45,
+          "title": "Julius La Rosa \"Pass it On\" on The Ed Sullivan Show"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_ed_sullivan",
+            "hours": 167.92,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 4,
+        "top": [
+          {
+            "key": "src_ed_sullivan",
+            "hours": 166.9,
+            "share": 0.99
+          },
+          {
+            "key": "dorothy kirsten",
+            "hours": 0.68,
+            "share": 0
+          },
+          {
+            "key": "darryl f. zanuck",
+            "hours": 0.23,
+            "share": 0
+          },
+          {
+            "key": "andrés segovia \"prelude for lute in c minor",
+            "hours": 0.12,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 541,
+      "name": "1960s",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 1685,
+      "poolHours": 90.5,
+      "poolTopSource": 0.88,
+      "aired7d": 167.92,
+      "fallback7d": 0.08,
+      "uniqueAired": 1595,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "HszufMtmvm0",
+          "count": 4,
+          "title": "Louis Armstrong \"After You've Gone\" on The Ed Sullivan Show"
+        }
+      ],
+      "sources": {
+        "distinct": 10,
+        "top": [
+          {
+            "key": "src_ed_sullivan",
+            "hours": 143.25,
+            "share": 0.85
+          },
+          {
+            "key": "src_jimi_hendrix",
+            "hours": 18.95,
+            "share": 0.11
+          },
+          {
+            "key": "src_roy_orbison",
+            "hours": 1.8,
+            "share": 0.01
+          },
+          {
+            "key": "src_the_beatles",
+            "hours": 1.37,
+            "share": 0.01
+          },
+          {
+            "key": "src_the_doors",
+            "hours": 1.2,
+            "share": 0.01
+          },
+          {
+            "key": "src_beach_boys",
+            "hours": 0.52,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 26,
+        "top": [
+          {
+            "key": "src_ed_sullivan",
+            "hours": 143.02,
+            "share": 0.85
+          },
+          {
+            "key": "1969-01-17",
+            "hours": 4.55,
+            "share": 0.03
+          },
+          {
+            "key": "1968-02-17",
+            "hours": 3.6,
+            "share": 0.02
+          },
+          {
+            "key": "1968-09-07",
+            "hours": 2.97,
+            "share": 0.02
+          },
+          {
+            "key": "1968-12-01",
+            "hours": 2.31,
+            "share": 0.01
+          },
+          {
+            "key": "the jimi hendri",
+            "hours": 2.29,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 542,
+      "name": "1970s",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 397,
+      "poolHours": 39.3,
+      "poolTopSource": 0.33,
+      "aired7d": 167.96,
+      "fallback7d": 0.04,
+      "uniqueAired": 394,
+      "maxAirings": 91,
+      "mostAired": [
+        {
+          "id": "FZto5r6O-z0",
+          "count": 91,
+          "title": "Liza Minnelli \"If I Were In Your Shoes\" on The Ed Sullivan Show"
+        }
+      ],
+      "sources": {
+        "distinct": 22,
+        "top": [
+          {
+            "key": "src_ed_sullivan",
+            "hours": 60.56,
+            "share": 0.36
+          },
+          {
+            "key": "src_jimi_hendrix",
+            "hours": 28.81,
+            "share": 0.17
+          },
+          {
+            "key": "src_led_zeppelin",
+            "hours": 23.73,
+            "share": 0.14
+          },
+          {
+            "key": "src_rockpalast",
+            "hours": 11.32,
+            "share": 0.07
+          },
+          {
+            "key": "src_the_doors",
+            "hours": 9.3,
+            "share": 0.06
+          },
+          {
+            "key": "src_bb_king",
+            "hours": 7.38,
+            "share": 0.04
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 30,
+        "top": [
+          {
+            "key": "src_ed_sullivan",
+            "hours": 60.56,
+            "share": 0.36
+          },
+          {
+            "key": "led zeppelin",
+            "hours": 23.73,
+            "share": 0.14
+          },
+          {
+            "key": "the doors",
+            "hours": 9.3,
+            "share": 0.06
+          },
+          {
+            "key": "bb king",
+            "hours": 7.38,
+            "share": 0.04
+          },
+          {
+            "key": "rory gallagher live (full show)",
+            "hours": 7.17,
+            "share": 0.04
+          },
+          {
+            "key": "roy orbison",
+            "hours": 6.04,
+            "share": 0.04
+          }
+        ]
+      }
+    },
+    {
+      "number": 543,
+      "name": "1980s",
+      "status": "PLAYABLE",
+      "programmes": 154,
+      "poolHours": 13.8,
+      "poolTopSource": 0.14,
+      "aired7d": 167.85,
+      "fallback7d": 0.15,
+      "uniqueAired": 154,
+      "maxAirings": 147,
+      "mostAired": [
+        {
+          "id": "qa8leK9ejrw",
+          "count": 147,
+          "title": "The Rolling Stones - Angie - Live At Roundhay Park, Leeds / 1982"
+        }
+      ],
+      "sources": {
+        "distinct": 32,
+        "top": [
+          {
+            "key": "src_gloria_gaynor",
+            "hours": 33.47,
+            "share": 0.2
+          },
+          {
+            "key": "src_rolling_stones",
+            "hours": 19.21,
+            "share": 0.11
+          },
+          {
+            "key": "src_rockpalast",
+            "hours": 15.59,
+            "share": 0.09
+          },
+          {
+            "key": "src_new_order",
+            "hours": 11.37,
+            "share": 0.07
+          },
+          {
+            "key": "src_acdc",
+            "hours": 9.9,
+            "share": 0.06
+          },
+          {
+            "key": "src_bruce_springsteen",
+            "hours": 9.37,
+            "share": 0.06
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 36,
+        "top": [
+          {
+            "key": "gloria gaynor",
+            "hours": 33.47,
+            "share": 0.2
+          },
+          {
+            "key": "the rolling stones",
+            "hours": 19.21,
+            "share": 0.11
+          },
+          {
+            "key": "joan armatrading live",
+            "hours": 15.59,
+            "share": 0.09
+          },
+          {
+            "key": "new order",
+            "hours": 11.37,
+            "share": 0.07
+          },
+          {
+            "key": "ac/dc",
+            "hours": 9.9,
+            "share": 0.06
+          },
+          {
+            "key": "bruce springsteen",
+            "hours": 8.11,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 544,
+      "name": "1990s",
+      "status": "PLAYABLE",
+      "programmes": 150,
+      "poolHours": 11.7,
+      "poolTopSource": 0.09,
+      "aired7d": 166.73,
+      "fallback7d": 1.27,
+      "uniqueAired": 117,
+      "maxAirings": 21,
+      "mostAired": [
+        {
+          "id": "IFyKbr6IVI0",
+          "count": 21,
+          "title": "Bon Jovi - Hey God (Short International Pinless Edit)"
+        }
+      ],
+      "sources": {
+        "distinct": 30,
+        "top": [
+          {
+            "key": "src_supergrass",
+            "hours": 16.42,
+            "share": 0.1
+          },
+          {
+            "key": "src_pulp",
+            "hours": 15.66,
+            "share": 0.09
+          },
+          {
+            "key": "src_bon_jovi",
+            "hours": 11.58,
+            "share": 0.07
+          },
+          {
+            "key": "src_smashing_pumpkins",
+            "hours": 9.61,
+            "share": 0.06
+          },
+          {
+            "key": "src_manics",
+            "hours": 9.13,
+            "share": 0.05
+          },
+          {
+            "key": "src_rem",
+            "hours": 8.96,
+            "share": 0.05
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 30,
+        "top": [
+          {
+            "key": "supergrass",
+            "hours": 16.42,
+            "share": 0.1
+          },
+          {
+            "key": "pulp",
+            "hours": 15.66,
+            "share": 0.09
+          },
+          {
+            "key": "manic street preachers",
+            "hours": 13.9,
+            "share": 0.08
+          },
+          {
+            "key": "bon jovi",
+            "hours": 11.58,
+            "share": 0.07
+          },
+          {
+            "key": "the smashing pumpkins",
+            "hours": 9.61,
+            "share": 0.06
+          },
+          {
+            "key": "r.e.m.",
+            "hours": 8.96,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 545,
+      "name": "2000s",
+      "status": "PLAYABLE",
+      "programmes": 219,
+      "poolHours": 15.4,
+      "poolTopSource": 0.09,
+      "aired7d": 167.89,
+      "fallback7d": 0.11,
+      "uniqueAired": 218,
+      "maxAirings": 128,
+      "mostAired": [
+        {
+          "id": "LzrKZkdK23k",
+          "count": 128,
+          "title": "50 Cent - This Is 50"
+        }
+      ],
+      "sources": {
+        "distinct": 37,
+        "top": [
+          {
+            "key": "src_bon_jovi",
+            "hours": 16.56,
+            "share": 0.1
+          },
+          {
+            "key": "src_rhcp",
+            "hours": 15.49,
+            "share": 0.09
+          },
+          {
+            "key": "src_usher",
+            "hours": 13.82,
+            "share": 0.08
+          },
+          {
+            "key": "src_vevo_the_killers",
+            "hours": 13.31,
+            "share": 0.08
+          },
+          {
+            "key": "src_ne_yo",
+            "hours": 11.8,
+            "share": 0.07
+          },
+          {
+            "key": "src_50_cent",
+            "hours": 10.6,
+            "share": 0.06
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 41,
+        "top": [
+          {
+            "key": "bon jovi",
+            "hours": 16.56,
+            "share": 0.1
+          },
+          {
+            "key": "red hot chili peppers",
+            "hours": 15.49,
+            "share": 0.09
+          },
+          {
+            "key": "usher",
+            "hours": 13.82,
+            "share": 0.08
+          },
+          {
+            "key": "the killers",
+            "hours": 13.31,
+            "share": 0.08
+          },
+          {
+            "key": "ne-yo",
+            "hours": 11.8,
+            "share": 0.07
+          },
+          {
+            "key": "50 cent",
+            "hours": 10.6,
+            "share": 0.06
+          }
+        ]
+      }
+    },
+    {
+      "number": 546,
+      "name": "2010s",
+      "status": "PLAYABLE_THIN",
+      "programmes": 7,
+      "poolHours": 0.8,
+      "poolTopSource": 1,
+      "aired7d": 168,
+      "fallback7d": 0,
+      "uniqueAired": 7,
+      "maxAirings": 210,
+      "mostAired": [
+        {
+          "id": "7a2JoKsrXZw",
+          "count": 210,
+          "title": "Cam - Diane – Vevo Live at CMA Awards 2017"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_vevo",
+            "hours": 168,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 6,
+        "top": [
+          {
+            "key": "aminé",
+            "hours": 68.31,
+            "share": 0.41
+          },
+          {
+            "key": "vevo live at cma awards 2017",
+            "hours": 32.67,
+            "share": 0.19
+          },
+          {
+            "key": "vevo",
+            "hours": 26.05,
+            "share": 0.16
+          },
+          {
+            "key": "src_vevo",
+            "hours": 16.57,
+            "share": 0.1
+          },
+          {
+            "key": "cam",
+            "hours": 13.24,
+            "share": 0.08
+          },
+          {
+            "key": "mobo awards 2013",
+            "hours": 11.16,
+            "share": 0.07
+          }
+        ]
+      }
+    },
+    {
+      "number": 547,
+      "name": "2020s",
+      "status": "PLAYABLE",
+      "programmes": 40,
+      "poolHours": 3.5,
+      "poolTopSource": 0.31,
+      "aired7d": 167.94,
+      "fallback7d": 0.06,
+      "uniqueAired": 40,
+      "maxAirings": 49,
+      "mostAired": [
+        {
+          "id": "4go_DzY8wHc",
+          "count": 49,
+          "title": "The Killers - My Own Soul's Warning (Michael Hili Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 16,
+        "top": [
+          {
+            "key": "src_insideout",
+            "hours": 53.52,
+            "share": 0.32
+          },
+          {
+            "key": "src_foo_fighters",
+            "hours": 22.66,
+            "share": 0.13
+          },
+          {
+            "key": "src_imagine_dragons",
+            "hours": 18.23,
+            "share": 0.11
+          },
+          {
+            "key": "src_nuclear_blast",
+            "hours": 18.15,
+            "share": 0.11
+          },
+          {
+            "key": "src_rhcp",
+            "hours": 17.94,
+            "share": 0.11
+          },
+          {
+            "key": "src_usher",
+            "hours": 4.26,
+            "share": 0.03
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 23,
+        "top": [
+          {
+            "key": "foo fighters",
+            "hours": 22.66,
+            "share": 0.13
+          },
+          {
+            "key": "imagine dragons",
+            "hours": 18.23,
+            "share": 0.11
+          },
+          {
+            "key": "red hot chili peppers",
+            "hours": 17.94,
+            "share": 0.11
+          },
+          {
+            "key": "charlie griffiths",
+            "hours": 13.24,
+            "share": 0.08
+          },
+          {
+            "key": "liquid tension experiment",
+            "hours": 13.04,
+            "share": 0.08
+          },
+          {
+            "key": "haken",
+            "hours": 11.66,
+            "share": 0.07
+          }
+        ]
+      }
+    },
+    {
+      "number": 548,
+      "name": "Oldies",
+      "status": "DELIBERATELY_UNAVAILABLE",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 549,
+      "name": "Retro Hits",
+      "status": "NEEDS_CONTENT",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 550,
+      "name": "Chart",
+      "status": "NEEDS_CONTENT",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 551,
+      "name": "New Music",
+      "status": "PLAYABLE",
+      "programmes": 52,
+      "poolHours": 3,
+      "poolTopSource": 0.67,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 52,
+      "maxAirings": 61,
+      "mostAired": [
+        {
+          "id": "0iidIYXMqBA",
+          "count": 61,
+          "title": "Mischa Daniels - Take Me Higher (Maga Remix) [Official Visualizer]"
+        }
+      ],
+      "sources": {
+        "distinct": 8,
+        "top": [
+          {
+            "key": "src_armada",
+            "hours": 107.62,
+            "share": 0.64
+          },
+          {
+            "key": "src_nuclear_blast",
+            "hours": 17.47,
+            "share": 0.1
+          },
+          {
+            "key": "src_insideout",
+            "hours": 14.77,
+            "share": 0.09
+          },
+          {
+            "key": "src_sub_pop",
+            "hours": 7.72,
+            "share": 0.05
+          },
+          {
+            "key": "src_ukf_dnb",
+            "hours": 7.63,
+            "share": 0.05
+          },
+          {
+            "key": "src_spinnin",
+            "hours": 7.03,
+            "share": 0.04
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 48,
+        "top": [
+          {
+            "key": "the go",
+            "hours": 7.72,
+            "share": 0.05
+          },
+          {
+            "key": "summer is calling",
+            "hours": 6.1,
+            "share": 0.04
+          },
+          {
+            "key": "silk",
+            "hours": 5.89,
+            "share": 0.04
+          },
+          {
+            "key": "the flower kings",
+            "hours": 5.79,
+            "share": 0.03
+          },
+          {
+            "key": "diøn",
+            "hours": 5.76,
+            "share": 0.03
+          },
+          {
+            "key": "green lung",
+            "hours": 5.63,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 552,
+      "name": "Unsigned",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 185.5,
+      "poolTopSource": 1,
+      "aired7d": 166.61,
+      "fallback7d": 1.39,
+      "uniqueAired": 263,
+      "maxAirings": 2,
+      "mostAired": [
+        {
+          "id": "1d2PUxw9nt8",
+          "count": 2,
+          "title": "Michigander on Audiotree Live (Full Session)"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_audiotree",
+            "hours": 166.61,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 27,
+        "top": [
+          {
+            "key": "src_audiotree",
+            "hours": 149.11,
+            "share": 0.89
+          },
+          {
+            "key": "jg shadid on audiotree live",
+            "hours": 1.53,
+            "share": 0.01
+          },
+          {
+            "key": "saba",
+            "hours": 1.04,
+            "share": 0.01
+          },
+          {
+            "key": "finom on audiotree live",
+            "hours": 0.89,
+            "share": 0.01
+          },
+          {
+            "key": "hemlock on audiotree live",
+            "hours": 0.78,
+            "share": 0
+          },
+          {
+            "key": "snooze on audiotree live",
+            "hours": 0.76,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 553,
+      "name": "Indie Sessions",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 298,
+      "poolHours": 79.3,
+      "poolTopSource": 1,
+      "aired7d": 167.53,
+      "fallback7d": 0.47,
+      "uniqueAired": 291,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "QfM932VOJbk",
+          "count": 4,
+          "title": "Léonore Boulanger - Clouds Hill | A Take Away Show"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_blogotheque",
+            "hours": 167.53,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 239,
+        "top": [
+          {
+            "key": "take me away",
+            "hours": 8.38,
+            "share": 0.05
+          },
+          {
+            "key": "src_blogotheque",
+            "hours": 7.04,
+            "share": 0.04
+          },
+          {
+            "key": "chilly gonzales",
+            "hours": 6.92,
+            "share": 0.04
+          },
+          {
+            "key": "damon albarn",
+            "hours": 4.77,
+            "share": 0.03
+          },
+          {
+            "key": "thylacine",
+            "hours": 4.51,
+            "share": 0.03
+          },
+          {
+            "key": "​ la jungle",
+            "hours": 2.96,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 554,
+      "name": "DJ Sets",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 304,
+      "poolHours": 484.6,
+      "poolTopSource": 1,
+      "aired7d": 166.96,
+      "fallback7d": 1.04,
+      "uniqueAired": 100,
+      "maxAirings": 13,
+      "mostAired": [
+        {
+          "id": "fFMvkzyeR1k",
+          "count": 13,
+          "title": "Moses Hightower - Sjáum hvað setur (Live on KEXP)"
+        }
+      ],
+      "sources": {
+        "distinct": 3,
+        "top": [
+          {
+            "key": "src_boiler_room",
+            "hours": 163.3,
+            "share": 0.98
+          },
+          {
+            "key": "src_vevo",
+            "hours": 2.73,
+            "share": 0.02
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.93,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 87,
+        "top": [
+          {
+            "key": "src_boiler_room",
+            "hours": 26.33,
+            "share": 0.16
+          },
+          {
+            "key": "kamasi washington heaven and earth album release party",
+            "hours": 3.26,
+            "share": 0.02
+          },
+          {
+            "key": "kebra ethiopia sound system",
+            "hours": 2.49,
+            "share": 0.01
+          },
+          {
+            "key": "bubblegum club",
+            "hours": 2.48,
+            "share": 0.01
+          },
+          {
+            "key": "joseph capriati deep techno mix",
+            "hours": 2.47,
+            "share": 0.01
+          },
+          {
+            "key": "tangerine dream",
+            "hours": 2.22,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 555,
+      "name": "Live",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 227,
+      "poolHours": 82.3,
+      "poolTopSource": 1,
+      "aired7d": 167.42,
+      "fallback7d": 0.58,
+      "uniqueAired": 224,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "6g-5gOfqEMg",
+          "count": 4,
+          "title": "Ira Wolf live at Paste Studio on the Road: NYC"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_paste",
+            "hours": 167.42,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 93,
+        "top": [
+          {
+            "key": "src_paste",
+            "hours": 101.77,
+            "share": 0.61
+          },
+          {
+            "key": "unforgettable indie",
+            "hours": 2.6,
+            "share": 0.02
+          },
+          {
+            "key": "best paste live sessions",
+            "hours": 2.55,
+            "share": 0.02
+          },
+          {
+            "key": "wheatus",
+            "hours": 2.02,
+            "share": 0.01
+          },
+          {
+            "key": "most iconic moments at paste studios",
+            "hours": 1.62,
+            "share": 0.01
+          },
+          {
+            "key": "hannah dasher",
+            "hours": 1.47,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 556,
+      "name": "Concerts",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 137.2,
+      "poolTopSource": 1,
+      "aired7d": 166.58,
+      "fallback7d": 1.42,
+      "uniqueAired": 289,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "EpnJcdZXAPQ",
+          "count": 4,
+          "title": "Tiny Desk Contest Top Shelf 2024: Episode 1 with Bobby Carter and Robin Hilton"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_npr_music",
+            "hours": 166.58,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 7,
+        "top": [
+          {
+            "key": "src_npr_music",
+            "hours": 163.16,
+            "share": 0.98
+          },
+          {
+            "key": "amber mark live at the 9:30 club",
+            "hours": 0.89,
+            "share": 0.01
+          },
+          {
+            "key": "leikeli47 live at the 9:30 club",
+            "hours": 0.78,
+            "share": 0
+          },
+          {
+            "key": "cory henry live at the 9:30 club",
+            "hours": 0.48,
+            "share": 0
+          },
+          {
+            "key": "cimafunk live at the 9:30 club",
+            "hours": 0.48,
+            "share": 0
+          },
+          {
+            "key": "yeиdry live at the 9:30 club",
+            "hours": 0.41,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 557,
+      "name": "Sessions",
+      "status": "PLAYABLE",
+      "programmes": 300,
+      "poolHours": 19.2,
+      "poolTopSource": 1,
+      "aired7d": 167.89,
+      "fallback7d": 0.11,
+      "uniqueAired": 297,
+      "maxAirings": 192,
+      "mostAired": [
+        {
+          "id": "-k3--5vljPE",
+          "count": 192,
+          "title": "WESTSIDE BOOGIE - STUCK | A COLORS SHOW"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_colors",
+            "hours": 167.89,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 281,
+        "top": [
+          {
+            "key": "src_colors",
+            "hours": 14.38,
+            "share": 0.09
+          },
+          {
+            "key": "arima ederra",
+            "hours": 12.16,
+            "share": 0.07
+          },
+          {
+            "key": "westside boogie",
+            "hours": 10.61,
+            "share": 0.06
+          },
+          {
+            "key": "victony",
+            "hours": 4.05,
+            "share": 0.02
+          },
+          {
+            "key": "mei semones",
+            "hours": 3.84,
+            "share": 0.02
+          },
+          {
+            "key": "benny the butcher",
+            "hours": 2.01,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 558,
+      "name": "Unplugged",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 81.9,
+      "poolTopSource": 1,
+      "aired7d": 167.76,
+      "fallback7d": 0.24,
+      "uniqueAired": 291,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "sPiew4e7LaI",
+          "count": 4,
+          "title": "Chilled Acoustic Vol. 6 😊 Indie Folk Compilation | Mahogany Playlist"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_mahogany",
+            "hours": 167.76,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 229,
+        "top": [
+          {
+            "key": "src_mahogany",
+            "hours": 22.95,
+            "share": 0.14
+          },
+          {
+            "key": "chilled acoustic vol. 7 ❄️  indie folk compilation",
+            "hours": 12.24,
+            "share": 0.07
+          },
+          {
+            "key": "lost in ireland",
+            "hours": 5.86,
+            "share": 0.03
+          },
+          {
+            "key": "chilled acoustic vol. 8 🗺  indie folk compilation",
+            "hours": 5.61,
+            "share": 0.03
+          },
+          {
+            "key": "one hour of chill acoustic music 🌿 relaxing indie folk",
+            "hours": 4.72,
+            "share": 0.03
+          },
+          {
+            "key": "discovering new music so you don't have to",
+            "hours": 4.71,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 559,
+      "name": "Festivals",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 510,
+      "poolHours": 306.1,
+      "poolTopSource": 0.4,
+      "aired7d": 167.9,
+      "fallback7d": 0.1,
+      "uniqueAired": 271,
+      "maxAirings": 1,
+      "mostAired": [
+        {
+          "id": "w4Zsg0q5ot0",
+          "count": 1,
+          "title": "Nikolaj Nørlund live at Roskilde Festival 2014"
+        }
+      ],
+      "sources": {
+        "distinct": 6,
+        "top": [
+          {
+            "key": "src_sziget",
+            "hours": 65.82,
+            "share": 0.39
+          },
+          {
+            "key": "src_primavera_sound",
+            "hours": 44.34,
+            "share": 0.26
+          },
+          {
+            "key": "src_roskilde",
+            "hours": 40.44,
+            "share": 0.24
+          },
+          {
+            "key": "src_bonnaroo",
+            "hours": 7.07,
+            "share": 0.04
+          },
+          {
+            "key": "src_coachella",
+            "hours": 6.1,
+            "share": 0.04
+          },
+          {
+            "key": "src_lollapalooza",
+            "hours": 4.13,
+            "share": 0.02
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 87,
+        "top": [
+          {
+            "key": "src_primavera_sound",
+            "hours": 44.34,
+            "share": 0.26
+          },
+          {
+            "key": "src_roskilde",
+            "hours": 39.76,
+            "share": 0.24
+          },
+          {
+            "key": "src_sziget",
+            "hours": 31.68,
+            "share": 0.19
+          },
+          {
+            "key": "src_lollapalooza",
+            "hours": 3.37,
+            "share": 0.02
+          },
+          {
+            "key": "src_coachella",
+            "hours": 2.58,
+            "share": 0.02
+          },
+          {
+            "key": "jáky chan b2b eliézer",
+            "hours": 2.02,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 560,
+      "name": "Music Documentary",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 131,
+      "poolHours": 58.9,
+      "poolTopSource": 1,
+      "aired7d": 167.66,
+      "fallback7d": 0.34,
+      "uniqueAired": 131,
+      "maxAirings": 5,
+      "mostAired": [
+        {
+          "id": "Vw2RRX3wprk",
+          "count": 5,
+          "title": "Pale Waves & Pop Culture's 80's Obsession [Re-upload]"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_trash_theory",
+            "hours": 167.66,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 49,
+        "top": [
+          {
+            "key": "src_trash_theory",
+            "hours": 111.87,
+            "share": 0.67
+          },
+          {
+            "key": "7 influential post-punk bands you must hear",
+            "hours": 3.47,
+            "share": 0.02
+          },
+          {
+            "key": "take that",
+            "hours": 2.8,
+            "share": 0.02
+          },
+          {
+            "key": "how the cure disintegrated",
+            "hours": 2.73,
+            "share": 0.02
+          },
+          {
+            "key": "exploring tricky",
+            "hours": 2.42,
+            "share": 0.01
+          },
+          {
+            "key": "soul ii soul",
+            "hours": 2.31,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 561,
+      "name": "Music History",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 296,
+      "poolHours": 75.7,
+      "poolTopSource": 0.94,
+      "aired7d": 167.96,
+      "fallback7d": 0.04,
+      "uniqueAired": 294,
+      "maxAirings": 6,
+      "mostAired": [
+        {
+          "id": "xb7ZUmkgAfA",
+          "count": 6,
+          "title": "Britain’s Murder Map with Vicky McClure and Jonny Owen | Crimes That Shaped British History"
+        }
+      ],
+      "sources": {
+        "distinct": 4,
+        "top": [
+          {
+            "key": "src_polyphonic",
+            "hours": 152.74,
+            "share": 0.91
+          },
+          {
+            "key": "src_nfb",
+            "hours": 5.78,
+            "share": 0.03
+          },
+          {
+            "key": "src_time_team",
+            "hours": 5.5,
+            "share": 0.03
+          },
+          {
+            "key": "src_sky_history_uk",
+            "hours": 3.94,
+            "share": 0.02
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 33,
+        "top": [
+          {
+            "key": "src_polyphonic",
+            "hours": 148.29,
+            "share": 0.88
+          },
+          {
+            "key": "src_time_team",
+            "hours": 3.53,
+            "share": 0.02
+          },
+          {
+            "key": "black history month panel discussion",
+            "hours": 3.19,
+            "share": 0.02
+          },
+          {
+            "key": "src_nfb",
+            "hours": 2.59,
+            "share": 0.02
+          },
+          {
+            "key": "world cup 2022: football archaeology",
+            "hours": 1.97,
+            "share": 0.01
+          },
+          {
+            "key": "brain damage/eclipse",
+            "hours": 0.94,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 562,
+      "name": "Album Stories",
+      "status": "PLAYABLE",
+      "programmes": 22,
+      "poolHours": 9.1,
+      "poolTopSource": 0.99,
+      "aired7d": 167.89,
+      "fallback7d": 0.11,
+      "uniqueAired": 22,
+      "maxAirings": 29,
+      "mostAired": [
+        {
+          "id": "WH-YV_KYRzI",
+          "count": 29,
+          "title": "Come A Little Closer (Small Clubs, Big Stories Presented by Chevy Small Cars)"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_pitchfork_classic",
+            "hours": 164.31,
+            "share": 0.98
+          },
+          {
+            "key": "src_vevo",
+            "hours": 3.59,
+            "share": 0.02
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 13,
+        "top": [
+          {
+            "key": "src_pitchfork_classic",
+            "hours": 62.08,
+            "share": 0.37
+          },
+          {
+            "key": "belle and sebastian",
+            "hours": 20.61,
+            "share": 0.12
+          },
+          {
+            "key": "slowdive",
+            "hours": 18.5,
+            "share": 0.11
+          },
+          {
+            "key": "modest mouse",
+            "hours": 15.98,
+            "share": 0.1
+          },
+          {
+            "key": "mac demarco",
+            "hours": 11.88,
+            "share": 0.07
+          },
+          {
+            "key": "the flaming lips",
+            "hours": 10.71,
+            "share": 0.06
+          }
+        ]
+      }
+    },
+    {
+      "number": 563,
+      "name": "Artists",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 85,
+      "poolHours": 83.5,
+      "poolTopSource": 1,
+      "aired7d": 167.16,
+      "fallback7d": 0.84,
+      "uniqueAired": 85,
+      "maxAirings": 6,
+      "mostAired": [
+        {
+          "id": "M6fJ5Nx_X5k",
+          "count": 6,
+          "title": "Why I Didn't Release This Part Of The Flea Interview"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_rick_beato",
+            "hours": 167.16,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 8,
+        "top": [
+          {
+            "key": "src_rick_beato",
+            "hours": 152.63,
+            "share": 0.91
+          },
+          {
+            "key": "the thomas newman interview",
+            "hours": 5.52,
+            "share": 0.03
+          },
+          {
+            "key": "the mateus asato interview",
+            "hours": 2.5,
+            "share": 0.01
+          },
+          {
+            "key": "the plini interview",
+            "hours": 2.08,
+            "share": 0.01
+          },
+          {
+            "key": "the tommy emmanuel interview",
+            "hours": 1.81,
+            "share": 0.01
+          },
+          {
+            "key": "the  mark isham interview",
+            "hours": 1.36,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 564,
+      "name": "Bands",
+      "status": "PLAYABLE",
+      "programmes": 106,
+      "poolHours": 7.7,
+      "poolTopSource": 0.23,
+      "aired7d": 167.92,
+      "fallback7d": 0.08,
+      "uniqueAired": 106,
+      "maxAirings": 28,
+      "mostAired": [
+        {
+          "id": "LWJYaep-0sg",
+          "count": 28,
+          "title": "The Smashing Pumpkins - The Everlasting Gaze (Official Music Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 39,
+        "top": [
+          {
+            "key": "src_vevo_90s",
+            "hours": 38.94,
+            "share": 0.23
+          },
+          {
+            "key": "src_vevo_80s",
+            "hours": 29.62,
+            "share": 0.18
+          },
+          {
+            "key": "src_vevo_2000s",
+            "hours": 21.49,
+            "share": 0.13
+          },
+          {
+            "key": "src_insideout",
+            "hours": 17.14,
+            "share": 0.1
+          },
+          {
+            "key": "src_nuclear_blast",
+            "hours": 6.54,
+            "share": 0.04
+          },
+          {
+            "key": "src_vevo_classics",
+            "hours": 5.85,
+            "share": 0.03
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 106,
+        "top": [
+          {
+            "key": "lunatic soul",
+            "hours": 3.25,
+            "share": 0.02
+          },
+          {
+            "key": "haken",
+            "hours": 3.16,
+            "share": 0.02
+          },
+          {
+            "key": "riverside",
+            "hours": 2.99,
+            "share": 0.02
+          },
+          {
+            "key": "liquid tension experiment",
+            "hours": 2.95,
+            "share": 0.02
+          },
+          {
+            "key": "sigur rós",
+            "hours": 2.69,
+            "share": 0.02
+          },
+          {
+            "key": "dream theater",
+            "hours": 2.48,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 565,
+      "name": "Producers",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 475.4,
+      "poolTopSource": 1,
+      "aired7d": 163.32,
+      "fallback7d": 4.68,
+      "uniqueAired": 96,
+      "maxAirings": 1,
+      "mostAired": [
+        {
+          "id": "ApVFtW8hDgQ",
+          "count": 1,
+          "title": "Critiquing YOUR Mixes LIVE"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_produce_like_a_pro",
+            "hours": 163.32,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 38,
+        "top": [
+          {
+            "key": "src_produce_like_a_pro",
+            "hours": 95.93,
+            "share": 0.59
+          },
+          {
+            "key": "mixing in the bo",
+            "hours": 4.96,
+            "share": 0.03
+          },
+          {
+            "key": "mixing rock",
+            "hours": 3.08,
+            "share": 0.02
+          },
+          {
+            "key": "i'm rating your mixes live",
+            "hours": 2.95,
+            "share": 0.02
+          },
+          {
+            "key": "reviewing your mixes live",
+            "hours": 2.89,
+            "share": 0.02
+          },
+          {
+            "key": "live q",
+            "hours": 2.85,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 566,
+      "name": "Songwriters",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 299,
+      "poolHours": 184.4,
+      "poolTopSource": 1,
+      "aired7d": 167.48,
+      "fallback7d": 0.52,
+      "uniqueAired": 261,
+      "maxAirings": 2,
+      "mostAired": [
+        {
+          "id": "wfeJCQKCz1Q",
+          "count": 2,
+          "title": "What Makes This Song Great? \"Starlight\" MUSE"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_rick_beato",
+            "hours": 167.48,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 12,
+        "top": [
+          {
+            "key": "src_rick_beato",
+            "hours": 159.85,
+            "share": 0.95
+          },
+          {
+            "key": "the thomas newman interview",
+            "hours": 1.38,
+            "share": 0.01
+          },
+          {
+            "key": "gary husband",
+            "hours": 0.92,
+            "share": 0.01
+          },
+          {
+            "key": "the tommy emmanuel interview",
+            "hours": 0.91,
+            "share": 0.01
+          },
+          {
+            "key": "the greg wells interview",
+            "hours": 0.82,
+            "share": 0
+          },
+          {
+            "key": "mark lettieri of snarky puppy interview on sounding off",
+            "hours": 0.77,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 567,
+      "name": "Studio",
+      "status": "PLAYABLE",
+      "programmes": 31,
+      "poolHours": 18.8,
+      "poolTopSource": 0.99,
+      "aired7d": 167.53,
+      "fallback7d": 0.47,
+      "uniqueAired": 31,
+      "maxAirings": 14,
+      "mostAired": [
+        {
+          "id": "mURPNkPIeCM",
+          "count": 14,
+          "title": "Interview with Manny Marroquin & Larry Crane"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_mix_with_the_masters",
+            "hours": 165.9,
+            "share": 0.99
+          },
+          {
+            "key": "src_vevo",
+            "hours": 1.63,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 6,
+        "top": [
+          {
+            "key": "src_mix_with_the_masters",
+            "hours": 118.09,
+            "share": 0.7
+          },
+          {
+            "key": "mwtm live at namm 2018",
+            "hours": 40.07,
+            "share": 0.24
+          },
+          {
+            "key": "behind the track｜ 'love",
+            "hours": 3.57,
+            "share": 0.02
+          },
+          {
+            "key": "mi",
+            "hours": 2.98,
+            "share": 0.02
+          },
+          {
+            "key": "vevo",
+            "hours": 1.63,
+            "share": 0.01
+          },
+          {
+            "key": "being efficient",
+            "hours": 1.19,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 568,
+      "name": "Guitar",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 301,
+      "poolHours": 129.3,
+      "poolTopSource": 1,
+      "aired7d": 167.65,
+      "fallback7d": 0.35,
+      "uniqueAired": 288,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "Mdx7zgm43KA",
+          "count": 4,
+          "title": "The Fender Telecaster: The One That Started It All. | 75th Anniversary Celebration"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_fender",
+            "hours": 165.99,
+            "share": 0.99
+          },
+          {
+            "key": "src_kexp",
+            "hours": 1.66,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 244,
+        "top": [
+          {
+            "key": "src_fender",
+            "hours": 18.71,
+            "share": 0.11
+          },
+          {
+            "key": "the fender telecaster: the one that started it all.",
+            "hours": 5.17,
+            "share": 0.03
+          },
+          {
+            "key": "how to sound like randy rhoads",
+            "hours": 2.58,
+            "share": 0.02
+          },
+          {
+            "key": "guitar crash course: indie folk",
+            "hours": 2.48,
+            "share": 0.01
+          },
+          {
+            "key": "behind the line conversation cut",
+            "hours": 2.47,
+            "share": 0.01
+          },
+          {
+            "key": "how to set up your pedal board",
+            "hours": 2.33,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 569,
+      "name": "Bass",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 122,
+      "poolHours": 27.2,
+      "poolTopSource": 0.99,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 122,
+      "maxAirings": 11,
+      "mostAired": [
+        {
+          "id": "0SV8ZIt_2ow",
+          "count": 11,
+          "title": "Gucci Mane - Sad Christmas story at Art Basel ft. YesJulz"
+        }
+      ],
+      "sources": {
+        "distinct": 3,
+        "top": [
+          {
+            "key": "src_bassbuzz",
+            "hours": 164.82,
+            "share": 0.98
+          },
+          {
+            "key": "src_vevo",
+            "hours": 2.73,
+            "share": 0.02
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.37,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 9,
+        "top": [
+          {
+            "key": "src_bassbuzz",
+            "hours": 161.6,
+            "share": 0.96
+          },
+          {
+            "key": "how to start learning bass",
+            "hours": 1.3,
+            "share": 0.01
+          },
+          {
+            "key": "bastille",
+            "hours": 1.28,
+            "share": 0.01
+          },
+          {
+            "key": "slap",
+            "hours": 0.96,
+            "share": 0.01
+          },
+          {
+            "key": "i watched 107 bassists",
+            "hours": 0.96,
+            "share": 0.01
+          },
+          {
+            "key": "gucci mane",
+            "hours": 0.58,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 570,
+      "name": "Drums",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 233,
+      "poolHours": 98.6,
+      "poolTopSource": 1,
+      "aired7d": 167.83,
+      "fallback7d": 0.17,
+      "uniqueAired": 227,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "xx045HBXlwg",
+          "count": 4,
+          "title": "Max Portnoy Reveals Metal Drumming’s Next Era"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_drumeo",
+            "hours": 167.83,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 56,
+        "top": [
+          {
+            "key": "src_drumeo",
+            "hours": 114.19,
+            "share": 0.68
+          },
+          {
+            "key": "the sound of modern jazz",
+            "hours": 4.86,
+            "share": 0.03
+          },
+          {
+            "key": "breaking down sum 41's final album",
+            "hours": 3.59,
+            "share": 0.02
+          },
+          {
+            "key": "boys like girls grooves",
+            "hours": 3.24,
+            "share": 0.02
+          },
+          {
+            "key": "breaking down dream theater's new album: \"parasomnia\"",
+            "hours": 3.18,
+            "share": 0.02
+          },
+          {
+            "key": "what’s it like drumming for frank zappa?",
+            "hours": 3.14,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 571,
+      "name": "Keyboards",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 124.2,
+      "poolTopSource": 1,
+      "aired7d": 167.7,
+      "fallback7d": 0.3,
+      "uniqueAired": 291,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "phlFEwEti4U",
+          "count": 4,
+          "title": "Pro Pianist Hears APT (Bruno Mars and Rosé) For The First Time ft. GLASYS"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_pianote",
+            "hours": 167.7,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 56,
+        "top": [
+          {
+            "key": "src_pianote",
+            "hours": 102.44,
+            "share": 0.61
+          },
+          {
+            "key": "learn your favorite christmas song",
+            "hours": 6.4,
+            "share": 0.04
+          },
+          {
+            "key": "play beautifully",
+            "hours": 4.24,
+            "share": 0.03
+          },
+          {
+            "key": "pianote live",
+            "hours": 3.9,
+            "share": 0.02
+          },
+          {
+            "key": "the haunted pianote",
+            "hours": 3.14,
+            "share": 0.02
+          },
+          {
+            "key": "piano warm-ups you need to know",
+            "hours": 2.82,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 572,
+      "name": "Synths",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 401,
+      "poolHours": 206.4,
+      "poolTopSource": 0.55,
+      "aired7d": 167.83,
+      "fallback7d": 0.17,
+      "uniqueAired": 306,
+      "maxAirings": 6,
+      "mostAired": [
+        {
+          "id": "FVL1lSqz6gw",
+          "count": 6,
+          "title": "Metric - Synthetica (Live on KEXP)"
+        }
+      ],
+      "sources": {
+        "distinct": 4,
+        "top": [
+          {
+            "key": "src_loopop",
+            "hours": 91.22,
+            "share": 0.54
+          },
+          {
+            "key": "src_moog",
+            "hours": 42.32,
+            "share": 0.25
+          },
+          {
+            "key": "src_korg",
+            "hours": 33.99,
+            "share": 0.2
+          },
+          {
+            "key": "src_kexp",
+            "hours": 0.31,
+            "share": 0
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 67,
+        "top": [
+          {
+            "key": "src_loopop",
+            "hours": 89.49,
+            "share": 0.53
+          },
+          {
+            "key": "src_korg",
+            "hours": 30.36,
+            "share": 0.18
+          },
+          {
+            "key": "src_moog",
+            "hours": 13.19,
+            "share": 0.08
+          },
+          {
+            "key": "minimoog model d",
+            "hours": 3.81,
+            "share": 0.02
+          },
+          {
+            "key": "synthesizing with moog",
+            "hours": 3.33,
+            "share": 0.02
+          },
+          {
+            "key": "moog one: sound designer",
+            "hours": 3.14,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 573,
+      "name": "Vocals",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 324,
+      "poolHours": 36.8,
+      "poolTopSource": 0.91,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 321,
+      "maxAirings": 90,
+      "mostAired": [
+        {
+          "id": "0vUAn0J1hrs",
+          "count": 90,
+          "title": "Home Free - Cross That Bridge (Official Music Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "src_home_free",
+            "hours": 154.92,
+            "share": 0.92
+          },
+          {
+            "key": "src_kings_singers",
+            "hours": 12.99,
+            "share": 0.08
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 37,
+        "top": [
+          {
+            "key": "home free",
+            "hours": 115.67,
+            "share": 0.69
+          },
+          {
+            "key": "src_home_free",
+            "hours": 24.35,
+            "share": 0.15
+          },
+          {
+            "key": "the king's singers",
+            "hours": 12.99,
+            "share": 0.08
+          },
+          {
+            "key": "home away from home",
+            "hours": 4.74,
+            "share": 0.03
+          },
+          {
+            "key": "texas eats with tim foust",
+            "hours": 1.09,
+            "share": 0.01
+          },
+          {
+            "key": "home free + the longest johns + seán dagher",
+            "hours": 0.73,
+            "share": 0
+          }
+        ]
+      }
+    },
+    {
+      "number": 574,
+      "name": "Karaoke",
+      "status": "PLAYABLE",
+      "programmes": 63,
+      "poolHours": 6.1,
+      "poolTopSource": 1,
+      "aired7d": 167.92,
+      "fallback7d": 0.08,
+      "uniqueAired": 63,
+      "maxAirings": 28,
+      "mostAired": [
+        {
+          "id": "pcZzMIFkPCg",
+          "count": 28,
+          "title": "Lady Gaga’s Pride Anthem is 15 YEARS Old! 🏳️‍🌈 + Gorillaz Landslide Victory! | Sing King Soundcheck"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_sing_king",
+            "hours": 167.92,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 33,
+        "top": [
+          {
+            "key": "src_sing_king",
+            "hours": 80.39,
+            "share": 0.48
+          },
+          {
+            "key": "the best karaoke with lyrics",
+            "hours": 16.6,
+            "share": 0.1
+          },
+          {
+            "key": "sing king soundcheck",
+            "hours": 5.13,
+            "share": 0.03
+          },
+          {
+            "key": "why “i think we’re alone now” still slaps",
+            "hours": 4.17,
+            "share": 0.02
+          },
+          {
+            "key": "billy joel",
+            "hours": 3.87,
+            "share": 0.02
+          },
+          {
+            "key": "why is this 2002 song everywhere? 🌅 milky",
+            "hours": 3.62,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 575,
+      "name": "Instrumental",
+      "status": "PLAYABLE",
+      "programmes": 103,
+      "poolHours": 10.8,
+      "poolTopSource": 0.83,
+      "aired7d": 167.88,
+      "fallback7d": 0.12,
+      "uniqueAired": 103,
+      "maxAirings": 21,
+      "mostAired": [
+        {
+          "id": "NnE73tTRPmg",
+          "count": 21,
+          "title": "Vieux Farka Touré et Khruangbin - Diarabi (Official Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 3,
+        "top": [
+          {
+            "key": "src_polyphia",
+            "hours": 139.16,
+            "share": 0.83
+          },
+          {
+            "key": "src_khruangbin",
+            "hours": 17.92,
+            "share": 0.11
+          },
+          {
+            "key": "src_animals_as_leaders",
+            "hours": 10.8,
+            "share": 0.06
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 10,
+        "top": [
+          {
+            "key": "polyphia",
+            "hours": 85.44,
+            "share": 0.51
+          },
+          {
+            "key": "src_polyphia",
+            "hours": 48.01,
+            "share": 0.29
+          },
+          {
+            "key": "khruangbin",
+            "hours": 16.17,
+            "share": 0.1
+          },
+          {
+            "key": "src_animals_as_leaders",
+            "hours": 4.52,
+            "share": 0.03
+          },
+          {
+            "key": "tjom 10 year eu/uk tour",
+            "hours": 3.83,
+            "share": 0.02
+          },
+          {
+            "key": "polyphia : tour diaries",
+            "hours": 2.83,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 576,
+      "name": "Acoustic",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 51,
+      "poolTopSource": 1,
+      "aired7d": 167.72,
+      "fallback7d": 0.28,
+      "uniqueAired": 295,
+      "maxAirings": 32,
+      "mostAired": [
+        {
+          "id": "taOAxli0v_E",
+          "count": 32,
+          "title": "Kymara - Walk Tall Woman | Sofar Brighton"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_sofar",
+            "hours": 167.72,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 285,
+        "top": [
+          {
+            "key": "o2 live from the highlands",
+            "hours": 6.21,
+            "share": 0.04
+          },
+          {
+            "key": "src_sofar",
+            "hours": 4.51,
+            "share": 0.03
+          },
+          {
+            "key": "la majo",
+            "hours": 3.77,
+            "share": 0.02
+          },
+          {
+            "key": "kymara",
+            "hours": 3.3,
+            "share": 0.02
+          },
+          {
+            "key": "“we really couldn’t imagine doing it as a solo act\"",
+            "hours": 2.82,
+            "share": 0.02
+          },
+          {
+            "key": "boys like girls",
+            "hours": 2.39,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 577,
+      "name": "Cover Versions",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 300,
+      "poolHours": 28.8,
+      "poolTopSource": 1,
+      "aired7d": 167.87,
+      "fallback7d": 0.13,
+      "uniqueAired": 297,
+      "maxAirings": 94,
+      "mostAired": [
+        {
+          "id": "9R2gKfxROx0",
+          "count": 94,
+          "title": "A Bar Song (Tipsy) - Shaboozey (‘60s Sam Cooke Style Cover) ft. Nathan Chester"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_postmodern_jukebox",
+            "hours": 167.87,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 263,
+        "top": [
+          {
+            "key": "src_postmodern_jukebox",
+            "hours": 35.46,
+            "share": 0.21
+          },
+          {
+            "key": "the powerpuff girls theme song",
+            "hours": 7.28,
+            "share": 0.04
+          },
+          {
+            "key": "a bar song (tipsy)",
+            "hours": 6.32,
+            "share": 0.04
+          },
+          {
+            "key": "birthday",
+            "hours": 6.17,
+            "share": 0.04
+          },
+          {
+            "key": "die for you",
+            "hours": 3.35,
+            "share": 0.02
+          },
+          {
+            "key": "who wants to live forever",
+            "hours": 2.88,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 578,
+      "name": "Remixes",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 884,
+      "poolHours": 59.9,
+      "poolTopSource": 0.44,
+      "aired7d": 167.82,
+      "fallback7d": 0.18,
+      "uniqueAired": 877,
+      "maxAirings": 4,
+      "mostAired": [
+        {
+          "id": "kSkiJdlewds",
+          "count": 4,
+          "title": "Julien Jabre & Mt. Eden feat. Hayley Gene - A Little Closer (Maelstrom Remix) [Cover Art]"
+        }
+      ],
+      "sources": {
+        "distinct": 4,
+        "top": [
+          {
+            "key": "src_ultra",
+            "hours": 73.51,
+            "share": 0.44
+          },
+          {
+            "key": "src_spinnin",
+            "hours": 43.16,
+            "share": 0.26
+          },
+          {
+            "key": "src_monstercat",
+            "hours": 28.18,
+            "share": 0.17
+          },
+          {
+            "key": "src_armada",
+            "hours": 22.98,
+            "share": 0.14
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 422,
+        "top": [
+          {
+            "key": "steve aoki",
+            "hours": 4.42,
+            "share": 0.03
+          },
+          {
+            "key": "hardwell",
+            "hours": 3.84,
+            "share": 0.02
+          },
+          {
+            "key": "benny benassi",
+            "hours": 3.5,
+            "share": 0.02
+          },
+          {
+            "key": "best 90s remixes",
+            "hours": 2.86,
+            "share": 0.02
+          },
+          {
+            "key": "sofi tukker",
+            "hours": 2.33,
+            "share": 0.01
+          },
+          {
+            "key": "nervo",
+            "hours": 2.11,
+            "share": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "number": 579,
+      "name": "Rare Tracks",
+      "status": "NEEDS_CONTENT",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 580,
+      "name": "MTV Generation",
+      "status": "PLAYABLE",
+      "programmes": 292,
+      "poolHours": 22,
+      "poolTopSource": 0.11,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 286,
+      "maxAirings": 107,
+      "mostAired": [
+        {
+          "id": "C6jElKMMOWM",
+          "count": 107,
+          "title": "Red Hot Chili Peppers - Suck My Kiss [Official Music Video]"
+        }
+      ],
+      "sources": {
+        "distinct": 46,
+        "top": [
+          {
+            "key": "src_motley_crue",
+            "hours": 12.31,
+            "share": 0.07
+          },
+          {
+            "key": "src_def_leppard",
+            "hours": 11.7,
+            "share": 0.07
+          },
+          {
+            "key": "src_siouxsie_vevo",
+            "hours": 10.01,
+            "share": 0.06
+          },
+          {
+            "key": "src_nirvana",
+            "hours": 9.97,
+            "share": 0.06
+          },
+          {
+            "key": "src_rhcp",
+            "hours": 9.52,
+            "share": 0.06
+          },
+          {
+            "key": "src_tears_for_fears_vevo",
+            "hours": 9.21,
+            "share": 0.05
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 48,
+        "top": [
+          {
+            "key": "def leppard",
+            "hours": 11.7,
+            "share": 0.07
+          },
+          {
+            "key": "manic street preachers",
+            "hours": 10.28,
+            "share": 0.06
+          },
+          {
+            "key": "siouxsie and the banshees",
+            "hours": 10.01,
+            "share": 0.06
+          },
+          {
+            "key": "nirvana",
+            "hours": 9.97,
+            "share": 0.06
+          },
+          {
+            "key": "red hot chili peppers",
+            "hours": 9.52,
+            "share": 0.06
+          },
+          {
+            "key": "tears for fears",
+            "hours": 9.21,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 581,
+      "name": "Alternative 90",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 311,
+      "poolHours": 26.8,
+      "poolTopSource": 0.19,
+      "aired7d": 167.85,
+      "fallback7d": 0.15,
+      "uniqueAired": 311,
+      "maxAirings": 102,
+      "mostAired": [
+        {
+          "id": "x6E0Z8wqNDQ",
+          "count": 102,
+          "title": "Mad Season - Wake Up (Live at the Moore, Seattle, 1995)"
+        }
+      ],
+      "sources": {
+        "distinct": 24,
+        "top": [
+          {
+            "key": "src_mad_season_vevo",
+            "hours": 32.55,
+            "share": 0.19
+          },
+          {
+            "key": "src_rem",
+            "hours": 28.73,
+            "share": 0.17
+          },
+          {
+            "key": "src_nirvana",
+            "hours": 24.3,
+            "share": 0.14
+          },
+          {
+            "key": "src_rhcp",
+            "hours": 12.42,
+            "share": 0.07
+          },
+          {
+            "key": "src_radiohead",
+            "hours": 10.71,
+            "share": 0.06
+          },
+          {
+            "key": "src_pearl_jam",
+            "hours": 10.01,
+            "share": 0.06
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 28,
+        "top": [
+          {
+            "key": "mad season",
+            "hours": 32.55,
+            "share": 0.19
+          },
+          {
+            "key": "r.e.m.",
+            "hours": 28.41,
+            "share": 0.17
+          },
+          {
+            "key": "nirvana",
+            "hours": 25.44,
+            "share": 0.15
+          },
+          {
+            "key": "red hot chili peppers",
+            "hours": 12.42,
+            "share": 0.07
+          },
+          {
+            "key": "radiohead",
+            "hours": 9.1,
+            "share": 0.05
+          },
+          {
+            "key": "pearl jam",
+            "hours": 8.91,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 582,
+      "name": "Indie 2000",
+      "status": "PLAYABLE",
+      "programmes": 43,
+      "poolHours": 4.3,
+      "poolTopSource": 0.56,
+      "aired7d": 167.89,
+      "fallback7d": 0.11,
+      "uniqueAired": 43,
+      "maxAirings": 42,
+      "mostAired": [
+        {
+          "id": "E0wOV-w1ObI",
+          "count": 42,
+          "title": "Sigur Rós: Festival (Inni)"
+        }
+      ],
+      "sources": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_radiohead",
+            "hours": 95.44,
+            "share": 0.57
+          },
+          {
+            "key": "src_sigur_ros",
+            "hours": 46.08,
+            "share": 0.27
+          },
+          {
+            "key": "src_blur",
+            "hours": 12.44,
+            "share": 0.07
+          },
+          {
+            "key": "src_jimmy_eat_world",
+            "hours": 11.7,
+            "share": 0.07
+          },
+          {
+            "key": "src_dashboard_confessional",
+            "hours": 2.24,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 10,
+        "top": [
+          {
+            "key": "radiohead",
+            "hours": 82.86,
+            "share": 0.49
+          },
+          {
+            "key": "sigur rós",
+            "hours": 26.92,
+            "share": 0.16
+          },
+          {
+            "key": "src_radiohead",
+            "hours": 12.58,
+            "share": 0.07
+          },
+          {
+            "key": "src_sigur_ros",
+            "hours": 12.03,
+            "share": 0.07
+          },
+          {
+            "key": "jimmy eat world",
+            "hours": 11.7,
+            "share": 0.07
+          },
+          {
+            "key": "blur",
+            "hours": 9.37,
+            "share": 0.06
+          }
+        ]
+      }
+    },
+    {
+      "number": 583,
+      "name": "Metal 80",
+      "status": "PLAYABLE",
+      "programmes": 64,
+      "poolHours": 5.3,
+      "poolTopSource": 0.36,
+      "aired7d": 167.77,
+      "fallback7d": 0.23,
+      "uniqueAired": 64,
+      "maxAirings": 35,
+      "mostAired": [
+        {
+          "id": "Gcj34XixuYg",
+          "count": 35,
+          "title": "Kiss - Lick It Up"
+        }
+      ],
+      "sources": {
+        "distinct": 7,
+        "top": [
+          {
+            "key": "src_def_leppard",
+            "hours": 61.44,
+            "share": 0.37
+          },
+          {
+            "key": "src_motley_crue",
+            "hours": 32.68,
+            "share": 0.19
+          },
+          {
+            "key": "src_acdc",
+            "hours": 28.57,
+            "share": 0.17
+          },
+          {
+            "key": "src_aerosmith",
+            "hours": 19.76,
+            "share": 0.12
+          },
+          {
+            "key": "src_kiss",
+            "hours": 10.05,
+            "share": 0.06
+          },
+          {
+            "key": "src_nine_inch_nails",
+            "hours": 8.35,
+            "share": 0.05
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 9,
+        "top": [
+          {
+            "key": "def leppard",
+            "hours": 61.44,
+            "share": 0.37
+          },
+          {
+            "key": "mötley crüe",
+            "hours": 28.7,
+            "share": 0.17
+          },
+          {
+            "key": "ac/dc",
+            "hours": 28.57,
+            "share": 0.17
+          },
+          {
+            "key": "aerosmith",
+            "hours": 16.4,
+            "share": 0.1
+          },
+          {
+            "key": "kiss",
+            "hours": 10.05,
+            "share": 0.06
+          },
+          {
+            "key": "nine inch nails",
+            "hours": 8.35,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 584,
+      "name": "Metal 90",
+      "status": "PLAYABLE",
+      "programmes": 62,
+      "poolHours": 5.1,
+      "poolTopSource": 0.29,
+      "aired7d": 167.76,
+      "fallback7d": 0.24,
+      "uniqueAired": 62,
+      "maxAirings": 35,
+      "mostAired": [
+        {
+          "id": "rXAj7b3B_14",
+          "count": 35,
+          "title": "DEF LEPPARD - \"Two Steps Behind\" (Official Music Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 9,
+        "top": [
+          {
+            "key": "src_def_leppard",
+            "hours": 46.92,
+            "share": 0.28
+          },
+          {
+            "key": "src_aerosmith",
+            "hours": 31.57,
+            "share": 0.19
+          },
+          {
+            "key": "src_soundgarden",
+            "hours": 29.79,
+            "share": 0.18
+          },
+          {
+            "key": "src_guns_n_roses",
+            "hours": 28.98,
+            "share": 0.17
+          },
+          {
+            "key": "src_nine_inch_nails",
+            "hours": 15.38,
+            "share": 0.09
+          },
+          {
+            "key": "src_motley_crue",
+            "hours": 8.78,
+            "share": 0.05
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 11,
+        "top": [
+          {
+            "key": "def leppard",
+            "hours": 46.92,
+            "share": 0.28
+          },
+          {
+            "key": "aerosmith",
+            "hours": 31.57,
+            "share": 0.19
+          },
+          {
+            "key": "soundgarden",
+            "hours": 29.79,
+            "share": 0.18
+          },
+          {
+            "key": "guns n' roses",
+            "hours": 24.1,
+            "share": 0.14
+          },
+          {
+            "key": "mötley crüe",
+            "hours": 8.78,
+            "share": 0.05
+          },
+          {
+            "key": "nine inch nails",
+            "hours": 8.09,
+            "share": 0.05
+          }
+        ]
+      }
+    },
+    {
+      "number": 585,
+      "name": "Punk 77",
+      "status": "PLAYABLE_THIN",
+      "programmes": 1,
+      "poolHours": 0.1,
+      "poolTopSource": 1,
+      "aired7d": 167.74,
+      "fallback7d": 0.26,
+      "uniqueAired": 1,
+      "maxAirings": 2296,
+      "mostAired": [
+        {
+          "id": "kkoOvLYr0Pk",
+          "count": 2296,
+          "title": "Alvvays - Plimsoll Punks (Live on KEXP)"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_kexp",
+            "hours": 167.74,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "alvvays",
+            "hours": 167.74,
+            "share": 1
+          }
+        ]
+      }
+    },
+    {
+      "number": 586,
+      "name": "Punk 90",
+      "status": "NEEDS_CONTENT",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 587,
+      "name": "Soul 70",
+      "status": "PLAYABLE_THIN",
+      "programmes": 2,
+      "poolHours": 0.4,
+      "poolTopSource": 1,
+      "aired7d": 167.77,
+      "fallback7d": 0.23,
+      "uniqueAired": 2,
+      "maxAirings": 463,
+      "mostAired": [
+        {
+          "id": "blaM_A5AgUg",
+          "count": 463,
+          "title": "Soul Asylum - Somebody to Shove (Live on KEXP)"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_kexp",
+            "hours": 167.77,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 2,
+        "top": [
+          {
+            "key": "saigon soul revival",
+            "hours": 140.25,
+            "share": 0.84
+          },
+          {
+            "key": "soul asylum",
+            "hours": 27.52,
+            "share": 0.16
+          }
+        ]
+      }
+    },
+    {
+      "number": 588,
+      "name": "Disco 79",
+      "status": "NEEDS_CONTENT",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 589,
+      "name": "Synth 84",
+      "status": "NEEDS_CONTENT",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 590,
+      "name": "VEVO",
+      "status": "PLAYABLE",
+      "programmes": 203,
+      "poolHours": 17.8,
+      "poolTopSource": 1,
+      "aired7d": 167.92,
+      "fallback7d": 0.08,
+      "uniqueAired": 202,
+      "maxAirings": 92,
+      "mostAired": [
+        {
+          "id": "a5pADe9-d-s",
+          "count": 92,
+          "title": "Andra Day - Why I Vote"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_vevo",
+            "hours": 167.92,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 155,
+        "top": [
+          {
+            "key": "vevo",
+            "hours": 33.75,
+            "share": 0.2
+          },
+          {
+            "key": "src_vevo",
+            "hours": 14.56,
+            "share": 0.09
+          },
+          {
+            "key": "g-eazy",
+            "hours": 9.13,
+            "share": 0.05
+          },
+          {
+            "key": "andra day",
+            "hours": 8.24,
+            "share": 0.05
+          },
+          {
+            "key": "jarryd james",
+            "hours": 6.38,
+            "share": 0.04
+          },
+          {
+            "key": "harry hudson",
+            "hours": 5.39,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 591,
+      "name": "VEVO Pop",
+      "status": "PLAYABLE",
+      "programmes": 99,
+      "poolHours": 10.8,
+      "poolTopSource": 1,
+      "aired7d": 167.96,
+      "fallback7d": 0.04,
+      "uniqueAired": 99,
+      "maxAirings": 21,
+      "mostAired": [
+        {
+          "id": "grJEl0u2YUQ",
+          "count": 21,
+          "title": "Doja Cat - Reactions to Doja Cat’s “Say So” | Watch This (Vevo)"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_vevo",
+            "hours": 167.96,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 77,
+        "top": [
+          {
+            "key": "vevo",
+            "hours": 51.21,
+            "share": 0.3
+          },
+          {
+            "key": "src_vevo",
+            "hours": 15.84,
+            "share": 0.09
+          },
+          {
+            "key": "stefflon don",
+            "hours": 7.5,
+            "share": 0.04
+          },
+          {
+            "key": "nipsey hussle",
+            "hours": 5.69,
+            "share": 0.03
+          },
+          {
+            "key": "g-eazy",
+            "hours": 5.11,
+            "share": 0.03
+          },
+          {
+            "key": "aminé",
+            "hours": 4.55,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 592,
+      "name": "VEVO Rock",
+      "status": "PLAYABLE",
+      "programmes": 243,
+      "poolHours": 19.4,
+      "poolTopSource": 0.48,
+      "aired7d": 167.89,
+      "fallback7d": 0.11,
+      "uniqueAired": 241,
+      "maxAirings": 151,
+      "mostAired": [
+        {
+          "id": "Y2NkuFIlLEo",
+          "count": 151,
+          "title": "Imagine Dragons - Wrecked (Official Music Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "src_imagine_dragons",
+            "hours": 79.82,
+            "share": 0.48
+          },
+          {
+            "key": "src_vevo_the_killers",
+            "hours": 37.59,
+            "share": 0.22
+          },
+          {
+            "key": "src_vevo_kings_of_leon",
+            "hours": 35.89,
+            "share": 0.21
+          },
+          {
+            "key": "src_vevo",
+            "hours": 9.47,
+            "share": 0.06
+          },
+          {
+            "key": "src_arctic_monkeys",
+            "hours": 5.12,
+            "share": 0.03
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 8,
+        "top": [
+          {
+            "key": "imagine dragons",
+            "hours": 77,
+            "share": 0.46
+          },
+          {
+            "key": "the killers",
+            "hours": 37.59,
+            "share": 0.22
+          },
+          {
+            "key": "kings of leon",
+            "hours": 35.89,
+            "share": 0.21
+          },
+          {
+            "key": "src_vevo",
+            "hours": 8.3,
+            "share": 0.05
+          },
+          {
+            "key": "arctic monkeys",
+            "hours": 5.12,
+            "share": 0.03
+          },
+          {
+            "key": "src_imagine_dragons",
+            "hours": 2.82,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 593,
+      "name": "VEVO Hip-Hop & R&B",
+      "status": "PLAYABLE",
+      "programmes": 155,
+      "poolHours": 12.4,
+      "poolTopSource": 0.49,
+      "aired7d": 167.82,
+      "fallback7d": 0.18,
+      "uniqueAired": 155,
+      "maxAirings": 48,
+      "mostAired": [
+        {
+          "id": "PVbQrvlB_gw",
+          "count": 48,
+          "title": "Eminem - Framed"
+        }
+      ],
+      "sources": {
+        "distinct": 4,
+        "top": [
+          {
+            "key": "src_eminem",
+            "hours": 82.96,
+            "share": 0.49
+          },
+          {
+            "key": "src_50_cent",
+            "hours": 42.91,
+            "share": 0.26
+          },
+          {
+            "key": "src_kendrick_lamar",
+            "hours": 36.66,
+            "share": 0.22
+          },
+          {
+            "key": "src_vevo",
+            "hours": 5.28,
+            "share": 0.03
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 5,
+        "top": [
+          {
+            "key": "eminem",
+            "hours": 79.44,
+            "share": 0.47
+          },
+          {
+            "key": "50 cent",
+            "hours": 42.91,
+            "share": 0.26
+          },
+          {
+            "key": "kendrick lamar",
+            "hours": 36.66,
+            "share": 0.22
+          },
+          {
+            "key": "nipsey hussle",
+            "hours": 5.28,
+            "share": 0.03
+          },
+          {
+            "key": "src_eminem",
+            "hours": 3.52,
+            "share": 0.02
+          }
+        ]
+      }
+    },
+    {
+      "number": 594,
+      "name": "VEVO Classics",
+      "status": "NEEDS_CONTENT",
+      "programmes": 0,
+      "poolHours": 0,
+      "poolTopSource": 0,
+      "aired7d": 0,
+      "fallback7d": 168,
+      "uniqueAired": 0,
+      "maxAirings": 0,
+      "mostAired": [],
+      "sources": {
+        "distinct": 0,
+        "top": []
+      },
+      "artists": {
+        "distinct": 0,
+        "top": []
+      }
+    },
+    {
+      "number": 595,
+      "name": "VEVO 1980s",
+      "status": "PLAYABLE",
+      "programmes": 333,
+      "poolHours": 22.1,
+      "poolTopSource": 0.77,
+      "aired7d": 167.88,
+      "fallback7d": 0.12,
+      "uniqueAired": 330,
+      "maxAirings": 144,
+      "mostAired": [
+        {
+          "id": "eTLX6goXfQM",
+          "count": 144,
+          "title": "Alabama - Take Me Down (Official Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 14,
+        "top": [
+          {
+            "key": "src_vevo_80s",
+            "hours": 125.63,
+            "share": 0.75
+          },
+          {
+            "key": "src_tears_for_fears_vevo",
+            "hours": 17.24,
+            "share": 0.1
+          },
+          {
+            "key": "src_vevo_classics",
+            "hours": 10.06,
+            "share": 0.06
+          },
+          {
+            "key": "src_vevo_abba",
+            "hours": 4.98,
+            "share": 0.03
+          },
+          {
+            "key": "src_siouxsie_vevo",
+            "hours": 3.33,
+            "share": 0.02
+          },
+          {
+            "key": "src_vevo_90s",
+            "hours": 1.55,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 149,
+        "top": [
+          {
+            "key": "tears for fears",
+            "hours": 17.56,
+            "share": 0.1
+          },
+          {
+            "key": "alabama",
+            "hours": 15.32,
+            "share": 0.09
+          },
+          {
+            "key": "ronnie milsap",
+            "hours": 7.37,
+            "share": 0.04
+          },
+          {
+            "key": "abba",
+            "hours": 5.48,
+            "share": 0.03
+          },
+          {
+            "key": "after the fire",
+            "hours": 4.94,
+            "share": 0.03
+          },
+          {
+            "key": "eddie murphy",
+            "hours": 4.93,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 596,
+      "name": "VEVO 1990s",
+      "status": "PLAYABLE",
+      "programmes": 263,
+      "poolHours": 18.4,
+      "poolTopSource": 0.6,
+      "aired7d": 167.91,
+      "fallback7d": 0.09,
+      "uniqueAired": 261,
+      "maxAirings": 189,
+      "mostAired": [
+        {
+          "id": "h0YSX9AkTk4",
+          "count": 189,
+          "title": "Phyllis Hyman - Don't Wanna Change the World (Official Video)"
+        }
+      ],
+      "sources": {
+        "distinct": 16,
+        "top": [
+          {
+            "key": "src_vevo_90s",
+            "hours": 105.38,
+            "share": 0.63
+          },
+          {
+            "key": "src_vevo_classics",
+            "hours": 41.08,
+            "share": 0.24
+          },
+          {
+            "key": "src_vevo_80s",
+            "hours": 3.22,
+            "share": 0.02
+          },
+          {
+            "key": "src_manics_vevo",
+            "hours": 3.01,
+            "share": 0.02
+          },
+          {
+            "key": "src_screaming_trees_vevo",
+            "hours": 2.93,
+            "share": 0.02
+          },
+          {
+            "key": "src_vevo_2000s",
+            "hours": 2.48,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 127,
+        "top": [
+          {
+            "key": "tanya tucker",
+            "hours": 12.25,
+            "share": 0.07
+          },
+          {
+            "key": "phyllis hyman",
+            "hours": 11.5,
+            "share": 0.07
+          },
+          {
+            "key": "la oreja de van gogh",
+            "hours": 11.38,
+            "share": 0.07
+          },
+          {
+            "key": "groove theory",
+            "hours": 11.28,
+            "share": 0.07
+          },
+          {
+            "key": "michael jackson",
+            "hours": 7.82,
+            "share": 0.05
+          },
+          {
+            "key": "shania twain",
+            "hours": 5.03,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 597,
+      "name": "VEVO 2000s",
+      "status": "PLAYABLE",
+      "programmes": 316,
+      "poolHours": 21.1,
+      "poolTopSource": 0.62,
+      "aired7d": 167.88,
+      "fallback7d": 0.12,
+      "uniqueAired": 314,
+      "maxAirings": 119,
+      "mostAired": [
+        {
+          "id": "scOlcopGBkw",
+          "count": 119,
+          "title": "Alien Ant Farm - Drifting Apart"
+        }
+      ],
+      "sources": {
+        "distinct": 13,
+        "top": [
+          {
+            "key": "src_vevo_2000s",
+            "hours": 108.19,
+            "share": 0.64
+          },
+          {
+            "key": "src_vevo_90s",
+            "hours": 39.4,
+            "share": 0.23
+          },
+          {
+            "key": "src_vevo_classics",
+            "hours": 4.82,
+            "share": 0.03
+          },
+          {
+            "key": "src_vevo_the_killers",
+            "hours": 2.9,
+            "share": 0.02
+          },
+          {
+            "key": "src_50_cent",
+            "hours": 2.7,
+            "share": 0.02
+          },
+          {
+            "key": "src_vevo_80s",
+            "hours": 1.94,
+            "share": 0.01
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 148,
+        "top": [
+          {
+            "key": "toni braxton",
+            "hours": 10.41,
+            "share": 0.06
+          },
+          {
+            "key": "n.e.r.d.",
+            "hours": 7.49,
+            "share": 0.04
+          },
+          {
+            "key": "joe",
+            "hours": 6.58,
+            "share": 0.04
+          },
+          {
+            "key": "alien ant farm",
+            "hours": 6.13,
+            "share": 0.04
+          },
+          {
+            "key": "shakira",
+            "hours": 5.98,
+            "share": 0.04
+          },
+          {
+            "key": "noelia",
+            "hours": 5.8,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 598,
+      "name": "VEVO Live & Performance",
+      "status": "PLAYABLE",
+      "programmes": 214,
+      "poolHours": 21.8,
+      "poolTopSource": 1,
+      "aired7d": 167.93,
+      "fallback7d": 0.07,
+      "uniqueAired": 212,
+      "maxAirings": 144,
+      "mostAired": [
+        {
+          "id": "qBq-SzjjiI4",
+          "count": 144,
+          "title": "Kelsy Karter & The Heroines - I Get Off (Performance Visual)"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_vevo_live",
+            "hours": 167.93,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 94,
+        "top": [
+          {
+            "key": "kelsy karter",
+            "hours": 15.06,
+            "share": 0.09
+          },
+          {
+            "key": "ti",
+            "hours": 8.2,
+            "share": 0.05
+          },
+          {
+            "key": "src_vevo_live",
+            "hours": 7.88,
+            "share": 0.05
+          },
+          {
+            "key": "luke bryan",
+            "hours": 5.88,
+            "share": 0.03
+          },
+          {
+            "key": "dem atlas",
+            "hours": 5.62,
+            "share": 0.03
+          },
+          {
+            "key": "forester",
+            "hours": 5.6,
+            "share": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "number": 599,
+      "name": "VEVO Discover",
+      "status": "PLAYABLE_STRONG",
+      "programmes": 893,
+      "poolHours": 53.5,
+      "poolTopSource": 1,
+      "aired7d": 167.93,
+      "fallback7d": 0.07,
+      "uniqueAired": 886,
+      "maxAirings": 7,
+      "mostAired": [
+        {
+          "id": "5FGHOyhcRaI",
+          "count": 7,
+          "title": "The Age of L.U.N.A - Freddie - Vevo dscvr (Live)"
+        }
+      ],
+      "sources": {
+        "distinct": 1,
+        "top": [
+          {
+            "key": "src_vevo_dscvr",
+            "hours": 167.93,
+            "share": 1
+          }
+        ]
+      },
+      "artists": {
+        "distinct": 549,
+        "top": [
+          {
+            "key": "vevo",
+            "hours": 7.15,
+            "share": 0.04
+          },
+          {
+            "key": "src_vevo_dscvr",
+            "hours": 6.17,
+            "share": 0.04
+          },
+          {
+            "key": "070 shake",
+            "hours": 1.15,
+            "share": 0.01
+          },
+          {
+            "key": "dagny",
+            "hours": 1.08,
+            "share": 0.01
+          },
+          {
+            "key": "sam fischer",
+            "hours": 0.87,
+            "share": 0.01
+          },
+          {
+            "key": "george ezra",
+            "hours": 0.8,
+            "share": 0
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,2270 @@
+[
+  {
+    "number": 1001,
+    "name": "AFunkyDiabetic",
+    "eligibleOwn": 7,
+    "refused": 0,
+    "beforePool": 7,
+    "beforeDay": {
+      "airings": 204,
+      "unique": 7,
+      "backToBack": 0,
+      "maxAirings": 30,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 31,
+    "afterOwnDistinct": 7,
+    "uploader": "AFunkyDiabetic",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.84,
+    "afterDay": {
+      "airings": 165,
+      "unique": 31,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 0.5
+    }
+  },
+  {
+    "number": 1002,
+    "name": "Academy of Ideas",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 104,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 52,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 26,
+    "afterOwnDistinct": 2,
+    "uploader": "Academy of Ideas",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 5.27,
+    "afterDay": {
+      "airings": 122,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 9,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1003,
+    "name": "Alien Theory",
+    "eligibleOwn": 3,
+    "refused": 0,
+    "beforePool": 3,
+    "beforeDay": {
+      "airings": 37,
+      "unique": 3,
+      "backToBack": 0,
+      "maxAirings": 13,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 18,
+    "afterOwnDistinct": 3,
+    "uploader": "Alien Theory",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 15,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.67,
+    "afterDay": {
+      "airings": 61,
+      "unique": 18,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 0.42
+    }
+  },
+  {
+    "number": 1004,
+    "name": "Argyle Life | Green",
+    "eligibleOwn": 8,
+    "refused": 0,
+    "beforePool": 8,
+    "beforeDay": {
+      "airings": 17,
+      "unique": 8,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 8,
+    "afterOwnDistinct": 8,
+    "uploader": "Argyle Life | Green & White Podcast",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 14.86,
+    "afterDay": {
+      "airings": 17,
+      "unique": 8,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 0.41
+    }
+  },
+  {
+    "number": 1005,
+    "name": "BBALLBREAKDOWN",
+    "eligibleOwn": 5,
+    "refused": 0,
+    "beforePool": 5,
+    "beforeDay": {
+      "airings": 46,
+      "unique": 5,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 29,
+    "afterOwnDistinct": 5,
+    "uploader": "BBALLBREAKDOWN",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.71,
+    "afterDay": {
+      "airings": 156,
+      "unique": 29,
+      "backToBack": 0,
+      "maxAirings": 11,
+      "minRepeatShare": 0.37
+    }
+  },
+  {
+    "number": 1006,
+    "name": "BEST OF the KC VAULT",
+    "eligibleOwn": 7,
+    "refused": 0,
+    "beforePool": 7,
+    "beforeDay": {
+      "airings": 14,
+      "unique": 7,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 7,
+    "uploader": "BEST OF the KC VAULT",
+    "uploaderArchivePlayable": 48,
+    "afterEarlierUploads": 9,
+    "otherUploaders": 0,
+    "afterCycleHours": 48.35,
+    "afterDay": {
+      "airings": 8,
+      "unique": 8,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1007,
+    "name": "Balludicrous",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 55,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 28,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 26,
+    "afterOwnDistinct": 2,
+    "uploader": "Balludicrous",
+    "uploaderArchivePlayable": 93,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.38,
+    "afterDay": {
+      "airings": 148,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 11,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1008,
+    "name": "Bleacher Report",
+    "eligibleOwn": 23,
+    "refused": 0,
+    "beforePool": 23,
+    "beforeDay": {
+      "airings": 353,
+      "unique": 23,
+      "backToBack": 0,
+      "maxAirings": 16,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 47,
+    "afterOwnDistinct": 23,
+    "uploader": "Bleacher Report",
+    "uploaderArchivePlayable": 26,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.33,
+    "afterDay": {
+      "airings": 200,
+      "unique": 47,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.32
+    }
+  },
+  {
+    "number": 1009,
+    "name": "CC Karaoke",
+    "eligibleOwn": 83,
+    "refused": 0,
+    "beforePool": 83,
+    "beforeDay": {
+      "airings": 336,
+      "unique": 83,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 83,
+    "afterOwnDistinct": 83,
+    "uploader": "CC Karaoke",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.42,
+    "afterDay": {
+      "airings": 334,
+      "unique": 83,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.41
+    }
+  },
+  {
+    "number": 1010,
+    "name": "Chillbooks",
+    "eligibleOwn": 3,
+    "refused": 0,
+    "beforePool": 3,
+    "beforeDay": {
+      "airings": 16,
+      "unique": 3,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 3,
+    "uploader": "Chillbooks",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 13,
+    "otherUploaders": 0,
+    "afterCycleHours": 67.5,
+    "afterDay": {
+      "airings": 7,
+      "unique": 7,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1011,
+    "name": "CinemaCopa",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 156,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 78,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 26,
+    "afterOwnDistinct": 2,
+    "uploader": "CinemaCopa",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.67,
+    "afterDay": {
+      "airings": 139,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1012,
+    "name": "CinemaSins",
+    "eligibleOwn": 33,
+    "refused": 0,
+    "beforePool": 33,
+    "beforeDay": {
+      "airings": 37,
+      "unique": 33,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 33,
+    "afterOwnDistinct": 33,
+    "uploader": "CinemaSins",
+    "uploaderArchivePlayable": 80,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 28.1,
+    "afterDay": {
+      "airings": 37,
+      "unique": 31,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.4
+    }
+  },
+  {
+    "number": 1013,
+    "name": "Control Alt History",
+    "eligibleOwn": 4,
+    "refused": 0,
+    "beforePool": 4,
+    "beforeDay": {
+      "airings": 66,
+      "unique": 4,
+      "backToBack": 0,
+      "maxAirings": 17,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 4,
+    "uploader": "Control Alt History",
+    "uploaderArchivePlayable": 98,
+    "afterEarlierUploads": 12,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.36,
+    "afterDay": {
+      "airings": 63,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.45
+    }
+  },
+  {
+    "number": 1014,
+    "name": "Danny Jones",
+    "eligibleOwn": 13,
+    "refused": 0,
+    "beforePool": 13,
+    "beforeDay": {
+      "airings": 9,
+      "unique": 9,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 13,
+    "afterOwnDistinct": 13,
+    "uploader": "Danny Jones",
+    "uploaderArchivePlayable": 97,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 48.36,
+    "afterDay": {
+      "airings": 9,
+      "unique": 9,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1015,
+    "name": "DflowHoops",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 158,
+      "unique": 1,
+      "backToBack": 157,
+      "maxAirings": 158,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 25,
+    "afterOwnDistinct": 1,
+    "uploader": "DflowHoops",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 3.7,
+    "afterDay": {
+      "airings": 169,
+      "unique": 25,
+      "backToBack": 0,
+      "maxAirings": 13,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1016,
+    "name": "ESPN",
+    "eligibleOwn": 194,
+    "refused": 0,
+    "beforePool": 194,
+    "beforeDay": {
+      "airings": 93,
+      "unique": 93,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 194,
+    "afterOwnDistinct": 194,
+    "uploader": "ESPN",
+    "uploaderArchivePlayable": 97,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 73.73,
+    "afterDay": {
+      "airings": 49,
+      "unique": 49,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1017,
+    "name": "Empire Wreckers",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 28,
+      "unique": 1,
+      "backToBack": 27,
+      "maxAirings": 28,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 1,
+    "uploader": "Empire Wreckers",
+    "uploaderArchivePlayable": 20,
+    "afterEarlierUploads": 15,
+    "otherUploaders": 0,
+    "afterCycleHours": 10.03,
+    "afterDay": {
+      "airings": 41,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 0.47
+    }
+  },
+  {
+    "number": 1018,
+    "name": "F4WOnline",
+    "eligibleOwn": 113,
+    "refused": 0,
+    "beforePool": 113,
+    "beforeDay": {
+      "airings": 48,
+      "unique": 48,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 113,
+    "afterOwnDistinct": 113,
+    "uploader": "F4WOnline",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 70.73,
+    "afterDay": {
+      "airings": 49,
+      "unique": 49,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1019,
+    "name": "Fiction Beast",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 109,
+      "unique": 1,
+      "backToBack": 108,
+      "maxAirings": 109,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 17,
+    "afterOwnDistinct": 1,
+    "uploader": "Fiction Beast",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 16,
+    "otherUploaders": 0,
+    "afterCycleHours": 8.39,
+    "afterDay": {
+      "airings": 54,
+      "unique": 17,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1020,
+    "name": "Filmento",
+    "eligibleOwn": 3,
+    "refused": 0,
+    "beforePool": 3,
+    "beforeDay": {
+      "airings": 87,
+      "unique": 3,
+      "backToBack": 0,
+      "maxAirings": 29,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 21,
+    "afterOwnDistinct": 3,
+    "uploader": "Filmento",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 18,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.59,
+    "afterDay": {
+      "airings": 81,
+      "unique": 21,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1021,
+    "name": "Forgotten Player Profiles",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 35,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 18,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 2,
+    "uploader": "Forgotten Player Profiles",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 14,
+    "otherUploaders": 0,
+    "afterCycleHours": 9.39,
+    "afterDay": {
+      "airings": 45,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1022,
+    "name": "Friendly Space Ninja",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 45,
+      "unique": 1,
+      "backToBack": 44,
+      "maxAirings": 45,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 1,
+    "uploader": "Friendly Space Ninja",
+    "uploaderArchivePlayable": 88,
+    "afterEarlierUploads": 15,
+    "otherUploaders": 0,
+    "afterCycleHours": 19.67,
+    "afterDay": {
+      "airings": 21,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 0.3
+    }
+  },
+  {
+    "number": 1023,
+    "name": "Heat Check",
+    "eligibleOwn": 26,
+    "refused": 0,
+    "beforePool": 26,
+    "beforeDay": {
+      "airings": 122,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 26,
+    "afterOwnDistinct": 26,
+    "uploader": "Heat Check",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.59,
+    "afterDay": {
+      "airings": 121,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.4
+    }
+  },
+  {
+    "number": 1024,
+    "name": "House of Highlights",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 31,
+      "unique": 1,
+      "backToBack": 30,
+      "maxAirings": 31,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 25,
+    "afterOwnDistinct": 1,
+    "uploader": "House of Highlights",
+    "uploaderArchivePlayable": 60,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.96,
+    "afterDay": {
+      "airings": 126,
+      "unique": 25,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 0.46
+    }
+  },
+  {
+    "number": 1025,
+    "name": "Isenhart Productions",
+    "eligibleOwn": 6,
+    "refused": 0,
+    "beforePool": 6,
+    "beforeDay": {
+      "airings": 100,
+      "unique": 6,
+      "backToBack": 0,
+      "maxAirings": 17,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 22,
+    "afterOwnDistinct": 6,
+    "uploader": "Isenhart Productions",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 16,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.49,
+    "afterDay": {
+      "airings": 90,
+      "unique": 22,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1026,
+    "name": "Joe Fier",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 71,
+      "unique": 1,
+      "backToBack": 70,
+      "maxAirings": 71,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 1,
+    "uploader": "Joe Fier",
+    "uploaderArchivePlayable": 66,
+    "afterEarlierUploads": 15,
+    "otherUploaders": 0,
+    "afterCycleHours": 8.91,
+    "afterDay": {
+      "airings": 45,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 0.46
+    }
+  },
+  {
+    "number": 1027,
+    "name": "Jonny Arnett",
+    "eligibleOwn": 14,
+    "refused": 0,
+    "beforePool": 14,
+    "beforeDay": {
+      "airings": 48,
+      "unique": 14,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 14,
+    "afterOwnDistinct": 14,
+    "uploader": "Jonny Arnett",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 11.02,
+    "afterDay": {
+      "airings": 38,
+      "unique": 14,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 0.35
+    }
+  },
+  {
+    "number": 1028,
+    "name": "LegendZ Productions",
+    "eligibleOwn": 3,
+    "refused": 0,
+    "beforePool": 3,
+    "beforeDay": {
+      "airings": 90,
+      "unique": 3,
+      "backToBack": 0,
+      "maxAirings": 30,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 25,
+    "afterOwnDistinct": 3,
+    "uploader": "LegendZ Productions",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 22,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.39,
+    "afterDay": {
+      "airings": 99,
+      "unique": 25,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1029,
+    "name": "MJ2KALLDAY",
+    "eligibleOwn": 3,
+    "refused": 0,
+    "beforePool": 3,
+    "beforeDay": {
+      "airings": 65,
+      "unique": 3,
+      "backToBack": 0,
+      "maxAirings": 22,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 22,
+    "afterOwnDistinct": 3,
+    "uploader": "MJ2KALLDAY",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 19,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.36,
+    "afterDay": {
+      "airings": 87,
+      "unique": 22,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1030,
+    "name": "Major Grin",
+    "eligibleOwn": 39,
+    "refused": 0,
+    "beforePool": 39,
+    "beforeDay": {
+      "airings": 437,
+      "unique": 39,
+      "backToBack": 0,
+      "maxAirings": 12,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 63,
+    "afterOwnDistinct": 39,
+    "uploader": "Major Grin",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 3.86,
+    "afterDay": {
+      "airings": 458,
+      "unique": 63,
+      "backToBack": 0,
+      "maxAirings": 13,
+      "minRepeatShare": 0.44
+    }
+  },
+  {
+    "number": 1031,
+    "name": "Matt Wolfe",
+    "eligibleOwn": 15,
+    "refused": 0,
+    "beforePool": 15,
+    "beforeDay": {
+      "airings": 43,
+      "unique": 15,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 15,
+    "afterOwnDistinct": 15,
+    "uploader": "Matt Wolfe",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 11.18,
+    "afterDay": {
+      "airings": 42,
+      "unique": 15,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 0.44
+    }
+  },
+  {
+    "number": 1032,
+    "name": "NBA on ESPN",
+    "eligibleOwn": 74,
+    "refused": 0,
+    "beforePool": 74,
+    "beforeDay": {
+      "airings": 75,
+      "unique": 74,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 74,
+    "afterOwnDistinct": 74,
+    "uploader": "NBA on ESPN",
+    "uploaderArchivePlayable": 93,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 27.56,
+    "afterDay": {
+      "airings": 85,
+      "unique": 69,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.43
+    }
+  },
+  {
+    "number": 1033,
+    "name": "OSW Review HD",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 10,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 2,
+    "uploader": "OSW Review HD",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 14,
+    "otherUploaders": 0,
+    "afterCycleHours": 27.3,
+    "afterDay": {
+      "airings": 16,
+      "unique": 15,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.5
+    }
+  },
+  {
+    "number": 1034,
+    "name": "Oldskoolbball",
+    "eligibleOwn": 2,
+    "refused": 2,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 75,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 38,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 2,
+    "afterOwnDistinct": 0,
+    "uploader": "Oldskoolbball",
+    "uploaderArchivePlayable": 2,
+    "afterEarlierUploads": 2,
+    "otherUploaders": 0,
+    "afterCycleHours": 1.75,
+    "afterDay": {
+      "airings": 28,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 14,
+      "minRepeatShare": 1
+    }
+  },
+  {
+    "number": 1035,
+    "name": "PlayersTV",
+    "eligibleOwn": 9,
+    "refused": 0,
+    "beforePool": 9,
+    "beforeDay": {
+      "airings": 50,
+      "unique": 9,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 9,
+    "afterOwnDistinct": 9,
+    "uploader": "PlayersTV",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.12,
+    "afterDay": {
+      "airings": 40,
+      "unique": 9,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.36
+    }
+  },
+  {
+    "number": 1036,
+    "name": "Reaper",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 49,
+      "unique": 1,
+      "backToBack": 48,
+      "maxAirings": 49,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 21,
+    "afterOwnDistinct": 1,
+    "uploader": "Reaper",
+    "uploaderArchivePlayable": 96,
+    "afterEarlierUploads": 20,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.75,
+    "afterDay": {
+      "airings": 80,
+      "unique": 21,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1037,
+    "name": "RedLetterMedia",
+    "eligibleOwn": 10,
+    "refused": 0,
+    "beforePool": 10,
+    "beforeDay": {
+      "airings": 29,
+      "unique": 10,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 10,
+    "afterOwnDistinct": 10,
+    "uploader": "RedLetterMedia",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 11.81,
+    "afterDay": {
+      "airings": 27,
+      "unique": 10,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 0.37
+    }
+  },
+  {
+    "number": 1038,
+    "name": "ReligionForBreakfast",
+    "eligibleOwn": 5,
+    "refused": 0,
+    "beforePool": 5,
+    "beforeDay": {
+      "airings": 49,
+      "unique": 5,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 5,
+    "uploader": "ReligionForBreakfast",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 11,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.47,
+    "afterDay": {
+      "airings": 57,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1039,
+    "name": "Reservoir Reels",
+    "eligibleOwn": 2,
+    "refused": 2,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 109,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 55,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 2,
+    "afterOwnDistinct": 2,
+    "uploader": "Reservoir Reels",
+    "uploaderArchivePlayable": 0,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 0.44,
+    "afterDay": {
+      "airings": 109,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 55,
+      "minRepeatShare": 1
+    }
+  },
+  {
+    "number": 1040,
+    "name": "Road Trippin' Show",
+    "eligibleOwn": 33,
+    "refused": 0,
+    "beforePool": 33,
+    "beforeDay": {
+      "airings": 66,
+      "unique": 33,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 33,
+    "afterOwnDistinct": 33,
+    "uploader": "Road Trippin' Show",
+    "uploaderArchivePlayable": 106,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 14.39,
+    "afterDay": {
+      "airings": 71,
+      "unique": 33,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 0.43
+    }
+  },
+  {
+    "number": 1041,
+    "name": "SWISHOUT",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 87,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 44,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 26,
+    "afterOwnDistinct": 2,
+    "uploader": "SWISHOUT",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 5.12,
+    "afterDay": {
+      "airings": 129,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1042,
+    "name": "Screen Junkies",
+    "eligibleOwn": 18,
+    "refused": 0,
+    "beforePool": 18,
+    "beforeDay": {
+      "airings": 64,
+      "unique": 18,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 18,
+    "afterOwnDistinct": 18,
+    "uploader": "Screen Junkies",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 9.78,
+    "afterDay": {
+      "airings": 55,
+      "unique": 18,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 0.38
+    }
+  },
+  {
+    "number": 1043,
+    "name": "ScreenRant",
+    "eligibleOwn": 41,
+    "refused": 0,
+    "beforePool": 41,
+    "beforeDay": {
+      "airings": 174,
+      "unique": 41,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 41,
+    "afterOwnDistinct": 41,
+    "uploader": "ScreenRant",
+    "uploaderArchivePlayable": 115,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.12,
+    "afterDay": {
+      "airings": 176,
+      "unique": 41,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.4
+    }
+  },
+  {
+    "number": 1044,
+    "name": "Secret Base",
+    "eligibleOwn": 13,
+    "refused": 0,
+    "beforePool": 13,
+    "beforeDay": {
+      "airings": 79,
+      "unique": 13,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 13,
+    "afterOwnDistinct": 13,
+    "uploader": "Secret Base",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.95,
+    "afterDay": {
+      "airings": 85,
+      "unique": 13,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 0.39
+    }
+  },
+  {
+    "number": 1045,
+    "name": "Sobering Stories",
+    "eligibleOwn": 43,
+    "refused": 0,
+    "beforePool": 43,
+    "beforeDay": {
+      "airings": 43,
+      "unique": 43,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 43,
+    "afterOwnDistinct": 43,
+    "uploader": "Sobering Stories ",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 26.98,
+    "afterDay": {
+      "airings": 47,
+      "unique": 36,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.4
+    }
+  },
+  {
+    "number": 1046,
+    "name": "Soder Cinema",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 71,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 36,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 26,
+    "afterOwnDistinct": 2,
+    "uploader": "Soder Cinema",
+    "uploaderArchivePlayable": 32,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.35,
+    "afterDay": {
+      "airings": 106,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1047,
+    "name": "TNT Sports US",
+    "eligibleOwn": 57,
+    "refused": 0,
+    "beforePool": 57,
+    "beforeDay": {
+      "airings": 331,
+      "unique": 57,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 57,
+    "afterOwnDistinct": 57,
+    "uploader": "TNT Sports US",
+    "uploaderArchivePlayable": 69,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.92,
+    "afterDay": {
+      "airings": 349,
+      "unique": 57,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 0.43
+    }
+  },
+  {
+    "number": 1048,
+    "name": "TYT Sports",
+    "eligibleOwn": 100,
+    "refused": 0,
+    "beforePool": 100,
+    "beforeDay": {
+      "airings": 145,
+      "unique": 100,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 100,
+    "afterOwnDistinct": 100,
+    "uploader": "TYT Sports",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 20.82,
+    "afterDay": {
+      "airings": 144,
+      "unique": 100,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 0.4
+    }
+  },
+  {
+    "number": 1049,
+    "name": "The Characters of Sports",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 59,
+      "unique": 1,
+      "backToBack": 58,
+      "maxAirings": 59,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 1,
+    "uploader": "The Characters of Sports",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 15,
+    "otherUploaders": 0,
+    "afterCycleHours": 13.23,
+    "afterDay": {
+      "airings": 31,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1050,
+    "name": "The Totally Football Show",
+    "eligibleOwn": 18,
+    "refused": 0,
+    "beforePool": 18,
+    "beforeDay": {
+      "airings": 27,
+      "unique": 18,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 18,
+    "afterOwnDistinct": 18,
+    "uploader": "The Totally Football Show",
+    "uploaderArchivePlayable": 103,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 21.56,
+    "afterDay": {
+      "airings": 27,
+      "unique": 18,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 0.39
+    }
+  },
+  {
+    "number": 1051,
+    "name": "This Guy Edits",
+    "eligibleOwn": 4,
+    "refused": 0,
+    "beforePool": 4,
+    "beforeDay": {
+      "airings": 21,
+      "unique": 4,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 4,
+    "uploader": "This Guy Edits",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 12,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.79,
+    "afterDay": {
+      "airings": 52,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 0.47
+    }
+  },
+  {
+    "number": 1052,
+    "name": "Title Match Wrestling",
+    "eligibleOwn": 100,
+    "refused": 0,
+    "beforePool": 100,
+    "beforeDay": {
+      "airings": 105,
+      "unique": 100,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 100,
+    "afterOwnDistinct": 100,
+    "uploader": "Title Match Wrestling",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 27.84,
+    "afterDay": {
+      "airings": 106,
+      "unique": 97,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.42
+    }
+  },
+  {
+    "number": 1053,
+    "name": "VintageVerse",
+    "eligibleOwn": 14,
+    "refused": 13,
+    "beforePool": 14,
+    "beforeDay": {
+      "airings": 92,
+      "unique": 14,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 25,
+    "afterOwnDistinct": 1,
+    "uploader": "VintageVerse",
+    "uploaderArchivePlayable": 30,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 5.69,
+    "afterDay": {
+      "airings": 111,
+      "unique": 25,
+      "backToBack": 0,
+      "maxAirings": 9,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1054,
+    "name": "VintageVerse Vault",
+    "eligibleOwn": 2,
+    "refused": 2,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 16,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 2,
+    "afterOwnDistinct": 2,
+    "uploader": "VintageVerse Vault",
+    "uploaderArchivePlayable": 0,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 3.12,
+    "afterDay": {
+      "airings": 16,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 1
+    }
+  },
+  {
+    "number": 1055,
+    "name": "WRESTLING SOUP",
+    "eligibleOwn": 13,
+    "refused": 0,
+    "beforePool": 13,
+    "beforeDay": {
+      "airings": 84,
+      "unique": 13,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 13,
+    "afterOwnDistinct": 13,
+    "uploader": "WRESTLING SOUP",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 5.28,
+    "afterDay": {
+      "airings": 79,
+      "unique": 13,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 0.39
+    }
+  },
+  {
+    "number": 1056,
+    "name": "Who Killed Kurt OFFICIAL",
+    "eligibleOwn": 8,
+    "refused": 0,
+    "beforePool": 8,
+    "beforeDay": {
+      "airings": 34,
+      "unique": 8,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 8,
+    "afterOwnDistinct": 8,
+    "uploader": "Who Killed Kurt OFFICIAL",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.31,
+    "afterDay": {
+      "airings": 34,
+      "unique": 8,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.41
+    }
+  },
+  {
+    "number": 1057,
+    "name": "World Wanderings: 4K Walking Tours",
+    "eligibleOwn": 10,
+    "refused": 0,
+    "beforePool": 10,
+    "beforeDay": {
+      "airings": 15,
+      "unique": 10,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 10,
+    "afterOwnDistinct": 10,
+    "uploader": "World Wanderings: 4K Walking Tours",
+    "uploaderArchivePlayable": 90,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 22.18,
+    "afterDay": {
+      "airings": 14,
+      "unique": 10,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.46
+    }
+  },
+  {
+    "number": 1058,
+    "name": "captainmidnight",
+    "eligibleOwn": 5,
+    "refused": 0,
+    "beforePool": 5,
+    "beforeDay": {
+      "airings": 127,
+      "unique": 5,
+      "backToBack": 0,
+      "maxAirings": 26,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 29,
+    "afterOwnDistinct": 5,
+    "uploader": "captainmidnight",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.5,
+    "afterDay": {
+      "airings": 115,
+      "unique": 29,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.49
+    }
+  },
+  {
+    "number": 1059,
+    "name": "Andy Hoops",
+    "eligibleOwn": 14,
+    "refused": 0,
+    "beforePool": 14,
+    "beforeDay": {
+      "airings": 71,
+      "unique": 14,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 14,
+    "afterOwnDistinct": 14,
+    "uploader": "Andy Hoops",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.3,
+    "afterDay": {
+      "airings": 69,
+      "unique": 14,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.39
+    }
+  },
+  {
+    "number": 1060,
+    "name": "Boiler Room",
+    "eligibleOwn": 20,
+    "refused": 0,
+    "beforePool": 20,
+    "beforeDay": {
+      "airings": 26,
+      "unique": 20,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 20,
+    "afterOwnDistinct": 20,
+    "uploader": "Boiler Room",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 24.8,
+    "afterDay": {
+      "airings": 25,
+      "unique": 20,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.41
+    }
+  },
+  {
+    "number": 1061,
+    "name": "COLETHEMAN",
+    "eligibleOwn": 46,
+    "refused": 0,
+    "beforePool": 46,
+    "beforeDay": {
+      "airings": 12,
+      "unique": 12,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 46,
+    "afterOwnDistinct": 46,
+    "uploader": "COLETHEMAN",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 101.69,
+    "afterDay": {
+      "airings": 13,
+      "unique": 13,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1062,
+    "name": "Chris Smoove",
+    "eligibleOwn": 63,
+    "refused": 0,
+    "beforePool": 63,
+    "beforeDay": {
+      "airings": 118,
+      "unique": 63,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 63,
+    "afterOwnDistinct": 63,
+    "uploader": "Chris Smoove",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 16.78,
+    "afterDay": {
+      "airings": 111,
+      "unique": 63,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 0.41
+    }
+  },
+  {
+    "number": 1063,
+    "name": "Dom Two",
+    "eligibleOwn": 31,
+    "refused": 0,
+    "beforePool": 31,
+    "beforeDay": {
+      "airings": 34,
+      "unique": 31,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 31,
+    "afterOwnDistinct": 31,
+    "uploader": "Dom Two",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 26.15,
+    "afterDay": {
+      "airings": 35,
+      "unique": 29,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 0.45
+    }
+  },
+  {
+    "number": 1064,
+    "name": "Dom2k",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 114,
+      "unique": 1,
+      "backToBack": 113,
+      "maxAirings": 114,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 18,
+    "afterOwnDistinct": 1,
+    "uploader": "Dom2k",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 17,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.57,
+    "afterDay": {
+      "airings": 73,
+      "unique": 18,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.37
+    }
+  },
+  {
+    "number": 1065,
+    "name": "ESPN College Football",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 19,
+      "unique": 1,
+      "backToBack": 18,
+      "maxAirings": 19,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 1,
+    "uploader": "ESPN College Football",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 15,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.56,
+    "afterDay": {
+      "airings": 54,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.43
+    }
+  },
+  {
+    "number": 1066,
+    "name": "Fandango",
+    "eligibleOwn": 3,
+    "refused": 0,
+    "beforePool": 3,
+    "beforeDay": {
+      "airings": 67,
+      "unique": 3,
+      "backToBack": 0,
+      "maxAirings": 23,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 27,
+    "afterOwnDistinct": 3,
+    "uploader": "Fandango",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 5.49,
+    "afterDay": {
+      "airings": 122,
+      "unique": 27,
+      "backToBack": 0,
+      "maxAirings": 9,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1067,
+    "name": "Gerald Celente",
+    "eligibleOwn": 30,
+    "refused": 0,
+    "beforePool": 30,
+    "beforeDay": {
+      "airings": 68,
+      "unique": 30,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 30,
+    "afterOwnDistinct": 30,
+    "uploader": "Gerald Celente",
+    "uploaderArchivePlayable": 105,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 13.58,
+    "afterDay": {
+      "airings": 68,
+      "unique": 30,
+      "backToBack": 0,
+      "maxAirings": 4,
+      "minRepeatShare": 0.43
+    }
+  },
+  {
+    "number": 1068,
+    "name": "Gil's Arena",
+    "eligibleOwn": 43,
+    "refused": 0,
+    "beforePool": 43,
+    "beforeDay": {
+      "airings": 26,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 43,
+    "afterOwnDistinct": 43,
+    "uploader": "Gil's Arena",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 55.83,
+    "afterDay": {
+      "airings": 23,
+      "unique": 23,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1069,
+    "name": "MMA in SHORT",
+    "eligibleOwn": 14,
+    "refused": 0,
+    "beforePool": 14,
+    "beforeDay": {
+      "airings": 130,
+      "unique": 14,
+      "backToBack": 0,
+      "maxAirings": 10,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 38,
+    "afterOwnDistinct": 14,
+    "uploader": "MMA in SHORT",
+    "uploaderArchivePlayable": 57,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.24,
+    "afterDay": {
+      "airings": 165,
+      "unique": 38,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.45
+    }
+  },
+  {
+    "number": 1070,
+    "name": "Matthew McConaughey",
+    "eligibleOwn": 12,
+    "refused": 0,
+    "beforePool": 12,
+    "beforeDay": {
+      "airings": 266,
+      "unique": 12,
+      "backToBack": 0,
+      "maxAirings": 23,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 36,
+    "afterOwnDistinct": 12,
+    "uploader": "Matthew McConaughey",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 3.09,
+    "afterDay": {
+      "airings": 304,
+      "unique": 36,
+      "backToBack": 0,
+      "maxAirings": 16,
+      "minRepeatShare": 0.47
+    }
+  },
+  {
+    "number": 1071,
+    "name": "Mike Korzemba",
+    "eligibleOwn": 19,
+    "refused": 0,
+    "beforePool": 19,
+    "beforeDay": {
+      "airings": 101,
+      "unique": 19,
+      "backToBack": 0,
+      "maxAirings": 6,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 19,
+    "afterOwnDistinct": 19,
+    "uploader": "Mike Korzemba",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 5.55,
+    "afterDay": {
+      "airings": 105,
+      "unique": 19,
+      "backToBack": 0,
+      "maxAirings": 9,
+      "minRepeatShare": 0.44
+    }
+  },
+  {
+    "number": 1072,
+    "name": "NFL on ESPN",
+    "eligibleOwn": 1,
+    "refused": 0,
+    "beforePool": 1,
+    "beforeDay": {
+      "airings": 362,
+      "unique": 1,
+      "backToBack": 361,
+      "maxAirings": 362,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 25,
+    "afterOwnDistinct": 1,
+    "uploader": "NFL on ESPN",
+    "uploaderArchivePlayable": 114,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 3.86,
+    "afterDay": {
+      "airings": 163,
+      "unique": 25,
+      "backToBack": 0,
+      "maxAirings": 13,
+      "minRepeatShare": 0.5
+    }
+  },
+  {
+    "number": 1073,
+    "name": "PlayStation",
+    "eligibleOwn": 54,
+    "refused": 0,
+    "beforePool": 54,
+    "beforeDay": {
+      "airings": 87,
+      "unique": 54,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 54,
+    "afterOwnDistinct": 54,
+    "uploader": "PlayStation",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 16.91,
+    "afterDay": {
+      "airings": 117,
+      "unique": 54,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 0.41
+    }
+  },
+  {
+    "number": 1074,
+    "name": "Quinn's Ideas",
+    "eligibleOwn": 6,
+    "refused": 0,
+    "beforePool": 6,
+    "beforeDay": {
+      "airings": 70,
+      "unique": 6,
+      "backToBack": 0,
+      "maxAirings": 12,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 16,
+    "afterOwnDistinct": 6,
+    "uploader": "Quinn's Ideas",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 10,
+    "otherUploaders": 0,
+    "afterCycleHours": 7.41,
+    "afterDay": {
+      "airings": 58,
+      "unique": 16,
+      "backToBack": 0,
+      "maxAirings": 7,
+      "minRepeatShare": 0.47
+    }
+  },
+  {
+    "number": 1075,
+    "name": "RF Video",
+    "eligibleOwn": 5,
+    "refused": 0,
+    "beforePool": 5,
+    "beforeDay": {
+      "airings": 175,
+      "unique": 5,
+      "backToBack": 0,
+      "maxAirings": 35,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 29,
+    "afterOwnDistinct": 5,
+    "uploader": "RF Video",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 5.62,
+    "afterDay": {
+      "airings": 134,
+      "unique": 29,
+      "backToBack": 0,
+      "maxAirings": 9,
+      "minRepeatShare": 0.48
+    }
+  },
+  {
+    "number": 1076,
+    "name": "Ringer NBA",
+    "eligibleOwn": 4,
+    "refused": 0,
+    "beforePool": 4,
+    "beforeDay": {
+      "airings": 49,
+      "unique": 4,
+      "backToBack": 0,
+      "maxAirings": 13,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 28,
+    "afterOwnDistinct": 4,
+    "uploader": "Ringer NBA",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 4.43,
+    "afterDay": {
+      "airings": 162,
+      "unique": 28,
+      "backToBack": 0,
+      "maxAirings": 12,
+      "minRepeatShare": 0.37
+    }
+  },
+  {
+    "number": 1077,
+    "name": "Rotten Tomatoes Trailers",
+    "eligibleOwn": 73,
+    "refused": 0,
+    "beforePool": 73,
+    "beforeDay": {
+      "airings": 337,
+      "unique": 73,
+      "backToBack": 0,
+      "maxAirings": 5,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 73,
+    "afterOwnDistinct": 73,
+    "uploader": "Rotten Tomatoes Trailers",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 6.25,
+    "afterDay": {
+      "airings": 352,
+      "unique": 73,
+      "backToBack": 0,
+      "maxAirings": 8,
+      "minRepeatShare": 0.42
+    }
+  },
+  {
+    "number": 1078,
+    "name": "Solomonster Sounds Off",
+    "eligibleOwn": 74,
+    "refused": 0,
+    "beforePool": 74,
+    "beforeDay": {
+      "airings": 25,
+      "unique": 25,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 74,
+    "afterOwnDistinct": 74,
+    "uploader": "Solomonster Sounds Off",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 101.04,
+    "afterDay": {
+      "airings": 24,
+      "unique": 24,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1079,
+    "name": "Speakeasy",
+    "eligibleOwn": 154,
+    "refused": 0,
+    "beforePool": 154,
+    "beforeDay": {
+      "airings": 62,
+      "unique": 62,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    },
+    "afterDistinct": 154,
+    "afterOwnDistinct": 154,
+    "uploader": "Speakeasy",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 142.98,
+    "afterDay": {
+      "airings": 19,
+      "unique": 19,
+      "backToBack": 0,
+      "maxAirings": 1,
+      "minRepeatShare": null
+    }
+  },
+  {
+    "number": 1080,
+    "name": "Sporting Logically",
+    "eligibleOwn": 47,
+    "refused": 0,
+    "beforePool": 47,
+    "beforeDay": {
+      "airings": 88,
+      "unique": 47,
+      "backToBack": 0,
+      "maxAirings": 2,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 47,
+    "afterOwnDistinct": 47,
+    "uploader": "Sporting Logically",
+    "uploaderArchivePlayable": 120,
+    "afterEarlierUploads": 0,
+    "otherUploaders": 0,
+    "afterCycleHours": 15.6,
+    "afterDay": {
+      "airings": 91,
+      "unique": 47,
+      "backToBack": 0,
+      "maxAirings": 3,
+      "minRepeatShare": 0.43
+    }
+  },
+  {
+    "number": 1081,
+    "name": "SportsCenter NEXT",
+    "eligibleOwn": 2,
+    "refused": 0,
+    "beforePool": 2,
+    "beforeDay": {
+      "airings": 142,
+      "unique": 2,
+      "backToBack": 0,
+      "maxAirings": 71,
+      "minRepeatShare": 1
+    },
+    "afterDistinct": 26,
+    "afterOwnDistinct": 2,
+    "uploader": "SportsCenter NEXT",
+    "uploaderArchivePlayable": 31,
+    "afterEarlierUploads": 24,
+    "otherUploaders": 0,
+    "afterCycleHours": 3.97,
+    "afterDay": {
+      "airings": 166,
+      "unique": 26,
+      "backToBack": 0,
+      "maxAirings": 12,
+      "minRepeatShare": 0.5
+    }
+  }
+]

@@ -1,0 +1,1797 @@
+{
+ "format": "retrotv-originals-v1",
+ "version": "originals-v2",
+ "channels": {
+  "887": {
+   "kind": "test-card",
+   "segments": [
+    [
+     "Test Card",
+     "TEST CARD · 1 kHz LINE-UP TONE",
+     40
+    ],
+    [
+     "Colour Bars",
+     "COLOUR BARS · 100/0/75/0",
+     10
+    ],
+    [
+     "Line-Up",
+     "LINE-UP · GREY SCALE AND CONVERGENCE",
+     5
+    ],
+    [
+     "Clock",
+     "TVN NETWORK CLOCK",
+     5
+    ]
+   ],
+   "summary": "TVN test card: an hourly cycle of test card, colour bars, line-up and clock; no external media."
+  },
+  "898": {
+   "kind": "night-block",
+   "start": "00:00",
+   "hours": 4,
+   "from": 1987,
+   "to": 1992,
+   "basis": "recording",
+   "card": [
+    "Night Network",
+    "NIGHT NETWORK · TONIGHT FROM MIDNIGHT"
+   ],
+   "summary": "TVN Night Network: 00:00-04:00 nightly block of verified 1987-1992 recordings."
+  },
+  "896": {
+   "kind": "test-card",
+   "clock": true,
+   "segments": [
+    [
+     "TVN Network Clock",
+     "NETWORK TIME · TVN",
+     60
+    ]
+   ],
+   "summary": "TVN network clock: the time, all day; no external media."
+  },
+  "897": {
+   "kind": "test-card",
+   "programmeType": "closedown",
+   "segments": [
+    [
+     "Closedown",
+     "THAT'S ALL FROM TVN · GOODNIGHT",
+     10
+    ],
+    [
+     "Test Card",
+     "PLEASE SWITCH OFF YOUR SET",
+     40
+    ],
+    [
+     "Tuning Signal",
+     "NORMAL SERVICE RESUMES ON THE REST OF THE DIAL",
+     10
+    ]
+   ],
+   "summary": "TVN closedown: an hourly closedown sequence of cards; no external media."
+  },
+  "999": {
+   "kind": "test-card",
+   "programmeType": "closedown",
+   "segments": [
+    [
+     "Closedown",
+     "THAT'S ALL FROM TVN RADIO · GOODNIGHT",
+     10
+    ],
+    [
+     "Interval",
+     "THE END OF THE DIAL",
+     50
+    ]
+   ],
+   "summary": "TVN radio closedown at the end of the dial; no external media."
+  },
+  "894": {
+   "kind": "listings",
+   "mode": "now",
+   "title": "Teletext: Now on TVN",
+   "channels": [
+    1,
+    100,
+    200,
+    300,
+    400,
+    500,
+    600,
+    700,
+    900
+   ],
+   "seconds": 20,
+   "summary": "TVN teletext: pages of what each category home is airing now, read from the live schedules."
+  },
+  "99": {
+   "kind": "listings",
+   "mode": "next",
+   "title": "Preview: Coming up on TVN",
+   "channels": [
+    1,
+    100,
+    200,
+    300,
+    400,
+    500,
+    600,
+    700,
+    900
+   ],
+   "seconds": 20,
+   "summary": "TVN preview: pages of what comes next on each category home, read from the live schedules."
+  }
+ },
+ "cards": {
+  "87": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "Public-domain status is recorded only for the US (non-renewal or pre-1929 publication). UK term is 70 years from the death of the last of director, screenwriter, dialogue author and composer, and is not established for any title."
+  },
+  "97": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 887 Test Card",
+   "caption": "THIS SERVICE IS NOW ON 887",
+   "redirect": 887,
+   "reason": "Test Lab's only supportable form is a test card, which 887 Test Card already is."
+  },
+  "98": {
+   "class": "UNRESOLVED",
+   "subtype": "IDENTITY_UNRESOLVED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SERVICE NOT YET DEFINED",
+   "reason": "No repository evidence defines what Showcase would feature distinct from the main-network mixes."
+  },
+  "134": {
+   "class": "UNRESOLVED",
+   "subtype": "IDENTITY_COLLISION",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · THESE PROGRAMMES AIR ON OTHER CHANNELS",
+   "reason": "Cult Trailers: every free trailer publisher already feeds 891 Trailers & Promos and the trailer-genre channels, and no structured field marks a trailer as cult; a subset would clone 891."
+  },
+  "135": {
+   "class": "UNRESOLVED",
+   "subtype": "INSUFFICIENT_EXISTING_INVENTORY",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "Only 55 trailers carry a Wikidata Animation genre, 1.9 h; the 3 h floor is not lowered."
+  },
+  "142": {
+   "class": "UNRESOLVED",
+   "subtype": "METADATA_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · PROGRAMME DETAILS NOT YET VERIFIED",
+   "reason": "No structured genre or date metadata identifies this identity's films; titles are never used to infer it."
+  },
+  "183": {
+   "class": "UNRESOLVED",
+   "subtype": "METADATA_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · PROGRAMME DETAILS NOT YET VERIFIED",
+   "reason": "No structured metadata identifies qualifying programmes; nothing is inferred from titles or upload dates."
+  },
+  "185": {
+   "class": "UNRESOLVED",
+   "subtype": "NEAR_THRESHOLD",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "2.4 h of qualifying programming; one targeted attempt found no further official material, and the 3 h floor stays."
+  },
+  "191": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 119 Midnight Movies",
+   "caption": "THIS SERVICE IS NOW ON 119",
+   "redirect": 119,
+   "reason": "Same identity as 119 Midnight Movies; its 586 eligible programmes are the film inventory 100 Film and 119 already air."
+  },
+  "198": {
+   "class": "UNRESOLVED",
+   "subtype": "IDENTITY_UNRESOLVED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SERVICE NOT YET DEFINED",
+   "reason": "Only short clips exist for the identity; no programme-length official source."
+  },
+  "199": {
+   "class": "UNRESOLVED",
+   "subtype": "INSUFFICIENT_INVENTORY",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "The Cinema Museum has about 2.1 h usable and the Projected Picture Trust two videos; no CTA channel; Pathé stays 805-only."
+  },
+  "211": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "Rights sit with broadcasters and distributors; the only full uploads are unofficial and are not used."
+  },
+  "212": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "Rights held by broadcasters and distributors; unofficial uploads are not used."
+  },
+  "213": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "Rights held by broadcasters and distributors; unofficial uploads are not used."
+  },
+  "214": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "Rights held by broadcasters and distributors; unofficial uploads are not used."
+  },
+  "215": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "Rights held by broadcasters and distributors; unofficial uploads are not used."
+  },
+  "285": {
+   "class": "UNRESOLVED",
+   "subtype": "INSUFFICIENT_EXISTING_INVENTORY",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "Titles naming magic are mostly unrelated (sketch shows, music, antiques); verified magic performance is under 3 h."
+  },
+  "291": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_OFFICIAL_SOURCE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN OFFICIAL SOURCE",
+   "reason": "Viral clips circulate as third-party re-uploads; catalogue hits are news items about virality, not the clips."
+  },
+  "294": {
+   "class": "UNRESOLVED",
+   "subtype": "IDENTITY_COLLISION",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · THESE PROGRAMMES AIR ON OTHER CHANNELS",
+   "reason": "Review programmes exist (tech, motoring, coffee) but each is already the identity of its subject channel; a Reviews mix would be a front door with no editorial definition."
+  },
+  "295": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_LEGITIMATE_CONTENT_MODEL",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NO SERVICE PLANNED",
+   "reason": "Reaction videos are built on third-party footage; no reaction format rests on official material."
+  },
+  "297": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "The underlying characters and worlds belong to third parties; no publisher shows a licence from the franchise owner."
+  },
+  "323": {
+   "class": "UNRESOLVED",
+   "subtype": "IDENTITY_COLLISION",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · THESE PROGRAMMES AIR ON OTHER CHANNELS",
+   "reason": "The only World Cup publisher (FIFA) is the whole of 301 Football; a distinct pool would mean restructuring 301."
+  },
+  "325": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 303 Football Classics",
+   "caption": "THIS SERVICE IS NOW ON 303",
+   "redirect": 303,
+   "reason": "Same name and identity as 303 Football Classics; its eligible programmes are the sport inventory 300 and 303 already air."
+  },
+  "326": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 304 Football Documentary",
+   "caption": "THIS SERVICE IS NOW ON 304",
+   "redirect": 304,
+   "reason": "Same name and identity as 304 Football Documentary; its eligible programmes are the sport inventory 300 and 304 already air."
+  },
+  "327": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 313 Football Analysis",
+   "caption": "THIS SERVICE IS NOW ON 313",
+   "redirect": 313,
+   "reason": "Same name and identity as 313 Football Analysis; its eligible programmes are the sport inventory 300 and 313 already air."
+  },
+  "361": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "No rightsholder publishes full classic matches free and embeddable in the UK; unofficial uploads are not used."
+  },
+  "394": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 626 Sports Business",
+   "caption": "THIS SERVICE IS NOW ON 626",
+   "redirect": 626,
+   "reason": "Same name and identity as 626 Sports Business; its eligible programmes are the inventory 300 and 626 already air."
+  },
+  "499": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 062 Knowledge",
+   "caption": "THIS SERVICE IS NOW ON 062",
+   "redirect": 62,
+   "reason": "Knowledge Extra would repeat 062 Knowledge's aggregate; no distinct format."
+  },
+  "548": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "IDENTITY_COLLISION",
+   "title": "See 540 1950s",
+   "caption": "THIS SERVICE IS NOW ON 540",
+   "redirect": 540,
+   "reason": "Oldies before 1970 is exactly the union of 540 1950s and 541 1960s."
+  },
+  "549": {
+   "class": "UNRESOLVED",
+   "subtype": "METADATA_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · PROGRAMME DETAILS NOT YET VERIFIED",
+   "reason": "No chart-position metadata for the recordings; chart status is never inferred from titles."
+  },
+  "550": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_OFFICIAL_SOURCE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN OFFICIAL SOURCE",
+   "reason": "No official chart programme at volume: Official Charts posts about a minute a week and Billboard's are Shorts, which are not used for volume."
+  },
+  "579": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_LEGITIMATE_CONTENT_MODEL",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NO SERVICE PLANNED",
+   "reason": "Rarity cannot be verified from any official field; an unverifiable label is not programmed."
+  },
+  "586": {
+   "class": "UNRESOLVED",
+   "subtype": "METADATA_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · PROGRAMME DETAILS NOT YET VERIFIED",
+   "reason": "Epitaph's official videos with verified release years are dated 2014-2021; none are 1990s."
+  },
+  "588": {
+   "class": "UNRESOLVED",
+   "subtype": "INSUFFICIENT_EXISTING_INVENTORY",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "0.1 h of verified qualifying material."
+  },
+  "589": {
+   "class": "UNRESOLVED",
+   "subtype": "METADATA_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · PROGRAMME DETAILS NOT YET VERIFIED",
+   "reason": "No song-level genre metadata for the recordings; publisher genre is not song genre."
+  },
+  "594": {
+   "class": "UNRESOLVED",
+   "subtype": "NEAR_THRESHOLD",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "2.49 h of VEVO recordings with verified 1950-79 years; non-VEVO sources cannot count, and the floor stays at 3 h."
+  },
+  "616": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 424 Economic History",
+   "caption": "THIS SERVICE IS NOW ON 424",
+   "redirect": 424,
+   "reason": "Same name and identity as 424 Economic History; its eligible programmes are the history inventory 400 and 424 already air."
+  },
+  "620": {
+   "class": "UNRESOLVED",
+   "subtype": "INSUFFICIENT_EXISTING_INVENTORY",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "2.9 h of eligible programmes, most of it already the identity of 767 Property Life."
+  },
+  "699": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 600 Business",
+   "caption": "THIS SERVICE IS NOW ON 600",
+   "redirect": 600,
+   "reason": "Business Extra would repeat 600 Business; no distinct format."
+  },
+  "729": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 700 Food",
+   "caption": "THIS SERVICE IS NOW ON 700",
+   "redirect": 700,
+   "reason": "Overflow slot of the food family; 700 Food carries the identity."
+  },
+  "769": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 750 Home",
+   "caption": "THIS SERVICE IS NOW ON 750",
+   "redirect": 750,
+   "reason": "Overflow slot of the home family; 750 Home carries the identity."
+  },
+  "799": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 700 Food",
+   "caption": "THIS SERVICE IS NOW ON 700",
+   "redirect": 700,
+   "reason": "Overflow slot of the lifestyle block (700-790); its 51 eligible programmes are 687 Makers' identity."
+  },
+  "802": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "US public-domain status does not establish UK public-domain status; no title has a UK determination."
+  },
+  "806": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_OFFICIAL_SOURCE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN OFFICIAL SOURCE",
+   "reason": "No official or authorised publisher for the identity."
+  },
+  "812": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_OFFICIAL_SOURCE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN OFFICIAL SOURCE",
+   "reason": "No arcade museum publisher; 242 Arcade already holds the available arcade material."
+  },
+  "841": {
+   "class": "RIGHTS_BLOCKED",
+   "subtype": "RIGHTS_BLOCKED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · BROADCAST RIGHTS NOT CLEARED",
+   "reason": "LibriVox checks US public-domain status only; UK status of each text and translation is not established, and audio needs a separate provider."
+  },
+  "883": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 292 Creators",
+   "caption": "THIS SERVICE IS NOW ON 292",
+   "redirect": 292,
+   "reason": "Creator TV is the identity of 292 Creators; its eligible programmes are already aired by 277 and 292."
+  },
+  "884": {
+   "class": "UNRESOLVED",
+   "subtype": "IDENTITY_UNRESOLVED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SERVICE NOT YET DEFINED",
+   "reason": "No repository evidence defines what Experimental would air."
+  },
+  "885": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_OFFICIAL_SOURCE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN OFFICIAL SOURCE",
+   "reason": "No official or authorised publisher for the identity."
+  },
+  "886": {
+   "class": "UNRESOLVED",
+   "subtype": "IDENTITY_UNRESOLVED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SERVICE NOT YET DEFINED",
+   "reason": "No repository evidence defines Generative; generative-AI programming is excluded."
+  },
+  "888": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 894 Teletext",
+   "caption": "THIS SERVICE IS NOW ON 894",
+   "redirect": 894,
+   "reason": "Continuity (what is on, what is next) is the listings service on 894; no separate continuity media exists."
+  },
+  "889": {
+   "class": "UNRESOLVED",
+   "subtype": "ORIGINAL_MEDIA_REQUIRED",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING TVN PRODUCTION",
+   "reason": "Idents need TVN-produced ident films; none exist, and archive idents are broadcasters' property."
+  },
+  "890": {
+   "class": "UNRESOLVED",
+   "subtype": "NO_OFFICIAL_SOURCE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN OFFICIAL SOURCE",
+   "reason": "Retro adverts need an official advertising archive (see 806); TVN has no advertising system."
+  },
+  "899": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 800 Specialist",
+   "caption": "THIS SERVICE IS NOW ON 800",
+   "redirect": 800,
+   "reason": "Specialist Extra would repeat 800 Specialist; no distinct format."
+  },
+  "910": {
+   "class": "UNRESOLVED",
+   "subtype": "INSUFFICIENT_INVENTORY",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · NOT ENOUGH PROGRAMMES YET",
+   "reason": "Weather-only reporting from official publishers is 1.2 h inside the window; the window is not extended."
+  },
+  "948": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 900 News",
+   "caption": "THIS SERVICE IS NOW ON 900",
+   "redirect": 900,
+   "reason": "News Extra has no editorial definition distinct from 900 News."
+  },
+  "949": {
+   "class": "INTENTIONALLY_UNAVAILABLE",
+   "subtype": "DUPLICATE_FRONT_DOOR",
+   "title": "See 900 News",
+   "caption": "THIS SERVICE IS NOW ON 900",
+   "redirect": 900,
+   "reason": "Information has no editorial definition distinct from 900 News and 894 Teletext."
+  },
+  "64": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "73": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "LIVE_STREAM",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "74": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "LIVE_STREAM",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "146": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "302": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "315": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "316": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "317": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "318": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "320": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "321": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "322": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "324": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "335": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "336": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "337": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "338": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "341": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "342": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "343": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "346": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "347": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "348": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "349": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "350": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "351": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "352": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "354": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "357": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "358": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "364": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "365": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "366": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "368": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "369": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "374": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "375": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "376": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "378": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "379": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "380": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "381": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "382": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "383": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "385": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "386": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "387": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "426": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "480": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "481": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "482": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "492": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "551": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "655": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "666": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "667": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "676": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "677": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "682": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "683": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "826": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "827": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "828": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "829": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "850": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "851": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "852": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "853": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "854": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "855": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "856": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "857": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "858": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "859": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "860": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "861": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "862": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Subject is excluded network-wide (space, aviation/aerospace or religion)."
+  },
+  "863": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "864": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "865": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "866": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "867": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "868": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "869": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "870": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "871": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "872": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "873": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "874": {
+   "class": "OFF_AIR",
+   "subtype": "EXCLUDED",
+   "title": "Not carried",
+   "caption": "OFF AIR · NOT CARRIED ON TVN",
+   "reason": "Excluded by network policy."
+  },
+  "875": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "876": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "877": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "878": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "879": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "895": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "902": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "903": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "904": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "905": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "906": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "907": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "911": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "912": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "913": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "917": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "919": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "920": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "921": {
+   "class": "OFF_AIR",
+   "subtype": "DELIBERATELY_UNAVAILABLE",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · SUBSCRIPTION OR RIGHTS-HOLDER SERVICE",
+   "reason": "Rights-holder or subscription programming with no free authorised source; kept off air."
+  },
+  "922": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "924": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_LIVE_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING A LIVE SOURCE",
+   "reason": "Live-only channel; needs a verified free official live stream or webcam provider. Recordings never air here."
+  },
+  "926": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "927": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "LIVE_STREAM",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "928": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "929": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "LIVE_STREAM",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "930": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "931": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "LIVE_STREAM",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "932": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "HYBRID_LIVE_ROLLING",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "933": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "934": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "935": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "936": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "938": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "939": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "941": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "942": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "943": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "944": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "946": {
+   "class": "LIVE_INTERRUPTED",
+   "subtype": "LIVE_STREAM",
+   "title": "Live service interrupted",
+   "caption": "LIVE STREAM UNAVAILABLE · RETRYING SHORTLY",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "947": {
+   "class": "DYNAMIC_EMPTY",
+   "subtype": "ROLLING_CURRENT",
+   "title": "No current programmes",
+   "caption": "OFF AIR · NO CURRENT PROGRAMMES IN THIS WINDOW",
+   "reason": "Shown only while the channel's live stream or rolling window has nothing to air."
+  },
+  "950": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "951": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "952": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "953": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "954": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "955": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "956": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "957": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "958": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "959": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "960": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "961": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "962": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "963": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "964": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "965": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "966": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "967": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "968": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "969": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "970": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "971": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "972": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "973": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "974": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "975": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "976": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "977": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "978": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "979": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "980": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "981": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "982": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "983": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "984": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "985": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "986": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "987": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "988": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "989": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "990": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "991": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "992": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "993": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "994": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "995": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "996": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "997": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  },
+  "998": {
+   "class": "OFF_AIR",
+   "subtype": "NEEDS_AUDIO_PROVIDER",
+   "title": "Not broadcasting",
+   "caption": "OFF AIR · AWAITING AN AUDIO SOURCE",
+   "reason": "Audio channel; needs a verified free audio stream provider."
+  }
+ }
+}

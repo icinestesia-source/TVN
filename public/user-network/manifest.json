@@ -1,0 +1,8 @@
+{
+  "id": "retrotv-user-network",
+  "version": "2.4",
+  "catalogues": [
+    { "id": "channels-txt", "version": "2.4", "file": "channels.txt" },
+    { "id": "more-channels", "version": "2.4", "file": "more-channels.txt" }
+  ]
+}

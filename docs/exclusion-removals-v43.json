@@ -1,0 +1,730 @@
+{
+ "catalogue": "catalogue-v43",
+ "note": "Programmes the mandatory 000–999 space/aviation/religion exclusion removes from each channel pool. Every id is rejected by src/library/exclusions.ts; without the exclusion every channel meets the v38/v40/v41 baselines and every static channel meets v42.",
+ "channels": 117,
+ "programmes": 217,
+ "removed": {
+  "1": [
+   "yt:GFxPMMkhHuA",
+   "yt:jXIeywVd4KM"
+  ],
+  "2": [
+   "yt:A2_Z9rZUjVw",
+   "yt:BiwhCucM470"
+  ],
+  "3": [
+   "yt:5X7vqLYoE_s",
+   "yt:ZtvG4davmbQ"
+  ],
+  "6": [
+   "yt:AJt2mhwUlq4",
+   "yt:zEvgbpQgNnE"
+  ],
+  "7": [
+   "yt:X__kbLv25uU"
+  ],
+  "9": [
+   "yt:V3FWWwuTlVM"
+  ],
+  "10": [
+   "yt:roM1QPr8lNo"
+  ],
+  "11": [
+   "yt:B4duk3RiQzA"
+  ],
+  "12": [
+   "yt:0Xkr3IGEpsk",
+   "yt:IF4UhElRUFg"
+  ],
+  "14": [
+   "yt:L_a16VNCmg4",
+   "yt:aom5SiHakGM",
+   "yt:pkT48OTGaSs",
+   "yt:tKfxjeLVBCA"
+  ],
+  "15": [
+   "yt:PAn61yU-wG0"
+  ],
+  "16": [
+   "yt:ZmkHQ9zNm8k",
+   "yt:ZvbQMqd0kEY"
+  ],
+  "17": [
+   "yt:8vQYn7IDzvo"
+  ],
+  "18": [
+   "yt:4t8CJGnViNY",
+   "yt:PLc0BCjbFcg"
+  ],
+  "20": [
+   "yt:ZvbQMqd0kEY",
+   "yt:pkT48OTGaSs",
+   "yt:zEvgbpQgNnE"
+  ],
+  "21": [
+   "yt:ZvbQMqd0kEY",
+   "yt:zEvgbpQgNnE"
+  ],
+  "22": [
+   "yt:3k5R3_b4eDU",
+   "yt:GFxPMMkhHuA",
+   "yt:lpj0E0a0mlU",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA"
+  ],
+  "24": [
+   "yt:8vQYn7IDzvo",
+   "yt:A2_Z9rZUjVw",
+   "yt:PAn61yU-wG0"
+  ],
+  "26": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:AJt2mhwUlq4",
+   "yt:PLc0BCjbFcg",
+   "yt:vIHKUB0QmA4",
+   "yt:vU-g6mC1F0g",
+   "yt:zju1nq3Eoqo"
+  ],
+  "28": [
+   "yt:8vQYn7IDzvo"
+  ],
+  "57": [
+   "yt:7SpRXU3RJ7Q",
+   "yt:DZyZm5XgDhc",
+   "yt:EhL4ahkP00w",
+   "yt:J05Wywg5cy0",
+   "yt:YsT_7sums4M",
+   "yt:d1gSW9VgyEs",
+   "yt:g0reauv6c-g"
+  ],
+  "62": [
+   "yt:Dlr_HNasxZY",
+   "yt:JOWFPTzK7D4",
+   "yt:ZVVEym0suvc"
+  ],
+  "67": [
+   "yt:p6cIzpEZWLQ"
+  ],
+  "80": [
+   "yt:861coSFLOvk",
+   "yt:ZTFWvOKvOcM",
+   "yt:vIHKUB0QmA4",
+   "yt:zju1nq3Eoqo"
+  ],
+  "86": [
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU"
+  ],
+  "91": [
+   "yt:PLc0BCjbFcg",
+   "yt:X__kbLv25uU",
+   "yt:tKfxjeLVBCA"
+  ],
+  "94": [
+   "yt:F8LTifOiISM"
+  ],
+  "100": [
+   "yt:8vQYn7IDzvo",
+   "yt:ZvbQMqd0kEY",
+   "yt:zEvgbpQgNnE"
+  ],
+  "102": [
+   "yt:9QL07ep7HA0"
+  ],
+  "103": [
+   "yt:RoibU3gpNVI"
+  ],
+  "106": [
+   "yt:10agmU9yHWU",
+   "yt:CA9Byt_aQk4",
+   "yt:PijTERClaEk"
+  ],
+  "108": [
+   "yt:QJKc4WsIkvw",
+   "yt:cV6uyuTWMaA"
+  ],
+  "112": [
+   "yt:8vQYn7IDzvo"
+  ],
+  "155": [
+   "yt:9QL07ep7HA0"
+  ],
+  "156": [
+   "yt:8vQYn7IDzvo"
+  ],
+  "169": [
+   "yt:oW54Ub2kDTE"
+  ],
+  "173": [
+   "yt:RoibU3gpNVI"
+  ],
+  "180": [
+   "yt:9QL07ep7HA0"
+  ],
+  "200": [
+   "yt:A2_Z9rZUjVw",
+   "yt:PAn61yU-wG0"
+  ],
+  "218": [
+   "yt:pkT48OTGaSs"
+  ],
+  "220": [
+   "yt:ZtvG4davmbQ"
+  ],
+  "235": [
+   "yt:ZtvG4davmbQ"
+  ],
+  "241": [
+   "yt:JrWb9jj3IsU"
+  ],
+  "258": [
+   "yt:L_a16VNCmg4"
+  ],
+  "267": [
+   "yt:z-CjrZfbthg"
+  ],
+  "268": [
+   "yt:L_a16VNCmg4"
+  ],
+  "278": [
+   "yt:L_a16VNCmg4"
+  ],
+  "288": [
+   "yt:7A_KV5XB0Ys",
+   "yt:FEzqUxT8ALc",
+   "yt:HTs7h3rR7DU",
+   "yt:L--UxAClJGY",
+   "yt:PLc0BCjbFcg",
+   "yt:QzS2_AFvR6E",
+   "yt:X__kbLv25uU",
+   "yt:peUyizgG-mM",
+   "yt:sohuixlaowU",
+   "yt:zx2yjuGwbt4"
+  ],
+  "400": [
+   "yt:0bSo4SVl2JQ",
+   "yt:8vQYn7IDzvo",
+   "yt:A2_Z9rZUjVw",
+   "yt:Dlr_HNasxZY",
+   "yt:JOWFPTzK7D4",
+   "yt:PAn61yU-wG0",
+   "yt:ZVVEym0suvc",
+   "yt:ZvbQMqd0kEY",
+   "yt:c9AZk-4n7Ns",
+   "yt:pkT48OTGaSs",
+   "yt:umzta3uraoA",
+   "yt:zEvgbpQgNnE"
+  ],
+  "401": [
+   "yt:zEvgbpQgNnE"
+  ],
+  "409": [
+   "yt:A2_Z9rZUjVw",
+   "yt:PAn61yU-wG0",
+   "yt:pkT48OTGaSs"
+  ],
+  "411": [
+   "yt:8vQYn7IDzvo",
+   "yt:PAn61yU-wG0",
+   "yt:pkT48OTGaSs"
+  ],
+  "412": [
+   "yt:0bSo4SVl2JQ",
+   "yt:pkT48OTGaSs",
+   "yt:yKe0tjU-Fiw"
+  ],
+  "414": [
+   "yt:A2_Z9rZUjVw"
+  ],
+  "416": [
+   "yt:1gNCT1lAlBw",
+   "yt:55Jas5HrzcQ",
+   "yt:YWhMCXo4lkQ",
+   "yt:hDQefy5WADM"
+  ],
+  "420": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:8vQYn7IDzvo",
+   "yt:A2_Z9rZUjVw",
+   "yt:AJt2mhwUlq4",
+   "yt:B4duk3RiQzA",
+   "yt:BiwhCucM470",
+   "yt:GFxPMMkhHuA",
+   "yt:IF4UhElRUFg",
+   "yt:PAn61yU-wG0",
+   "yt:PLc0BCjbFcg",
+   "yt:V3FWWwuTlVM",
+   "yt:X__kbLv25uU",
+   "yt:ZmkHQ9zNm8k",
+   "yt:ZvbQMqd0kEY",
+   "yt:aom5SiHakGM",
+   "yt:jXIeywVd4KM",
+   "yt:lpj0E0a0mlU",
+   "yt:pkT48OTGaSs",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA",
+   "yt:vIHKUB0QmA4",
+   "yt:vU-g6mC1F0g",
+   "yt:zEvgbpQgNnE",
+   "yt:zju1nq3Eoqo"
+  ],
+  "421": [
+   "yt:8vQYn7IDzvo",
+   "yt:A2_Z9rZUjVw",
+   "yt:PAn61yU-wG0",
+   "yt:ZvbQMqd0kEY",
+   "yt:pkT48OTGaSs",
+   "yt:zEvgbpQgNnE"
+  ],
+  "428": [
+   "yt:0bSo4SVl2JQ",
+   "yt:8vQYn7IDzvo",
+   "yt:PAn61yU-wG0",
+   "yt:pkT48OTGaSs"
+  ],
+  "430": [
+   "yt:8vQYn7IDzvo",
+   "yt:ZTFWvOKvOcM",
+   "yt:ZvbQMqd0kEY",
+   "yt:zEvgbpQgNnE"
+  ],
+  "431": [
+   "yt:W8wZ3ISBSUU"
+  ],
+  "444": [
+   "yt:19pcpcqQG3k",
+   "yt:cMoI_RPf0rw"
+  ],
+  "470": [
+   "yt:lpj0E0a0mlU",
+   "yt:vU-g6mC1F0g"
+  ],
+  "471": [
+   "yt:roM1QPr8lNo"
+  ],
+  "474": [
+   "yt:lpj0E0a0mlU",
+   "yt:vU-g6mC1F0g"
+  ],
+  "478": [
+   "yt:esCRnu8B1JU"
+  ],
+  "484": [
+   "yt:ZvbQMqd0kEY"
+  ],
+  "489": [
+   "yt:7spe1FBlLYQ"
+  ],
+  "490": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:AJt2mhwUlq4",
+   "yt:B4duk3RiQzA",
+   "yt:BiwhCucM470",
+   "yt:GFxPMMkhHuA",
+   "yt:IF4UhElRUFg",
+   "yt:PLc0BCjbFcg",
+   "yt:V3FWWwuTlVM",
+   "yt:X__kbLv25uU",
+   "yt:ZmkHQ9zNm8k",
+   "yt:aom5SiHakGM",
+   "yt:jXIeywVd4KM",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA",
+   "yt:vIHKUB0QmA4",
+   "yt:zju1nq3Eoqo"
+  ],
+  "498": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:AJt2mhwUlq4",
+   "yt:B4duk3RiQzA",
+   "yt:BiwhCucM470",
+   "yt:GFxPMMkhHuA",
+   "yt:IF4UhElRUFg",
+   "yt:PLc0BCjbFcg",
+   "yt:V3FWWwuTlVM",
+   "yt:X__kbLv25uU",
+   "yt:ZmkHQ9zNm8k",
+   "yt:ZtvG4davmbQ",
+   "yt:aom5SiHakGM",
+   "yt:jXIeywVd4KM",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA",
+   "yt:vIHKUB0QmA4",
+   "yt:zju1nq3Eoqo"
+  ],
+  "519": [
+   "yt:1pv3FNLTVhw"
+  ],
+  "540": [
+   "yt:G_QsXaTWyqE",
+   "yt:L9sMmGRqemQ",
+   "yt:_yY4BnPMTNk"
+  ],
+  "541": [
+   "yt:1_NiGHa8-Lg",
+   "yt:FsjGoEFYXCc",
+   "yt:GRB0AIpg4rs",
+   "yt:HfRadOSj2qU",
+   "yt:eRr6bBiUrLE",
+   "yt:uZDjA619EyI"
+  ],
+  "561": [
+   "yt:A2_Z9rZUjVw",
+   "yt:IP4m6ibriKo"
+  ],
+  "573": [
+   "yt:fpKPyaqPLoI"
+  ],
+  "600": [
+   "yt:70dK0LyXu-0",
+   "yt:M1KFg6edqro",
+   "yt:NKAS96UPeJs",
+   "yt:zs5cQ6b_ZeY"
+  ],
+  "606": [
+   "yt:A9JDkiYEhfY",
+   "yt:byAj35QlGbs"
+  ],
+  "614": [
+   "yt:Dba1RqmzOjo",
+   "yt:VzcNPKTrC90",
+   "yt:qTulYqP6vkI"
+  ],
+  "615": [
+   "yt:0ef0vmx0Bow",
+   "yt:4A95t8BJNtI",
+   "yt:Cu8peMBN0fM",
+   "yt:Oi6cmg2RoLk",
+   "yt:SjTOVR339Ck",
+   "yt:XTh6-7A9BEk",
+   "yt:yn9huAoV3R0"
+  ],
+  "617": [
+   "yt:6se8TltCOoc",
+   "yt:ZEdUqn-Yudo"
+  ],
+  "622": [
+   "yt:b7YgXassC3c"
+  ],
+  "623": [
+   "yt:r2oPk20OHBE"
+  ],
+  "629": [
+   "yt:3jT_Zui1Am8",
+   "yt:APOT0GqtJXI",
+   "yt:OWZ9HgLckrQ",
+   "yt:QHVAERH4yzc",
+   "yt:UiHFtubW4JM",
+   "yt:W6dsLthcvzU",
+   "yt:W9olSzNOh8s",
+   "yt:Z9KAIm6zUQk",
+   "yt:eSm93rME8Rs",
+   "yt:hVoRXdcCOjw",
+   "yt:iJQdny3-T2Q",
+   "yt:ii1aMY-vU70",
+   "yt:w5LCl2SRbkM"
+  ],
+  "630": [
+   "yt:lpj0E0a0mlU",
+   "yt:vU-g6mC1F0g"
+  ],
+  "642": [
+   "yt:eGtKK0oxj2M",
+   "yt:mP-E6IfsndE"
+  ],
+  "646": [
+   "yt:_2rkRDg0d60"
+  ],
+  "649": [
+   "yt:ifI_fwg55k8"
+  ],
+  "650": [
+   "yt:B4duk3RiQzA",
+   "yt:ZJqY1WLX4zA",
+   "yt:mTdjZG-eiak",
+   "yt:p6cIzpEZWLQ"
+  ],
+  "652": [
+   "yt:9gpjRy3uDUM"
+  ],
+  "656": [
+   "yt:ZJqY1WLX4zA",
+   "yt:mTdjZG-eiak",
+   "yt:p6cIzpEZWLQ"
+  ],
+  "663": [
+   "yt:PHDnZtFElK8",
+   "yt:UPGqUza0H58",
+   "yt:p9eSogiYNJ8"
+  ],
+  "664": [
+   "yt:ZJqY1WLX4zA",
+   "yt:mTdjZG-eiak",
+   "yt:p6cIzpEZWLQ"
+  ],
+  "668": [
+   "yt:ZJqY1WLX4zA",
+   "yt:mTdjZG-eiak",
+   "yt:p6cIzpEZWLQ"
+  ],
+  "684": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:AJt2mhwUlq4",
+   "yt:B4duk3RiQzA",
+   "yt:BiwhCucM470",
+   "yt:GFxPMMkhHuA",
+   "yt:IF4UhElRUFg",
+   "yt:PLc0BCjbFcg",
+   "yt:V3FWWwuTlVM",
+   "yt:X__kbLv25uU",
+   "yt:ZJqY1WLX4zA",
+   "yt:ZmkHQ9zNm8k",
+   "yt:aom5SiHakGM",
+   "yt:jXIeywVd4KM",
+   "yt:lpj0E0a0mlU",
+   "yt:mTdjZG-eiak",
+   "yt:p6cIzpEZWLQ",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA",
+   "yt:vIHKUB0QmA4",
+   "yt:vU-g6mC1F0g",
+   "yt:zju1nq3Eoqo"
+  ],
+  "688": [
+   "yt:lBAElIfmlLk"
+  ],
+  "693": [
+   "yt:rslcr774JXM",
+   "yt:yXlKVghVQbo"
+  ],
+  "703": [
+   "yt:BZdsIti3lfo"
+  ],
+  "730": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:AJt2mhwUlq4",
+   "yt:B4duk3RiQzA",
+   "yt:BiwhCucM470",
+   "yt:GFxPMMkhHuA",
+   "yt:IF4UhElRUFg",
+   "yt:PLc0BCjbFcg",
+   "yt:V3FWWwuTlVM",
+   "yt:X__kbLv25uU",
+   "yt:ZmkHQ9zNm8k",
+   "yt:aom5SiHakGM",
+   "yt:jXIeywVd4KM",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA",
+   "yt:vIHKUB0QmA4",
+   "yt:zju1nq3Eoqo"
+  ],
+  "770": [
+   "yt:ZTFWvOKvOcM"
+  ],
+  "772": [
+   "yt:9TVCs9Zv4TE"
+  ],
+  "776": [
+   "yt:0ijSSikbkrM",
+   "yt:6rzjqLTxjsk"
+  ],
+  "779": [
+   "yt:1mpwbTSdLpE",
+   "yt:IbpcxRrj1YY",
+   "yt:JFwzMvFJYik",
+   "yt:swuHFQPkJpc"
+  ],
+  "787": [
+   "yt:ZTFWvOKvOcM"
+  ],
+  "788": [
+   "yt:3lWWH1zfl38",
+   "yt:70JnwZLArK8",
+   "yt:KqSG8_2KbDg",
+   "yt:WSQOz5vTvZw"
+  ],
+  "803": [
+   "yt:ZvbQMqd0kEY"
+  ],
+  "804": [
+   "yt:A2_Z9rZUjVw",
+   "yt:PAn61yU-wG0",
+   "yt:pkT48OTGaSs"
+  ],
+  "805": [
+   "yt:-F3jq2EugvM",
+   "yt:0NMbU7I8YP4",
+   "yt:0Z3vdFDSKN8",
+   "yt:0ay7qoz2FD4",
+   "yt:0dZnBQfe2D8",
+   "yt:3p3xHVnK5o4",
+   "yt:6TLhaEg8IO8",
+   "yt:8TndKZgrrNQ",
+   "yt:9fUmxvzLoE4",
+   "yt:B5PNp_RvqKo",
+   "yt:BAlbuc06dcs",
+   "yt:CABR_V1t1Ps",
+   "yt:DvGAb-OycL4",
+   "yt:J-X729bTi6Y",
+   "yt:JsVdOdtNI1Q",
+   "yt:KwNAkagDuKQ",
+   "yt:LV__lltmsys",
+   "yt:NPeh5luV2FM",
+   "yt:S1k6C8T8yEo",
+   "yt:VSLWy0qvTSE",
+   "yt:VTgFetAh6tg",
+   "yt:Vnbljjwt-aU",
+   "yt:WvGxmTEu6kg",
+   "yt:WwxsBPtRy8U",
+   "yt:c6r-sfm-okY",
+   "yt:di48OrjTf10",
+   "yt:fURATK5Yt30",
+   "yt:g1MYNuH8rBQ",
+   "yt:jr7oBRf19Zw",
+   "yt:n23XaBZPEMg",
+   "yt:n4w7YaAWoCY",
+   "yt:o0O7tkAqYTs",
+   "yt:s-Jf8Y1HUp4",
+   "yt:sz6YlqrqIgI",
+   "yt:t_5-VFd-41I",
+   "yt:uvEF9zu21XE",
+   "yt:vBEMdGs-5B8",
+   "yt:vS0ob0_byb4",
+   "yt:vaO7fiO41wQ",
+   "yt:wTNWpy7m4ww",
+   "yt:yfTcZSzjvUs",
+   "yt:zWyxLWf1d90",
+   "yt:z_toVuwZdD8"
+  ],
+  "807": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:8vQYn7IDzvo",
+   "yt:AJt2mhwUlq4",
+   "yt:B4duk3RiQzA",
+   "yt:BiwhCucM470",
+   "yt:GFxPMMkhHuA",
+   "yt:IF4UhElRUFg",
+   "yt:PLc0BCjbFcg",
+   "yt:V3FWWwuTlVM",
+   "yt:X__kbLv25uU",
+   "yt:ZmkHQ9zNm8k",
+   "yt:ZtvG4davmbQ",
+   "yt:ZvbQMqd0kEY",
+   "yt:aom5SiHakGM",
+   "yt:jXIeywVd4KM",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA",
+   "yt:vIHKUB0QmA4",
+   "yt:zEvgbpQgNnE",
+   "yt:zju1nq3Eoqo"
+  ],
+  "808": [
+   "yt:G4iEE9KhdBc",
+   "yt:IB-Jwys_KjE",
+   "yt:_ds8_IFDp1o",
+   "yt:dZzY8-nxabA",
+   "yt:uwo5uqOywFI"
+  ],
+  "816": [
+   "yt:3dArEoLOvzI",
+   "yt:9_C5RTTKOw8",
+   "yt:DeSDjjicGWY",
+   "yt:WvvBm5gZoy4"
+  ],
+  "822": [
+   "yt:oDsk173y7Tk"
+  ],
+  "829": [
+   "yt:A2_Z9rZUjVw"
+  ],
+  "836": [
+   "yt:NuvV4RlGuRE"
+  ],
+  "845": [
+   "yt:4mmlKLmF99A"
+  ],
+  "882": [
+   "yt:zx2yjuGwbt4"
+  ],
+  "909": [
+   "yt:0Xkr3IGEpsk",
+   "yt:2Ye-1VOeCgs",
+   "yt:3k5R3_b4eDU",
+   "yt:4t8CJGnViNY",
+   "yt:5X7vqLYoE_s",
+   "yt:861coSFLOvk",
+   "yt:AJt2mhwUlq4",
+   "yt:B4duk3RiQzA",
+   "yt:BiwhCucM470",
+   "yt:GFxPMMkhHuA",
+   "yt:IF4UhElRUFg",
+   "yt:PLc0BCjbFcg",
+   "yt:V3FWWwuTlVM",
+   "yt:X__kbLv25uU",
+   "yt:ZmkHQ9zNm8k",
+   "yt:aom5SiHakGM",
+   "yt:jXIeywVd4KM",
+   "yt:lpj0E0a0mlU",
+   "yt:roM1QPr8lNo",
+   "yt:tKfxjeLVBCA",
+   "yt:vIHKUB0QmA4",
+   "yt:vU-g6mC1F0g",
+   "yt:zju1nq3Eoqo"
+  ],
+  "914": [
+   "yt:0Oq3iHJF15c",
+   "yt:0yOvHz60HaQ",
+   "yt:CimQOh-1DqM",
+   "yt:MvmfyO8GvTE",
+   "yt:U0IlVEaxWVY",
+   "yt:Vq7Ld-2BDiI",
+   "yt:_EX--pCuNdk",
+   "yt:c1cy9olnvsQ",
+   "yt:iSJoOKxt0Hs",
+   "yt:nXrCtC-KYCc",
+   "yt:nn4ZrO7WO8k"
+  ],
+  "945": [
+   "yt:-dJ3-0YDLo8",
+   "yt:1bTAmI87zw0",
+   "yt:9t4PAFAGXsc",
+   "yt:T9p42wOyf0Y",
+   "yt:sTu_usbmL_I",
+   "yt:y_kuN4EdvOo"
+  ]
+ }
+}

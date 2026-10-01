@@ -1,0 +1,71 @@
+# Dependencies and build output (Netlify builds from source)
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+.vite/
+.cache/
+
+# Environment and credentials. The app needs no key at runtime; acquisition keys live outside the repo.
+.env
+.env.*
+!.env.example
+*.local
+*.key
+*.pem
+*.p12
+.retrotv_key*
+.tvn_key*
+*api-key*
+*apikey*
+secrets.*
+credentials.*
+
+# Acquisition caches (API responses and description dumps)
+retrotv-api-cache.json
+retrotv-descriptions.json
+*-api-cache.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test and coverage artefacts
+coverage/
+.vitest/
+test-results/
+playwright-report/
+
+# Local or user media and databases, never shipped
+media/
+user-media/
+*.sqlite
+*.sqlite3
+*.db
+
+# Editor and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.cursor/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Netlify local state
+.netlify/

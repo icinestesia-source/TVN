@@ -1,0 +1,176 @@
+.tv {
+  height: 100%;
+  background: #000;
+  user-select: none;
+  overflow: hidden;
+}
+
+.watch {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #000;
+}
+
+.tv:not(.is-integrated) .watch {
+  position: fixed;
+  inset: 0;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.stage iframe,
+.yt-host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+.stage.is-card iframe,
+.stage.is-card .yt-host {
+  opacity: 0;
+}
+
+.local-host {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.local-host[hidden],
+.stage.is-card .local-host {
+  display: none;
+}
+
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.45);
+  z-index: 3;
+}
+
+.click-catch {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  /* A vertical swipe on the picture changes channel rather than panning the page. */
+  touch-action: pinch-zoom;
+}
+
+.test-card {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: #070b12;
+  overflow: hidden;
+}
+
+.bars {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 12%;
+  height: 18%;
+  display: flex;
+}
+
+.bars span { flex: 1; }
+
+.card-disc {
+  width: min(52vw, 420px);
+  height: min(52vw, 420px);
+  border-radius: 50%;
+  border: 18px solid rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 18px rgba(0, 0, 0, 0.28);
+}
+
+.card-copy {
+  position: absolute;
+  text-align: center;
+  z-index: 1;
+  max-width: min(92%, 760px);
+  padding: 0 12px;
+  overflow-wrap: anywhere;
+}
+
+.card-number,
+.card-name,
+.card-title,
+.card-elapsed,
+.card-note {
+  margin: 0;
+}
+
+.card-number {
+  font-family: var(--font-ui);
+  font-size: clamp(64px, 10vw, 112px);
+  line-height: 0.85;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.card-name {
+  margin-top: 8px;
+  font-family: var(--font-ui);
+  font-size: clamp(22px, 3vw, 34px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card-title {
+  margin-top: 10px;
+  font-family: var(--font-ui);
+  font-size: clamp(18px, 2.4vw, 28px);
+}
+
+.card-elapsed {
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+
+.card-note {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 3px 10px;
+  background: rgba(6, 8, 12, 0.82);
+  font-family: var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: clamp(13px, 1.25vw, 17px);
+  line-height: 1.4;
+  color: rgba(242, 242, 242, 0.86);
+}
+
+.card-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.card-progress span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}

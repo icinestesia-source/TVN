@@ -1,0 +1,3458 @@
+{
+ "format": "tvn-source-register-v1",
+ "catalogueGeneratedAt": 1790729333482,
+ "sources": {
+  "src_1xtra_hiphop": {
+   "name": "BBC Radio 1Xtra – Hip-Hop",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@1Xtra"
+  },
+  "src_50_cent": {
+   "name": "50 Cent (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@50CentVEVO"
+  },
+  "src_8bit_guy": {
+   "name": "The 8-Bit Guy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@The8BitGuy"
+  },
+  "src_92ny_books": {
+   "name": "92NY – Books and Authors",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@92ndStreetY"
+  },
+  "src_abc_news": {
+   "name": "ABC News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCBi2mrWuNuyYy4gbM6fU18Q"
+  },
+  "src_abc_news_au": {
+   "name": "ABC News (Australia)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCVgO39Bk5sMo66-6o6Spn6Q"
+  },
+  "src_abc_news_indepth": {
+   "name": "ABC News In-depth",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ABCNewsIndepth"
+  },
+  "src_acdc": {
+   "name": "AC/DC",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@acdc"
+  },
+  "src_ace_editors": {
+   "name": "American Cinema Editors",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCy0xVMmQdIOTGO82lDH4EJA"
+  },
+  "src_adam_ragusea": {
+   "name": "Adam Ragusea",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@aragusea"
+  },
+  "src_adult_swim": {
+   "name": "Adult Swim",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@adultswim"
+  },
+  "src_aerosmith": {
+   "name": "Aerosmith",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Aerosmith"
+  },
+  "src_africanews": {
+   "name": "africanews",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC1_E8NeF5QHY2dtdLRBCCLA"
+  },
+  "src_afro_nation": {
+   "name": "Afro Nation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AfroNation"
+  },
+  "src_alex_the_analyst": {
+   "name": "Alex The Analyst",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AlexTheAnalyst"
+  },
+  "src_ali_abdaal": {
+   "name": "Ali Abdaal",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@aliabdaal"
+  },
+  "src_alice_in_chains": {
+   "name": "Alice In Chains",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@aliceinchains"
+  },
+  "src_alicia_keys": {
+   "name": "Alicia Keys",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@aliciakeys"
+  },
+  "src_aljazeera_english": {
+   "name": "Al Jazeera English",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCNye-wNBqNL5ZzHSJj3l8Bg"
+  },
+  "src_all_the_stations": {
+   "name": "All The Stations",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AllTheStations"
+  },
+  "src_alter": {
+   "name": "ALTER",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@watchALTER"
+  },
+  "src_american_battlefield_trust": {
+   "name": "American Battlefield Trust",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AmericanBattlefieldTrust"
+  },
+  "src_american_theatre_wing": {
+   "name": "American Theatre Wing – Working in the Theatre",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AmericanTheatreWing"
+  },
+  "src_amoeba_sisters": {
+   "name": "Amoeba Sisters",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AmoebaSisters"
+  },
+  "src_anatomyzone": {
+   "name": "AnatomyZone",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AnatomyZone"
+  },
+  "src_angelique_kidjo": {
+   "name": "Angelique Kidjo",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AngeliqueKidjo"
+  },
+  "src_animals_as_leaders": {
+   "name": "Animals As Leaders",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AnimalsAsLeaders"
+  },
+  "src_anjunabeats": {
+   "name": "Anjunabeats",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Anjunabeats"
+  },
+  "src_antiques_roadshow_pbs": {
+   "name": "ANTIQUES ROADSHOW PBS",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RoadshowPBS"
+  },
+  "src_ap_archive": {
+   "name": "AP Archive",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@APArchive"
+  },
+  "src_architectural_digest": {
+   "name": "Architectural Digest",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Archdigest"
+  },
+  "src_arctic_monkeys": {
+   "name": "Arctic Monkeys (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ArcticMonkeysVEVO"
+  },
+  "src_armada": {
+   "name": "Armada Music",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ArmadaMusicTV"
+  },
+  "src_armando_physiology": {
+   "name": "Armando Hasudungan – Physiology",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@armandohasudungan"
+  },
+  "src_arrl_history": {
+   "name": "ARRL – Radio History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ARRLHQ"
+  },
+  "src_art_assignment": {
+   "name": "The Art Assignment",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@theartassignment"
+  },
+  "src_arte_travel": {
+   "name": "ARTE.tv Documentary – Travel",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ARTEtvDocumentary"
+  },
+  "src_asianometry": {
+   "name": "Asianometry",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Asianometry"
+  },
+  "src_athletic_fc": {
+   "name": "The Athletic FC",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheAthleticFC"
+  },
+  "src_atk": {
+   "name": "America's Test Kitchen",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@AmericasTestKitchen"
+  },
+  "src_atlas_obscura": {
+   "name": "Atlas Obscura",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@atlasobscura"
+  },
+  "src_audiotree": {
+   "name": "Audiotree",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Audiotree"
+  },
+  "src_b1m": {
+   "name": "The B1M",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheB1M"
+  },
+  "src_bake_with_jack": {
+   "name": "Bake with Jack",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BakewithJack"
+  },
+  "src_balu_nature": {
+   "name": "Balu – Relaxing Nature in 4K",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCUTOwFZ5grVnUMvvleA_JMg"
+  },
+  "src_bank_of_england": {
+   "name": "Bank of England",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCY70MMJ8Rj4wtwt7bVN6hIA"
+  },
+  "src_bassbuzz": {
+   "name": "BassBuzz",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@bassbuzz"
+  },
+  "src_bauhaus": {
+   "name": "Bauhaus",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCxtEHoDaGH83DiqzFR6nMcw"
+  },
+  "src_bb_king": {
+   "name": "B.B. King",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BBKing"
+  },
+  "src_bbc_archive": {
+   "name": "BBC Archive",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BBCArchive"
+  },
+  "src_bbc_archive_broadcasting": {
+   "name": "BBC Archive – Broadcasting History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BBCArchive"
+  },
+  "src_bbc_archive_radio": {
+   "name": "BBC Archive – Radio History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BBCArchive"
+  },
+  "src_bbc_earth": {
+   "name": "BBC Earth",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BBCEarth"
+  },
+  "src_bbc_news": {
+   "name": "BBC News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC16niRr50-MSBwiO3YDb3RA"
+  },
+  "src_be_a_better_dev": {
+   "name": "Be A Better Dev",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BeABetterDev"
+  },
+  "src_beach_boys": {
+   "name": "The Beach Boys",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheBeachBoys"
+  },
+  "src_bee_gees": {
+   "name": "Bee Gees",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BeeGees"
+  },
+  "src_belgrave_villa": {
+   "name": "Belgrave Villa Renovation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCKUIPcAsg6zlG_qCMucq3AA"
+  },
+  "src_ben_eater": {
+   "name": "Ben Eater",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BenEater"
+  },
+  "src_ben_felix": {
+   "name": "Ben Felix",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BenFelixCSI"
+  },
+  "src_ben_g_thomas": {
+   "name": "Ben G Thomas",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BenGThomas"
+  },
+  "src_berkman_klein": {
+   "name": "Berkman Klein Center for Internet & Society",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BKCHarvard"
+  },
+  "src_bernadette_banner": {
+   "name": "Bernadette Banner",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BernadetteBanner"
+  },
+  "src_best_ever_food": {
+   "name": "Best Ever Food Review Show",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BestEverFoodReviewShow"
+  },
+  "src_beth_hart": {
+   "name": "Beth Hart",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@bethhartmusic"
+  },
+  "src_beyblade": {
+   "name": "BEYBLADE English",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BeybladeOfficial"
+  },
+  "src_bfi": {
+   "name": "BFI",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BritishFilmInstitute"
+  },
+  "src_bh_photo": {
+   "name": "B&H Photo Video Event Space",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BandH"
+  },
+  "src_bi_manufacturing": {
+   "name": "Business Insider – Manufacturing",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@businessinsider"
+  },
+  "src_bigclive": {
+   "name": "bigclivedotcom",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@bigclivedotcom"
+  },
+  "src_black_white": {
+   "name": "&Black&White",
+   "provider": "YouTube",
+   "website": "https://andblackandwhite.com/"
+  },
+  "src_blogotheque": {
+   "name": "Blogothèque",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@blogotheque"
+  },
+  "src_blondihacks": {
+   "name": "Blondihacks",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Blondihacks"
+  },
+  "src_bloomberg_originals": {
+   "name": "Bloomberg Originals",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCUMZ7gohGI9HcU9VNsr2FJQ"
+  },
+  "src_bloomberg_tv": {
+   "name": "Bloomberg Television",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCIALMKvObZNtJ6AmdCLP7Lg"
+  },
+  "src_bluebell": {
+   "name": "Bluebell Railway",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BluebellRail"
+  },
+  "src_bluey": {
+   "name": "Bluey",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BlueyOfficialChannel"
+  },
+  "src_blur": {
+   "name": "Blur",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@blur"
+  },
+  "src_body_coach": {
+   "name": "The Body Coach TV",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheBodyCoachTV"
+  },
+  "src_bof": {
+   "name": "The Business of Fashion",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BusinessofFashion"
+  },
+  "src_boiler_room": {
+   "name": "Boiler Room",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@boilerroom"
+  },
+  "src_bon_jovi": {
+   "name": "Bon Jovi",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@bonjovi"
+  },
+  "src_bonnaroo": {
+   "name": "Bonnaroo",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@bonnaroo"
+  },
+  "src_brad_stanfield": {
+   "name": "Dr Brad Stanfield",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DrBradStanfield"
+  },
+  "src_braille_skate": {
+   "name": "Braille Skateboarding",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BrailleSkateboarding"
+  },
+  "src_brandy": {
+   "name": "Brandy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@brandy"
+  },
+  "src_brave_wilderness": {
+   "name": "Brave Wilderness",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BraveWilderness"
+  },
+  "src_brick_immortar": {
+   "name": "Brick Immortar – Structural Failures",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BrickImmortar"
+  },
+  "src_british_library_lit": {
+   "name": "British Library – Literature",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@britishlibrary"
+  },
+  "src_british_movietone": {
+   "name": "British Movietone",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BritishMovietone"
+  },
+  "src_british_museum": {
+   "name": "The British Museum",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@britishmuseum"
+  },
+  "src_british_pathe": {
+   "name": "British Pathé",
+   "provider": "YouTube",
+   "website": "https://www.britishpathe.com/"
+  },
+  "src_british_red_cross": {
+   "name": "British Red Cross – First Aid",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BritishRedCross"
+  },
+  "src_bruce_springsteen": {
+   "name": "Bruce Springsteen",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@brucespringsteen"
+  },
+  "src_budget_bytes": {
+   "name": "Budget Bytes",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC17vdVOZBVxTSDcldUBBlRg"
+  },
+  "src_bundesliga": {
+   "name": "Bundesliga",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@bundesliga"
+  },
+  "src_business_casual": {
+   "name": "Business Casual",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BusinessCasual"
+  },
+  "src_button_poetry": {
+   "name": "Button Poetry",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ButtonPoetry"
+  },
+  "src_buzzr": {
+   "name": "BUZZR",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BUZZRtv"
+  },
+  "src_bvws": {
+   "name": "British Vintage Wireless Society",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BVWS"
+  },
+  "src_cannes_lions": {
+   "name": "Cannes Lions",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CannesLions"
+  },
+  "src_carol_burnett": {
+   "name": "The Carol Burnett Show",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@carolburnettshow"
+  },
+  "src_cartoon_network_uk": {
+   "name": "Cartoon Network UK",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CartoonNetworkUK"
+  },
+  "src_casual_navigation": {
+   "name": "Casual Navigation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CasualNavigation"
+  },
+  "src_cbc_news": {
+   "name": "CBC News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCuFFtHWoLl5fauMMD5Ww2jA"
+  },
+  "src_cbs_news": {
+   "name": "CBS News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC8p1vwvWtl6T73JiExfWs1g"
+  },
+  "src_cch": {
+   "name": "The Centre for Computing History – Conversations",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheCentreforComputingHistory"
+  },
+  "src_cercle": {
+   "name": "Cercle",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Cercle"
+  },
+  "src_channel4_news": {
+   "name": "Channel 4 News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCTrQ7HXWRRxr7OsOtodr2_w"
+  },
+  "src_chateau_diaries": {
+   "name": "The Chateau Diaries",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheChateauDiaries"
+  },
+  "src_chef_jean_pierre": {
+   "name": "Chef Jean-Pierre",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ChefJeanPierre"
+  },
+  "src_chicago_film_archives": {
+   "name": "Chicago Film Archives",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@chicagofilmarchives"
+  },
+  "src_chief_makoi": {
+   "name": "Chief MAKOi",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ChiefMAKOi"
+  },
+  "src_chm": {
+   "name": "Computer History Museum",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ComputerHistory"
+  },
+  "src_chm_internet": {
+   "name": "Computer History Museum – Internet History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ComputerHistory"
+  },
+  "src_chm_interviews": {
+   "name": "Computer History Museum – Oral Histories and Conversations",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ComputerHistory"
+  },
+  "src_chris_cornell": {
+   "name": "Chris Cornell",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCf0pcytyiYVYy3UOs52nsQg"
+  },
+  "src_chrisfix": {
+   "name": "ChrisFix – Car Care Basics",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ChrisFix"
+  },
+  "src_christies": {
+   "name": "Christie's – Collecting",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Christies"
+  },
+  "src_chubbyemu": {
+   "name": "Chubbyemu",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@chubbyemu"
+  },
+  "src_chuds_bbq": {
+   "name": "Chuds BBQ",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ChudsBBQ"
+  },
+  "src_cirque": {
+   "name": "Cirque du Soleil",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@cirquedusoleil"
+  },
+  "src_city_beautiful": {
+   "name": "City Beautiful",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CityBeautiful"
+  },
+  "src_climate_town": {
+   "name": "Climate Town",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ClimateTown"
+  },
+  "src_clints_reptiles": {
+   "name": "Clint's Reptiles",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ClintsReptiles"
+  },
+  "src_clover_chaos": {
+   "name": "Clover Chaos",
+   "provider": "YouTube",
+   "website": "https://cloverchaos.com/"
+  },
+  "src_clutterbug": {
+   "name": "Clutterbug",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Clutterbug"
+  },
+  "src_cna": {
+   "name": "CNA",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC83jt4dlz1Gjl58fzQrrKZg"
+  },
+  "src_cna_insider": {
+   "name": "CNA Insider",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CNAInsider"
+  },
+  "src_cnbc": {
+   "name": "CNBC",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCvJJ_dzjViJCoLf5uKUTwoA"
+  },
+  "src_cnbc_documentary": {
+   "name": "CNBC – Documentaries",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CNBC"
+  },
+  "src_cnbc_international": {
+   "name": "CNBC International",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCo7a6riBFJ3tkeHjvkXPn1g"
+  },
+  "src_cnbc_make_it": {
+   "name": "CNBC Make It",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CNBCMakeIt"
+  },
+  "src_cnbc_manufacturing": {
+   "name": "CNBC – Manufacturing",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CNBC"
+  },
+  "src_coachella": {
+   "name": "Coachella",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@coachella"
+  },
+  "src_coaches_voice": {
+   "name": "Coaches' Voice",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheCoachesVoice"
+  },
+  "src_cocteau_twins": {
+   "name": "Cocteau Twins",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCXmBg9Kz7RJ8MUGz-vtXR2w"
+  },
+  "src_colbert": {
+   "name": "The Late Show with Stephen Colbert",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ColbertLateShow"
+  },
+  "src_colors": {
+   "name": "COLORS",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@COLORSxSTUDIOS"
+  },
+  "src_comic_tropes": {
+   "name": "Comic Tropes",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ComicTropes"
+  },
+  "src_comicstorian": {
+   "name": "Comicstorian",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Comicstorian"
+  },
+  "src_company_man": {
+   "name": "Company Man",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCQMyhrt92_8XM0KgZH6VnRg"
+  },
+  "src_computerphile": {
+   "name": "Computerphile",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Computerphile"
+  },
+  "src_concacaf": {
+   "name": "Concacaf",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Concacaf"
+  },
+  "src_cooper_hewitt": {
+   "name": "Cooper Hewitt – Design History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CooperHewitt"
+  },
+  "src_copa90": {
+   "name": "COPA90",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Copa90"
+  },
+  "src_corridor_crew": {
+   "name": "Corridor Crew",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CorridorCrew"
+  },
+  "src_court_tv": {
+   "name": "Court TV",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@COURTTV"
+  },
+  "src_cricket_au": {
+   "name": "cricket.com.au",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@cricketcomau"
+  },
+  "src_cruising_the_cut": {
+   "name": "Cruising The Cut",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CruisingtheCut"
+  },
+  "src_crunchyroll_action": {
+   "name": "Crunchyroll – Action",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Crunchyroll"
+  },
+  "src_crunchyroll_comedy": {
+   "name": "Crunchyroll – Comedy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Crunchyroll"
+  },
+  "src_crunchyroll_drama": {
+   "name": "Crunchyroll – Drama",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Crunchyroll"
+  },
+  "src_crunchyroll_fantasy": {
+   "name": "Crunchyroll – Fantasy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Crunchyroll"
+  },
+  "src_dashboard_confessional": {
+   "name": "Dashboard Confessional",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@dashboardconfessional"
+  },
+  "src_dead_meat": {
+   "name": "Dead Meat",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DeadMeat"
+  },
+  "src_def_leppard": {
+   "name": "Def Leppard",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DefLeppard"
+  },
+  "src_defcon": {
+   "name": "DEF CON",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DEFCONConference"
+  },
+  "src_degrassi": {
+   "name": "Degrassi – The Official Channel",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Degrassi"
+  },
+  "src_depeche_mode": {
+   "name": "Depeche Mode",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@depechemode"
+  },
+  "src_design_museum": {
+   "name": "Design Museum",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DesignMuseum"
+  },
+  "src_dianxi_xiaoge": {
+   "name": "Dianxi Xiaoge",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@dianxixiaoge"
+  },
+  "src_dick_cavett": {
+   "name": "The Dick Cavett Show",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheDickCavettShow"
+  },
+  "src_digital_foundry": {
+   "name": "Digital Foundry",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DigitalFoundry"
+  },
+  "src_diiv": {
+   "name": "DIIV",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DIIV"
+  },
+  "src_doctor_who": {
+   "name": "Doctor Who",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DoctorWho"
+  },
+  "src_dogwoof": {
+   "name": "Dogwoof",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@dogwoof"
+  },
+  "src_drumeo": {
+   "name": "Drumeo",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@drumeoofficial"
+  },
+  "src_dry_bar": {
+   "name": "Dry Bar Comedy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DryBarComedy"
+  },
+  "src_duran_duran": {
+   "name": "Duran Duran",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DuranDuran"
+  },
+  "src_dust": {
+   "name": "DUST",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@watchdust"
+  },
+  "src_dw_documentary": {
+   "name": "DW Documentary",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DWDocumentary"
+  },
+  "src_dw_news": {
+   "name": "DW News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCknLrEdhRCp1aegoMqRaCZg"
+  },
+  "src_dwarkesh": {
+   "name": "Dwarkesh Patel – Technology Interviews",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DwarkeshPatel"
+  },
+  "src_eames_office": {
+   "name": "Eames Office",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EamesOffice"
+  },
+  "src_eater": {
+   "name": "Eater",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@eater"
+  },
+  "src_ecb": {
+   "name": "England & Wales Cricket Board",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@officialenglandcricket"
+  },
+  "src_economics_explained": {
+   "name": "Economics Explained",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EconomicsExplained"
+  },
+  "src_economist": {
+   "name": "The Economist",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheEconomist"
+  },
+  "src_ed_sullivan": {
+   "name": "The Ed Sullivan Show",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheEdSullivanShow"
+  },
+  "src_eevblog": {
+   "name": "EEVblog",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EEVblog"
+  },
+  "src_efficient_engineer": {
+   "name": "The Efficient Engineer",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheEfficientEngineer"
+  },
+  "src_electroboom": {
+   "name": "ElectroBOOM",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ElectroBOOM"
+  },
+  "src_eminem": {
+   "name": "Eminem (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EminemVEVO"
+  },
+  "src_engineering_rosie": {
+   "name": "Engineering with Rosie",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EngineeringwithRosie"
+  },
+  "src_england_football": {
+   "name": "England",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@England"
+  },
+  "src_english_heritage": {
+   "name": "English Heritage",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EnglishHeritage"
+  },
+  "src_entertainment_tonight": {
+   "name": "Entertainment Tonight",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EntertainmentTonight"
+  },
+  "src_epic_history": {
+   "name": "Epic History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EpicHistoryTV"
+  },
+  "src_epitaph": {
+   "name": "Epitaph Records",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@epitaph"
+  },
+  "src_eric_clapton": {
+   "name": "Eric Clapton",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EricClapton"
+  },
+  "src_eric_strebel": {
+   "name": "Eric Strebel",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EricStrebel"
+  },
+  "src_euronews": {
+   "name": "euronews",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCSrZ3UV4jOidv8ppoVuvW9Q"
+  },
+  "src_eva_zu_beck": {
+   "name": "Eva zu Beck",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@evazubeck"
+  },
+  "src_every_frame": {
+   "name": "Every Frame a Painting",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@everyframeapainting"
+  },
+  "src_exploring_alternatives": {
+   "name": "Exploring Alternatives",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@exploringalternatives"
+  },
+  "src_fall_out_boy": {
+   "name": "Fall Out Boy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@falloutboy"
+  },
+  "src_fallon": {
+   "name": "The Tonight Show Starring Jimmy Fallon",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@fallontonight"
+  },
+  "src_fender": {
+   "name": "Fender",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Fender"
+  },
+  "src_fia_wec": {
+   "name": "FIA World Endurance Championship",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FIAWEC"
+  },
+  "src_fifa": {
+   "name": "FIFA",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@fifa"
+  },
+  "src_fih": {
+   "name": "International Hockey Federation (FIH)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@fihockey"
+  },
+  "src_film_detective": {
+   "name": "The Film Detective",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheFilmDetective"
+  },
+  "src_filmmaker_iq": {
+   "name": "Filmmaker IQ",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FilmmakerIQ"
+  },
+  "src_filmrise_documentaries": {
+   "name": "FilmRise Documentaries",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FilmRiseDocumentaries"
+  },
+  "src_filmrise_movies": {
+   "name": "FilmRise Movies",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FilmRiseMovies"
+  },
+  "src_fis_alpine": {
+   "name": "FIS Alpine",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@fisalpine"
+  },
+  "src_fitness_blender": {
+   "name": "Fitness Blender",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FitnessBlender"
+  },
+  "src_fivb_archive": {
+   "name": "FIVB / Volleyball World historical free replays",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@volleyballworld"
+  },
+  "src_flo_chinyere": {
+   "name": "Flo Chinyere",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FloChinyere"
+  },
+  "src_foil_arms_hog": {
+   "name": "Foil Arms and Hog",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FoilArmsandHog"
+  },
+  "src_folding_ideas": {
+   "name": "Folding Ideas – Digital Culture",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FoldingIdeas"
+  },
+  "src_foo_fighters": {
+   "name": "Foo Fighters",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@foofighters"
+  },
+  "src_fortnine": {
+   "name": "FortNine",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FortNine"
+  },
+  "src_fox_weather": {
+   "name": "FOX Weather",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC1FbPiXx59_ltnFVx7IxWow",
+   "website": "https://www.foxweather.com/live"
+  },
+  "src_france24_english": {
+   "name": "FRANCE 24 English",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCQfwfsi5VrQ8yKZ-UWmAEFg"
+  },
+  "src_free_documentary_nature": {
+   "name": "Free Documentary – Nature",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FreeDocumentaryNature"
+  },
+  "src_free_documentary_travel": {
+   "name": "Free Documentary – Travel",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@freedocumentary"
+  },
+  "src_freecodecamp": {
+   "name": "freeCodeCamp.org",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@freecodecamp"
+  },
+  "src_friends": {
+   "name": "Friends",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Friends"
+  },
+  "src_frontline": {
+   "name": "FRONTLINE PBS",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@frontline"
+  },
+  "src_gaming_historian": {
+   "name": "Gaming Historian",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GamingHistorian"
+  },
+  "src_gary_clark_jr": {
+   "name": "Gary Clark Jr.",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GaryClarkJr"
+  },
+  "src_gbh_archives": {
+   "name": "GBH Archives",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GBHArchives"
+  },
+  "src_gcn": {
+   "name": "Global Cycling Network",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@gcn"
+  },
+  "src_geography_now": {
+   "name": "Geography Now",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GeographyNow"
+  },
+  "src_geologyhub": {
+   "name": "GeologyHub",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GeologyHub"
+  },
+  "src_gerry_anderson": {
+   "name": "Gerry Anderson",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GerryAndersonTV"
+  },
+  "src_glitch": {
+   "name": "GLITCH Productions",
+   "provider": "YouTube",
+   "website": "https://www.glitchprod.com/"
+  },
+  "src_gloria_gaynor": {
+   "name": "Gloria Gaynor",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GloriaGaynor"
+  },
+  "src_goodwood": {
+   "name": "Goodwood Road & Racing",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC8rador8CU-pTJ6p7WNiv6w"
+  },
+  "src_great_british_chefs": {
+   "name": "Great British Chefs",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GreatBritishChefs"
+  },
+  "src_greatscott": {
+   "name": "GreatScott!",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@greatscottlab"
+  },
+  "src_gresham_crime": {
+   "name": "Gresham College – Crime",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GreshamCollege"
+  },
+  "src_gresham_law": {
+   "name": "Gresham College – Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GreshamCollege"
+  },
+  "src_gresham_medicine": {
+   "name": "Gresham College – History of Medicine",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GreshamCollege"
+  },
+  "src_gresham_politics": {
+   "name": "Gresham College – Political History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GreshamCollege"
+  },
+  "src_grow_with_jo": {
+   "name": "growwithjo",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GrowWithJo"
+  },
+  "src_guardian_news": {
+   "name": "Guardian News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCIRYBXDze5krPDzAEOxFGVA"
+  },
+  "src_gundam": {
+   "name": "GUNDAM CHANNEL INTL",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GundamInfo"
+  },
+  "src_guns_n_roses": {
+   "name": "Guns N' Roses",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GunsNRoses"
+  },
+  "src_hagerty": {
+   "name": "Hagerty",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/hagerty"
+  },
+  "src_ham_radio_crash_course": {
+   "name": "Ham Radio Crash Course",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HamRadioCrashCourse"
+  },
+  "src_hammock": {
+   "name": "Hammock",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HammockMusic"
+  },
+  "src_harvard_chan": {
+   "name": "Harvard T.H. Chan School of Public Health",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HarvardPublicHealth"
+  },
+  "src_harvard_law_civil": {
+   "name": "Harvard Law School – Civil Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HarvardLawSchool"
+  },
+  "src_harvard_law_constitutional": {
+   "name": "Harvard Law School – Constitutional Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HarvardLawSchool"
+  },
+  "src_harvard_law_criminal": {
+   "name": "Harvard Law School – Criminal Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HarvardLawSchool"
+  },
+  "src_harvard_law_human_rights": {
+   "name": "Harvard Law School – Human Rights",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HarvardLawSchool"
+  },
+  "src_harvard_law_international": {
+   "name": "Harvard Law School – International Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HarvardLawSchool"
+  },
+  "src_hasfit": {
+   "name": "HASfit",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HASfit"
+  },
+  "src_hay_festival": {
+   "name": "Hay Festival",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HayFestivalOfficial"
+  },
+  "src_hbr": {
+   "name": "Harvard Business Review",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HarvardBusinessReview"
+  },
+  "src_headspace": {
+   "name": "Headspace",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@headspace"
+  },
+  "src_heather_robertson": {
+   "name": "Heather Robertson",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HeatherRobertsoncom"
+  },
+  "src_henry_ford": {
+   "name": "The Henry Ford – Inventions",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheHenryFord"
+  },
+  "src_historia_civilis": {
+   "name": "Historia Civilis",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HistoriaCivilis"
+  },
+  "src_history_guy": {
+   "name": "The History Guy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheHistoryGuyChannel"
+  },
+  "src_hole_vevo": {
+   "name": "Hole (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCaJkmYzCsJMLPXotZUXArSA"
+  },
+  "src_holiday_expert": {
+   "name": "Holiday Expert",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_028dXp-sotGWR0ofrvjOg"
+  },
+  "src_hollyoaks": {
+   "name": "Hollyoaks Official",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@hollyoaks"
+  },
+  "src_hollywood_reporter": {
+   "name": "The Hollywood Reporter",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCZ8Sxmkweh65HetaZfR8YuA"
+  },
+  "src_home_free": {
+   "name": "Home Free",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@homefreeguys"
+  },
+  "src_home_renovision": {
+   "name": "Home RenoVision DIY",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HomeRenoVisionDIY"
+  },
+  "src_hopscotch": {
+   "name": "Hopscotch the Globe",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC0Tf8LUUtL3E24Dr28vXkbA"
+  },
+  "src_hot97": {
+   "name": "HOT 97 – Freestyles and Performances",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HOT97"
+  },
+  "src_hot_ones": {
+   "name": "First We Feast – Hot Ones",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FirstWeFeast"
+  },
+  "src_how_to_drink": {
+   "name": "How To Drink",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HowToDrink"
+  },
+  "src_hr_symphony": {
+   "name": "hr-Sinfonieorchester – Frankfurt Radio Symphony",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@hrSinfonieorchester"
+  },
+  "src_hs2": {
+   "name": "HS2 Ltd",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HS2Ltd"
+  },
+  "src_human_league": {
+   "name": "The Human League",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheHumanLeague"
+  },
+  "src_huntley_architecture": {
+   "name": "Huntley Film Archives – Architecture",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_events": {
+   "name": "Huntley Film Archives – Historic Events",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_industrial": {
+   "name": "Huntley Film Archives – Industry",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_motoring": {
+   "name": "Huntley Film Archives – Motoring",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_police": {
+   "name": "Huntley Film Archives – Police",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_radio": {
+   "name": "Huntley Film Archives – Radio",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_sailing": {
+   "name": "Huntley Film Archives – Sailing",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_social": {
+   "name": "Huntley Film Archives – Everyday Life",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huntley_transport": {
+   "name": "Huntley Film Archives – Transport",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuntleyFilmArchives"
+  },
+  "src_huw_richards": {
+   "name": "Huw Richards",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HuwRichards"
+  },
+  "src_icc": {
+   "name": "ICC",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ICC"
+  },
+  "src_icheme": {
+   "name": "Institution of Chemical Engineers (IChemE)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@IChemE"
+  },
+  "src_ieee_spectrum": {
+   "name": "IEEE Spectrum",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@IEEESpectrum"
+  },
+  "src_ietf": {
+   "name": "IETF – Internet Engineering Task Force",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ietf"
+  },
+  "src_ifixit": {
+   "name": "iFixit – Repair Skills",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@iFixitYourself"
+  },
+  "src_iihf": {
+   "name": "IIHF",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@IIHF"
+  },
+  "src_imagine_dragons": {
+   "name": "Imagine Dragons (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ImagineDragonsVEVO"
+  },
+  "src_indigo_traveller": {
+   "name": "Indigo Traveller",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@IndigoTraveller"
+  },
+  "src_insideout": {
+   "name": "InsideOut Music",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@insideoutmusic"
+  },
+  "src_insider_manufacturing": {
+   "name": "Insider – Manufacturing",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Insider"
+  },
+  "src_internet_historian": {
+   "name": "Internet Historian",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@InternetHistorian"
+  },
+  "src_intl_criminal_court": {
+   "name": "International Criminal Court",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@IntlCriminalCourt"
+  },
+  "src_iris_earthquake": {
+   "name": "IRIS Earthquake Science",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@IRISEarthquakeScience"
+  },
+  "src_itchy_boots": {
+   "name": "Itchy Boots",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ItchyBoots"
+  },
+  "src_its_anime": {
+   "name": "It's Anime / REMOW",
+   "provider": "YouTube",
+   "website": "https://www.remow.com/en/service/"
+  },
+  "src_itv_news": {
+   "name": "ITV News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCFQgi22Ht00CpaOQLtvZx2A"
+  },
+  "src_iwm": {
+   "name": "Imperial War Museums",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ImperialWarMuseums"
+  },
+  "src_j_utah": {
+   "name": "J Utah",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JUtah"
+  },
+  "src_jago_hazzard": {
+   "name": "Jago Hazzard",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@jagohazzard"
+  },
+  "src_jalc": {
+   "name": "Jazz at Lincoln Center",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JALC"
+  },
+  "src_james_bruton": {
+   "name": "James Bruton",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@jamesbruton"
+  },
+  "src_james_hoffmann": {
+   "name": "James Hoffmann",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@jameshoffmann"
+  },
+  "src_jamie_oliver": {
+   "name": "Jamie Oliver",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JamieOliver"
+  },
+  "src_jay_leno": {
+   "name": "Jay Leno's Garage",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JayLenosGarage"
+  },
+  "src_jimi_hendrix": {
+   "name": "Jimi Hendrix",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JimiHendrix"
+  },
+  "src_jimmy_diresta": {
+   "name": "Jimmy DiResta",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JimmyDiResta"
+  },
+  "src_jimmy_eat_world": {
+   "name": "Jimmy Eat World",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@jimmyeatworld"
+  },
+  "src_joe_bonamassa": {
+   "name": "Joe Bonamassa",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCcCa2gD7AEA-6SVN8nZw_IA"
+  },
+  "src_johnny_carson": {
+   "name": "Johnny Carson",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JohnnyCarson"
+  },
+  "src_josh_revell": {
+   "name": "Josh Revell",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCSawmZ2PP6R7EURKRMNYXMw"
+  },
+  "src_just_have_a_think": {
+   "name": "Just Have a Think",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JustHaveaThink"
+  },
+  "src_kara_and_nate": {
+   "name": "Kara and Nate",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KaraandNate"
+  },
+  "src_keb_mo": {
+   "name": "Keb' Mo'",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@kebmo"
+  },
+  "src_kendrick_lamar": {
+   "name": "Kendrick Lamar (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KendrickLamarVEVO"
+  },
+  "src_kenhub": {
+   "name": "Kenhub",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Kenhub"
+  },
+  "src_kenji": {
+   "name": "J. Kenji López-Alt",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JKenjiLopezAlt"
+  },
+  "src_kermode_mayo": {
+   "name": "Kermode and Mayo",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KermodeandMayo"
+  },
+  "src_kevin_powell": {
+   "name": "Kevin Powell",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KevinPowell"
+  },
+  "src_kexp": {
+   "name": "KEXP",
+   "provider": "YouTube",
+   "website": "https://www.kexp.org/watch/"
+  },
+  "src_khan_medicine_physiology": {
+   "name": "Khan Academy Medicine – Physiology",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@khanacademymedicine"
+  },
+  "src_khruangbin": {
+   "name": "Khruangbin",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@khruangbin"
+  },
+  "src_kindatv": {
+   "name": "KindaTV",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KindaTV"
+  },
+  "src_kings_and_generals": {
+   "name": "Kings and Generals",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KingsandGenerals"
+  },
+  "src_kings_singers": {
+   "name": "The King's Singers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheKingsSingers"
+  },
+  "src_kiss": {
+   "name": "KISS",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@kiss"
+  },
+  "src_kofa": {
+   "name": "Korean Film Archive / Korean Classic Film",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KoreanFilm"
+  },
+  "src_kombi_life": {
+   "name": "Kombi Life",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KombiLife"
+  },
+  "src_korg": {
+   "name": "KORG",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KorgOfficial"
+  },
+  "src_kraig_adams": {
+   "name": "Kraig Adams",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KraigAdams"
+  },
+  "src_kwvr": {
+   "name": "Keighley and Worth Valley Railway",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KwvrUkRailway"
+  },
+  "src_l7": {
+   "name": "L7",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCvNz35FxAbo7aRFWRRZsFVA"
+  },
+  "src_langfocus": {
+   "name": "Langfocus",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@langfocus"
+  },
+  "src_lannan": {
+   "name": "Lannan Foundation – Readings and Conversations",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LannanFoundation"
+  },
+  "src_latin_grammys": {
+   "name": "Latin GRAMMYs",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LatinGRAMMYs"
+  },
+  "src_laura_kampf": {
+   "name": "Laura Kampf",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LauraKampf"
+  },
+  "src_lbs": {
+   "name": "London Business School",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LondonBusinessSchool"
+  },
+  "src_led_zeppelin": {
+   "name": "Led Zeppelin",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ledzeppelin"
+  },
+  "src_legaleagle": {
+   "name": "LegalEagle",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LegalEagle"
+  },
+  "src_lessons_screenplay": {
+   "name": "Lessons from the Screenplay",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@lessonsfromthescreenplay"
+  },
+  "src_lettuce": {
+   "name": "Lettuce",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LettuceFunk"
+  },
+  "src_lgr": {
+   "name": "LGR",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LGR"
+  },
+  "src_li_ziqi": {
+   "name": "Li Ziqi",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@cnliziqi"
+  },
+  "src_lincoln_center": {
+   "name": "Lincoln Center – Theatre and Dance",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LincolnCenter"
+  },
+  "src_linus_tech_tips": {
+   "name": "Linus Tech Tips",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LinusTechTips"
+  },
+  "src_linux_foundation": {
+   "name": "The Linux Foundation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LinuxfoundationOrg"
+  },
+  "src_livenow_fox": {
+   "name": "LiveNOW from FOX",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@livenowfox"
+  },
+  "src_lizzie_bennet": {
+   "name": "The Lizzie Bennet Diaries",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LizzieBennet"
+  },
+  "src_logically_answered": {
+   "name": "Logically Answered",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LogicallyAnswered"
+  },
+  "src_lol_esports": {
+   "name": "LoL Esports",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@lolesports"
+  },
+  "src_lol_network": {
+   "name": "LOL! Network",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LOLNetwork"
+  },
+  "src_lollapalooza": {
+   "name": "Lollapalooza",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@lollapalooza"
+  },
+  "src_lonely_planet": {
+   "name": "Lonely Planet",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@lonelyplanet"
+  },
+  "src_long_now": {
+   "name": "The Long Now Foundation – Future Technology",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@longnow"
+  },
+  "src_loopop": {
+   "name": "loopop",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@loopop"
+  },
+  "src_loose_women": {
+   "name": "Loose Women",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@loosewomen"
+  },
+  "src_lost_leblanc": {
+   "name": "Lost LeBlanc",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LostLeBlanc"
+  },
+  "src_lse_sociology": {
+   "name": "LSE – Sociology",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCK08_B5SZwoEUk2hDPMOijQ"
+  },
+  "src_mad_season_vevo": {
+   "name": "Mad Season (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCBVzMfppYBWZ9OdHBH3c-IA"
+  },
+  "src_made_with_lau": {
+   "name": "Made With Lau",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MadeWithLau"
+  },
+  "src_madfit": {
+   "name": "MadFit",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MadFit"
+  },
+  "src_madness": {
+   "name": "Madness",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC0iYPVu2agNaaqbnHFPCBFQ"
+  },
+  "src_mahogany": {
+   "name": "Mahogany Sessions",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MahoganySessions"
+  },
+  "src_manics": {
+   "name": "Manic Street Preachers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC0fmT1J9iVv_wzLUN7E-aJA"
+  },
+  "src_manics_vevo": {
+   "name": "Manic Street Preachers (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCgkt10hEZXC6nGwkqeEWK5Q"
+  },
+  "src_manjulas_kitchen": {
+   "name": "Manjula's Kitchen",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Manjulaskitchen"
+  },
+  "src_mark_lanegan": {
+   "name": "Mark Lanegan",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCV6dSPsn3kcwFAY7bFTHl5w"
+  },
+  "src_mark_wiens": {
+   "name": "Mark Wiens",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MarkWiens"
+  },
+  "src_massive_attack": {
+   "name": "Massive Attack",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@massiveattack"
+  },
+  "src_megaprojects": {
+   "name": "Megaprojects",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC0woBco6Dgcxt0h8SwyyOmw"
+  },
+  "src_mellow": {
+   "name": "Mellow Climbing",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@mellowclimbing"
+  },
+  "src_melvins": {
+   "name": "Melvins",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCaoEPkhVvqVQVv-BoaQl5bQ"
+  },
+  "src_met_office": {
+   "name": "Met Office",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MetOffice"
+  },
+  "src_miguel_barclay": {
+   "name": "Miguel Barclay – One Pound Meals",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCXsD_ap_LoLfVFUMYMFwyJQ"
+  },
+  "src_missouri_star": {
+   "name": "Missouri Star Quilt Company",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MissouriQuiltCo"
+  },
+  "src_mix_with_the_masters": {
+   "name": "Mix with the Masters",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MixWithTheMasters"
+  },
+  "src_mixmag": {
+   "name": "Mixmag",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@mixmag"
+  },
+  "src_mkbhd": {
+   "name": "Marques Brownlee",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@mkbhd"
+  },
+  "src_mock_the_week": {
+   "name": "Mock The Week",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MockTheWeek"
+  },
+  "src_modern_mba": {
+   "name": "Modern MBA",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ModernMBA"
+  },
+  "src_modern_vintage_gamer": {
+   "name": "Modern Vintage Gamer",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ModernVintageGamer"
+  },
+  "src_monstercat": {
+   "name": "Monstercat",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Monstercat"
+  },
+  "src_moog": {
+   "name": "Moog Music",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC3ZR8kjzs1pf6aH_SMiT3Pw"
+  },
+  "src_motley_crue": {
+   "name": "Mötley Crüe",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MotleyCrue"
+  },
+  "src_motorweek": {
+   "name": "MotorWeek",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MotorWeek"
+  },
+  "src_move_with_nicole": {
+   "name": "Move With Nicole",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MoveWithNicole"
+  },
+  "src_movie_central": {
+   "name": "Movie Central",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MovieCentral"
+  },
+  "src_mr_bean": {
+   "name": "Mr Bean",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MrBean"
+  },
+  "src_mst3k": {
+   "name": "Mystery Science Theater 3000",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@mst3k"
+  },
+  "src_mtv_grunge": {
+   "name": "MTV – Grunge Archive",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCxAICW_LdkfFYwTqTHHE0vg"
+  },
+  "src_much_grunge": {
+   "name": "Much – Grunge Archive",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCRf0VlZul2nR65s-FD_85rQ"
+  },
+  "src_mudhoney": {
+   "name": "Mudhoney",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCDTbr5CIsgVAwXxUIfukV6w"
+  },
+  "src_my_bloody_valentine": {
+   "name": "my bloody valentine",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@mbvofficial"
+  },
+  "src_my_chemical_romance": {
+   "name": "My Chemical Romance",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@mychemicalromance"
+  },
+  "src_national_archives_uk": {
+   "name": "The National Archives UK",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheNationalArchivesUK"
+  },
+  "src_national_gallery": {
+   "name": "The National Gallery",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NationalGallery"
+  },
+  "src_national_rail_scenic": {
+   "name": "National Rail Scenic Railway Journeys",
+   "provider": "YouTube",
+   "website": "https://www.nationalrail.co.uk/discover-by-train/nature-by-train/scenic-railway-journeys/"
+  },
+  "src_national_theatre": {
+   "name": "National Theatre",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NationalTheatre"
+  },
+  "src_nature_relaxation_films": {
+   "name": "Nature Relaxation Films",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NatureRelaxationFilms"
+  },
+  "src_nbc_news": {
+   "name": "NBC News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCeY0bbntWzzVIaj2z3QigXg"
+  },
+  "src_nbc_news_now": {
+   "name": "NBC News NOW",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NBCNews"
+  },
+  "src_ne_yo": {
+   "name": "NE-YO",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@neyo"
+  },
+  "src_nerdwriter": {
+   "name": "Nerdwriter1",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Nerdwriter1"
+  },
+  "src_network_rail": {
+   "name": "Network Rail",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NetworkRail"
+  },
+  "src_networkchuck": {
+   "name": "NetworkChuck",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NetworkChuck"
+  },
+  "src_new_order": {
+   "name": "New Order",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NewOrder"
+  },
+  "src_new_scientist": {
+   "name": "New Scientist",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCt5OA3LingpZBeEyPYmputQ"
+  },
+  "src_newport_folk": {
+   "name": "Newport Folk Festival",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NewportFolkFest"
+  },
+  "src_newsnation": {
+   "name": "NewsNation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCCjG8NtOig0USdrT5D1FpxQ"
+  },
+  "src_nfb": {
+   "name": "National Film Board of Canada",
+   "provider": "YouTube",
+   "website": "https://www.nfb.ca/"
+  },
+  "src_nfb_experimental": {
+   "name": "NFB – experimental films (McLaren, Lambart, Lipsett)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NFB"
+  },
+  "src_nfl": {
+   "name": "NFL",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NFL"
+  },
+  "src_nfl_films": {
+   "name": "NFL Films",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NFLFilms"
+  },
+  "src_nick_zentner": {
+   "name": "Nick Zentner",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@GeologyNick"
+  },
+  "src_nickelodeon_uk": {
+   "name": "Nickelodeon UK",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NickelodeonUK"
+  },
+  "src_nihf": {
+   "name": "National Inventors Hall of Fame",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NationalInventorsHallofFame"
+  },
+  "src_nile_rodgers": {
+   "name": "Nile Rodgers & CHIC",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@nilerodgers"
+  },
+  "src_nine_inch_nails": {
+   "name": "Nine Inch Nails",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NIN"
+  },
+  "src_ninja_nerd_anatomy": {
+   "name": "Ninja Nerd – Anatomy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NinjaNerdOfficial"
+  },
+  "src_ninja_nerd_physiology": {
+   "name": "Ninja Nerd – Physiology",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NinjaNerdOfficial"
+  },
+  "src_nirvana": {
+   "name": "Nirvana",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@nirvana"
+  },
+  "src_nirvana_vevo": {
+   "name": "Nirvana (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCzGrGrvf9g8CVVzh_LvGf-g"
+  },
+  "src_noclip": {
+   "name": "Noclip",
+   "provider": "YouTube",
+   "website": "https://www.noclip.video/"
+  },
+  "src_nomadic_matt": {
+   "name": "Nomadic Matt",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NomadicMatt"
+  },
+  "src_npr": {
+   "name": "NPR",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCJnS2EsPfv46u1JR8cnD0NA"
+  },
+  "src_npr_music": {
+   "name": "NPR Music",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@nprmusic"
+  },
+  "src_nrm": {
+   "name": "National Railway Museum",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NatRailwayMuseum"
+  },
+  "src_nuclear_blast": {
+   "name": "Nuclear Blast",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NuclearBlastRecords"
+  },
+  "src_numberphile": {
+   "name": "Numberphile",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@numberphile"
+  },
+  "src_nutrition_made_simple": {
+   "name": "Nutrition Made Simple!",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@NutritionMadeSimple"
+  },
+  "src_nyt": {
+   "name": "The New York Times",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCqnbDFdCpuN8CMEg0VuEBqA"
+  },
+  "src_oasis": {
+   "name": "Oasis",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OasisVEVO"
+  },
+  "src_oceanliner_designs": {
+   "name": "Oceanliner Designs",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OceanlinerDesigns"
+  },
+  "src_oii": {
+   "name": "Oxford Internet Institute",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@oiioxford"
+  },
+  "src_older_backpacker": {
+   "name": "OlderBackpacker",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCDigfZFKxdPcMtg-ldrj1-A"
+  },
+  "src_omeleto": {
+   "name": "Omeleto",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Omeleto"
+  },
+  "src_one": {
+   "name": "ONE Championship",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ONEChampionship"
+  },
+  "src_operavision": {
+   "name": "OperaVision",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OperaVision"
+  },
+  "src_opry": {
+   "name": "Grand Ole Opry",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@opry"
+  },
+  "src_orbital_bacon": {
+   "name": "Orbital Bacon",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OrbitalBacon"
+  },
+  "src_oscars": {
+   "name": "Oscars",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Oscars"
+  },
+  "src_osmosis_physiology": {
+   "name": "Osmosis – Physiology",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@osmosis"
+  },
+  "src_our_changing_climate": {
+   "name": "Our Changing Climate",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OurChangingClimate"
+  },
+  "src_outdoor_boys": {
+   "name": "Outdoor Boys",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OutdoorBoys"
+  },
+  "src_overly_sarcastic": {
+   "name": "Overly Sarcastic Productions",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OverlySarcasticProductions"
+  },
+  "src_oxford_law_civil": {
+   "name": "Oxford Law Faculty – Civil Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OxfordLawFaculty"
+  },
+  "src_oxford_law_constitutional": {
+   "name": "Oxford Law Faculty – Constitutional Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OxfordLawFaculty"
+  },
+  "src_oxford_law_criminal": {
+   "name": "Oxford Law Faculty – Criminal Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OxfordLawFaculty"
+  },
+  "src_oxford_law_human_rights": {
+   "name": "Oxford Law Faculty – Human Rights",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OxfordLawFaculty"
+  },
+  "src_oxford_law_international": {
+   "name": "Oxford Law Faculty – International Law",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OxfordLawFaculty"
+  },
+  "src_paley_center": {
+   "name": "The Paley Center for Media",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PaleyCenter"
+  },
+  "src_paramore": {
+   "name": "Paramore",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@paramore"
+  },
+  "src_parks_and_rec": {
+   "name": "Parks and Recreation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@parksandrecreation"
+  },
+  "src_pasta_grannies": {
+   "name": "Pasta Grannies",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PastaGrannies"
+  },
+  "src_paste": {
+   "name": "Paste Magazine",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PasteMagazine"
+  },
+  "src_patrick_boyle": {
+   "name": "Patrick Boyle – Market History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PBoyle"
+  },
+  "src_patrick_willems": {
+   "name": "Patrick (H) Willems",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@patrickhwillems"
+  },
+  "src_paul_sellers": {
+   "name": "Paul Sellers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCc3EpWncNq5QL0QhwUNQb7w"
+  },
+  "src_pbs_eons": {
+   "name": "PBS Eons",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@eons"
+  },
+  "src_pbs_newshour": {
+   "name": "PBS NewsHour",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC6ZFN9Tx6xh-skXCuRHCDpQ"
+  },
+  "src_pbs_terra": {
+   "name": "PBS Terra",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PBSTerra"
+  },
+  "src_pc_gamer": {
+   "name": "PC Gamer",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@pcgamer"
+  },
+  "src_pdc": {
+   "name": "Professional Darts Corporation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@OfficialPDC"
+  },
+  "src_pearl_jam": {
+   "name": "Pearl Jam",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@pearljam"
+  },
+  "src_pemberley": {
+   "name": "Pemberley Digital",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PemberleyDigital"
+  },
+  "src_pianote": {
+   "name": "Pianote",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PianoteOfficial"
+  },
+  "src_pink_floyd": {
+   "name": "Pink Floyd",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PinkFloyd"
+  },
+  "src_pitchfork_classic": {
+   "name": "Pitchfork – Album Stories",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@pitchfork"
+  },
+  "src_plain_bagel": {
+   "name": "The Plain Bagel",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ThePlainBagel"
+  },
+  "src_playing_for_change": {
+   "name": "Playing For Change",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PlayingForChange"
+  },
+  "src_poetry_foundation": {
+   "name": "Poetry Foundation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PoetryFoundation"
+  },
+  "src_polyphia": {
+   "name": "Polyphia",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@polyphia"
+  },
+  "src_polyphonic": {
+   "name": "Polyphonic",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Polyphonic"
+  },
+  "src_popcornflix": {
+   "name": "Popcornflix",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Popcornflix"
+  },
+  "src_popeye": {
+   "name": "Popeye And Friends Official",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PopeyeandFriendsOfficial"
+  },
+  "src_postmodern_jukebox": {
+   "name": "Postmodern Jukebox",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PostmodernJukebox"
+  },
+  "src_practical_engineering": {
+   "name": "Practical Engineering",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PracticalEngineeringChannel"
+  },
+  "src_premier_league": {
+   "name": "Premier League",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@premierleague"
+  },
+  "src_preppy_kitchen": {
+   "name": "Preppy Kitchen",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PreppyKitchen"
+  },
+  "src_primavera_sound": {
+   "name": "Primavera Sound",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PrimaveraSound"
+  },
+  "src_produce_like_a_pro": {
+   "name": "Produce Like A Pro",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ProduceLikeAPro"
+  },
+  "src_prowalk": {
+   "name": "Prowalk Tours",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@prowalktours"
+  },
+  "src_ps_fit": {
+   "name": "PS Fit (POPSUGAR Fitness)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCBINFWq52ShSgUFEoynfSwg"
+  },
+  "src_public_enemy": {
+   "name": "Public Enemy (Channel ZERO)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@PublicEnemy"
+  },
+  "src_pulp": {
+   "name": "Pulp",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC5FrSWytdXh-sKJHjSaiyLg"
+  },
+  "src_radiohead": {
+   "name": "Radiohead",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@radiohead"
+  },
+  "src_rai": {
+   "name": "Royal Anthropological Institute",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC3rzUoVJSYVnahC1p87XQtA"
+  },
+  "src_rail_relaxation": {
+   "name": "Rail Relaxation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RailRelaxation"
+  },
+  "src_railcowgirl": {
+   "name": "RailCowGirl",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RailCowGirl"
+  },
+  "src_rainbow_plant_life": {
+   "name": "Rainbow Plant Life",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RainbowPlantLife"
+  },
+  "src_rambalac": {
+   "name": "Rambalac",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@rambalac"
+  },
+  "src_real_wild": {
+   "name": "Real Wild",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RealWild"
+  },
+  "src_realpars": {
+   "name": "RealPars",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@realpars"
+  },
+  "src_red_green": {
+   "name": "The Red Green Show",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RedGreenTV"
+  },
+  "src_relaxation_film": {
+   "name": "Relaxation Film",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCPotnGNahFjLWjfsq4KYvuQ"
+  },
+  "src_rem": {
+   "name": "R.E.M.",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@REMhq"
+  },
+  "src_resident_advisor": {
+   "name": "Resident Advisor",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@residentadvisor"
+  },
+  "src_restoring_number_four": {
+   "name": "Restoring Number Four",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC0Im1sZzPfRr6511BeazyQg"
+  },
+  "src_reuters": {
+   "name": "Reuters",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UChqUTb7kYRX8-EiaN3XFrSQ"
+  },
+  "src_rhcp": {
+   "name": "Red Hot Chili Peppers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RedHotChiliPeppers"
+  },
+  "src_rhs": {
+   "name": "Royal Horticultural Society",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@The_RHS"
+  },
+  "src_rick_bayless": {
+   "name": "Rick Bayless",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RickBayless"
+  },
+  "src_rick_beato": {
+   "name": "Rick Beato",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RickBeato"
+  },
+  "src_rick_steves": {
+   "name": "Rick Steves' Europe",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ricksteves"
+  },
+  "src_ride": {
+   "name": "Ride",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCIesQAH8Z8SbA2rR6Ujx_Xw"
+  },
+  "src_ripe_ncc": {
+   "name": "RIPE NCC",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RIPENCC"
+  },
+  "src_road_guy_rob": {
+   "name": "Road Guy Rob",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RoadGuyRob"
+  },
+  "src_rockpalast": {
+   "name": "WDR Rockpalast",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WDRrockpalast"
+  },
+  "src_rolling_stones": {
+   "name": "The Rolling Stones",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheRollingStones"
+  },
+  "src_roskilde": {
+   "name": "Roskilde Festival",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@roskildefestival"
+  },
+  "src_roy_orbison": {
+   "name": "Roy Orbison",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RoyOrbison"
+  },
+  "src_royal_ballet_opera": {
+   "name": "Royal Ballet and Opera",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@royalballetandopera"
+  },
+  "src_royal_court": {
+   "name": "Royal Court Theatre",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@royalcourttheatre"
+  },
+  "src_royal_institution": {
+   "name": "Royal Institution",
+   "provider": "YouTube",
+   "website": "https://www.rigb.org/explore-science/explore/blog/free-ways-access-science-ri"
+  },
+  "src_royal_society_future": {
+   "name": "The Royal Society – Future Technology",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@royalsociety"
+  },
+  "src_rsc": {
+   "name": "Royal Shakespeare Company",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@theRSC"
+  },
+  "src_rsl": {
+   "name": "The Royal Society of Literature",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RSLiterature"
+  },
+  "src_rt_classic_trailers": {
+   "name": "Rotten Tomatoes Classic Trailers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCTCjFFoX1un-j7ni4B6HJ3Q"
+  },
+  "src_rt_trailers": {
+   "name": "Rotten Tomatoes Trailers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RottenTomatoesTRAILERS"
+  },
+  "src_run_the_jewels": {
+   "name": "Run The Jewels",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@RunTheJewels"
+  },
+  "src_running_channel": {
+   "name": "The Running Channel",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@runningchannel"
+  },
+  "src_sabc_news": {
+   "name": "SABC News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC8yH-uI81UUtEMDsowQyx1g"
+  },
+  "src_sadlers_wells": {
+   "name": "Sadler's Wells",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SadlersWells"
+  },
+  "src_sag_foundation": {
+   "name": "SAG-AFTRA Foundation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SAGAFTRAFoundation"
+  },
+  "src_sailgp": {
+   "name": "SailGP",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SailGP"
+  },
+  "src_sam_the_cooking_guy": {
+   "name": "Sam the Cooking Guy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@samthecookingguy"
+  },
+  "src_sams_trains": {
+   "name": "Sam'sTrains",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SamsTrains"
+  },
+  "src_scenic_nature_relaxation": {
+   "name": "Scenic Nature Relaxation",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCKV_9NXnNbCpI19w22ucd3A"
+  },
+  "src_schmidt_ocean": {
+   "name": "Schmidt Ocean Institute",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SchmidtOcean"
+  },
+  "src_school_of_life": {
+   "name": "The School of Life",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheSchoolofLifeTV"
+  },
+  "src_science_museum": {
+   "name": "Science Museum – Inventions",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ScienceMuseum"
+  },
+  "src_screaming_trees_vevo": {
+   "name": "Screaming Trees (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCfkD7WftBqx0WyiEC4emrfQ"
+  },
+  "src_screen_junkies": {
+   "name": "Screen Junkies",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@screenjunkies"
+  },
+  "src_scripps_news": {
+   "name": "Scripps News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCTln5ss6h6L_xNfMeujfPbg"
+  },
+  "src_sesame_street": {
+   "name": "Sesame Street / Sesame Street Classics",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SesameStreet"
+  },
+  "src_seth_meyers": {
+   "name": "Late Night with Seth Meyers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@LateNightSeth"
+  },
+  "src_severn_valley": {
+   "name": "Severn Valley Railway",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCoaT_geZ6GwRscQgOlchh_w"
+  },
+  "src_shakespeares_globe": {
+   "name": "Shakespeare's Globe",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ShakespearesGlobe"
+  },
+  "src_shawn_willsey": {
+   "name": "Shawn Willsey: Geology Explained",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@shawnwillsey"
+  },
+  "src_she_wants_revenge_vevo": {
+   "name": "She Wants Revenge (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ShewantsRevenge"
+  },
+  "src_shows_must_go_on": {
+   "name": "The Shows Must Go On!",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheShowsMustGoOn"
+  },
+  "src_sigur_ros": {
+   "name": "Sigur Rós",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@sigurros"
+  },
+  "src_sing_king": {
+   "name": "Sing King",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SingKingKaraoke"
+  },
+  "src_siouxsie_vevo": {
+   "name": "Siouxsie And The Banshees (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCkOByxhQ3me30cFlcA9VdSw"
+  },
+  "src_sky_history_uk": {
+   "name": "Sky HISTORY UK",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@HISTORYUK"
+  },
+  "src_sky_news": {
+   "name": "Sky News",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCoMdktPbSTixAyNGwb-UYkQ"
+  },
+  "src_slowdive": {
+   "name": "Slowdive",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@slowdiveband"
+  },
+  "src_smashing_pumpkins": {
+   "name": "Smashing Pumpkins",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@smashingpumpkins"
+  },
+  "src_snarky_puppy": {
+   "name": "Snarky Puppy",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@snarkypuppy"
+  },
+  "src_sofar": {
+   "name": "Sofar Sounds",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SofarSounds"
+  },
+  "src_songhoy_blues": {
+   "name": "Songhoy Blues",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SonghoyBlues"
+  },
+  "src_sothebys": {
+   "name": "Sotheby's – Collecting",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Sothebys"
+  },
+  "src_soul_train": {
+   "name": "Soul Train",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SoulTrain"
+  },
+  "src_soundgarden": {
+   "name": "Soundgarden",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@soundgarden"
+  },
+  "src_soundworks": {
+   "name": "SoundWorks Collection",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SoundWorksCollection"
+  },
+  "src_spinnin": {
+   "name": "Spinnin' Records",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SpinninRecords"
+  },
+  "src_stan_winston": {
+   "name": "Stan Winston School",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@StanWinstonSchool"
+  },
+  "src_stanford_gsb": {
+   "name": "Stanford Graduate School of Business",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@StanfordGSB"
+  },
+  "src_starter_story": {
+   "name": "Starter Story",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@starterstory"
+  },
+  "src_statquest": {
+   "name": "StatQuest with Josh Starmer",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@statquest"
+  },
+  "src_steve_ramsey": {
+   "name": "Steve Ramsey – Woodworking for Mere Mortals",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCBB7sYb14uBtk8UqSQYc9-w"
+  },
+  "src_steve_wallis": {
+   "name": "Steve Wallis",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCSnqXeK94-iNmwqGO__eJ5g"
+  },
+  "src_stone_temple_pilots": {
+   "name": "Stone Temple Pilots",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCocfdCiKujljqcGC-STMsCQ"
+  },
+  "src_stratford": {
+   "name": "Stratford Festival",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@stratfordfestival"
+  },
+  "src_strip_panel_naked": {
+   "name": "Strip Panel Naked",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@StripPanelNaked"
+  },
+  "src_strong_museum": {
+   "name": "The Strong National Museum of Play",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@museumofplay"
+  },
+  "src_studiobinder": {
+   "name": "StudioBinder",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@StudioBinder"
+  },
+  "src_stumpy_nubs": {
+   "name": "Stumpy Nubs",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@StumpyNubs"
+  },
+  "src_sub_pop": {
+   "name": "Sub Pop",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@subpop"
+  },
+  "src_sub_pop_grunge": {
+   "name": "Sub Pop – Grunge",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@subpop"
+  },
+  "src_suede": {
+   "name": "Suede",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCdNf1p4SVbcFWKJULVNvl3A"
+  },
+  "src_sugar_geek": {
+   "name": "Sugar Geek Show",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SugarGeekShow"
+  },
+  "src_supergrass": {
+   "name": "Supergrass",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCvEVRo07OAojKg8ekpk1Lyw"
+  },
+  "src_sziget": {
+   "name": "Sziget Festival",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@szigetofficial"
+  },
+  "src_ta_outdoors": {
+   "name": "TA Outdoors",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TAOutdoors"
+  },
+  "src_talking_heads": {
+   "name": "Talking Heads",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TalkingHeads"
+  },
+  "src_taskmaster": {
+   "name": "Taskmaster",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Taskmaster"
+  },
+  "src_tasting_history": {
+   "name": "Tasting History with Max Miller",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TastingHistory"
+  },
+  "src_team_coco": {
+   "name": "Team Coco",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@teamcoco"
+  },
+  "src_tears_for_fears_vevo": {
+   "name": "Tears For Fears (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TearsForFearsVEVO"
+  },
+  "src_techworld_nana": {
+   "name": "TechWorld with Nana",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TechWorldwithNana"
+  },
+  "src_ted": {
+   "name": "TED",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TED"
+  },
+  "src_temple_of_the_dog": {
+   "name": "Temple Of The Dog",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCgf3d2y9zlw2QvY7OlFt6uw"
+  },
+  "src_terra_mater": {
+   "name": "Terra Mater",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TerraMater"
+  },
+  "src_tgr": {
+   "name": "Teton Gravity Research",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@tetongravityresearch"
+  },
+  "src_thames_tv": {
+   "name": "Thames TV",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ThamesTV"
+  },
+  "src_the_beat": {
+   "name": "The Beat",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCtvV29Qigs3qw7FSqioGHsA"
+  },
+  "src_the_beatles": {
+   "name": "The Beatles",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@thebeatles"
+  },
+  "src_the_build": {
+   "name": "The Build",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCN3aYbtQ7yCqk9DM56B0kEw"
+  },
+  "src_the_cult": {
+   "name": "The Cult",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@thecultofficial"
+  },
+  "src_the_cure": {
+   "name": "The Cure",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@thecure"
+  },
+  "src_the_dodo": {
+   "name": "The Dodo",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheDodo"
+  },
+  "src_the_doors": {
+   "name": "The Doors",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@thedoors"
+  },
+  "src_the_office": {
+   "name": "The Office",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheOffice"
+  },
+  "src_the_selecter": {
+   "name": "The Selecter",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCWCvnELYdQPd22Q6YR4GR-g"
+  },
+  "src_the_specials": {
+   "name": "The Specials",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@thespecials"
+  },
+  "src_the_verve_vevo": {
+   "name": "The Verve (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheVerveVEVO"
+  },
+  "src_the_who_vevo": {
+   "name": "The Who (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheWhoVEVO"
+  },
+  "src_this_morning": {
+   "name": "This Morning",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@thismorning"
+  },
+  "src_this_old_house": {
+   "name": "This Old House",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@thisoldhouse"
+  },
+  "src_thomas_flight": {
+   "name": "Thomas Flight",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ThomasFlight"
+  },
+  "src_time_team": {
+   "name": "Time Team Official / Time Team Classics",
+   "provider": "YouTube",
+   "website": "https://www.timeteamdigital.com/"
+  },
+  "src_timeline": {
+   "name": "Timeline – World History Documentaries",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TimelineChannel"
+  },
+  "src_tinariwen": {
+   "name": "Tinariwen",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Tinariwen"
+  },
+  "src_tms_anime": {
+   "name": "Anime! on TMS Official Channel",
+   "provider": "YouTube",
+   "website": "https://tmsanime.com/anime-on-tms-official-channel"
+  },
+  "src_toldinstone": {
+   "name": "toldinstone",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@toldinstone"
+  },
+  "src_tom_merrick": {
+   "name": "Tom Merrick",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BodyweightWarrior"
+  },
+  "src_tom_petty": {
+   "name": "Tom Petty & The Heartbreakers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TomPetty"
+  },
+  "src_tomorrowland": {
+   "name": "Tomorrowland",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@tomorrowland"
+  },
+  "src_toolroom": {
+   "name": "Toolroom Records",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@toolroomrecords"
+  },
+  "src_toots": {
+   "name": "Toots and the Maytals",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TootsandtheMaytals"
+  },
+  "src_top_rank": {
+   "name": "Top Rank Boxing",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TopRankBoxing"
+  },
+  "src_tracey_marks": {
+   "name": "Dr. Tracey Marks",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DrTraceyMarks"
+  },
+  "src_trailers_from_hell": {
+   "name": "Trailers From Hell",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TrailersFromHell"
+  },
+  "src_trash_theory": {
+   "name": "Trash Theory",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TrashTheory"
+  },
+  "src_travel_film_archive": {
+   "name": "Travel Film Archive",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@travelfilmarchive"
+  },
+  "src_travel_tiny_budget": {
+   "name": "Travel Big with a Tiny Budget",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCjs2gk48IqM2j7kwaKqYYYg"
+  },
+  "src_trt_world": {
+   "name": "TRT World",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC7fWeaHhqgM4Ry-RMpM2YYw"
+  },
+  "src_tv_academy_interviews": {
+   "name": "Television Academy Foundation – The Interviews",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCj4PxzfWBNV9vIdEPkglrrg"
+  },
+  "src_two_cents": {
+   "name": "Two Cents",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TwoCentsPBS"
+  },
+  "src_two_minute_papers": {
+   "name": "Two Minute Papers",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TwoMinutePapers"
+  },
+  "src_uefa": {
+   "name": "UEFA",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@UEFA"
+  },
+  "src_ukf_dnb": {
+   "name": "UKF Drum & Bass",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@UKFDrumandBass"
+  },
+  "src_uksc_constitutional": {
+   "name": "UK Supreme Court – Constitutional Cases",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@UKSupremeCourt"
+  },
+  "src_uksc_human_rights": {
+   "name": "UK Supreme Court – Human Rights Cases",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@UKSupremeCourt"
+  },
+  "src_ultra": {
+   "name": "Ultra Records",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@UltraRecords"
+  },
+  "src_un_human_rights": {
+   "name": "UN Human Rights",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@UNOHCHR"
+  },
+  "src_unep": {
+   "name": "UN Environment Programme",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@UNEP"
+  },
+  "src_us_national_archives": {
+   "name": "US National Archives",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@usnationalarchives"
+  },
+  "src_usgs": {
+   "name": "USGS",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@USGS"
+  },
+  "src_usher": {
+   "name": "Usher",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@usher"
+  },
+  "src_va_design": {
+   "name": "V&A – Design History",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@VAMuseum"
+  },
+  "src_vanguard": {
+   "name": "Cardfight!! Vanguard",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@cardfightvanguard"
+  },
+  "src_vanity_fair": {
+   "name": "Vanity Fair",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@VanityFair"
+  },
+  "src_verypink_knits": {
+   "name": "VeryPink Knits",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@verypinkknits"
+  },
+  "src_vevo": {
+   "name": "Vevo Official Music Network",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@VEVO"
+  },
+  "src_vevo_2000s": {
+   "name": "Vevo – 2000s playlists",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Vevo"
+  },
+  "src_vevo_80s": {
+   "name": "Vevo – '80s playlists",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Vevo"
+  },
+  "src_vevo_90s": {
+   "name": "Vevo – '90s playlists",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Vevo"
+  },
+  "src_vevo_abba": {
+   "name": "ABBA (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ABBAVEVO"
+  },
+  "src_vevo_barry_white": {
+   "name": "Barry White (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BarryWhiteVEVO"
+  },
+  "src_vevo_blondie": {
+   "name": "Blondie (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BlondieVEVO"
+  },
+  "src_vevo_bob_marley": {
+   "name": "Bob Marley (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BobMarleyVEVO"
+  },
+  "src_vevo_carpenters": {
+   "name": "Carpenters (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@CarpentersVEVO"
+  },
+  "src_vevo_classics": {
+   "name": "Vevo – Legends & Classics playlists",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Vevo"
+  },
+  "src_vevo_diana_ross": {
+   "name": "Diana Ross (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DianaRossVEVO"
+  },
+  "src_vevo_dolly_parton": {
+   "name": "Dolly Parton (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DollyPartonVEVO"
+  },
+  "src_vevo_donna_summer": {
+   "name": "Donna Summer (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@DonnaSummerVEVO"
+  },
+  "src_vevo_dscvr": {
+   "name": "Vevo DSCVR",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@vevodscvr"
+  },
+  "src_vevo_elton_john": {
+   "name": "Elton John (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EltonJohnVEVO"
+  },
+  "src_vevo_ewf": {
+   "name": "Earth, Wind & Fire (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@EarthWindandFireVEVO"
+  },
+  "src_vevo_fleetwood_mac": {
+   "name": "Fleetwood Mac (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@FleetwoodMacVEVO"
+  },
+  "src_vevo_kings_of_leon": {
+   "name": "Kings Of Leon (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@KingsOfLeonVEVO"
+  },
+  "src_vevo_live": {
+   "name": "Vevo – Live Performances",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Vevo"
+  },
+  "src_vevo_marvin_gaye": {
+   "name": "Marvin Gaye (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@MarvinGayeVEVO"
+  },
+  "src_vevo_queen": {
+   "name": "Queen (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@QueenVEVO"
+  },
+  "src_vevo_simon_garfunkel": {
+   "name": "Simon & Garfunkel (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SimonGarfunkelVEVO"
+  },
+  "src_vevo_smokey_robinson": {
+   "name": "Smokey Robinson (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@SmokeyRobinsonVEVO"
+  },
+  "src_vevo_stevie_wonder": {
+   "name": "Stevie Wonder (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@StevieWonderVEVO"
+  },
+  "src_vevo_temptations": {
+   "name": "The Temptations (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheTemptationsVEVO"
+  },
+  "src_vevo_the_killers": {
+   "name": "The Killers (Vevo)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@TheKillersVEVO"
+  },
+  "src_vitra": {
+   "name": "Vitra Design Museum",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@VitraDesignMuseum"
+  },
+  "src_viz_manga": {
+   "name": "VIZ – Manga",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@VIZMedia"
+  },
+  "src_vogue": {
+   "name": "Vogue",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Vogue"
+  },
+  "src_vp_records": {
+   "name": "VP Records",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@VPRecords"
+  },
+  "src_vulf": {
+   "name": "Vulfpeck",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@vulf"
+  },
+  "src_wcw": {
+   "name": "WCW",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WCW"
+  },
+  "src_web_dev_simplified": {
+   "name": "Web Dev Simplified",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WebDevSimplified"
+  },
+  "src_weissman_budget": {
+   "name": "Joshua Weissman – But Cheaper",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@JoshuaWeissman"
+  },
+  "src_wendover": {
+   "name": "Wendover Productions",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Wendoverproductions"
+  },
+  "src_wheel_of_fortune": {
+   "name": "Wheel of Fortune – Vintage",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WheelofFortune"
+  },
+  "src_whose_line": {
+   "name": "Whose Line Is It Anyway?",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WhoseLineIsItAnyway"
+  },
+  "src_wild_commons": {
+   "name": "Wild Commons",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WildCommons"
+  },
+  "src_wimbledon": {
+   "name": "Wimbledon",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@Wimbledon"
+  },
+  "src_wind_walk": {
+   "name": "Wind Walk Travel Videos",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WindWalkTravelVideos"
+  },
+  "src_wion": {
+   "name": "WION",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_gUM8rL-Lrg6O3adPW9K1g"
+  },
+  "src_wolters_world": {
+   "name": "Wolters World",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WoltersWorld"
+  },
+  "src_world_rugby": {
+   "name": "World Rugby",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WorldRugby"
+  },
+  "src_wsl": {
+   "name": "Barclays Women's Super League",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@BarclaysWSL"
+  },
+  "src_wsl_surf": {
+   "name": "World Surf League",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WSL"
+  },
+  "src_wtt": {
+   "name": "World Table Tennis",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WTTGlobal",
+   "website": "https://www.worldtabletennis.com/"
+  },
+  "src_wu_tang_clan": {
+   "name": "Wu-Tang Clan",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WuTangClan"
+  },
+  "src_ww2": {
+   "name": "World War Two (TimeGhost)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WorldWarTwo"
+  },
+  "src_wwe": {
+   "name": "WWE",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WWE"
+  },
+  "src_wwe_vault": {
+   "name": "WWE Vault",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@WWEVault"
+  },
+  "src_yahoo_finance": {
+   "name": "Yahoo Finance",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UCEAZeUIeJs0IjQiqTCdVSIg"
+  },
+  "src_ycombinator": {
+   "name": "Y Combinator",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@ycombinator"
+  },
+  "src_yoga_adriene": {
+   "name": "Yoga With Adriene",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/user/yogawithadriene"
+  },
+  "src_yorkshire_film_archive": {
+   "name": "Yorkshire and North East Film Archive",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@YorkshireFilmArchive"
+  },
+  "src_zero_7": {
+   "name": "Zero 7",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/@zero7"
+  }
+ }
+}
