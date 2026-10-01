@@ -54,7 +54,7 @@ describe('one TVN, two entries', () => {
 
   it('keeps the startup playback check: Surf hops before the first key or tap stay muted', () => {
     expect(provider).toContain('void confirmStart(player, stillFirst, sleep)')
-    expect(provider.match(/mutedRef\.current \|\| startHoldRef\.current !== null\)/g)?.length).toBe(2)
+    expect(provider.match(/mutedRef\.current \|\| soundHeld\(startHoldRef\.current, startCheckRef\.current, viewerInteracted\(\)\)\)/g)?.length).toBe(2)
   })
 
   it('a direct load or refresh of /tvn is served the app by the Netlify SPA fallback', () => {

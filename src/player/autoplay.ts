@@ -24,14 +24,38 @@ export async function advancing(player: Pick<PlayerHandle, 'currentTime'>, wait:
 /**
  * Checks the first programme really started. Browsers refuse sound before the viewer has interacted with a
  * new site, so when it did not start TVN plays it muted, as browsers allow, and reports what is being held
- * back. `current` is false once the viewer has tuned, paused or left single view, and the check stops.
+ * back. `current` is false once something else has tuned, paused or left single view, and the check stops:
+ * if that was Surf rather than the viewer, sound was never proven allowed, so it stays held.
  */
-export async function confirmStart(player: PlayerHandle, current: () => boolean, wait: Wait): Promise<StartHold> {
-  if (await advancing(player, wait)) return null
-  if (!current()) return null
+export async function confirmStart(
+  player: PlayerHandle,
+  current: () => boolean,
+  wait: Wait,
+  interacted: () => boolean = viewerInteracted,
+): Promise<StartHold> {
+  const unproven = (): StartHold => (interacted() ? null : 'sound')
+  const moving = await advancing(player, wait)
+  if (!current()) return unproven()
+  if (moving) return null
   player.setAudible(false, 0, true)
   player.play()
   const muted = await advancing(player, wait)
-  if (!current()) return null
+  if (!current()) return unproven()
   return muted ? 'sound' : 'picture'
+}
+
+/**
+ * Whether a tune must keep the sound off. Unmuting a muted video before the viewer has interacted makes the
+ * browser pause it on its still, so sound stays off while the start is held or still being checked.
+ */
+export function soundHeld(hold: StartHold, checking: boolean, interacted: boolean): boolean {
+  return hold !== null || (checking && !interacted)
+}
+
+export function viewerInteracted(): boolean {
+  try {
+    return typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive === true
+  } catch {
+    return false
+  }
 }

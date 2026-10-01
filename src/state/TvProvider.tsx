@@ -74,7 +74,7 @@ import {
   tileCount,
 } from '../view/multiview.ts'
 import { isOnAir } from '../network/airing.ts'
-import { confirmStart, type StartHold } from '../player/autoplay.ts'
+import { confirmStart, soundHeld, viewerInteracted, type StartHold } from '../player/autoplay.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './history.ts'
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
 import {
@@ -216,6 +216,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const bootedRef = useRef(false)
   const [startHold, setStartHold] = useState<StartHold>(null)
   const startHoldRef = useRef<StartHold>(null)
+  const startCheckRef = useRef(false)
   const loadedKey = useRef('')
   const loadToken = useRef(0)
   const tokenRef = useRef(0)
@@ -371,7 +372,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       pendingNumberRef.current = null
       staticSince.current = 0
       setTuningNumber(null)
-      playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || startHoldRef.current !== null)
+      playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || soundHeld(startHoldRef.current, startCheckRef.current, viewerInteracted()))
       if (pausedRef.current) resumeViewing()
       showOverlay('info', INFO_MS)
       return
@@ -404,7 +405,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     pendingNumberRef.current = null
     staticSince.current = 0
     setTuningNumber(null)
-    playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || startHoldRef.current !== null)
+    playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || soundHeld(startHoldRef.current, startCheckRef.current, viewerInteracted()))
     showOverlay('info', INFO_MS)
   }
 
@@ -571,16 +572,27 @@ export function TvProvider({ children }: { children: ReactNode }) {
     bootedRef.current = true
     playerRef.current.setAudible(true, volumeRef.current, mutedRef.current)
     if (!pausedRef.current) {
+      startCheckRef.current = true
       void loadProgramme(current, Date.now()).then((result) => {
         const player = playerRef.current
-        if (result !== 'playing' || !player) return
+        if (result !== 'playing' || !player) {
+          startCheckRef.current = false
+          return
+        }
         const load = loadToken.current
         const stillFirst = () =>
           load === loadToken.current && playerRef.current === player && !pausedRef.current && !tuningRef.current && multiviewRef.current === '1'
         void confirmStart(player, stillFirst, sleep).then((hold) => {
-          if (!hold) return
-          startHoldRef.current = hold
-          setStartHold(hold)
+          startCheckRef.current = false
+          if (hold) {
+            startHoldRef.current = hold
+            setStartHold(hold)
+            return
+          }
+          // Sound is allowed: a tune made while the check ran kept it off, so it comes back now.
+          if (playerRef.current === player && multiviewRef.current === '1' && !pausedRef.current && !tuningRef.current) {
+            player.setAudible(true, volumeRef.current, mutedRef.current)
+          }
         })
       })
     }

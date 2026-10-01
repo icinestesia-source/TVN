@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { advancing, confirmStart, START_HOLD_COPY } from './player/autoplay.ts'
+import { advancing, confirmStart, soundHeld, START_HOLD_COPY, type StartHold } from './player/autoplay.ts'
 import type { PlayerHandle } from './player/types.ts'
 import { DEFAULT_PREFERENCES } from './services/preferences.ts'
 
@@ -57,10 +57,20 @@ describe('the first programme really starts', () => {
     expect(START_HOLD_COPY.sound).toBe('Sound off · press any key or tap for sound')
   })
 
-  it('stops if the viewer has already tuned, paused or left single view', async () => {
+  it('stops if the viewer has already tuned, paused or left single view: their interaction allows sound', async () => {
     const blocked = fakePlayer(() => false)
-    expect(await confirmStart(blocked.player, () => false, blocked.wait)).toBeNull()
+    expect(await confirmStart(blocked.player, () => false, blocked.wait, () => true)).toBeNull()
     expect(blocked.calls).toEqual([])
+  })
+
+  it('stops if Surf tuned before the viewer interacted, keeping sound held because it was never proven allowed', async () => {
+    const blocked = fakePlayer(() => false)
+    expect(await confirmStart(blocked.player, () => false, blocked.wait, () => false)).toBe('sound')
+    expect(blocked.calls).toEqual([])
+    const mutedRetry = fakePlayer((muted) => muted)
+    let checks = 0
+    expect(await confirmStart(mutedRetry.player, () => (checks += 1) < 2, mutedRetry.wait, () => false)).toBe('sound')
+    expect(mutedRetry.calls).toEqual(['mute', 'play'])
   })
 })
 
@@ -87,7 +97,13 @@ describe('startup activates the selected channel', () => {
   })
 
   it('a channel change before that first interaction (Surf) keeps the picture muted rather than stalling again', () => {
-    expect(provider.match(/setAudible\(true, volumeRef\.current, mutedRef\.current \|\| startHoldRef\.current !== null\)/g)?.length).toBe(2)
+    expect(
+      provider.match(/setAudible\(true, volumeRef\.current, mutedRef\.current \|\| soundHeld\(startHoldRef\.current, startCheckRef\.current, viewerInteracted\(\)\)\)/g)
+        ?.length,
+    ).toBe(2)
+    const boot = provider.slice(provider.indexOf('bootRef.current = () => {'), provider.indexOf('// The viewer\'s first key or tap'))
+    expect(boot).toMatch(/startCheckRef\.current = true\s+void loadProgramme/)
+    expect(boot.match(/startCheckRef\.current = false/g)?.length).toBe(2)
   })
 
   it('shows the held state on screen', () => {
@@ -168,5 +184,142 @@ describe('programme Prev and Next over the picture', () => {
 
   it('a channel change ends the picked programme, so stepping starts again from the new channel’s schedule', () => {
     expect(provider).toMatch(/const requestTune = \(number: number, keepPick = false\) => \{[\s\S]{0,300}if \(!keepPick\) clearManual\(\)/)
+  })
+})
+
+/**
+ * A browser as autoplay policy has it: before the viewer interacts, a video may start only muted, and
+ * unmuting a playing video pauses it on its still. Time is virtual; `advance` runs the timers due.
+ */
+function policyBrowser() {
+  let now = 0
+  const timers: { at: number; resolve: () => void }[] = []
+  const wait = (ms: number) => new Promise<void>((resolve) => void timers.push({ at: now + ms, resolve }))
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+  const advance = async (ms: number) => {
+    const end = now + ms
+    for (;;) {
+      timers.sort((a, b) => a.at - b.at)
+      const next = timers[0]
+      if (!next || next.at > end) break
+      timers.shift()
+      now = next.at
+      next.resolve()
+      await settle()
+    }
+    now = end
+    await settle()
+  }
+  const state = { interacted: false, muted: false, playing: false, video: '', base: 0, since: 0 }
+  const start = () => {
+    if (state.muted || state.interacted) {
+      state.playing = true
+      state.since = now
+    }
+  }
+  const stop = () => {
+    state.base += state.playing ? (now - state.since) / 1000 : 0
+    state.playing = false
+  }
+  const player: PlayerHandle = {
+    async load(request) {
+      stop()
+      state.video = request.videoId ?? ''
+      state.base = 600
+      start()
+      return 'playing'
+    },
+    play: start,
+    pause: stop,
+    seek: () => undefined,
+    setAudible(audible, volume, mute) {
+      const muted = !audible || mute || volume <= 0
+      if (state.muted && !muted && state.playing && !state.interacted) stop()
+      state.muted = muted
+    },
+    currentTime: () => state.base + (state.playing ? (now - state.since) / 1000 : 0),
+    actualVideoId: () => state.video,
+  }
+  return { player, state, wait, advance }
+}
+
+/** TvProvider's order of events: boot and its start check, then Surf hops through requestTune and the tune commit. */
+async function surfSession(options: { interacted: boolean; hops: number; firstHopMs: number; dwellMs: number }) {
+  const browser = policyBrowser()
+  const { player, state, wait, advance } = browser
+  state.interacted = options.interacted
+  let hold: StartHold = null
+  let checking = true
+  let token = 0
+  const load = (videoId: string) => player.load({ videoId, startSeconds: 600, loop: false })
+  player.setAudible(true, 80, false)
+  await load('first000001')
+  const first = token
+  void confirmStart(player, () => token === first, wait, () => state.interacted).then((result) => {
+    checking = false
+    hold = result
+    if (!result && !state.interacted) player.setAudible(true, 80, false)
+  })
+  const results: { video: string; moving: boolean; muted: boolean; hold: StartHold }[] = []
+  await advance(options.firstHopMs)
+  for (let hop = 1; hop <= options.hops; hop += 1) {
+    token += 1
+    player.setAudible(false, 0, true)
+    await advance(800)
+    await load(`surfhop${String(hop).padStart(4, '0')}`)
+    player.setAudible(true, 80, soundHeld(hold, checking, state.interacted))
+    const from = player.currentTime()
+    await advance(3000)
+    results.push({ video: state.video, moving: player.currentTime() - from > 2, muted: state.muted, hold })
+    await advance(options.dwellMs - 3800)
+  }
+  return { results, browser, hold: () => hold }
+}
+
+describe('/tvn before the viewer interacts: every Surf hop plays', () => {
+  it('a Surf hop during the start check, then hop after hop, each loads its programme and the clock moves', async () => {
+    const { results, browser, hold } = await surfSession({ interacted: false, hops: 4, firstHopMs: 4500, dwellMs: 6000 })
+    expect(results.map((result) => result.video)).toEqual(['surfhop0001', 'surfhop0002', 'surfhop0003', 'surfhop0004'])
+    expect(results.every((result) => result.moving && result.muted)).toBe(true)
+    expect(hold()).toBe('sound')
+    browser.state.interacted = true
+    browser.player.setAudible(true, 80, false)
+    browser.player.play()
+    const from = browser.player.currentTime()
+    await browser.advance(2000)
+    expect(browser.state.muted).toBe(false)
+    expect(browser.player.currentTime() - from).toBeGreaterThan(1.5)
+  })
+
+  it('also when the hop lands before the first programme was even found still, and when it lands after the check', async () => {
+    for (const firstHopMs of [1500, 9000]) {
+      const { results } = await surfSession({ interacted: false, hops: 3, firstHopMs, dwellMs: 5000 })
+      expect(results.every((result) => result.moving && result.muted)).toBe(true)
+    }
+  })
+
+  it('reproduces the 1.0.1 failure under the old rule, which unmuted the hop because no hold had been recorded', async () => {
+    const browser = policyBrowser()
+    await browser.player.load({ videoId: 'surfhop0001', startSeconds: 0, loop: false })
+    browser.player.setAudible(false, 0, true)
+    browser.player.play()
+    const oldHold: StartHold = null
+    browser.player.setAudible(true, 80, oldHold !== null)
+    const from = browser.player.currentTime()
+    await browser.advance(3000)
+    expect(browser.player.currentTime() - from).toBe(0)
+  })
+
+  it('after the viewer has interacted (/ with Surf switched on), hops play with sound', async () => {
+    const { results, hold } = await surfSession({ interacted: true, hops: 3, firstHopMs: 4500, dwellMs: 6000 })
+    expect(results.every((result) => result.moving && !result.muted)).toBe(true)
+    expect(hold()).toBeNull()
+  })
+
+  it('sound is held only before interaction while the start is held or being checked', () => {
+    expect(soundHeld(null, false, false)).toBe(false)
+    expect(soundHeld(null, true, false)).toBe(true)
+    expect(soundHeld(null, true, true)).toBe(false)
+    expect(soundHeld('sound', false, true)).toBe(true)
   })
 })
