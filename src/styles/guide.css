@@ -593,6 +593,23 @@ span.editor-expand { border-color: transparent; }
   outline-offset: 1px;
 }
 
+/* Timeline zoom: a slim slider filling what the channel heading leaves, from 1x up. */
+.guide-zoom {
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 28px;
+  max-width: 132px;
+  height: 22px;
+  margin: 0 0 0 4px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.guide-zoom:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
 .guide-search {
   flex: 0 1 150px;
   min-width: 84px;
@@ -784,6 +801,8 @@ span.editor-expand { border-color: transparent; }
   flex: 1;
   min-height: 0;
   overflow: auto;
+  /* Fingers still scroll the listings; a pinch here belongs to the timeline zoom, not the page. */
+  touch-action: pan-x pan-y;
   scrollbar-width: none;
   background: #06101a;
 }

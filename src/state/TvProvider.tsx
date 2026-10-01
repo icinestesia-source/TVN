@@ -8,6 +8,7 @@ import {
   windowAround,
 } from '../epg/geometry.ts'
 import { guideFilterForChannel, searchGuideChannels, stepGuideChannel } from '../epg/navigation.ts'
+import { clampZoom } from '../epg/zoom.ts'
 import { commandFromGamepad } from '../input/gamepad.ts'
 import { commandFromKeyEvent } from '../input/keyboard.ts'
 import { tunerStep } from '../input/tuner.ts'
@@ -245,6 +246,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const previousChannel = previousNumber !== null ? (channelByNumber(previousNumber) ?? null) : null
   const guideOpen = guideMode !== 'closed'
   const [guideQuery, setGuideQuery] = useState('')
+  const [guideZoom, setGuideZoomState] = useState(1)
+  const setGuideZoom = useCallback((zoom: number) => setGuideZoomState(clampZoom(zoom)), [])
   const guideChannels = useMemo(() => {
     return listChannels().filter((item) => channelMatchesFilter(item, guideFilter, favourites))
   }, [catalogueVersion, favourites, guideFilter])
@@ -1120,6 +1123,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
           if (!guideOpenRef.current) showOverlay('info', INFO_MS)
         }
         if (!guideOpenRef.current) break
+        setGuideZoomState(1)
         const now = Date.now()
         const nextCursor = { ...cursorRef.current, timeMs: now }
         cursorRef.current = nextCursor
@@ -1671,6 +1675,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideFilter,
       guideQuery,
       setGuideQuery,
+      guideZoom,
+      setGuideZoom,
       guideOpen,
       guideMode,
       guideSplit,
@@ -1751,6 +1757,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideNote,
       guideOpen,
       guideQuery,
+      guideZoom,
+      setGuideZoom,
       guideMode,
       guideSplit,
       guideWindow,

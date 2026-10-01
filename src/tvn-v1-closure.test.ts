@@ -318,11 +318,11 @@ describe('viewing history: Back and Forward', () => {
         history: { canBack: false, canForward: false, onBack: () => {}, onForward: () => {} },
       }),
     )
-    expect(html).toMatch(/<button type="button" class="info-square" disabled="" title="Back — previous watched channel"/)
-    expect(html).toMatch(/<button type="button" class="info-square" disabled="" title="Forward — next watched channel"/)
+    expect(html).toMatch(/<button type="button" class="info-square" disabled="" title="Channel up — back to the previous watched channel"/)
+    expect(html).toMatch(/<button type="button" class="info-square" disabled="" title="Channel down — forward to the next watched channel"/)
   })
 
-  it('orders the group ← Watch Prev Next ↗ → as one unwrapped group', () => {
+  it('orders the group ↑ ← Watch → ↓ ↗ as one unwrapped group', () => {
     const shipped = channelByNumber(225)!
     const html = renderToStaticMarkup(
       createElement(InfoActions, {
@@ -336,7 +336,7 @@ describe('viewing history: Back and Forward', () => {
       }),
     )
     const labels = [...html.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels).toEqual(['←', 'Watch', 'Prev', 'Next', '↗', '→'])
+    expect(labels).toEqual(['↑', '←', 'Watch', '→', '↓', '↗'])
     expect(html).toContain('class="info-actions has-history"')
     const css = read('src/styles/guide.css')
     expect(css).toMatch(/\.info-actions\.has-history \{\s*flex-wrap: nowrap;/)

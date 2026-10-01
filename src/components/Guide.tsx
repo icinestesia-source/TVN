@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type WheelEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type RefObject, type WheelEvent } from 'react'
 import {
   ROW_HEIGHT,
   TIME_HEADER_HEIGHT,
@@ -10,6 +10,15 @@ import {
   visibleRowRange,
 } from '../epg/geometry.ts'
 import { bandLabel, guideBandTarget, guideViewedChannel } from '../epg/navigation.ts'
+import {
+  GUIDE_ZOOM_MAX,
+  GUIDE_ZOOM_MIN,
+  GUIDE_ZOOM_STEP,
+  anchorTime,
+  anchoredScrollLeft,
+  clampZoom,
+} from '../epg/zoom.ts'
+import { bindTimelinePinch, type TimelinePinchHandlers } from '../input/timeline-pinch.ts'
 import { slotContaining } from '../scheduler/window.ts'
 import { isOnAir } from '../network/airing.ts'
 import { guideSlots } from '../services/broadcast.ts'
@@ -43,9 +52,11 @@ import {
 export function Guide({ closing = false }: { closing?: boolean }) {
   const tv = useTv()
   const now = useClock(1000)
-  const pxPerMinute = usePxPerMinute()
+  // Timeline zoom widens the time axis only: at 1x this is exactly the standard scale.
+  const pxPerMinute = usePxPerMinute() * tv.guideZoom
   const sectionRef = useRef<HTMLElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  const timelineRef = useRef<HTMLDivElement>(null)
 
   // The guide rises out of, and folds back into, its information bar; the animation needs the bar's height.
   useLayoutEffect(() => {
@@ -57,7 +68,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const channelScrollRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(() =>
-    openScrollLeft(Date.now(), tv.guideWindow.startMs, initialPxPerMinute(), Math.max(480, window.innerWidth - 320)),
+    openScrollLeft(Date.now(), tv.guideWindow.startMs, initialPxPerMinute() * tv.guideZoom, Math.max(480, window.innerWidth - 320)),
   )
   const [viewport, setViewport] = useState(480)
   const [viewWidth, setViewWidth] = useState(() => Math.max(480, window.innerWidth - 320))
@@ -66,6 +77,39 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const scrollFrame = useRef(0)
 
   const { startMs, endMs } = tv.guideWindow
+
+  // The scale on screen, a zoom waiting for the next frame, and the time a zoom must hold in place.
+  const drawn = useRef({ px: pxPerMinute, startMs, zoom: tv.guideZoom })
+  const pendingZoom = useRef<{ zoom: number; offsetPx: number | null } | null>(null)
+  const zoomFrame = useRef(0)
+  const zoomAnchor = useRef<{ timeMs: number; offsetPx: number } | null>(null)
+  const zoomAim = useRef(tv.guideZoom)
+  const zoomHeld = useRef(false)
+
+  /** Zoom to `next`, holding the time at `offsetPx` across the timeline (its centre when null). */
+  const applyZoom = (next: number, offsetPx: number | null) => {
+    const grid = gridRef.current
+    const zoom = clampZoom(next)
+    if (!grid || zoom === drawn.current.zoom) return
+    const offset = offsetPx ?? grid.clientWidth / 2
+    zoomAnchor.current = { timeMs: anchorTime(grid.scrollLeft, offset, drawn.current.startMs, drawn.current.px), offsetPx: offset }
+    zoomAim.current = zoom
+    tv.setGuideZoom(zoom)
+  }
+  // Pinch and trackpad events arrive faster than frames; only the latest in each frame is drawn.
+  const requestZoom = (next: number, offsetPx: number) => {
+    pendingZoom.current = { zoom: clampZoom(next), offsetPx }
+    if (zoomFrame.current) return
+    zoomFrame.current = window.requestAnimationFrame(() => {
+      zoomFrame.current = 0
+      const request = pendingZoom.current
+      pendingZoom.current = null
+      if (request) applyZoom(request.zoom, request.offsetPx)
+    })
+  }
+  const zoomBase = () => pendingZoom.current?.zoom ?? zoomAim.current
+  useEffect(() => () => window.cancelAnimationFrame(zoomFrame.current), [])
+  useTimelinePinch(timelineRef, tv.visibleChannels.length > 0, zoomBase, requestZoom)
   const width = trackWidthPx(startMs, endMs, pxPerMinute)
   const ticks = halfHourTicks(startMs, endMs)
   const gridOffset = timeX(floorHalfHour(startMs), startMs, pxPerMinute)
@@ -193,6 +237,27 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // A new scale keeps the anchored time exactly where it was on screen by moving scrollLeft.
+  useLayoutEffect(() => {
+    const before = drawn.current
+    drawn.current = { px: pxPerMinute, startMs, zoom: tv.guideZoom }
+    if (before.zoom !== tv.guideZoom) zoomAim.current = tv.guideZoom
+    if (before.px === pxPerMinute) return
+    const anchor = zoomAnchor.current
+    zoomAnchor.current = null
+    const grid = gridRef.current
+    if (!grid) return
+    const offsetPx = anchor?.offsetPx ?? grid.clientWidth / 2
+    const timeMs = anchor?.timeMs ?? anchorTime(grid.scrollLeft, offsetPx, before.startMs, before.px)
+    grid.scrollLeft = anchoredScrollLeft(timeMs, offsetPx, startMs, pxPerMinute)
+    prevStart.current = startMs
+    // A zoom the viewer aimed stays where they aimed it; NOW still brings the current programme into view.
+    zoomHeld.current = anchor !== null
+    if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
+    setScrollLeft(grid.scrollLeft)
+    setViewWidth(grid.clientWidth)
+  }, [pxPerMinute, startMs, tv.guideZoom])
+
   useLayoutEffect(() => {
     const deltaMs = prevStart.current - startMs
     prevStart.current = startMs
@@ -213,6 +278,10 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   useLayoutEffect(() => {
     if (!revealArmed.current) {
       revealArmed.current = true
+      return
+    }
+    if (zoomHeld.current) {
+      zoomHeld.current = false
       return
     }
     const grid = gridRef.current
@@ -379,6 +448,18 @@ export function Guide({ closing = false }: { closing?: boolean }) {
               >
                 ›
               </button>
+              <input
+                type="range"
+                className="guide-zoom"
+                min={GUIDE_ZOOM_MIN}
+                max={GUIDE_ZOOM_MAX}
+                step={GUIDE_ZOOM_STEP}
+                value={tv.guideZoom}
+                onChange={(event) => applyZoom(Number(event.target.value), null)}
+                aria-label="Guide timeline zoom"
+                aria-valuetext={`${tv.guideZoom.toFixed(1)}x`}
+                title={`Timeline zoom ${tv.guideZoom.toFixed(1)}x`}
+              />
             </div>
             <div
               className="channel-scroll"
@@ -425,7 +506,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
             </div>
           </div>
 
-          <div className="guide-grid">
+          <div className="guide-grid" ref={timelineRef}>
             <div className="time-scroll" ref={timeRef} style={{ height: TIME_HEADER_HEIGHT }}>
               <div className="time-inner" style={{ width }}>
                 {ticks.map((tick) => {
@@ -827,6 +908,25 @@ function emptyGuideCopy(filter: string): string {
   if (filter === 'favourites') return 'No favourite channels'
   if (filter === 'user') return 'No user channels'
   return 'No channels'
+}
+
+/** Pinch over the Guide timeline zooms the timeline; the listeners come and go with the timeline. */
+function useTimelinePinch(
+  timelineRef: RefObject<HTMLDivElement | null>,
+  attached: boolean,
+  zoomBase: () => number,
+  requestZoom: (zoom: number, offsetPx: number) => void,
+) {
+  const handlers = useRef<TimelinePinchHandlers>({ zoomBase, requestZoom })
+  useLayoutEffect(() => {
+    handlers.current = { zoomBase, requestZoom }
+  })
+
+  useEffect(() => {
+    const timeline = timelineRef.current
+    if (!attached || !timeline) return
+    return bindTimelinePinch(timeline, () => handlers.current)
+  }, [attached, timelineRef])
 }
 
 function initialPxPerMinute(): number {

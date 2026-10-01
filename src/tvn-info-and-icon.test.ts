@@ -25,10 +25,10 @@ describe('Next on the information bar', () => {
   const actions = (onPrev?: () => void, onNext?: () => void) =>
     renderToStaticMarkup(createElement(InfoActions, { channel, programme, live: true, onTune: () => {}, onPrev, onNext }))
 
-  it('reads Watch, Prev, Next, each step only when there is a programme to step to', () => {
-    expect(actions(() => {}, () => {})).toMatch(/>Watch<\/button><button[^>]*>Prev<\/button><button[^>]*>Next<\/button>/)
-    expect(actions(undefined, () => {})).not.toContain('>Prev<')
-    expect(actions(() => {})).not.toContain('>Next<')
+  it('reads ← Watch →, each step only when there is a programme to step to', () => {
+    expect(actions(() => {}, () => {})).toMatch(/aria-label="Previous programme"[^>]*>←<\/button><button[^>]*>Watch<\/button><button[^>]*aria-label="Next programme"[^>]*>→<\/button>/)
+    expect(actions(undefined, () => {})).not.toContain('Previous programme')
+    expect(actions(() => {})).not.toContain('Next programme')
   })
 
   it('moves the Guide back and forth, and over the picture plays the programme either side from its start', () => {

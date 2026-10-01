@@ -21,7 +21,7 @@ function render(history: ReturnType<typeof historyActions> | undefined) {
 }
 
 describe('one information bar, in the Guide and over the picture', () => {
-  it('both pass the same ← → viewing history to the same InfoActions', () => {
+  it('both pass the same ↑ ↓ viewing history to the same InfoActions', () => {
     expect(overlay).toContain('history={historyActions(tv)}')
     expect(guide).toContain('history={historyActions(tv)}')
     const panel = guide.slice(guide.indexOf('function ProgrammePanel('), guide.indexOf('/** The bundled starter network'))
@@ -29,13 +29,13 @@ describe('one information bar, in the Guide and over the picture', () => {
     expect(panel).toMatch(/<InfoActions [^>]*onPrev=\{onPrev\} onNext=\{onNext\} history=\{history\} \/>/)
   })
 
-  it('renders ← Watch Prev Next ↗ → in that order as one unwrapped group', () => {
+  it('renders ↑ ← Watch → ↓ ↗ in that order as one unwrapped group', () => {
     const tv = { canGoBack: true, canGoForward: false, dispatch: () => undefined }
     const markup = render(historyActions(tv))
     expect(markup).toMatch(/^<div class="info-actions has-history">/)
     const labels = [...markup.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels.filter((label) => label !== '↗')).toEqual(['←', 'Watch', 'Prev', 'Next', '→'])
-    if (labels.includes('↗')) expect(labels.indexOf('↗')).toBe(4)
+    expect(labels.filter((label) => label !== '↗')).toEqual(['↑', '←', 'Watch', '→', '↓'])
+    if (labels.includes('↗')) expect(labels.indexOf('↗')).toBe(5)
   })
 
   it('has no Guide-only rule for the actions: the one-line rule and the narrow-width rule apply to both', () => {
@@ -44,7 +44,7 @@ describe('one information bar, in the Guide and over the picture', () => {
     expect(css).not.toMatch(/\.guide(?!-info\.is-programme \>)[^{]*\.info-actions/)
   })
 
-  it('keeps the semantics: ← and → are viewing history; Prev and Next stay programme steps', () => {
+  it('keeps the semantics: ↑ and ↓ are viewing history; ← and → stay programme steps', () => {
     const sent: TvCommand['type'][] = []
     const actions = historyActions({ canGoBack: false, canGoForward: true, dispatch: (command) => void sent.push(command.type) })
     actions.onBack()
@@ -55,7 +55,7 @@ describe('one information bar, in the Guide and over the picture', () => {
     expect(overlay).toContain('onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}')
   })
 
-  it('disables ← and → where there is no history, as over the picture', () => {
+  it('disables ↑ and ↓ where there is no history, as over the picture', () => {
     const markup = render(historyActions({ canGoBack: false, canGoForward: false, dispatch: () => undefined }))
     expect(markup.match(/disabled=""/g)?.length).toBe(2)
   })

@@ -39,6 +39,9 @@ export interface TvContextValue {
   /** Narrows the listed guide rows only; tuning, favourites and airing ignore it. */
   guideQuery: string
   setGuideQuery: (query: string) => void
+  /** The Guide's timeline zoom for this session: 1 is the standard scale; NOW restores it. */
+  guideZoom: number
+  setGuideZoom: (zoom: number) => void
   guideOpen: boolean
   guideMode: GuideMode
   guideSplit: number
