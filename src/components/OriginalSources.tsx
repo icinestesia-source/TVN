@@ -19,6 +19,7 @@ export function OriginalSources({
   overrides,
   idle,
   disabled,
+  addedSeconds = 0,
   onDecide,
 }: {
   originals: readonly OriginalSource[]
@@ -26,6 +27,8 @@ export function OriginalSources({
   /** Why TVN's programming is not on air as edited (switched off, or replaced by added sources), if it is not. */
   idle: string | null
   disabled: boolean
+  /** Running time the added sources bring alongside, so each share is of the whole channel. */
+  addedSeconds?: number
   onDecide: (ref: string, next: OriginalOverride | null) => void
 }) {
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set())
@@ -36,7 +39,8 @@ export function OriginalSources({
       else next.add(ref)
       return next
     })
-  const { rows, total } = contributionsOf(originals, overrides)
+  const { rows, total: own } = contributionsOf(originals, overrides)
+  const total = own + addedSeconds
   return (
     <div className="editor-originals">
       {idle ? <p className="guide-tool-note">{idle}</p> : null}

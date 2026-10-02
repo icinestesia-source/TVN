@@ -503,6 +503,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           tool={tool}
           picked={picked}
           following={following}
+          query={tv.guideSearch && tv.guideLibrary.current?.id === tv.guideSearch.guideId ? tv.guideSearch.query : null}
           onNow={() => tv.dispatch({ type: 'guide-now' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
         />

@@ -20,6 +20,7 @@ import {
 } from './channel-sources.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 import type { OriginalOverride } from './original-sources.ts'
+import type { FoundFeed } from './podcast-source.ts'
 
 /**
  * The Channel Editor works on one channel at a time. Every function here takes the whole stored User
@@ -64,6 +65,8 @@ export interface RescanDeps {
   uploaderOf?(listName: string): string | null
   /** TVN's shipped back catalogue for a source, which ARCHIVE and ALL add to it. */
   archiveOf?(source: ChannelSource): readonly ImportedVideo[]
+  /** TVN's keyless feed reader: a podcast feed, or a website that announces one. */
+  resolveFeed?(url: string, options?: { mode?: SourceMode }): Promise<FoundFeed>
 }
 
 /** The programmes of the playlists a source's filter names, each marked with its playlist. A playlist that cannot be read adds nothing. */
@@ -249,8 +252,28 @@ export async function rescanSources(sources: readonly ChannelSource[], deps: Res
           const videos = widened.videos ?? []
           return {
             ...widened,
+            // What was typed (a handle, a video) gives way to the channel or playlist it resolved to.
+            url: canonicalYouTubeUrl({ ref: found.channelId, url: source.url, ...(youtube ? { youtube } : {}) }),
             label: found.title || source.label,
             status: { state: 'ready', playable: videos.length, checkedAt: now },
+          }
+        } catch {
+          return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
+        }
+      }
+      if (source.kind === 'podcast') {
+        if (!deps.resolveFeed) return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
+        try {
+          const found = await deps.resolveFeed(source.url, ...wider(sourceModeOf(source)))
+          const info = found.website ? { ...source.info, website: source.info?.website ?? found.website } : source.info
+          return {
+            ...source,
+            url: found.feedUrl,
+            ref: found.feedUrl,
+            label: found.title || source.label,
+            videos: found.episodes.map((video) => ({ ...video })),
+            ...(info ? { info } : {}),
+            status: { state: 'ready', playable: found.episodes.length, checkedAt: now },
           }
         } catch {
           return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
@@ -289,6 +312,8 @@ export async function rescanChannel(
 ): Promise<{ all: StoredSource[]; edit: ChannelEdit; message: string }> {
   if (!all.some((record) => record.channelNumber === channelNumber)) throw new Error('That channel is no longer in your User Network')
   const sources = await rescanSources(edit.sources, deps, now)
-  const next = { ...edit, sources }
+  // A channel with no name of its own takes its publisher's, as the source names itself.
+  const named = sources.find((source) => source.enabled && source.kind !== 'tvn' && source.label && source.status?.state === 'ready')?.label
+  const next = { ...edit, sources, ...(!edit.name.trim() && named ? { name: named } : {}) }
   return { all: applyChannelEdit(all, channelNumber, next, now), edit: next, message: rescanSummary(sources) }
 }

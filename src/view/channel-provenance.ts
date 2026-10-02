@@ -3,7 +3,7 @@ import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { mediaLibrary } from '../director/library.ts'
 import { getChannelMedia } from '../library/query.ts'
 import { eligibleOf } from '../services/channel-curation.ts'
-import type { ChannelSource } from '../services/channel-sources.ts'
+import { isStreamSource, type ChannelSource } from '../services/channel-sources.ts'
 import { contributionOf, originalChannelSource, originalSourcesOf, poolEntryOf, UNSOURCED_REF, type Contribution, type OriginalOverride, type OriginalSource } from '../services/original-sources.ts'
 
 /**
@@ -48,6 +48,27 @@ export function contributionsOf(originals: readonly OriginalSource[], overrides:
     return { source, override, ...contributionOf(source, override) }
   })
   return { rows, total: rows.reduce((sum, row) => sum + row.seconds, 0) }
+}
+
+/** Each switched-on added source's contribution, through its filter, a programme counted once where sources overlap. */
+export function addedContributions(sources: readonly ChannelSource[], taken: ReadonlySet<string> = new Set()): { rows: Map<string, Contribution>; total: number } {
+  const seen = new Set(taken)
+  const rows = new Map<string, Contribution>()
+  let total = 0
+  for (const source of sources) {
+    if (source.kind === 'tvn' || !source.enabled || isStreamSource(source)) continue
+    let programmes = 0
+    let seconds = 0
+    for (const video of eligibleOf(source)) {
+      if (seen.has(video.id)) continue
+      seen.add(video.id)
+      programmes += 1
+      seconds += video.durationSec
+    }
+    rows.set(source.id, { programmes, seconds })
+    total += seconds
+  }
+  return { rows, total }
 }
 
 /** The short name a running-order row shows for the source that supplied it. */

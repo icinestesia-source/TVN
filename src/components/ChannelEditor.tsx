@@ -27,7 +27,7 @@ import { EditorialPanel, SourceFilterPanel, StatusPicker } from './ChannelCurati
 import { SourceDetails } from './SourceDetails.tsx'
 import { OriginalSources } from './OriginalSources.tsx'
 import { withOriginalOverride } from '../services/original-sources.ts'
-import { addedSourceLabels, channelOriginals, originalLineup } from '../view/channel-provenance.ts'
+import { addedContributions, addedSourceLabels, channelOriginals, contributionsOf, contributionText, originalLineup } from '../view/channel-provenance.ts'
 
 /** Enter and Space press these controls; they must not also reach the Guide. */
 function keepKey(event: KeyboardEvent<HTMLElement>) {
@@ -67,6 +67,8 @@ interface ListedVideo {
   href?: string
   /** The source that supplied it, briefly. */
   from?: string
+  /** One of TVN's original programmes, which the viewer keeps or leaves out. */
+  original?: boolean
 }
 
 /** What a source holds, from its last scan: nothing is fetched to show it. */
@@ -216,16 +218,30 @@ export function ChannelEditor({
   const tvnLineup =
     scope === 'curated' && edit !== null && edit.sources.some((source) => source.kind === 'tvn' && source.enabled) && inventoryOf(edit.sources).length === 0 && !liveStreamOf(edit.sources)
   const fromOriginals = tvnLineup && originals.length > 0
+  // TVN's original sources and the viewer's added ones play together while TVN programming is on.
+  const mixed =
+    scope === 'curated' && edit !== null && originals.length > 0 && !tvnLineup && !liveStreamOf(edit.sources) && edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
   const ownLabels = edit && !tvnLineup ? addedSourceLabels(edit.sources, sourceTitle) : null
+  const shippedRows = (): ListedVideo[] => originalLineup(originals, edit?.originals).map((video): ListedVideo => ({ ...video, original: true }))
+  const addedRows = (): ListedVideo[] => (edit ? inventoryOf(edit.sources).map((video): ListedVideo => ({ ...video, from: ownLabels?.get(video.id) })) : [])
+  const mixedRows = (): ListedVideo[] => {
+    const first = shippedRows()
+    const seen = new Set(first.map((video) => video.id))
+    return [...first, ...addedRows().filter((video) => !seen.has(video.id))]
+  }
+  const shippedPool = mixed ? contributionsOf(originals, edit?.originals) : null
+  const added = edit && scope === 'curated' ? addedContributions(edit.sources, new Set(mixed ? shippedRows().map((video) => video.id) : [])) : null
+  const channelSeconds = (shippedPool?.total ?? 0) + (added?.total ?? 0)
   const lineup: ListedVideo[] = edit
-    ? inOrder(
-        fromOriginals ? originalLineup(originals, edit.originals).map((video): ListedVideo => video) : tvnLineup ? tvnProgrammes(number) : inventoryOf(edit.sources).map((video): ListedVideo => ({ ...video, from: ownLabels?.get(video.id) })),
-        edit.order,
-      )
+    ? inOrder(fromOriginals ? shippedRows() : mixed ? mixedRows() : tvnLineup ? tvnProgrammes(number) : addedRows(), edit.order)
     : []
   const decided = (edit?.originals?.length ?? 0) > 0
   const tvnSource = edit?.sources.find((source) => source.kind === 'tvn')
-  const originalsIdle = !tvnSource?.enabled ? "TVN's programming is switched off, so none of these play." : !tvnLineup ? 'Your added sources carry this channel, so none of these play while they do.' : null
+  const originalsIdle = !tvnSource?.enabled
+    ? "TVN's programming is switched off, so none of these play."
+    : edit && liveStreamOf(edit.sources)
+      ? 'A live stream carries this channel, so none of these play while it does.'
+      : null
   const left = new Set(edit?.excluded ?? [])
   const arranged = (edit?.order?.length ?? 0) > 0 || left.size > 0
   const ownOrder = arranged || decided
@@ -286,7 +302,13 @@ export function ChannelEditor({
       setLink('')
       setKind('auto')
       setAdding(false)
-      setNote(source.kind === 'youtube' ? 'SOURCE ADDED · RESCAN TO FETCH ITS PROGRAMMES' : 'SOURCE ADDED · SAVE OR RESCAN TO USE IT')
+      setNote(
+        source.kind === 'youtube'
+          ? `SOURCE ADDED · ${source.url.replace(/^https:\/\/www\./, '').toUpperCase()} · RESCAN TO FETCH ITS PROGRAMMES`
+          : source.kind === 'podcast'
+            ? 'PODCAST ADDED · RESCAN TO FIND ITS FEED AND EPISODES'
+            : 'SOURCE ADDED · SAVE OR RESCAN TO USE IT',
+      )
     } catch (caught) {
       setNote(viewerMessage(caught, 'THAT SOURCE COULD NOT BE ADDED'))
     }
@@ -395,6 +417,7 @@ export function ChannelEditor({
                         overrides={edit.originals}
                         idle={originalsIdle}
                         disabled={busy !== null}
+                        addedSeconds={mixed ? (added?.total ?? 0) : 0}
                         onDecide={(ref, next) => change({ ...edit, originals: withOriginalOverride(edit.originals, ref, next) })}
                       />
                     </li>
@@ -428,7 +451,10 @@ export function ChannelEditor({
                     />
                     <span className="editor-source-name">{sourceTitle(source)}</span>
                   </label>
-                  <span className="editor-source-status">{sourceStatusText(source, edit.sources)}</span>
+                  <span className="editor-source-status">
+                    {sourceStatusText(source, edit.sources)}
+                    {added?.rows.get(source.id)?.programmes ? ` · adds ${contributionText(added.rows.get(source.id)!, channelSeconds)}` : null}
+                  </span>
                   {source.kind === 'tvn' ? (
                     <span className="editor-source-remove" aria-hidden="true" />
                   ) : (
@@ -446,7 +472,7 @@ export function ChannelEditor({
                   {open ? (
                     <SourceDetails source={source} number={number} disabled={busy !== null} onInfo={(info) => setSource(source.id, { info })} />
                   ) : null}
-                  {open && (source.kind === 'youtube' || source.kind === 'collection') ? (
+                  {open && (source.kind === 'youtube' || source.kind === 'collection' || source.kind === 'podcast') ? (
                     <SourceFilterPanel
                       source={source}
                       archive={archiveOf?.(source)}
@@ -485,10 +511,11 @@ export function ChannelEditor({
               <form className="add-channel editor-add" onSubmit={addSource} onKeyDown={keepKey}>
                 <input
                   ref={linkRef}
-                  type="url"
+                  type="text"
                   inputMode="url"
+                  autoCapitalize="off"
                   value={link}
-                  placeholder="YouTube channel, video or playlist, or a stream address"
+                  placeholder="@handle, YouTube link, podcast or website, or a stream address"
                   aria-label="Source address"
                   autoComplete="off"
                   spellCheck={false}
@@ -580,7 +607,7 @@ export function ChannelEditor({
                 <ol className="editor-lineup" aria-label="Running order">
                   {lineup.map((video, index) => (
                     <li key={video.id} className={[video.id === onAir ? 'is-on-air' : '', left.has(video.id) ? 'is-off' : ''].filter(Boolean).join(' ') || undefined}>
-                      {tvnLineup ? (
+                      {tvnLineup || (mixed && video.original) ? (
                         <input
                           type="checkbox"
                           className="editor-keep"

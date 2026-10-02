@@ -8,7 +8,7 @@ import type { ImportedVideo } from './channels-import.ts'
  * continuous live feed the browser plays itself. `tvn` stands for a curated channel's own shipped
  * programming, which TVN schedules itself. Another resolver joins by adding a kind here.
  */
-export type SourceKind = 'tvn' | 'youtube' | 'collection' | 'audio' | 'audio-hls' | 'video' | 'video-hls'
+export type SourceKind = 'tvn' | 'youtube' | 'collection' | 'podcast' | 'audio' | 'audio-hls' | 'video' | 'video-hls'
 
 export type SourceState = 'unchecked' | 'ready' | 'online' | 'unavailable' | 'unsupported' | 'failed'
 
@@ -68,6 +68,7 @@ export const SOURCE_TYPES: Record<SourceKind, SourceType> = {
   tvn: { label: 'TVN programming', live: false, media: 'video' },
   youtube: { label: 'YouTube', live: false, media: 'video' },
   collection: { label: 'Imported list', live: false, media: 'video' },
+  podcast: { label: 'Podcast', live: false, media: 'audio' },
   audio: { label: 'Live audio', live: true, media: 'audio', format: 'direct' },
   'audio-hls': { label: 'HLS audio', live: true, media: 'audio', format: 'hls' },
   video: { label: 'Live video', live: true, media: 'video', format: 'direct' },
@@ -75,7 +76,7 @@ export const SOURCE_TYPES: Record<SourceKind, SourceType> = {
 }
 
 /** The kinds a viewer can add by address; an imported list only arrives with its channel. */
-export const ADDABLE_KINDS: readonly SourceKind[] = ['youtube', 'audio', 'audio-hls', 'video', 'video-hls']
+export const ADDABLE_KINDS: readonly SourceKind[] = ['youtube', 'podcast', 'audio', 'audio-hls', 'video', 'video-hls']
 
 export function isStreamSource(source: Pick<ChannelSource, 'kind'>): boolean {
   return SOURCE_TYPES[source.kind].live
@@ -137,7 +138,7 @@ export function sourceStatusText(source: ChannelSource, siblings: readonly Chann
   if (!source.enabled) return 'Disabled'
   if (source.kind === 'tvn') {
     if (liveStreamOf(siblings)) return 'TVN programming · replaced by the live stream'
-    return inventoryOf(siblings).length > 0 ? 'TVN programming · replaced by your sources' : 'TVN programming · on air'
+    return inventoryOf(siblings).length > 0 ? 'TVN programming · with your added sources' : 'TVN programming · on air'
   }
   const state = source.status?.state ?? 'unchecked'
   if (state === 'failed') return 'Resolution failed'
@@ -149,6 +150,7 @@ export function sourceStatusText(source: ChannelSource, siblings: readonly Chann
     return state === 'unchecked' ? `${what} · not scanned yet` : `${what} · ${source.status?.playable ?? source.videos?.length ?? 0} playable${matching}`
   }
   if (source.kind === 'collection') return `Imported list · ${source.videos?.length ?? 0} programmes${matching}`
+  if (source.kind === 'podcast') return state === 'unchecked' ? 'Podcast · not read yet · Rescan to find its feed' : `Podcast · ${source.videos?.length ?? 0} episodes${matching}`
   const label = SOURCE_TYPES[source.kind].label
   if (state === 'unchecked') return `${label} · not checked yet`
   return source.kind.endsWith('-hls') ? `${label} · verified` : `${label} · online`
@@ -170,6 +172,11 @@ export function canonicalYouTubeUrl(source: Pick<ChannelSource, 'ref' | 'url' | 
 }
 
 const YOUTUBE_HOST = /^(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)$/i
+const YOUTUBE_HANDLE = /^@[\w.-]{3,100}$/
+/** A host typed without a scheme: dotted labels ending in an alphabetic top-level domain, e.g. example.com. */
+const PLAIN_HOST = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/i
+/** A page or feed rather than a stream: the site itself, a web page, or an address that names a feed. */
+const FEED_PATH = /(?:^\/?$|\.(?:rss|xml|atom|html?|php|aspx?)$|\/(?:feed|rss|atom|podcasts?)(?:\/|$))/i
 const AUDIO_FILE = /\.(?:mp3|aac|m4a|ogg|oga|opus|flac|wav)$/i
 const VIDEO_FILE = /\.(?:mp4|m4v|webm|mov|ogv)$/i
 
@@ -180,26 +187,44 @@ const VIDEO_FILE = /\.(?:mp4|m4v|webm|mov|ogv)$/i
 export function classifySourceUrl(raw: string, hint: SourceKind | 'auto' = 'auto'): { kind: SourceKind; url: string } {
   const text = raw.trim()
   if (!text) throw new Error('Paste a source address')
-  if (/^UC[0-9A-Za-z_-]{22}$/.test(text) || /^@[\w.-]{3,}$/.test(text)) return { kind: 'youtube', url: text }
-  let url: URL
-  try {
-    url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`)
-  } catch {
-    throw new Error('That is not a web address')
-  }
+  if (/^UC[0-9A-Za-z_-]{22}$/.test(text)) return { kind: 'youtube', url: text }
+  // A bare handle names a YouTube channel; it is only a source once the lookup finds it.
+  if (YOUTUBE_HANDLE.test(text) && (hint === 'auto' || hint === 'youtube')) return { kind: 'youtube', url: `https://www.youtube.com/${text}` }
+  const url = webAddress(text)
   if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Only web addresses can be added')
   const youtube = YOUTUBE_HOST.test(url.hostname)
   if (hint === 'collection' || hint === 'tvn') throw new Error('That kind of source cannot be added by address')
   if (youtube || hint === 'youtube') {
     if (!youtube) throw new Error('That is not a YouTube address')
+    const handle = url.pathname.split('/').filter(Boolean)
+    if (handle.length === 1 && YOUTUBE_HANDLE.test(decodeURIComponent(handle[0])) && !url.search) return { kind: 'youtube', url: `https://www.youtube.com/${decodeURIComponent(handle[0])}` }
     return { kind: 'youtube', url: url.toString() }
   }
+  if (hint === 'podcast' || (hint === 'auto' && FEED_PATH.test(url.pathname))) return { kind: 'podcast', url: url.toString() }
   if (/\.(?:pls|m3u|asx|xspf)$/i.test(url.pathname)) throw new Error('Paste the stream address inside that playlist file')
   if (hint !== 'auto') return { kind: hint, url: url.toString() }
   if (/\.m3u8$/i.test(url.pathname)) return { kind: /radio|audio|aac|icecast/i.test(url.toString()) ? 'audio-hls' : 'video-hls', url: url.toString() }
   if (VIDEO_FILE.test(url.pathname)) return { kind: 'video', url: url.toString() }
   if (AUDIO_FILE.test(url.pathname)) return { kind: 'audio', url: url.toString() }
   return { kind: 'audio', url: url.toString() }
+}
+
+/**
+ * A typed address as a URL. One with a scheme is read as it is; one without gets https:// only when it is
+ * plainly a host name (example.com, www.example.com/path), so a word or phrase is never taken for a site.
+ */
+export function webAddress(text: string): URL {
+  const trimmed = text.trim()
+  const schemed = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+  if (!schemed) {
+    const host = trimmed.split(/[/?#]/, 1)[0].replace(/:\d{1,5}$/, '')
+    if (/\s/.test(trimmed) || !PLAIN_HOST.test(host)) throw new Error('That is not a web address')
+  }
+  try {
+    return new URL(schemed ? trimmed : `https://${trimmed}`)
+  } catch {
+    throw new Error('That is not a web address')
+  }
 }
 
 export function nextSourceId(sources: readonly ChannelSource[]): string {

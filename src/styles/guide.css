@@ -1641,6 +1641,10 @@ span.editor-expand { border-color: transparent; }
   grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
+.plan-search { display: flex; flex-wrap: wrap; align-items: end; gap: 6px; }
+.plan-search-field { flex: 1 1 260px; max-width: 520px; }
+.plan-search .tab { min-height: 36px; height: 36px; }
+.plan-search .tab.guide-follow { color: var(--follow); border-bottom-color: var(--follow); }
 .plan-head { display: flex; flex-wrap: wrap; align-items: end; gap: 4px 16px; }
 .plan-name { flex: 1 1 260px; }
 .plan-state {

@@ -7,7 +7,7 @@ import { ChannelEditor } from './components/ChannelEditor.tsx'
 import { GuideActions } from './components/GuideAdd.tsx'
 import { InfoActions } from './components/InfoActions.tsx'
 import { padProps } from './info-pad.fixture.ts'
-import { channelByNumber, channels, programmesFor, shippedChannel } from './data/catalogue.ts'
+import { channelByNumber, channels, programmesFor, shippedChannel, shippedProgrammes } from './data/catalogue.ts'
 import { installCuratedEdits, installUserCatalogue } from './data/user-overlay.ts'
 import { commandFromGamepad } from './input/gamepad.ts'
 import { commandFromKey } from './input/keyboard.ts'
@@ -499,7 +499,7 @@ describe('editing curated 001–999 channels', () => {
     expect([...memory.keys()]).toEqual([CURATED_EDITS_KEY])
   })
 
-  it('added sources take over only that channel; its neighbours and the shipped catalogue are untouched', async () => {
+  it('added sources join only that channel, alongside its own programming; its neighbours and the shipped catalogue are untouched', async () => {
     const { store } = memoryStore()
     const shipped = shippedChannel(5)!
     const neighbours = [4, 6].map((number) => structuredClone(channelByNumber(number)))
@@ -513,9 +513,11 @@ describe('editing curated 001–999 channels', () => {
     expect(edited.customLineup).toBe(true)
     expect(isOnAir(edited)).toBe(true)
     expect(edited.id).toBe(shipped.id)
-    expect(new Set(programmesFor(edited.id).map((programme) => programme.videoId))).toEqual(new Set(videos('aaaa', 9).map((video) => video.id)))
-    expect(broadcast(edited, T0).current.programme.videoId).toMatch(/^aaaa/)
-    expect(sourceStatusText(result.edit.sources[0], result.edit.sources)).toBe('TVN programming · replaced by your sources')
+    const playing = new Set(programmesFor(edited.id).map((programme) => programme.videoId))
+    for (const video of videos('aaaa', 9)) expect(playing.has(video.id)).toBe(true)
+    for (const programme of shippedProgrammes(shipped.id)) if (programme.videoId) expect(playing.has(programme.videoId)).toBe(true)
+    expect(broadcast(edited, T0).current.programme.videoId).toBeTruthy()
+    expect(sourceStatusText(result.edit.sources[0], result.edit.sources)).toBe('TVN programming · with your added sources')
     expect([4, 6].map((number) => channelByNumber(number))).toEqual(neighbours)
     expect(shippedChannel(5)).toBe(shipped)
   })

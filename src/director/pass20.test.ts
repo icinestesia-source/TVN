@@ -11,6 +11,8 @@ import { DEDICATED, OWNED_SOURCES, PROGRAMME_REUSE } from './fit.ts'
 import { setMediaLibrary } from './library.ts'
 import type { MediaItem } from './types.ts'
 
+const RECURATED = new Set(Object.keys((JSON.parse(readFileSync('src/data/central-sources.json', 'utf8')) as { channels: object }).channels))
+
 const CURATED = [27, 84, 88, 89, 90, 292]
 const YEAR_DECADES: Record<number, [number, number]> = { 544: [1990, 1999], 547: [2020, 2029] }
 const ACTIVATED = [...CURATED, 139, ...Object.keys(YEAR_DECADES).map(Number)]
@@ -158,6 +160,8 @@ describe('Pass 20 static content production', () => {
     const removals = JSON.parse(readFileSync('docs/exclusion-removals-v43.json', 'utf8')).removed as Record<string, string[]>
     const byId = new Map(items.map((item) => [item.id, item]))
     for (const [channel, count] of Object.entries(map.baselineProgrammes)) {
+      // A channel re-defined centrally (src/data/central-sources.json) is held to its own definition, not the old baseline.
+      if (RECURATED.has(channel)) continue
       const removed = (removals[channel] ?? []).map((id) => byId.get(id)!)
       for (const item of removed) expect(excludedProgramme(item), `${channel}`).toBe(true)
       expect(airing(Number(channel)).length + removed.length, channel).toBeGreaterThanOrEqual(count)

@@ -447,7 +447,7 @@ export const DEDICATED: Readonly<Record<string, readonly number[]>> = {
   src_imagine_dragons: [592],
   src_arctic_monkeys: [592],
   src_mahogany: [558],
-  src_paste: [555],
+  src_daftpunk: [555],
   src_this_morning: [267],
   src_loose_women: [267],
   src_slowdive: [510],

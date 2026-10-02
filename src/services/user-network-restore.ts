@@ -139,11 +139,14 @@ export interface RestoreDeps {
   resolveYouTube(url: string, options?: { mode?: SourceMode }): Promise<{ channelId: string; title: string; videos: readonly ImportedVideo[] }>
   /** TVN's shipped back catalogue for a source, which ARCHIVE and ALL add to it. */
   archiveOf?(source: ChannelSource): readonly ImportedVideo[]
+  /** TVN's keyless feed reader, for podcast sources. */
+  resolveFeed?(url: string, options?: { mode?: SourceMode }): Promise<{ feedUrl: string; episodes: readonly ImportedVideo[] }>
 }
 
 /** What one source asks the lookup for: its address, and how far back it reaches. */
 const lookupKey = (source: ChannelSource) => `${canonicalYouTubeUrl(source)}|${sourceModeOf(source)}`
 const playlistKey = (id: string) => `playlist:${id}`
+const feedKey = (source: ChannelSource) => `feed:${source.url}|${sourceModeOf(source)}`
 
 /** The YouTube sources a restored record must read again: its own when plain, its enabled ones when edited. */
 function youTubeSourcesOf(record: StoredSource): ChannelSource[] {
@@ -166,11 +169,12 @@ export async function resolveRestored(
   parallel = 4,
 ): Promise<{ records: StoredSource[]; failed: number }> {
   // One lookup per address and mode, and one per playlist a filter names, however many channels share them.
-  const lookups = new Map<string, { url: string; mode: SourceMode }>()
+  const lookups = new Map<string, { url: string; mode: SourceMode; feed?: boolean }>()
   for (const record of records) {
     for (const source of youTubeSourcesOf(record)) lookups.set(lookupKey(source), { url: canonicalYouTubeUrl(source), mode: sourceModeOf(source) })
     for (const source of record.channelSources ?? []) {
       if (!source.enabled) continue
+      if (source.kind === 'podcast' && deps.resolveFeed) lookups.set(feedKey(source), { url: source.url, mode: sourceModeOf(source), feed: true })
       for (const id of source.filter?.include?.playlists ?? []) lookups.set(playlistKey(id), { url: `https://www.youtube.com/playlist?list=${id}`, mode: 'all' })
     }
   }
@@ -179,8 +183,12 @@ export async function resolveRestored(
   let next = 0
   const worker = async () => {
     while (next < jobs.length) {
-      const [key, { url, mode }] = jobs[next++]
+      const [key, { url, mode, feed }] = jobs[next++]
       try {
+        if (feed && deps.resolveFeed) {
+          found.set(key, (await (mode === 'recent' ? deps.resolveFeed(url) : deps.resolveFeed(url, { mode }))).episodes)
+          continue
+        }
         const read = await (mode === 'recent' ? deps.resolveYouTube(url) : deps.resolveYouTube(url, { mode }))
         found.set(key, read.videos)
       } catch {
@@ -194,7 +202,7 @@ export async function resolveRestored(
     (source.filter?.include?.playlists ?? []).flatMap((id) => cleanVideos(found.get(playlistKey(id)) ?? []).map((video) => ({ ...video, lists: [id] })))
   const out = records.map((record) => {
     const wanted = youTubeSourcesOf(record)
-    const curated = record.channelSources?.some((source) => source.filter?.include?.playlists?.length || sourceModeOf(source) !== 'recent') ?? false
+    const curated = record.channelSources?.some((source) => source.filter?.include?.playlists?.length || sourceModeOf(source) !== 'recent' || source.kind === 'podcast') ?? false
     if (wanted.length === 0 && !curated) return record
     const read = (source: ChannelSource) => found.get(lookupKey(source)) ?? null
     failed += wanted.filter((source) => read(source) === null).length
@@ -206,6 +214,13 @@ export async function resolveRestored(
       return { ...record, videos, ...(runningOrder?.length ? { runningOrder } : {}) }
     }
     const readSources = record.channelSources.map((source): ChannelSource => {
+      if (source.enabled && source.kind === 'podcast') {
+        const episodes = found.get(feedKey(source)) ?? null
+        if (episodes === null) failed += 1
+        return episodes === null
+          ? { ...source, status: { state: 'failed', playable: 0, checkedAt: now } }
+          : { ...source, videos: episodes.map((video) => ({ ...video })), status: { state: 'ready', playable: episodes.length, checkedAt: now } }
+      }
       if (!source.enabled || (source.kind !== 'youtube' && source.kind !== 'collection')) return source
       if (source.kind === 'collection') return { ...source, videos: withPlaylistVideos(source.videos ?? [], listed(source)) }
       const videos = read(source)

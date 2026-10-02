@@ -23,6 +23,17 @@ export interface GuideToolState {
   cursor: GuideCursor
 }
 
+/** A Guide created from words: what they were, which Guide holds the result, and how it was varied. */
+export interface GuideSearchState {
+  query: string
+  guideId: string
+  seed: number
+  /** How many programmes answered the words at all. */
+  matched: number
+  /** Too few matched for RESCAN to vary much. */
+  small: boolean
+}
+
 export interface TvContextValue {
   channel: Channel
   previousChannel: Channel | null
@@ -113,6 +124,10 @@ export interface TvContextValue {
   guideLibrary: import('../services/viewing-guides.ts').GuideLibrary
   /** The Guide being played: ACTIVE while it chooses what comes next, SUSPENDED once the viewer tuned away. */
   guideRun: import('../services/viewing-guides.ts').GuideRun | null
+  /** The words the current Guide was created from, while it is the one on show; null otherwise. */
+  guideSearch: GuideSearchState | null
+  /** CREATE GUIDE FROM…: a new Guide from TVN's catalogue for these words, or RESCAN (`rescan`) of the last; the answer is a short line. */
+  searchGuide: (query: string, rescan?: boolean) => string
   /** ADD TO GUIDE: the programme joins the end of the current Guide (a new one if there is none). */
   addToGuide: (channelNumber: number, programme: import('../types/programme.ts').Programme) => string
   /** One Guide editor action (NEW, SAVE, RENAME, reorder…); the answer is a short line for the viewer. */

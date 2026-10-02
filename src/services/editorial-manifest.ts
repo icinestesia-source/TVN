@@ -220,10 +220,11 @@ export function curatedChannelManifest(
   const record: StoredSource = { id: `tvn-${number}`, name: edit.name, videos: [], channelNumber: number, inLibrary: false, automatic: true, updatedAt: 0, channelSources: edit.sources, runningOrder: edit.order, editorial: edit.editorial }
   const base = { ...userChannelManifest(record), scope: 'central' as const }
   const tvnOn = edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
-  const replaced = Boolean(liveStreamOf(own)) || own.some((source) => source.enabled && eligibleOf(source).length > 0)
+  const replaced = Boolean(liveStreamOf(own))
   const manifest = { ...base, provenance: provenanceOf(edit, originals, base.current.sources, replaced) }
   if (!tvnOn || replaced) return manifest
   const left = new Set(edit.excluded ?? [])
+  const added = own.some((source) => source.enabled && eligibleOf(source).length > 0)
   if (originals.length > 0) {
     const seen = new Set<string>()
     const programmes = originals.flatMap((source) => {
@@ -235,12 +236,21 @@ export function curatedChannelManifest(
         return [{ sourceId: made.id, durationSec: video.durationSec, programmeType: programmeTypeFor(video.durationSec), year: videoYear(video) }]
       })
     })
+    for (const source of own) {
+      if (!source.enabled || isStreamSource(source)) continue
+      for (const video of eligibleOf(source)) {
+        if (seen.has(video.id)) continue
+        seen.add(video.id)
+        programmes.push({ sourceId: source.id, durationSec: video.durationSec, programmeType: programmeTypeFor(video.durationSec), year: videoYear(video) })
+      }
+    }
     const facts = [
       ...manifest.current.sources,
       ...originals.map((source) => ({ id: originalChannelSource(source).id, label: source.name, sourceType: 'tvn-original', enabled: edit.originals?.find((item) => item.ref === source.ref)?.enabled ?? true, held: source.videos.length })),
     ]
     return { ...manifest, current: currentFacts(programmes, facts) }
   }
+  if (added) return manifest
   const programmes = shippedList
     .filter((programme) => !left.has(programme.id))
     .map((programme) => ({ sourceId: 'tvn', durationSec: programme.durationSeconds, programmeType: programmeTypeFor(programme.durationSeconds), year: programme.year ?? null }))

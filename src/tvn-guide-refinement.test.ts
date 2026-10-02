@@ -90,7 +90,7 @@ describe('ADD', () => {
     const source = readFileSync('src/components/GuideAdd.tsx', 'utf8')
     expect(source).toContain("setNote('FINDING CHANNEL…')")
     const markup = renderToStaticMarkup(createElement(AddChannelForm, { nextNumber: 1055, onAdd: async () => '' }))
-    expect(markup).toContain('YouTube link for channel 1055')
+    expect(markup).toContain('YouTube link, @handle or podcast for channel 1055')
     expect(markup).not.toMatch(/role="dialog"/)
   })
 

@@ -20,6 +20,8 @@ import { CATALOGUE_VERSION } from './network.ts'
 import { broadcastWindow } from './time.ts'
 import type { MediaItem } from './types.ts'
 
+const RECURATED = new Set(Object.keys((JSON.parse(readFileSync('src/data/central-sources.json', 'utf8')) as { channels: object }).channels))
+
 const DATE = '2026-09-28'
 const NOW = new Date(`${DATE}T12:00:00+01:00`).getTime()
 const OUTCOMES = ['ACTIVATED', 'GENERATED_PRESENTATION', 'RETROTV_ORIGINAL', 'INTENTIONALLY_UNAVAILABLE', 'UNRESOLVED', 'RIGHTS_BLOCKED']
@@ -221,6 +223,8 @@ describe('Pass 22 final 000–999 completion', () => {
     const removals = JSON.parse(readFileSync('docs/exclusion-removals-v43.json', 'utf8')).removed as Record<string, string[]>
     const byId = new Map(items.map((item) => [item.id, item]))
     for (const [channel, count] of Object.entries(v42.baselineProgrammes)) {
+      // A channel re-defined centrally (src/data/central-sources.json) is held to its own definition, not the old baseline.
+      if (RECURATED.has(channel)) continue
       const n = Number(channel)
       if (n >= 900 && n < 1000) continue
       const removed = (removals[channel] ?? []).map((id) => byId.get(id)!)

@@ -79,6 +79,46 @@ export function addChannelSource(
   return { sources, number, status: 'added' }
 }
 
+export const PODCAST_PREFIX = 'podcast:'
+
+/** A podcast as a new User Channel, named from its publisher, its canonical feed kept as its one source. */
+export function addPodcastChannel(
+  existing: readonly StoredSource[],
+  feed: { feedUrl: string; website?: string | null; title: string; episodes: readonly ImportedVideo[] },
+  now: number,
+): { sources: StoredSource[]; number: number | null; status: 'added' | 'duplicate' | 'full' } {
+  const id = `${PODCAST_PREFIX}${feed.feedUrl}`
+  const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
+  const same = sources.find((source) => source.id === id || source.channelSources?.some((item) => item.kind === 'podcast' && item.url === feed.feedUrl))
+  if (same?.channelNumber) return { sources, number: same.channelNumber, status: 'duplicate' }
+  const number = claimUserNumber(sources)
+  if (number === null) return { sources, number: null, status: 'full' }
+  const videos = feed.episodes.map((video) => ({ ...video }))
+  sources.push({
+    id,
+    name: feed.title,
+    videos,
+    channelNumber: number,
+    inLibrary: false,
+    automatic: true,
+    updatedAt: now,
+    channelSources: [
+      {
+        id: 's1',
+        kind: 'podcast',
+        url: feed.feedUrl,
+        ref: feed.feedUrl,
+        label: feed.title,
+        enabled: true,
+        videos: videos.map((video) => ({ ...video })),
+        ...(feed.website ? { info: { website: feed.website } } : {}),
+        status: { state: 'ready', playable: videos.length, checkedAt: now },
+      },
+    ],
+  })
+  return { sources, number, status: 'added' }
+}
+
 /**
  * Install the bundled starter network after the viewer's own. A collection already present (the same
  * collection, the same name, or the same uploader added by link) is left exactly as it is.

@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { channelByNumber, programmesFor } from '../data/catalogue.ts'
 import { refusedVideos } from '../services/embed-refusals.ts'
 import { resolveItem, unsaved, type GuideItem, type GuideRun, type ViewingGuide } from '../services/viewing-guides.ts'
@@ -52,6 +52,14 @@ export function GuidePanel() {
   const [name, setName] = useState(guide?.name ?? '')
   const [note, setNote] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [words, setWords] = useState('')
+  const [building, setBuilding] = useState(false)
+  const wordsRef = useRef<HTMLInputElement>(null)
+  const search = tv.guideSearch && guide && tv.guideSearch.guideId === guide.id ? tv.guideSearch : null
+  useEffect(() => {
+    // Opened with a mouse (a right-click on GUIDE), the words box is ready to type in; a touch keeps the keyboard down.
+    if (typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches) wordsRef.current?.focus()
+  }, [])
   const shown = `${guide?.id ?? ''}:${guide?.name ?? ''}`
   const [seen, setSeen] = useState(shown)
   if (seen !== shown) {
@@ -75,6 +83,25 @@ export function GuidePanel() {
     act(() => tv.editGuide({ type: 'rename', name: next }))
   }
 
+  /** Builds after the note has painted: a broad search over the whole catalogue takes a moment. */
+  const create = (rescan: boolean) => {
+    if (building) return
+    if (!rescan && !words.trim()) {
+      setNote('TYPE WHAT THE GUIDE SHOULD BE ABOUT')
+      return
+    }
+    setBuilding(true)
+    setNote(rescan ? 'RESCANNING…' : 'BUILDING A GUIDE…')
+    window.setTimeout(() => {
+      act(() => tv.searchGuide(words, rescan))
+      setBuilding(false)
+    }, 30)
+  }
+  const submitWords = (event: FormEvent) => {
+    event.preventDefault()
+    create(false)
+  }
+
   const lookup = { channelByNumber, programmesFor, refused: refusedVideos() }
   const button = (label: string, onClick: () => void, options: { disabled?: boolean; on?: boolean; title?: string; className?: string } = {}) => (
     <button
@@ -93,6 +120,35 @@ export function GuidePanel() {
 
   return (
     <footer className="guide-info guide-editor guide-plan" aria-label="Viewing Guide">
+      <form className="plan-search" onSubmit={submitWords} aria-label="Create Guide from">
+        <label className="editor-field plan-search-field">
+          <span className="editor-heading">Create Guide from…</span>
+          <input
+            ref={wordsRef}
+            value={words}
+            maxLength={60}
+            placeholder="Music, Daft Punk, Italian cooking…"
+            aria-label="Create a Guide from these words"
+            autoComplete="off"
+            spellCheck={false}
+            enterKeyHint="search"
+            onChange={(event) => setWords(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation()
+              if (event.key === 'Enter') submitWords(event)
+            }}
+          />
+        </label>
+        <button type="submit" className="tab" disabled={building} onKeyDown={keepKey}>
+          Create
+        </button>
+        {search ? (
+          <>
+            {button('Watch Guide', () => tv.playGuide(0), { disabled: building || !guide || guide.items.length === 0, className: 'guide-follow', title: 'Play this Guide from the start' })}
+            {button('Rescan', () => create(true), { disabled: building, title: search.small ? `Only ${search.matched} programmes match, so a rescan cannot vary much` : `Build ${search.query} again, differently` })}
+          </>
+        ) : null}
+      </form>
       <div className="plan-head">
         <label className="editor-field plan-name">
           <span className="editor-heading">Guide</span>
@@ -170,7 +226,9 @@ export function GuidePanel() {
           })}
         </ol>
       ) : (
-        <p className="plan-empty">Right-click or hold a programme in the Guide, then choose ADD TO GUIDE. A normal click still plays it.</p>
+        <p className="plan-empty">
+          Type a few words above to build a Guide from TVN's channels, or right-click or hold a programme in the Guide and choose ADD TO GUIDE. A normal click still plays it.
+        </p>
       )}
 
       <div className="plan-library">

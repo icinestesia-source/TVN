@@ -51,6 +51,8 @@ export interface Programme {
   description: string
   /** Null when no playable media has been attached. The receiver shows a test card. */
   videoId: string | null
+  /** A recorded media file the browser plays itself (a podcast episode), when the programme is not on YouTube. */
+  mediaUrl?: string
   durationSeconds: number
   /** Length of the attached media when it differs from the scheduled slot. */
   mediaDurationSeconds?: number

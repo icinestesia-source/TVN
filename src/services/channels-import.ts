@@ -17,6 +17,8 @@ export interface ImportedVideo {
   year?: number
   /** YouTube playlists this programme was found in, for a filter's playlist rule. */
   lists?: string[]
+  /** A podcast episode's public audio file. Its id is then the feed's episode id, never a YouTube id. */
+  media?: string
 }
 
 export interface ImportedSource {
@@ -473,7 +475,7 @@ export function channelsFromSources(
       ordered ? ' in your running order on a clock schedule.' : wide ? ' from across the archive on a clock schedule.' : ' on a clock schedule.',
       refusedCount > 0 ? ` ${refusedCount} of its videos cannot play outside YouTube.` : '',
     ].join('')
-    channels.push({ ...base, description })
+    channels.push({ ...base, description, ...(own.length > 0 && own.every((video) => video.media) ? { mediaKind: 'audio' as const } : {}) })
 
     const ownIndex = new Map(pool.map((video, index) => [video.id, index + 1]))
     const entry = (video: ImportedVideo) => ({ key: video.id, item: { video, earlier: false, programmeId: `${id}-p${ownIndex.get(video.id)}` }, repeat: false })
@@ -486,7 +488,7 @@ export function channelsFromSources(
           own.map(entry),
           archive.map((video) => ({ key: video.id, item: { video, earlier: true, programmeId: `${id}-a-${video.id}` }, repeat: false })),
         )
-    const list: Programme[] = order.map(({ item: { video, earlier, programmeId }, repeat }) => ({
+    const list: Programme[] = order.map(({ item: { video, earlier, programmeId }, repeat }): Programme => video.media ? episodeProgramme(video, repeat ? `${programmeId}-r` : programmeId, id, source.name) : ({
       id: repeat ? `${programmeId}-r` : programmeId,
       title: video.title,
       description: earlier
@@ -509,6 +511,29 @@ export function channelsFromSources(
   }
 
   return { channels, programmes }
+}
+
+/** A podcast episode: its own public audio file, played by the browser's media element, never by YouTube. */
+function episodeProgramme(video: ImportedVideo, id: string, channelId: string, name: string): Programme {
+  return {
+    id,
+    title: video.title,
+    description: `${video.title} on ${name}, a podcast episode. The slot is the episode's own length.`,
+    videoId: null,
+    mediaUrl: video.media,
+    durationSeconds: video.durationSec,
+    mediaDurationSeconds: video.durationSec,
+    channelId,
+    category: 'User',
+    source: 'imported',
+    kind: 'programme',
+    programmeType: 'radio',
+    mediaKind: 'audio',
+    sourceRef: `podcast:${video.id}`,
+    ...(video.published ? { publishedAt: video.published } : {}),
+    creator: name,
+    playbackMode: 'linear',
+  }
 }
 
 /** The single listing of a live-stream channel: no duration and no programme boundaries. */

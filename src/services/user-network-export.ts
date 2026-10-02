@@ -29,6 +29,7 @@ export type ExportSourceType =
   | 'youtube-playlist'
   | 'collection'
   | 'tvn'
+  | 'podcast'
   | 'audio'
   | 'audio-hls'
   | 'video'
@@ -131,7 +132,7 @@ function exportVideo({ id, title, durationSec, published, year, lists }: ExportV
 
 export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): ExportSource {
   const sourceType = sourceTypeOf(source)
-  const scheduled = source.kind === 'youtube' || source.kind === 'collection'
+  const scheduled = source.kind === 'youtube' || source.kind === 'collection' || source.kind === 'podcast'
   const filter = scheduled ? cleanFilter(source.filter) : undefined
   const mode = scheduled ? sourceModeOf(source) : 'recent'
   const base: ExportSource = {
@@ -217,12 +218,13 @@ export function serialiseUserNetworkExport(document: UserNetworkExport): string 
   return `${JSON.stringify(document, null, 2)}\n`
 }
 
-const SOURCE_TYPES: readonly ExportSourceType[] = ['youtube-channel', 'youtube-playlist', 'collection', 'tvn', 'audio', 'audio-hls', 'video', 'video-hls']
+const SOURCE_TYPES: readonly ExportSourceType[] = ['youtube-channel', 'youtube-playlist', 'collection', 'tvn', 'podcast', 'audio', 'audio-hls', 'video', 'video-hls']
 const STORED_KINDS: Record<ExportSourceType, SourceKind> = {
   'youtube-channel': 'youtube',
   'youtube-playlist': 'youtube',
   collection: 'collection',
   tvn: 'tvn',
+  podcast: 'podcast',
   audio: 'audio',
   'audio-hls': 'audio-hls',
   video: 'video',

@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import type { Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
+import { feedMiddleware } from './server/podcast-feed.ts'
 import { channelMiddleware } from './server/youtube-channel.ts'
 
 /** The Add Channel lookup, served by the dev and preview servers as the Netlify Function serves it in production. */
@@ -9,9 +10,11 @@ function channelApi(): Plugin {
     name: 'tvn-channel-api',
     configureServer(server) {
       server.middlewares.use('/api/channel', channelMiddleware)
+      server.middlewares.use('/api/feed', feedMiddleware)
     },
     configurePreviewServer(server) {
       server.middlewares.use('/api/channel', channelMiddleware)
+      server.middlewares.use('/api/feed', feedMiddleware)
     },
   }
 }

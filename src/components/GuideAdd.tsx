@@ -34,10 +34,13 @@ export function GuideActions({
   tool,
   picked,
   following = false,
+  query = null,
   onNow,
   onTool,
 }: {
   tool: GuideTool | null
+  /** The words the Guide on show was created from, shown beside GUIDE while it is. */
+  query?: string | null
   /** A programme chosen in the Guide is playing; NOW returns to air. */
   picked: boolean
   /** A viewing Guide is choosing what plays. */
@@ -53,6 +56,11 @@ export function GuideActions({
   return (
     <div className="guide-import guide-actions">
       <GuideTab open={tool === 'guides'} following={following} onToggle={() => onTool('guides')} />
+      {query ? (
+        <span className="guide-query" title={`This Guide was created from “${query}”`}>
+          {query}
+        </span>
+      ) : null}
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
       {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
       {action('Add', tool === 'add', () => onTool('add'))}
@@ -99,7 +107,7 @@ function GuideTab({ open, following, onToggle }: { open: boolean; following: boo
   )
 }
 
-/** A box for a YouTube channel or video link; IMPORT brings that source in as a User Channel. EXPORT, after it, downloads the User Network. */
+/** A box for a YouTube channel or video link, an @handle, or a podcast or its website; IMPORT brings that source in as a User Channel. EXPORT, after it, downloads the User Network. */
 export function AddChannelForm({
   nextNumber,
   onAdd,
@@ -156,11 +164,12 @@ export function AddChannelForm({
     <form className="add-channel" onSubmit={(event) => void submit(event)} onKeyDown={keepKey}>
       <input
         ref={inputRef}
-        type="url"
+        type="text"
         inputMode="url"
+        autoCapitalize="off"
         value={link}
-        placeholder="Paste a YouTube channel, playlist or video link"
-        aria-label={nextNumber ? `YouTube link for channel ${nextNumber}` : 'YouTube channel or playlist link'}
+        placeholder="@handle, YouTube link, podcast or website"
+        aria-label={nextNumber ? `YouTube link, @handle or podcast for channel ${nextNumber}` : 'YouTube link, @handle or podcast'}
         autoComplete="off"
         spellCheck={false}
         disabled={busy}

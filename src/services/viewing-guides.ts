@@ -15,7 +15,7 @@ export const DEFAULT_GUIDE_NAME = 'My Guide'
 
 /** The programme as it was when added: enough to play it again, never its media. */
 export type GuideProgramme = Pick<Programme, 'id' | 'title' | 'videoId' | 'durationSeconds' | 'source'> &
-  Partial<Pick<Programme, 'description' | 'mediaDurationSeconds' | 'thumbnail' | 'year' | 'series' | 'episode' | 'kind' | 'playbackMode' | 'playback' | 'programmeType' | 'mediaKind' | 'sourceRef' | 'creator'>>
+  Partial<Pick<Programme, 'description' | 'mediaDurationSeconds' | 'thumbnail' | 'year' | 'series' | 'episode' | 'kind' | 'playbackMode' | 'playback' | 'programmeType' | 'mediaKind' | 'sourceRef' | 'creator' | 'mediaUrl'>>
 
 export interface GuideItem {
   id: string
@@ -51,7 +51,7 @@ export function guideId(prefix: 'g' | 'i', now: number): string {
 }
 
 const SOURCES: readonly ProgrammeSource[] = ['demo', 'youtube', 'imported']
-const OPTIONAL_TEXT = ['description', 'thumbnail', 'series', 'episode', 'kind', 'playbackMode', 'playback', 'programmeType', 'mediaKind', 'sourceRef', 'creator'] as const
+const OPTIONAL_TEXT = ['description', 'thumbnail', 'series', 'episode', 'kind', 'playbackMode', 'playback', 'programmeType', 'mediaKind', 'sourceRef', 'creator', 'mediaUrl'] as const
 
 /** The fields a Guide keeps of a programme, and nothing else. */
 export function guideProgramme(programme: Programme | GuideProgramme): GuideProgramme {
@@ -69,12 +69,12 @@ export function guideProgramme(programme: Programme | GuideProgramme): GuideProg
 }
 
 /** Why a programme cannot join a Guide, or null when it can. */
-export function cannotAdd(channel: Pick<Channel, 'number' | 'origin'>, programme: Pick<Programme, 'videoId' | 'liveStream' | 'source' | 'durationSeconds'>): string | null {
+export function cannotAdd(channel: Pick<Channel, 'number' | 'origin'>, programme: Pick<Programme, 'videoId' | 'liveStream' | 'source' | 'durationSeconds' | 'mediaUrl'>): string | null {
   // Local files (channel 000) last only for the session. YouTube programmes on imported user channels are also
   // `source: 'imported'`, and those can join.
   if (channel.origin === 'session' || channel.number === 0) return 'Local files cannot join a Guide'
   if (programme.liveStream) return 'A live stream has no end, so it cannot join a Guide'
-  if (!programme.videoId || !(programme.durationSeconds > 0)) return 'Nothing to play there'
+  if ((!programme.videoId && !programme.mediaUrl) || !(programme.durationSeconds > 0)) return 'Nothing to play there'
   return null
 }
 
@@ -120,6 +120,8 @@ export type GuideAction =
   | { type: 'duplicate' }
   | { type: 'delete' }
   | { type: 'load'; id: string }
+  /** The current Guide's programmes replaced wholesale, as CREATE GUIDE FROM… and RESCAN do. */
+  | { type: 'fill'; items: GuideItem[] }
 
 const copyGuide = (guide: ViewingGuide): ViewingGuide => structuredClone(guide)
 
@@ -175,6 +177,8 @@ export function applyGuideAction(library: GuideLibrary, action: GuideAction, now
       return current ? { ...library, current: touched(current, now, { items: [] }) } : library
     case 'loop':
       return current ? { ...library, current: touched(current, now, { loop: action.loop || undefined }) } : library
+    case 'fill':
+      return current ? { ...library, current: touched(current, now, { items: action.items.slice(0, GUIDE_LIMITS.items).map((item) => structuredClone(item)) }) } : library
   }
 }
 
@@ -225,10 +229,13 @@ export function resolveItem(item: GuideItem, lookup: ItemLookup): ResolvedItem {
   const channel = lookup.channelByNumber(item.channelNumber)
   if (!channel) return { ok: false, reason: 'Channel no longer available' }
   const videoId = item.programme.videoId
-  if (!videoId) return { ok: false, reason: 'Nothing to play' }
-  if (lookup.refused.has(videoId)) return { ok: false, reason: 'Unavailable' }
+  const media = item.programme.mediaUrl
+  if (!videoId && !media) return { ok: false, reason: 'Nothing to play' }
+  if (videoId && lookup.refused.has(videoId)) return { ok: false, reason: 'Unavailable' }
   const listed = lookup.programmesFor(channel.id)
-  const found = listed.find((programme) => programme.id === item.programme.id) ?? listed.find((programme) => programme.videoId === videoId)
+  const found =
+    listed.find((programme) => programme.id === item.programme.id) ??
+    listed.find((programme) => (videoId ? programme.videoId === videoId : programme.mediaUrl === media))
   if (found) return { ok: true, channel, programme: found }
   const programme: Programme = {
     description: '',
@@ -319,7 +326,9 @@ function checkGuide(value: unknown, at: string, errors: string[]): void {
       return
     }
     if (typeof programme.id !== 'string' || typeof programme.title !== 'string') errors.push(`${where}.programme has no id or title`)
-    if (typeof programme.videoId !== 'string' || !programme.videoId) errors.push(`${where}.programme.videoId is not a video id`)
+    const media = typeof programme.mediaUrl === 'string' && /^https?:\/\//i.test(programme.mediaUrl)
+    if (programme.mediaUrl !== undefined && !media) errors.push(`${where}.programme.mediaUrl is not a web address`)
+    if (!media && (typeof programme.videoId !== 'string' || !programme.videoId)) errors.push(`${where}.programme.videoId is not a video id`)
     if (typeof programme.durationSeconds !== 'number' || !(programme.durationSeconds > 0)) errors.push(`${where}.programme.durationSeconds is not a length`)
     if (!SOURCES.includes(programme.source as ProgrammeSource)) errors.push(`${where}.programme.source is not a portable source`)
     if ('liveStream' in programme) errors.push(`${where}.programme is a live stream`)

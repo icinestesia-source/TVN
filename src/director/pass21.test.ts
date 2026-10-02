@@ -17,6 +17,8 @@ import { setMediaLibrary } from './library.ts'
 import { addCalendarDays, broadcastWindow } from './time.ts'
 import type { MediaItem } from './types.ts'
 
+const RECURATED = new Set(Object.keys((JSON.parse(readFileSync('src/data/central-sources.json', 'utf8')) as { channels: object }).channels))
+
 const DATE = '2026-09-28'
 const NOW = new Date(`${DATE}T12:00:00+01:00`).getTime()
 const STAMPS = [7, 11, 15, 20].map((hour) => new Date(`${DATE}T${String(hour).padStart(2, '0')}:23:00+01:00`).getTime())
@@ -355,6 +357,8 @@ describe('Pass 21 live and rolling provider model', () => {
     const removals = JSON.parse(readFileSync('docs/exclusion-removals-v43.json', 'utf8')).removed as Record<string, string[]>
     const byId = new Map(items.map((item) => [item.id, item]))
     for (const [channel, count] of Object.entries(v41.baselineProgrammes)) {
+      // A channel re-defined centrally (src/data/central-sources.json) is held to its own definition, not the old baseline.
+      if (RECURATED.has(channel)) continue
       const removed = (removals[channel] ?? []).map((id) => byId.get(id)!)
       for (const item of removed) expect(excludedProgramme(item), `${channel}`).toBe(true)
       const allowance = freshFor(Number(channel), removed, DATE).length

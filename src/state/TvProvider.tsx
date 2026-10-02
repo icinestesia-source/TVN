@@ -33,6 +33,7 @@ import { loadRegister } from '../credits/load.ts'
 import type { SourceRegister } from '../credits/provenance.ts'
 import { reconcileOriginals, type OriginalSource } from '../services/original-sources.ts'
 import { channelOriginals } from '../view/channel-provenance.ts'
+import { lookUpFeed } from '../services/podcast-source.ts'
 import { guideEndAdvances } from '../view/guide-following.ts'
 import { guideSlots } from '../services/broadcast.ts'
 import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
@@ -50,13 +51,13 @@ import {
   type StoredSource,
 } from '../services/channels-import.ts'
 import { lookUpChannel } from '../services/add-channel.ts'
-import { addChannelSource, clearUserChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
+import { addChannelSource, addPodcastChannel, clearUserChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
 import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
-import type { ChannelSource } from '../services/channel-sources.ts'
+import { classifySourceUrl, type ChannelSource } from '../services/channel-sources.ts'
 import {
   baselineChanged,
   buildCuratedEdit,
@@ -101,6 +102,7 @@ import {
   addToGuide as addProgrammeToGuide,
   applyGuideAction,
   DEFAULT_GUIDE_NAME,
+  guideId,
   libraryFrom,
   loadGuideLibrary,
   newGuide,
@@ -108,10 +110,15 @@ import {
   resolveItem,
   saveGuideLibrary,
   type GuideAction,
+  type GuideItem,
   type GuideLibrary,
   type GuideRun,
   type ItemLookup,
 } from '../services/viewing-guides.ts'
+import { buildSearchGuide, SEARCH_TARGET } from '../services/guide-search.ts'
+import { searchIndex } from '../services/guide-search-pool.ts'
+import { shippedEditorial } from '../data/central-editorial.ts'
+import type { ChannelEditorial } from '../services/channel-curation.ts'
 import { buildTvnExport, serialiseTvnExport, tvnExportFilename, validateTvnExport, type TvnExport } from '../services/tvn-export.ts'
 import {
   asTransitionSettings,
@@ -133,6 +140,7 @@ import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAcce
 /** RESTORE and channel-file IMPORT read YouTube sources at their own modes and add TVN's shipped back catalogue to ARCHIVE and ALL. */
 const restoreDeps = {
   resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { ...options }),
+  resolveFeed: (url: string, options?: { mode?: SourceMode }) => lookUpFeed(url, fetch, { ...options }),
   archiveOf: sourceArchive,
 }
 import { loadYouTubeApi } from '../player/load-api.ts'
@@ -157,6 +165,7 @@ import {
   TvContext,
   type GuideCursor,
   type GuideNote,
+  type GuideSearchState,
   type GuideToolState,
   type OverlayMode,
   type TvContextValue,
@@ -176,7 +185,7 @@ const shippedIds = (shipped: Channel) => shippedProgrammes(shipped.id).map((prog
 const originalsOf = (number: number, register?: SourceRegister): OriginalSource[] => channelOriginals(number, register)
 const poolIdsOf = (number: number) => originalsOf(number).flatMap((source) => source.videos.map((video) => video.id))
 /** Only an override that decides about original sources, or arranges TVN's programmes, reads them. */
-const readsOriginals = (edit: CuratedEdit) => Boolean(edit.originals?.length || edit.order?.length || edit.excluded?.length)
+const readsOriginals = (edit: CuratedEdit) => Boolean(edit.originals?.length || edit.order?.length || edit.excluded?.length || edit.sources.some((source) => source.kind !== 'tvn' && source.enabled))
 
 /** Lay the viewer's saved changes to curated channels over the shipped ones, in this browser only. */
 function installCurated() {
@@ -285,6 +294,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [guideLibrary, setGuideLibraryState] = useState<GuideLibrary>(() => loadGuideLibrary())
   const guideLibraryRef = useRef(guideLibrary)
   const [guideRun, setGuideRunState] = useState<GuideRun | null>(null)
+  const [guideSearch, setGuideSearchState] = useState<GuideSearchState | null>(null)
+  const guideSearchRef = useRef<GuideSearchState | null>(null)
+  /** The 1001+ channels' editorial notes, for CREATE GUIDE FROM… . */
+  const userEditorialRef = useRef(new Map<number, ChannelEditorial>())
   const guideRunRef = useRef<GuideRun | null>(null)
   /** The tune or pick in progress is the Guide's own, not the viewer's: it does not suspend the Guide. */
   const guideDrivingRef = useRef(false)
@@ -1180,6 +1193,50 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return `ADDED TO ${current.name.toUpperCase()} · ${current.items.length} ${current.items.length === 1 ? 'ITEM' : 'ITEMS'}`
   }
 
+  /**
+   * CREATE GUIDE FROM…: a new, unsaved Guide named after the words, built from TVN's own catalogue. RESCAN
+   * (`rescan`) rebuilds the same words differently; the Guide on show stays until its replacement is ready.
+   */
+  const searchGuideAction = (text: string, rescan = false): string => {
+    const state = guideSearchRef.current
+    const library = guideLibraryRef.current
+    const again = rescan && state !== null && library.current?.id === state.guideId
+    const query = (again ? state.query : text).replace(/\s+/g, ' ').trim().slice(0, 60)
+    if (!query) throw new Error('Type what the Guide should be about')
+    const edits = loadCuratedEdits()
+    const editorialFor = (number: number) => (number <= 999 ? (edits[String(number)]?.editorial ?? shippedEditorial(number)) : userEditorialRef.current.get(number))
+    const stamp = JSON.stringify([Object.values(edits).map((edit) => [edit.channelNumber, edit.editorial ?? null]), [...userEditorialRef.current]])
+    const index = searchIndex(editorialFor, refusedVideos(), stamp)
+    const keyOf = (item: GuideItem) => item.programme.videoId || item.programme.mediaUrl || ''
+    const previous = again && library.current ? new Set(library.current.items.map(keyOf)) : undefined
+    const seed = again ? state.seed + 1 : 0
+    const built = buildSearchGuide(index, query, { seed, previous })
+    if (built.picks.length === 0) return again ? 'NOTHING ELSE MATCHES' : `NOTHING IN TVN MATCHES ${query.toUpperCase()}`
+    if (previous && built.picks.every((pick) => previous.has(pick.entry.key)) && built.picks.length === previous.size) {
+      guideSearchRef.current = { ...state!, seed, small: true }
+      setGuideSearchState(guideSearchRef.current)
+      return `ONLY ${built.matched} ${built.matched === 1 ? 'PROGRAMME MATCHES' : 'PROGRAMMES MATCH'} · NOTHING DIFFERENT TO RESCAN`
+    }
+    const now = Date.now()
+    const items: GuideItem[] = built.picks.map((pick) => ({
+      id: guideId('i', now),
+      channelNumber: pick.entry.channel.number,
+      channelName: pick.entry.channel.name,
+      programme: pick.entry.programme.guide ?? { id: pick.entry.programme.id, title: pick.entry.programme.title, videoId: pick.entry.programme.videoId ?? null, durationSeconds: pick.entry.programme.durationSeconds, source: 'imported' },
+    }))
+    if (!again) editGuideAction({ type: 'new', name: query })
+    editGuideAction({ type: 'fill', items })
+    const guide = guideLibraryRef.current.current!
+    guideSearchRef.current = { query, guideId: guide.id, seed, matched: built.matched, small: built.small }
+    setGuideSearchState(guideSearchRef.current)
+    const channels = new Set(items.map((item) => item.channelNumber)).size
+    const hours = Math.round(built.seconds / 60)
+    const length = hours >= 60 ? `${Math.floor(hours / 60)}H ${String(hours % 60).padStart(2, '0')}M` : `${hours}M`
+    const summary = `${items.length} ${items.length === 1 ? 'PROGRAMME' : 'PROGRAMMES'} · ${length} · ${channels} ${channels === 1 ? 'CHANNEL' : 'CHANNELS'}`
+    if (built.small) return `${summary} · ONLY ${built.matched} MATCH${again ? ' · RESCAN CANNOT VARY IT MUCH' : ''}`
+    return built.seconds < SEARCH_TARGET.min ? `${summary} · ALL THAT MATCHES` : summary
+  }
+
   const editGuideAction = (action: GuideAction): string => {
     const before = guideLibraryRef.current
     const next = applyGuideAction(before, action, Date.now())
@@ -1884,6 +1941,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   /** Rebuild 1001+ from the stored sources; a removed channel that was on screen hands over to 001. */
   const installSources = useCallback((sources: readonly StoredSource[]) => {
+    userEditorialRef.current = new Map(sources.flatMap((source) => (source.channelNumber && source.editorial ? [[source.channelNumber, source.editorial] as const] : [])))
     const built = channelsFromSources(sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
     installUserCatalogue(built.channels, built.programmes)
     if (!channelByNumber(channelRef.current)) requestTune(1)
@@ -1892,6 +1950,26 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const addChannel = useCallback(
     async (link: string, owner?: string) => {
+      const kind = (() => {
+        try {
+          return classifySourceUrl(link).kind
+        } catch {
+          return 'youtube'
+        }
+      })()
+      if (kind === 'podcast') {
+        // A website or feed: its announced public feed becomes a channel named after the publisher.
+        const feed = await lookUpFeed(link, fetch, { fresh: true, mode: 'all' })
+        const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
+        const result = addPodcastChannel(existing, feed, Date.now())
+        if (result.status === 'full') throw new Error('The User Network is full')
+        if (result.status === 'duplicate') return { number: result.number, message: `${feed.title} IS ALREADY ON ${result.number}` }
+        if (owner) result.sources = result.sources.map((source) => (source.channelNumber === result.number ? { ...source, owner } : source))
+        await saveStoredSources(result.sources)
+        installSources(result.sources)
+        return { number: result.number, message: `${feed.title} ADDED ON ${result.number} · ${feed.episodes.length} EPISODES` }
+      }
+      if (kind !== 'youtube') throw new Error('ADD takes a YouTube link, a podcast or a website')
       const found = await lookUpChannel(link)
       const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
       const result = addChannelSource(existing, found, Date.now(), uploaderIdFor)
@@ -2264,6 +2342,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const { scope, shipped } = scopeOf(number)
       const deps = {
         resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { fresh: true, ...options }),
+        resolveFeed: (url: string, options?: { mode?: SourceMode }) => lookUpFeed(url, fetch, { fresh: true, ...options }),
         probeStream: (source: ChannelSource) => probeStream(source),
         uploaderOf: uploaderIdFor,
         archiveOf: sourceArchive,
@@ -2526,8 +2605,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const guideApi = useRef({ add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction })
-  guideApi.current = { add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction }
+  const guideApi = useRef({ add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction, search: searchGuideAction })
+  guideApi.current = { add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction, search: searchGuideAction }
+  const searchGuide = useCallback((query: string, rescan?: boolean) => guideApi.current.search(query, rescan), [])
   const addToGuide = useCallback((channelNumber: number, programme: Programme) => guideApi.current.add(channelNumber, programme), [])
   const editGuide = useCallback((action: GuideAction) => guideApi.current.edit(action), [])
   const playGuide = useCallback((fromIndex?: number) => guideApi.current.play(fromIndex), [])
@@ -2600,6 +2680,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       holdInfo,
       guideLibrary,
       guideRun,
+      guideSearch,
+      searchGuide,
       addToGuide,
       editGuide,
       playGuide,
@@ -2715,6 +2797,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       holdInfo,
       guideLibrary,
       guideRun,
+      guideSearch,
+      searchGuide,
       addToGuide,
       editGuide,
       playGuide,

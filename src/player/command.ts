@@ -32,7 +32,7 @@ export function playbackCommand(programme: Programme, scheduleSeekSeconds: numbe
       kind: 'real',
     }
   }
-  const localUrl = sessionUrlFor(programme)
+  const localUrl = sessionUrlFor(programme) ?? programme.mediaUrl
   if (localUrl) {
     return {
       videoId: null,

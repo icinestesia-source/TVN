@@ -94,7 +94,7 @@ describe('TVN 2.0 · original sources of a central channel', () => {
     expect(loadCuratedEdits(store)).toEqual({})
   })
 
-  it('an added source with programmes still carries the channel, as before', () => {
+  it('an added source with programmes plays alongside the enabled originals; with TVN programming off, alone', () => {
     const own: ChannelSource = {
       id: 's1',
       kind: 'youtube',
@@ -108,8 +108,10 @@ describe('TVN 2.0 · original sources of a central channel', () => {
     const { store } = memoryStore()
     const saved = saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource(), own], originals: [originalOverrideOf(archive, false, undefined)!] }, NOW, store, ids)!
     const built = buildCuratedEdit(shipped, saved, new Set(), shippedProgrammes(shipped.id), originals)
-    expect(built.programmes?.map((programme) => programme.videoId)).toEqual(['eeeeeeeeee1'])
+    expect(built.programmes?.map((programme) => programme.videoId).sort()).toEqual(['bbbbbbbbbb1', 'bbbbbbbbbb2', 'ccccccccccc', 'ddddddddddd', 'eeeeeeeeee1'])
     expect(saved.originals).toHaveLength(1)
+    const alone = buildCuratedEdit(shipped, { ...saved, sources: [{ ...tvnSource(), enabled: false }, own] }, new Set(), shippedProgrammes(shipped.id), originals)
+    expect(alone.programmes?.map((programme) => programme.videoId)).toEqual(['eeeeeeeeee1'])
   })
 
   it('a local filter over an original source keeps only its matching programmes', () => {

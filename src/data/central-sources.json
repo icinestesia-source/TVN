@@ -1,0 +1,30 @@
+{
+  "format": "tvn-central-sources-v1",
+  "channels": {
+    "555": {
+      "name": "Daft Punk",
+      "sources": [
+        {
+          "id": "src_daftpunk",
+          "input": "@daftpunk",
+          "mode": "all",
+          "filter": {
+            "include": { "minSeconds": 120 },
+            "exclude": { "shorts": true, "terms": ["watch now", "#shorts", "teaser", "trailer"] }
+          }
+        }
+      ],
+      "editorial": {
+        "purpose": "A career-spanning Daft Punk television channel.",
+        "desired": "Their recorded and audiovisual career: official videos, performances, remixes and archive material, not only current uploads.",
+        "include": "Official videos, official audio and remixes, visualizers, performances, making-of and archive material.",
+        "exclude": "Shorts, short promo fragments, trivial duplicate variants and unrelated material.",
+        "sourceNotes": "@daftpunk (official channel, read through TVN's keyless resolver, mode All).",
+        "gaps": "One read of the official channel reaches 37 uploads, mostly the Human After All and Daft Club era and the Random Access Memories anniversary material. The classic Homework and Discovery videos (Da Funk, Around the World, One More Time) are not in that read; they need a further confirmed source such as an official playlist.",
+        "eras": "1997–2025",
+        "tags": ["music", "electronic", "french house", "daft punk"],
+        "status": "reviewing"
+      }
+    }
+  }
+}

@@ -1,10 +1,11 @@
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
+import { isShippedEditorial, shippedEditorial } from '../data/central-editorial.ts'
 import { cleanEditorial } from './channel-curation.ts'
 import { cleanName, curatedSource, keptOrder, type ChannelEdit } from './channel-editor.ts'
 import { inOrder, inventoryOf, liveStreamOf, type ChannelSource } from './channel-sources.ts'
 import { channelsFromSources } from './channels-import.ts'
-import { activeOriginals, cleanOriginals, originalChannelSources, type OriginalSource } from './original-sources.ts'
+import { activeOriginals, cleanOriginals, ORIGINAL_ID_PREFIX, originalChannelSources, type OriginalSource } from './original-sources.ts'
 
 /**
  * A viewer's own curation of 001–999 channels: a local override, one record per channel number, laid over
@@ -90,7 +91,8 @@ export function baselineChanged(saved: CuratedEdit, current: CuratedBaseline): b
 
 /** What the editor shows for a curated channel: the viewer's saved change, or the channel as shipped. */
 export function curatedEditOf(channel: Pick<Channel, 'number' | 'name'>, saved: CuratedEdit | null): ChannelEdit {
-  if (!saved) return { name: channel.name, sources: [tvnSource()] }
+  const shippedNotes = shippedEditorial(channel.number)
+  if (!saved) return { name: channel.name, sources: [tvnSource()], ...(shippedNotes ? { editorial: shippedNotes } : {}) }
   const sources = saved.sources.some((source) => source.kind === 'tvn') ? saved.sources : [tvnSource(), ...saved.sources]
   return {
     name: saved.name,
@@ -98,7 +100,7 @@ export function curatedEditOf(channel: Pick<Channel, 'number' | 'name'>, saved: 
     ...(saved.order ? { order: [...saved.order] } : {}),
     ...(saved.excluded?.length ? { excluded: [...saved.excluded] } : {}),
     ...(saved.description ? { description: saved.description } : {}),
-    ...(saved.editorial ? { editorial: structuredClone(saved.editorial) } : {}),
+    ...(saved.editorial ? { editorial: structuredClone(saved.editorial) } : shippedNotes ? { editorial: shippedNotes } : {}),
     ...(saved.originals?.length ? { originals: structuredClone(saved.originals) } : {}),
   }
 }
@@ -139,7 +141,10 @@ export function canonicalEdit(
   const known = new Set([...programmeIds, ...poolIds])
   const tvnIds = poolIds.length ? poolIds : programmeIds
   const tvnOrder = !ownProgrammes && edit.order?.length && tvnIds.length ? inOrder(tvnIds.map((id) => ({ id })), edit.order).map((item) => item.id) : undefined
-  const order = ownProgrammes ? keptOrder(sources, edit.order) : tvnOrder?.some((id, index) => id !== tvnIds[index]) ? tvnOrder : undefined
+  // Mixed with TVN's original sources, the viewer's order may also place TVN's own programmes.
+  const mixedIds = poolIds.length && edit.order?.length ? new Set([...inventoryOf(sources).map((video) => video.id), ...poolIds]) : null
+  const mixedOrder = mixedIds ? [...new Set(edit.order)].filter((id) => mixedIds.has(id)) : []
+  const order = ownProgrammes ? (mixedIds ? (mixedOrder.length ? mixedOrder : undefined) : keptOrder(sources, edit.order)) : tvnOrder?.some((id, index) => id !== tvnIds[index]) ? tvnOrder : undefined
   const excluded = [...new Set(edit.excluded ?? [])].filter((id) => known.has(id))
   const description = cleanDescription(edit.description, shipped.description)
   const editorial = cleanEditorial(edit.editorial)
@@ -169,7 +174,7 @@ export function saveCuratedEdit(
 ): CuratedEdit | null {
   const number = shipped.number
   if (number < 1 || number > 999) throw new Error('Only TVN channels 001–999 are kept here')
-  const next = canonicalEdit(shipped, edit, programmeIds, poolIds)
+  const next = canonicalEdit(shipped, isShippedEditorial(number, edit.editorial) ? { ...edit, editorial: undefined } : edit, programmeIds, poolIds)
   const all = loadCuratedEdits(store)
   if (pristine(shipped, next)) {
     delete all[String(number)]
@@ -192,8 +197,9 @@ export function clearCuratedEdit(channelNumber: number, store: Store | null = br
  * The shipped channel with the viewer's change laid over it. While TVN programming is the only enabled
  * source the channel keeps its own schedule, unless the viewer has switched off or filtered one of its
  * original sources (`originals`: the channel's library sources as TVN ships them now), or reordered or
- * left out its programmes, when it plays what remains, in their order. Once the viewer's own sources carry
- * programmes (or a live stream), or TVN programming is switched off, those sources take over.
+ * left out its programmes, when it plays what remains, in their order. The viewer's own sources with
+ * programmes play alongside TVN's enabled originals, each through its own filter; a live stream, or TVN
+ * programming switched off, leaves only the viewer's sources.
  */
 export function buildCuratedEdit(
   shipped: Channel,
@@ -221,7 +227,25 @@ export function buildCuratedEdit(
     }
     return { channel: { ...shipped, name, description }, programmes: null }
   }
+  if (tvnOn && !liveStreamOf(own)) {
+    // TVN's own programming and the viewer's added sources together: each source keeps its identity and filter.
+    const left = new Set(edit.excluded ?? [])
+    const shippedOwn: ChannelSource[] = originals.length
+      ? originalChannelSources(originals, edit.originals).map((source) => ({ ...source, videos: (source.videos ?? []).filter((video) => !left.has(video.id)) }))
+      : [shippedAsSource(shippedList, left)].filter((source) => (source.videos?.length ?? 0) > 0)
+    // TVN's own programmes are a back catalogue, not recent uploads: spread through, never repeated as newest.
+    const spread = shippedOwn.map((source): ChannelSource => ({ ...source, mode: 'all' }))
+    return fromSources(shipped, edit, name, description, [...spread, ...own], refused, true)
+  }
   return fromSources(shipped, edit, name, description, own, refused)
+}
+
+/** A channel's fixed shipped programmes as one source, for mixing with added ones. */
+function shippedAsSource(shippedList: readonly Programme[], left: ReadonlySet<string>): ChannelSource {
+  const videos = shippedList
+    .filter((programme) => programme.videoId && !left.has(programme.id))
+    .map((programme) => ({ id: programme.videoId as string, title: programme.title, durationSec: programme.durationSeconds }))
+  return { id: `${ORIGINAL_ID_PREFIX}shipped`, kind: 'collection', url: '', label: 'TVN catalogue', enabled: true, videos }
 }
 
 /** The channel as its sources make it, under its TVN number and category. */

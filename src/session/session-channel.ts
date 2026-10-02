@@ -111,8 +111,8 @@ export function isSessionProgramme(programme: { sourceRef?: string }): boolean {
 }
 
 /** Picture comes from the network, or from a local file on the session channel. */
-export function hasPicture(programme: { videoId: string | null; sourceRef?: string; liveStream?: unknown }): boolean {
-  return programme.videoId !== null || isSessionProgramme(programme) || programme.liveStream !== undefined
+export function hasPicture(programme: { videoId: string | null; sourceRef?: string; liveStream?: unknown; mediaUrl?: string }): boolean {
+  return programme.videoId !== null || isSessionProgramme(programme) || programme.liveStream !== undefined || programme.mediaUrl !== undefined
 }
 
 export function sessionUrlFor(programme: { id: string; sourceRef?: string }): string | null {

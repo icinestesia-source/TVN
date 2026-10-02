@@ -3453,6 +3453,11 @@
    "name": "Zero 7",
    "provider": "YouTube",
    "channelUrl": "https://www.youtube.com/@zero7"
+  },
+  "src_daftpunk": {
+   "name": "Daft Punk",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
   }
  }
 }
