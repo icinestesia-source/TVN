@@ -34,9 +34,10 @@ export function setShippedArchive(value: unknown): void {
       const list: ImportedVideo[] = []
       for (const row of videos) {
         if (!Array.isArray(row)) continue
-        const [id, name, durationSec] = row as unknown[]
+        const [id, name, durationSec, published] = row as unknown[]
         if (typeof id === 'string' && typeof name === 'string' && typeof durationSec === 'number' && durationSec > 0) {
-          list.push({ id, title: name, durationSec: Math.round(durationSec) })
+          const dated = typeof published === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(published) ? { published } : {}
+          list.push({ id, title: name, durationSec: Math.round(durationSec), ...dated })
         }
       }
       archives.set(uploader, { uploader, title: typeof title === 'string' ? title : '', videos: list })
@@ -57,6 +58,14 @@ export async function loadShippedArchive(read: typeof fetch = fetch): Promise<vo
 export const uploaderArchive: ArchiveLookup = (source) => {
   const uploader = source.id.startsWith('yt:') ? source.id.slice(3) : owners.get(source.name)
   return uploader ? (archives.get(uploader) ?? null) : null
+}
+
+/** The shipped back catalogue of one channel source: a YouTube uploader by its id, an imported list by its name. A playlist has none. */
+export function sourceArchive(source: { kind: string; ref?: string; youtube?: string }): ImportedVideo[] {
+  if (!source.ref) return []
+  if (source.kind === 'youtube') return source.ref.startsWith('UC') && source.youtube !== 'playlist' ? (archives.get(source.ref)?.videos ?? []) : []
+  if (source.kind === 'collection') return uploaderArchive({ id: '', name: source.ref })?.videos ?? []
+  return []
 }
 
 export function uploaderIdFor(collectionName: string): string | null {

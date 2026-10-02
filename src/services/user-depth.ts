@@ -1,4 +1,5 @@
 import type { ImportedVideo } from './channels-import.ts'
+import { spread } from './channel-curation.ts'
 
 /**
  * Depth for User Network channels.
@@ -19,24 +20,6 @@ function secondsOf(videos: readonly ImportedVideo[]): number {
 
 export function needsDepth(videos: readonly ImportedVideo[]): boolean {
   return videos.length < DEPTH_MIN_PROGRAMMES || secondsOf(videos) < DEPTH_MIN_SECONDS
-}
-
-/** Visit a list at 1/2, 1/4, 3/4, 1/8 … of its length, so any prefix samples the whole span. */
-function spread<T>(list: readonly T[]): T[] {
-  const out: T[] = []
-  const used = new Set<number>()
-  for (let denominator = 2; used.size < list.length && denominator <= list.length * 2; denominator *= 2) {
-    for (let numerator = 1; numerator < denominator; numerator += 2) {
-      const index = Math.floor((numerator / denominator) * list.length)
-      if (used.has(index)) continue
-      used.add(index)
-      out.push(list[index])
-    }
-  }
-  list.forEach((item, index) => {
-    if (!used.has(index)) out.push(item)
-  })
-  return out
 }
 
 /**

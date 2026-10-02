@@ -474,6 +474,93 @@ span.editor-expand { border-color: transparent; }
 
 .guide-editor .editor-actions { align-self: start; }
 
+/* A source's filter and mode, and the channel's editorial notes: user channels only. */
+.curation {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  max-width: 760px;
+  margin: 2px 0 6px;
+  padding: 4px 8px 8px 40px;
+}
+
+.curation.editorial { padding-left: 4px; }
+
+.curation-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.curation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 8px;
+}
+
+.curation-field {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.curation-field.is-wide { grid-column: 1 / -1; }
+
+.curation-field small { font-size: 12px; letter-spacing: 0.02em; }
+
+.curation-field input,
+.curation-field select,
+.curation-field textarea {
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #1d4c78;
+  border-radius: 0;
+  background: rgba(8, 20, 34, 0.92);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.curation-field textarea { height: auto; min-height: 30px; padding: 5px 8px; resize: vertical; }
+
+.curation-field input:focus,
+.curation-field select:focus,
+.curation-field textarea:focus { outline: 2px solid var(--gold); outline-offset: 0; }
+
+.curation-check { font-size: 13px; }
+
+.curation-count {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  color: var(--gold);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+.curation .editor-videos,
+.curation .editor-videos-empty { padding-left: 0; max-height: 168px; }
+
+.curation-sample.is-excluded .editor-video-title { color: var(--muted); }
+.curation-sample.is-excluded .editor-video-length { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.curation-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
 /* Deleting sits on its own row at the foot of the editor, well away from Rescan and Save. */
 .editor-danger {
   grid-column: 1 / -1;
@@ -493,7 +580,9 @@ span.editor-expand { border-color: transparent; }
   .editor-source { grid-template-columns: auto minmax(0, 1fr) auto; }
   .editor-source-status { grid-column: 2; grid-row: 2; padding-left: 26px; white-space: normal; }
   .editor-videos, .editor-videos-empty { padding-left: 8px; }
-  .guide-editor .editor-actions { justify-self: end; max-width: none; margin-top: 6px; }
+  .curation { padding-left: 4px; padding-right: 4px; }
+  .curation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .guide-editor .editor-actions { justify-self: end; max-width: none; margin-top: 6px; flex-wrap: wrap; }
 }
 
 .match-list {

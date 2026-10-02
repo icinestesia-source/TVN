@@ -6,12 +6,15 @@ export const CHANNEL_API = '/api/channel'
 export interface LookUpOptions {
   /** An explicit RESCAN: skip every cache between here and YouTube, so the list is the current one. */
   fresh?: boolean
+  /** ARCHIVE or ALL: every embeddable video the source's page lists, not only the newest. */
+  mode?: 'recent' | 'archive' | 'all'
   now?: () => number
 }
 
 export async function lookUpChannel(link: string, read: typeof fetch = fetch, options: LookUpOptions = {}): Promise<AddedChannel> {
   let response: Response
-  const query = `${CHANNEL_API}?url=${encodeURIComponent(link.trim())}`
+  const wide = options.mode === 'archive' || options.mode === 'all' ? `&mode=${options.mode}` : ''
+  const query = `${CHANNEL_API}?url=${encodeURIComponent(link.trim())}${wide}`
   try {
     response = options.fresh
       ? await read(`${query}&refresh=${(options.now ?? Date.now)()}`, { cache: 'no-store' })

@@ -1,4 +1,5 @@
 import type { LiveStreamRef } from '../types/programme.ts'
+import { eligibleOf, type SourceFilter, type SourceMode } from './channel-curation.ts'
 import type { ImportedVideo } from './channels-import.ts'
 
 /**
@@ -45,10 +46,14 @@ export interface ChannelSource {
   ref?: string
   /** For a YouTube source: a channel's uploads, or one playlist and nothing else. */
   youtube?: YouTubeSourceType
-  /** The scheduled programmes this source contributed at its last scan. */
+  /** Everything this source's last scan found; its filter decides which of them are eligible. */
   videos?: ImportedVideo[]
   status?: SourceStatus
   info?: SourceInfo
+  /** A scheduled source's include and exclude rules (src/services/channel-curation.ts). Absent: everything is eligible. */
+  filter?: SourceFilter
+  /** How far back a scheduled source reaches. Absent: recent. */
+  mode?: SourceMode
 }
 
 interface SourceType {
@@ -84,13 +89,13 @@ export function liveStreamOf(sources: readonly ChannelSource[]): { source: Chann
   return { source, stream: { url: source.url, format: type.format ?? 'direct' }, media: type.media }
 }
 
-/** Scheduled programmes from the enabled scheduled sources, in source order, each video once. */
+/** Eligible programmes from the enabled scheduled sources (each through its filter and mode), in source order, each video once. */
 export function inventoryOf(sources: readonly ChannelSource[]): ImportedVideo[] {
   const seen = new Set<string>()
   const videos: ImportedVideo[] = []
   for (const source of sources) {
     if (!source.enabled || isStreamSource(source)) continue
-    for (const video of source.videos ?? []) {
+    for (const video of eligibleOf(source)) {
       if (seen.has(video.id)) continue
       seen.add(video.id)
       videos.push({ ...video })
@@ -138,11 +143,12 @@ export function sourceStatusText(source: ChannelSource, siblings: readonly Chann
   if (state === 'failed') return 'Resolution failed'
   if (state === 'unavailable') return 'Unavailable'
   if (state === 'unsupported') return 'This browser cannot play this stream'
+  const matching = source.filter ? ` · ${eligibleOf(source).length} match the filter` : ''
   if (source.kind === 'youtube') {
     const what = youTubeSourceType(source) === 'playlist' ? 'YouTube playlist' : 'YouTube uploader'
-    return state === 'unchecked' ? `${what} · not scanned yet` : `${what} · ${source.status?.playable ?? source.videos?.length ?? 0} playable`
+    return state === 'unchecked' ? `${what} · not scanned yet` : `${what} · ${source.status?.playable ?? source.videos?.length ?? 0} playable${matching}`
   }
-  if (source.kind === 'collection') return `Imported list · ${source.videos?.length ?? 0} programmes`
+  if (source.kind === 'collection') return `Imported list · ${source.videos?.length ?? 0} programmes${matching}`
   const label = SOURCE_TYPES[source.kind].label
   if (state === 'unchecked') return `${label} · not checked yet`
   return source.kind.endsWith('-hls') ? `${label} · verified` : `${label} · online`

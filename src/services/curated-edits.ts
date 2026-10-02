@@ -75,8 +75,10 @@ export function saveCuratedEdit(
   const number = shipped.number
   if (number < 1 || number > 999) throw new Error('Only TVN channels 001–999 are kept here')
   const sources = edit.sources.some((source) => source.kind === 'tvn') ? edit.sources : [tvnSource(), ...edit.sources]
-  const order = keptOrder(sources, edit.order)
-  const next: ChannelEdit = { name: cleanName(edit.name, shipped.name), sources: sources.map((source) => ({ ...source })), ...(order ? { order } : {}) }
+  // Curation (filters, modes, editorial notes) belongs to User Network channels; a TVN channel's overlay never carries it.
+  const plainSources = sources.map(({ filter: _filter, mode: _mode, ...source }) => ({ ...source }))
+  const order = keptOrder(plainSources, edit.order)
+  const next: ChannelEdit = { name: cleanName(edit.name, shipped.name), sources: plainSources, ...(order ? { order } : {}) }
   const all = loadCuratedEdits(store)
   if (pristine(shipped, next)) {
     delete all[String(number)]

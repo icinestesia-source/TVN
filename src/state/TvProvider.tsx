@@ -38,7 +38,10 @@ import {
 } from '../services/channels-import.ts'
 import { lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, clearUserChannel, planTestChannels, removeUserChannels as withoutUserChannels } from '../services/user-network.ts'
-import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, type ChannelEdit } from '../services/channel-editor.ts'
+import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
+import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile } from '../services/channel-file.ts'
+import { manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
+import type { SourceMode } from '../services/channel-curation.ts'
 import type { ChannelSource } from '../services/channel-sources.ts'
 import { buildCuratedEdit, clearCuratedEdit, curatedEditOf, loadCuratedEdit, loadCuratedEdits, saveCuratedEdit } from '../services/curated-edits.ts'
 import { probeStream } from '../player/stream.ts'
@@ -59,7 +62,7 @@ import { loadStoredSources, saveStoredSources } from '../services/user-db.ts'
 import { buildUserNetworkExport, downloadText, exportFilename, serialiseUserNetworkExport, type UserNetworkExport } from '../services/user-network-export.ts'
 import { favouritesAfterRestore, recordsFromExport, resolveRestored, restoreUserNetwork, usersFromExport } from '../services/user-network-restore.ts'
 import { isRefusalCode, learnRefusal, refusedVideos } from '../services/embed-refusals.ts'
-import { uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
+import { sourceArchive, uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import type { GuideTool, TvCommand } from '../types/input.ts'
@@ -73,6 +76,12 @@ import { commitTuned, emptyUniverseNote, randomTarget, stepTarget, type Tuned } 
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
 import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, type StartupPhase } from './startup.ts'
+
+/** RESTORE and channel-file IMPORT read YouTube sources at their own modes and add TVN's shipped back catalogue to ARCHIVE and ALL. */
+const restoreDeps = {
+  resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { ...options }),
+  archiveOf: sourceArchive,
+}
 import { loadYouTubeApi } from '../player/load-api.ts'
 import { clampGuideSplit, guideTuneDecision, type GuideMode } from '../view/guide-mode.ts'
 import { guideToolTarget } from '../view/guide-tool.ts'
@@ -1574,7 +1583,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const importUserNetwork = useCallback(
     async (document: UserNetworkExport) => {
       const now = Date.now()
-      const resolved = await resolveRestored(recordsFromExport(document, now), { resolveYouTube: (url) => lookUpChannel(url) }, now)
+      const resolved = await resolveRestored(recordsFromExport(document, now), restoreDeps, now)
       const next = restoreUserNetwork(await loadStoredSources(), resolved.records)
       await saveStoredSources(next)
       if (starterState() === 'pending') setStarterState('installed')
@@ -1610,7 +1619,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
         installCurated()
         return saved ? 'SAVED · IN THIS BROWSER ONLY' : 'SAVED · AS TVN SHIPS IT'
       }
-      const next = applyChannelEdit(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, edit, Date.now())
+      const widened = { ...edit, sources: widenSources(edit.sources, sourceArchive) }
+      const next = applyChannelEdit(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, widened, Date.now())
       await saveStoredSources(next)
       installSources(next)
       return 'SAVED'
@@ -1623,9 +1633,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
     async (number: number, edit: ChannelEdit) => {
       const { scope, shipped } = scopeOf(number)
       const deps = {
-        resolveYouTube: (url: string) => lookUpChannel(url, fetch, { fresh: true }),
+        resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { fresh: true, ...options }),
         probeStream: (source: ChannelSource) => probeStream(source),
         uploaderOf: uploaderIdFor,
+        archiveOf: sourceArchive,
       }
       const now = Date.now()
       if (scope === 'curated') {
@@ -1639,6 +1650,43 @@ export function TvProvider({ children }: { children: ReactNode }) {
       await saveStoredSources(result.all)
       installSources(result.all)
       return { edit: result.edit, message: result.message }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [installSources],
+  )
+
+  const exportChannelFile = useCallback(
+    async (number: number, edit: ChannelEdit, as: 'json' | 'md') => {
+      if (scopeOf(number).scope !== 'user') throw new Error('Only your own channels can be exported')
+      // What the editor shows, unsaved changes included, on a copy: exporting never saves.
+      const shown = applyChannelEdit(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, Date.now())
+      const record = shown.find((item) => item.channelNumber === number)
+      if (!record) throw new Error('That channel is no longer in your User Network')
+      if (as === 'md') {
+        downloadText(channelFilename(record, 'md'), manifestText(userChannelManifest(record), record), 'text/markdown')
+        return 'CHANNEL MANIFEST EXPORTED'
+      }
+      downloadText(channelFilename(record), serialiseChannelFile(buildChannelFile(record, new Date(), uploaderIdFor)))
+      return 'CHANNEL EXPORTED'
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+
+  const importChannelFile = useCallback(
+    async (text: string, owner: string) => {
+      const read = readChannelFile(text)
+      if (!read.ok) throw new Error(read.errors[0] ?? 'That channel file could not be read')
+      const now = Date.now()
+      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      const added = addChannelFromFile(existing, read.value, owner, now)
+      const resolved = await resolveRestored([added.record], restoreDeps, now)
+      const record = resolved.records[0]
+      const next = added.sources.map((item) => (item === added.record ? record : item))
+      await saveStoredSources(next)
+      installSources(next)
+      const failed = resolved.failed > 0 ? ` · ${resolved.failed} ${resolved.failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : ''
+      return { message: `CHANNEL IMPORTED AS ${added.number}${failed}`, number: added.number }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [installSources],
@@ -1890,6 +1938,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
+      exportChannelFile,
+      importChannelFile,
+      sourceArchive,
       deleteUserChannel,
       restoreCuratedChannel,
       setSourceOverride,
@@ -1900,6 +1951,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
+      exportChannelFile,
+      importChannelFile,
       deleteUserChannel,
       restoreCuratedChannel,
       playSession,

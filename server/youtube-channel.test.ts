@@ -151,3 +151,27 @@ describe('a playlist as a channel source', () => {
     expect(channel.videos.map((video) => video.id)).toEqual(['cccccccccc1', 'cccccccccc3'])
   })
 })
+
+const WIDE_ARTIST = 'UCdaft00000000000000000a'
+
+describe('source modes', () => {
+  it('the server keeps 60 recent uploads, or every embeddable upload the page lists for ARCHIVE and ALL', async () => {
+    const lockups = Array.from({ length: 100 }, (_, index) => ({
+      lockupViewModel: {
+        contentId: `u${String(index).padStart(10, '0')}`,
+        contentType: 'LOCKUP_CONTENT_TYPE_VIDEO',
+        contentImage: { thumbnailViewModel: { overlays: [{ thumbnailBottomOverlayViewModel: { badges: [{ thumbnailBadgeViewModel: { text: '4:00' } }] } }] } },
+        metadata: { lockupMetadataViewModel: { title: { content: `Upload ${index}` } } },
+      },
+    }))
+    const page = `<html><script>var ytInitialData = ${JSON.stringify({ contents: lockups })};</script></html>`
+    const read = (async (input: string | URL | Request) =>
+      new Response(String(input).includes('/playlist?list=UU') ? page : '{}', { status: 200 })) as typeof fetch
+    expect((await resolveChannel(WIDE_ARTIST, read)).videos).toHaveLength(60)
+    expect((await resolveChannel(WIDE_ARTIST, read, { wide: true })).videos).toHaveLength(100)
+    const wide = await handleChannelRequest(new URL(`http://x/api/channel?url=${WIDE_ARTIST}&mode=all`), read)
+    expect((wide.body as { videos: unknown[] }).videos).toHaveLength(100)
+    const plain = await handleChannelRequest(new URL(`http://x/api/channel?url=${WIDE_ARTIST}&mode=bogus`), read)
+    expect((plain.body as { videos: unknown[] }).videos).toHaveLength(60)
+  })
+})

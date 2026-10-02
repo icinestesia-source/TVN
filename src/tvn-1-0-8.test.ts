@@ -358,7 +358,7 @@ describe('RESCAN genuinely refreshes', () => {
     expect(calls[1][1]).toEqual({ cache: 'no-store' })
     expect(read('netlify/functions/channel.ts')).toContain('channelCacheControl(url, status)')
     expect(read('server/youtube-channel.ts')).toContain("response.setHeader('cache-control', channelCacheControl(url, status))")
-    expect(provider).toContain('lookUpChannel(url, fetch, { fresh: true })')
+    expect(provider).toContain('lookUpChannel(url, fetch, { fresh: true, ...options })')
     expect(provider).toContain('uploaderOf: uploaderIdFor')
   })
 

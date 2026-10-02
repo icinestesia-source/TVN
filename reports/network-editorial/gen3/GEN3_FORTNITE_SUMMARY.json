@@ -1,0 +1,116 @@
+{
+ "tranche_hash": "c956cb12ca8c4ec2",
+ "status": "EDITORIALLY_REVIEWED_NOT_IMPORTED",
+ "imported": false,
+ "decisions": {
+  "APPROVE": 6,
+  "HOLD": 2,
+  "REJECT": 0
+ },
+ "approved_hours": 2.07,
+ "tvn_source_id": "src_sypherpk",
+ "dry_run": {
+  "programmes_added": 6,
+  "new_sources": {
+   "src_sypherpk": "SypherPK"
+  },
+  "invalid": [],
+  "incompatible": [],
+  "duplicates_prevented": [],
+  "airing_on_812": 6,
+  "not_airing": [],
+  "spill": {},
+  "before": {
+   "812": {
+    "programmes": 0,
+    "hours": 0
+   }
+  },
+  "after": {
+   "812": {
+    "programmes": 6,
+    "hours": 2.07
+   }
+  },
+  "tvn_catalogue_unchanged": true
+ },
+ "projection_812": {
+  "rule": {
+   "rule": "LONGFORM",
+   "min_hours": 3,
+   "min_programmes": 12,
+   "target_hours": 6,
+   "target_programmes": 20,
+   "note": "ordinary recorded long-form channel"
+  },
+  "current": {
+   "programmes": 0,
+   "hours": 0.0,
+   "to_viable": {
+    "programmes": 12,
+    "hours": 3.0
+   },
+   "to_target": {
+    "programmes": 20,
+    "hours": 6.0
+   },
+   "status": "BELOW_VIABLE"
+  },
+  "with_approved_sypherpk": {
+   "programmes": 6,
+   "hours": 2.07,
+   "to_viable": {
+    "programmes": 6,
+    "hours": 0.93
+   },
+   "to_target": {
+    "programmes": 14,
+    "hours": 3.93
+   },
+   "status": "BELOW_VIABLE"
+  },
+  "with_approved_sypherpk_and_legitimate_reuse": {
+   "programmes": 8,
+   "hours": 2.6,
+   "to_viable": {
+    "programmes": 4,
+    "hours": 0.4
+   },
+   "to_target": {
+    "programmes": 12,
+    "hours": 3.4
+   },
+   "status": "BELOW_VIABLE",
+   "note": "adds the Folding Ideas and PC Gamer programmes only if their bounded reuse were approved (not implemented)"
+  },
+  "top5gaming": "excluded: HOLD_SOURCE"
+ },
+ "top5gaming": {
+  "decision": "HOLD_SOURCE",
+  "candidates_preserved": 10,
+  "in_tranche": 0
+ },
+ "tvn_git_before": {
+  "head": "a77c72b",
+  "clean": true,
+  "porcelain": []
+ },
+ "tvn_git_after": {
+  "head": "a77c72b",
+  "clean": true,
+  "porcelain": []
+ },
+ "hashes_before": {
+  "gen1": "85863db560e064de90bde0a869c431f2fb5bdfd09f82894b722ed846c4fc0a24",
+  "gen2": "8db10ac1f80bb85dc2f591c1fdce7bc65110d8647e604106e6c7417f90b77082",
+  "gen3": "35a3e9079034033e9c9ac3227ee27f3e5d31e50586db0ddf63a03ef8e96e490b",
+  "registry": "576c4654cd5221301f6fb86792c89229937ca3c63d0fa5f45d749345b465f081"
+ },
+ "hashes_after": {
+  "gen1": "85863db560e064de90bde0a869c431f2fb5bdfd09f82894b722ed846c4fc0a24",
+  "gen2": "8db10ac1f80bb85dc2f591c1fdce7bc65110d8647e604106e6c7417f90b77082",
+  "gen3": "35a3e9079034033e9c9ac3227ee27f3e5d31e50586db0ddf63a03ef8e96e490b",
+  "registry": "576c4654cd5221301f6fb86792c89229937ca3c63d0fa5f45d749345b465f081"
+ },
+ "generations_unchanged": true
+}

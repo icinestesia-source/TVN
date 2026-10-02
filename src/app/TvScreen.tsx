@@ -178,6 +178,8 @@ function ScreenEditor() {
         onRescan={tv.rescanChannelEdit}
         onDelete={scope === 'curated' ? tv.restoreCuratedChannel : tv.deleteUserChannel}
         onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
+        onExport={tv.exportChannelFile}
+        archiveOf={tv.sourceArchive}
       />
     </div>
   )

@@ -33,7 +33,7 @@ import { historyActions, InfoActions, type HistoryActions } from './InfoActions.
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { GuideOptions } from './GuideOptions.tsx'
 import { AddChannelForm, GuideActions, NewUserTools, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
-import { filterUserId, freeUserName, userFilter } from '../data/user-network/users.ts'
+import { filterUserId, freeUserName, TVN_OWNER, userFilter } from '../data/user-network/users.ts'
 import { ChannelEditor } from './ChannelEditor.tsx'
 import { useEditPress } from './use-edit-press.ts'
 import { createLongPress, editorScope } from '../view/channel-edit.ts'
@@ -42,6 +42,7 @@ import { manualAiring } from '../player/manual.ts'
 import { parseChannelsExport } from '../services/channels-import.ts'
 import { channelLinksFrom } from '../services/user-network.ts'
 import { USER_NETWORK_FORMAT } from '../services/user-network-export.ts'
+import { CHANNEL_FILE_FORMAT } from '../services/channel-file.ts'
 import { USER_NUMBER_START } from '../data/network.ts'
 import { listChannels } from '../data/catalogue.ts'
 import {
@@ -197,6 +198,11 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const importList = async (file: File, listOwner = owner) => {
     const text = await file.text()
     if (text.includes(USER_NETWORK_FORMAT)) throw new Error('A User Network file: use OPTIONS then RESTORE to restore it')
+    if (text.includes(CHANNEL_FILE_FORMAT)) {
+      const imported = await tv.importChannelFile(text, listOwner ?? TVN_OWNER)
+      tv.focusGuide(imported.number, Date.now())
+      return imported.message
+    }
     const links = channelLinksFrom(text)
     if (!links) {
       const parsed = parseChannelsExport(text)
@@ -648,6 +654,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onRescan={tv.rescanChannelEdit}
           onDelete={editScope === 'curated' ? tv.restoreCuratedChannel : tv.deleteUserChannel}
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
+          onExport={tv.exportChannelFile}
+          archiveOf={tv.sourceArchive}
         />
       ) : tool === 'media' ? (
         <SessionImportTools onImport={tv.importSession} />

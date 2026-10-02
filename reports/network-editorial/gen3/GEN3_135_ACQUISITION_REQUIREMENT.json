@@ -1,0 +1,49 @@
+{
+ "channel": 135,
+ "floor_changed": false,
+ "harvested": false,
+ "held": {
+  "programmes": 45,
+  "seconds": 5596,
+  "hours": 1.55,
+  "mean_seconds": 124.4,
+  "median_seconds": 133,
+  "all_wikidata_animation": true,
+  "source": [
+   "src_rt_classic_trailers"
+  ]
+ },
+ "catalogue_animation_tagged": 55,
+ "tvn_genre_floor": {
+  "seconds": 10800,
+  "remaining": {
+   "seconds": 5204,
+   "hours": 1.45,
+   "trailers_at_held_mean": 42
+  }
+ },
+ "harvester_trailer_viable": {
+  "hours": 4,
+  "programmes": 120,
+  "remaining": {
+   "seconds": 8804,
+   "hours": 2.45,
+   "trailers_at_held_mean": 75
+  }
+ },
+ "harvester_trailer_target": {
+  "hours": 8,
+  "programmes": 250,
+  "remaining": {
+   "seconds": 23204,
+   "hours": 6.45,
+   "trailers_at_held_mean": 205
+  }
+ },
+ "acquisition_requirement": [
+  "distinct animated-feature trailers from src_rt_classic_trailers (the only source TVN maps to trailer-genre channels); a trailer from any other source would not reach 135 without a TVN change",
+  "each matched to a Wikidata film whose genres include Animation (scripts/trailer_genres.py), on exact title and original year",
+  "one trailer per film; teasers and re-cuts of a film already held do not add depth",
+  "the held 45 are released together with the new depth, once the pool reaches the 3 h floor in TVN code, never by routing around it"
+ ]
+}

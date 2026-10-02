@@ -1,5 +1,6 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
-import { cleanName, keptOrder } from './channel-editor.ts'
+import { cleanEditorial, cleanFilter, rescanned, SOURCE_MODES, sourceModeOf, type SourceMode } from './channel-curation.ts'
+import { cleanName, keptOrder, widenSources, withPlaylistVideos } from './channel-editor.ts'
 import { canonicalYouTubeUrl, inventoryOf, type ChannelSource } from './channel-sources.ts'
 import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, type ImportedVideo, type StoredSource } from './channels-import.ts'
 import { ADDED_PREFIX } from './user-network.ts'
@@ -32,8 +33,17 @@ export function readUserNetworkFile(text: string): ReadResult {
   return { ok: true, value: checked.value, channels: checked.value.channels.length, empty, users: checked.value.users?.length ?? 0 }
 }
 
-const cleanVideos = (videos: readonly { id: string; title: string; durationSec: number }[] = []): ImportedVideo[] =>
-  videos.filter((video) => video.id.trim() && video.durationSec >= 0).map(({ id, title, durationSec }) => ({ id, title, durationSec }))
+const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
+  videos
+    .filter((video) => video.id.trim() && video.durationSec >= 0)
+    .map(({ id, title, durationSec, published, year, lists }) => ({
+      id,
+      title,
+      durationSec,
+      ...(typeof published === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(published) ? { published } : {}),
+      ...(typeof year === 'number' && Number.isInteger(year) ? { year } : {}),
+      ...(Array.isArray(lists) && lists.length ? { lists: lists.filter((list) => typeof list === 'string') } : {}),
+    }))
 
 /** A YouTube channel or playlist id from its canonical address, when the file does not name it. */
 function youTubeRef(url: string): string | undefined {
@@ -45,8 +55,11 @@ function youTubeRef(url: string): string | undefined {
   }
 }
 
-function channelSource(source: ExportSource, index: number): ChannelSource {
-  const base = { id: `s${index + 1}`, label: source.label, enabled: source.enabled, ...(source.info ? { info: structuredClone(source.info) } : {}) }
+export function channelSource(source: ExportSource, index: number): ChannelSource {
+  const filter = cleanFilter(source.filter)
+  const mode = source.mode && SOURCE_MODES.includes(source.mode) && source.mode !== 'recent' ? source.mode : undefined
+  const curation = source.sourceType === 'youtube-channel' || source.sourceType === 'youtube-playlist' || source.sourceType === 'collection' ? { ...(filter ? { filter } : {}), ...(mode ? { mode } : {}) } : {}
+  const base = { id: `s${index + 1}`, label: source.label, enabled: source.enabled, ...(source.info ? { info: structuredClone(source.info) } : {}), ...curation }
   if (source.sourceType === 'youtube-channel' || source.sourceType === 'youtube-playlist') {
     const ref = source.providerId || youTubeRef(source.url)
     const youtube = source.sourceType === 'youtube-playlist' ? ('playlist' as const) : ('channel' as const)
@@ -83,9 +96,11 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
     .filter((channel) => channel.number >= USER_NUMBER_START && channel.number < USER_NUMBER_LIMIT)
     .map((channel): StoredSource => {
       const owner = channel.owner && channel.owner !== TVN_OWNER ? { owner: channel.owner } : {}
+      const editorial = cleanEditorial(channel.editorial)
+      const notes = editorial ? { editorial } : {}
       if (channel.state === 'empty') {
         taken.add(`slot:${channel.number}`)
-        return { ...emptySlotRecord(channel.number, now), name: cleanName(channel.name, EMPTY_SLOT_NAME), ...owner }
+        return { ...emptySlotRecord(channel.number, now), name: cleanName(channel.name, EMPTY_SLOT_NAME), ...owner, ...notes }
       }
       const sources = channel.sources.map(channelSource)
       const id = recordId(channel, sources, taken, seen)
@@ -100,8 +115,10 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
         updatedAt: now,
         ...(channel.runningOrder?.length ? { runningOrder: [...channel.runningOrder] } : {}),
         ...owner,
+        ...notes,
       }
-      const plain = !channel.edited && sources.length === 1 && ((first.kind === 'youtube' && Boolean(first.ref)) || first.kind === 'collection')
+      const curated = Boolean(first?.filter || first?.mode)
+      const plain = !channel.edited && !curated && sources.length === 1 && ((first.kind === 'youtube' && Boolean(first.ref)) || first.kind === 'collection')
       if (plain && first.kind === 'youtube') return { ...record, sourceType: first.youtube === 'playlist' ? 'youtube-playlist' : 'youtube-channel' }
       if (plain) return { ...record, ...(channel.listName ? { listName: channel.listName } : {}) }
       return { ...record, channelSources: sources, ...(channel.listName ? { listName: channel.listName } : {}) }
@@ -118,9 +135,15 @@ export function usersFromExport(doc: UserNetworkExport): NetworkUser[] {
 }
 
 export interface RestoreDeps {
-  /** TVN's keyless lookup of a YouTube channel or playlist. */
-  resolveYouTube(url: string): Promise<{ channelId: string; title: string; videos: readonly ImportedVideo[] }>
+  /** TVN's keyless lookup of a YouTube channel or playlist; ARCHIVE and ALL ask it for everything the page lists. */
+  resolveYouTube(url: string, options?: { mode?: SourceMode }): Promise<{ channelId: string; title: string; videos: readonly ImportedVideo[] }>
+  /** TVN's shipped back catalogue for a source, which ARCHIVE and ALL add to it. */
+  archiveOf?(source: ChannelSource): readonly ImportedVideo[]
 }
+
+/** What one source asks the lookup for: its address, and how far back it reaches. */
+const lookupKey = (source: ChannelSource) => `${canonicalYouTubeUrl(source)}|${sourceModeOf(source)}`
+const playlistKey = (id: string) => `playlist:${id}`
 
 /** The YouTube sources a restored record must read again: its own when plain, its enabled ones when edited. */
 function youTubeSourcesOf(record: StoredSource): ChannelSource[] {
@@ -142,28 +165,38 @@ export async function resolveRestored(
   now: number,
   parallel = 4,
 ): Promise<{ records: StoredSource[]; failed: number }> {
-  const jobs = records.flatMap((record, index) => youTubeSourcesOf(record).map((source) => ({ index, source })))
+  // One lookup per address and mode, and one per playlist a filter names, however many channels share them.
+  const lookups = new Map<string, { url: string; mode: SourceMode }>()
+  for (const record of records) {
+    for (const source of youTubeSourcesOf(record)) lookups.set(lookupKey(source), { url: canonicalYouTubeUrl(source), mode: sourceModeOf(source) })
+    for (const source of record.channelSources ?? []) {
+      if (!source.enabled) continue
+      for (const id of source.filter?.include?.playlists ?? []) lookups.set(playlistKey(id), { url: `https://www.youtube.com/playlist?list=${id}`, mode: 'all' })
+    }
+  }
+  const jobs = [...lookups]
   const found = new Map<string, readonly ImportedVideo[] | null>()
   let next = 0
   const worker = async () => {
     while (next < jobs.length) {
-      const { source } = jobs[next++]
-      const url = canonicalYouTubeUrl(source)
-      if (found.has(url)) continue
-      found.set(url, null)
+      const [key, { url, mode }] = jobs[next++]
       try {
-        found.set(url, (await deps.resolveYouTube(url)).videos)
+        const read = await (mode === 'recent' ? deps.resolveYouTube(url) : deps.resolveYouTube(url, { mode }))
+        found.set(key, read.videos)
       } catch {
-        found.set(url, null)
+        found.set(key, null)
       }
     }
   }
   await Promise.all(Array.from({ length: Math.min(parallel, jobs.length) }, worker))
   let failed = 0
+  const listed = (source: ChannelSource): ImportedVideo[] =>
+    (source.filter?.include?.playlists ?? []).flatMap((id) => cleanVideos(found.get(playlistKey(id)) ?? []).map((video) => ({ ...video, lists: [id] })))
   const out = records.map((record) => {
     const wanted = youTubeSourcesOf(record)
-    if (wanted.length === 0) return record
-    const read = (source: ChannelSource) => found.get(canonicalYouTubeUrl(source)) ?? null
+    const curated = record.channelSources?.some((source) => source.filter?.include?.playlists?.length || sourceModeOf(source) !== 'recent') ?? false
+    if (wanted.length === 0 && !curated) return record
+    const read = (source: ChannelSource) => found.get(lookupKey(source)) ?? null
     failed += wanted.filter((source) => read(source) === null).length
     const order = (sources: readonly ChannelSource[]) => keptOrder(sources, record.runningOrder) ?? record.runningOrder
     if (!record.channelSources) {
@@ -172,13 +205,19 @@ export async function resolveRestored(
       const runningOrder = videos.length > 0 ? order(sources) : record.runningOrder
       return { ...record, videos, ...(runningOrder?.length ? { runningOrder } : {}) }
     }
-    const channelSources = record.channelSources.map((source): ChannelSource => {
-      if (source.kind !== 'youtube' || !source.enabled) return source
+    const readSources = record.channelSources.map((source): ChannelSource => {
+      if (!source.enabled || (source.kind !== 'youtube' && source.kind !== 'collection')) return source
+      if (source.kind === 'collection') return { ...source, videos: withPlaylistVideos(source.videos ?? [], listed(source)) }
       const videos = read(source)
       return videos === null
         ? { ...source, status: { state: 'failed', playable: 0, checkedAt: now } }
-        : { ...source, videos: cleanVideos(videos), status: { state: 'ready', playable: videos.length, checkedAt: now } }
+        : {
+            ...source,
+            videos: withPlaylistVideos(rescanned(cleanVideos(videos), [], sourceModeOf(source)), listed(source)),
+            status: { state: 'ready', playable: videos.length, checkedAt: now },
+          }
     })
+    const channelSources = widenSources(readSources, deps.archiveOf)
     const videos = inventoryOf(channelSources)
     const runningOrder = videos.length > 0 ? order(channelSources) : record.runningOrder
     const { runningOrder: _old, ...rest } = record

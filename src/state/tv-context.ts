@@ -146,6 +146,15 @@ export interface TvContextValue {
   saveChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<string>
   /** Re-resolve this channel's enabled sources and rebuild its inventory and schedule; no other channel is touched. */
   rescanChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
+  /**
+   * EXPORT CHANNEL: download one user channel, as the editor shows it, as a tvn-channel-v1 file (`json`) or its
+   * readable manifest (`md`). Reads only: nothing is saved.
+   */
+  exportChannelFile: (channelNumber: number, edit: ChannelEdit, as: 'json' | 'md') => Promise<string>
+  /** Add a validated tvn-channel-v1 file as a new channel for `owner`, on the lowest free user number. */
+  importChannelFile: (text: string, owner: string) => Promise<{ message: string; number: number }>
+  /** TVN's shipped back catalogue for a channel source, which ARCHIVE and ALL add to it; for the editor's preview. */
+  sourceArchive: (source: import('../services/channel-sources.ts').ChannelSource) => readonly import('../services/channels-import.ts').ImportedVideo[]
   /** Clear one user channel (after the editor's confirmation); its number stays as an empty slot. */
   deleteUserChannel: (channelNumber: number) => Promise<string>
   /** Drops the viewer's change to a curated channel, so it is exactly as TVN ships it again. */

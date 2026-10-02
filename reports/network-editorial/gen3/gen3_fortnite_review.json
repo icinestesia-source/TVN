@@ -1,0 +1,26 @@
+{
+  "format": "tvn-gen3-fortnite-review-v1",
+  "pack_hash": "dd5acdb3b691ca00",
+  "reviewed_against": "TVN 1.0.10 a77c72b",
+  "channel": 812,
+  "source_id": "youtube:UC_q5WZtFp36adwqhKpZzxwQ",
+  "review_basis": "the user approved SypherPK as a source for 812; each upload is still judged on its own: genuinely Fortnite, a complete programme, duration, not a Short, not a passing reference, not unrelated gaming, not a duplicate, not repetitive clickbait, programme type, provenance and hard rules",
+  "decisions": [
+    {"provider_media_id": "IN_50beQ8CM", "decision": "APPROVE", "editorial_programme_type": "GAMEPLAY_COMMENTARY",
+     "reason": "Complete 14-minute tournament run on controller; wholly Fortnite competitive gameplay with the creator's commentary."},
+    {"provider_media_id": "MRyNqJF0myk", "decision": "APPROVE", "editorial_programme_type": "GAMEPLAY_COMMENTARY",
+     "reason": "Complete 18-minute challenge playing each Fortnite chapter's loadout against the others; Fortnite throughout and less tied to one season than most uploads."},
+    {"provider_media_id": "UcxoHc_uPL8", "decision": "APPROVE", "editorial_programme_type": "GAMEPLAY_COMMENTARY",
+     "reason": "Complete 20-minute match story; Fortnite gameplay throughout. Superlative title, but it describes the match rather than baiting a rumour."},
+    {"provider_media_id": "XsUbvKwzfns", "decision": "APPROVE", "editorial_programme_type": "GAMEPLAY_COMMENTARY",
+     "reason": "Complete 27-minute gameplay programme on a season's mechanics; Fortnite throughout. Season-specific, so a later review should rotate it out when Season 4 is long past."},
+    {"provider_media_id": "cpChQevfTAA", "decision": "APPROVE", "editorial_programme_type": "GAMEPLAY_COMMENTARY",
+     "reason": "Complete 17-minute comeback match; Fortnite gameplay throughout. Second \"in Fortnite History\" superlative from the source, accepted because the content differs; a third would be held as repetition."},
+    {"provider_media_id": "nv6xQHvv5-4", "decision": "APPROVE", "editorial_programme_type": "GAMEPLAY_COMMENTARY",
+     "reason": "Complete 27-minute creator challenge built on Fortnite's Sprite feature with other Fortnite creators; Fortnite throughout. The only Sprite programme on 812 (the Top5Gaming Sprite items stay with their held source)."},
+    {"provider_media_id": "jcXgjJwJiIw", "decision": "HOLD", "reason_code": "EPHEMERAL_COMMENTARY", "editorial_programme_type": "NEWS_COMMENTARY",
+     "reason": "10-minute opinion on where the game is heading, dated August 2026; commentary that ages within a season. Hold rather than reject: suitable for a short-lived recent slot if 812 ever has one."},
+    {"provider_media_id": "APhZXObAdio", "decision": "HOLD", "reason_code": "LOW_EDITORIAL_CONFIDENCE", "editorial_programme_type": "GAMEPLAY_COMMENTARY",
+     "reason": "\"Fortnite Messed Up...\": the title does not say what the programme is, and no description is available; it may be a complaint about an update. Needs viewing before a decision."}
+  ]
+}

@@ -1,0 +1,590 @@
+{
+ "fit_ts_lines": {
+  "OWNED_SOURCES": 86,
+  "DEDICATED": 137,
+  "CURATED_REUSE": 778,
+  "HARVESTER_REUSE": 890,
+  "PROGRAMME_REUSE": 906,
+  "programmeSuitsChannel": 1234,
+  "reuse_check": 1246,
+  "dedicated_check": 1248
+ },
+ "blocked": 46,
+ "classification_counts": {
+  "LEGITIMATE_BOUNDED_REUSE": 37,
+  "QUESTIONABLE_REUSE": 7,
+  "WRONG_DESTINATION": 1,
+  "DUPLICATE_OR_REDUNDANT": 0,
+  "NEEDS_EDITORIAL_REVIEW": 1
+ },
+ "harvester_reuse_entries_needed": {
+  "153": [
+   "src_filmrise_movies",
+   "src_popcornflix"
+  ],
+  "171": [
+   "src_film_detective",
+   "src_travel_film_archive"
+  ],
+  "745": [
+   "src_92ny_books",
+   "src_berkman_klein",
+   "src_gresham_medicine",
+   "src_harvard_law_international"
+  ],
+  "812": [
+   "src_folding_ideas",
+   "src_pc_gamer"
+  ],
+  "916": [
+   "src_harvard_law_international"
+  ]
+ },
+ "existing_reuse_channels": {
+  "src_92ny_books": [
+   800
+  ],
+  "src_atlas_obscura": [],
+  "src_berkman_klein": [
+   290,
+   469,
+   916
+  ],
+  "src_film_detective": [
+   109,
+   110,
+   141,
+   145,
+   188,
+   189,
+   190
+  ],
+  "src_filmrise_movies": [
+   37,
+   118,
+   143,
+   152,
+   218
+  ],
+  "src_folding_ideas": [],
+  "src_gresham_medicine": [
+   90,
+   471,
+   695
+  ],
+  "src_harvard_law_international": [
+   450
+  ],
+  "src_pc_gamer": [],
+  "src_popcornflix": [
+   37,
+   118,
+   143,
+   149,
+   152,
+   157
+  ],
+  "src_travel_film_archive": [
+   89,
+   418,
+   440,
+   449
+  ]
+ },
+ "dedicated_homes": {
+  "src_92ny_books": [
+   840
+  ],
+  "src_atlas_obscura": [
+   96
+  ],
+  "src_berkman_klein": [
+   690
+  ],
+  "src_film_detective": [
+   103
+  ],
+  "src_filmrise_movies": [
+   101
+  ],
+  "src_folding_ideas": [
+   690
+  ],
+  "src_gresham_medicine": [
+   746
+  ],
+  "src_harvard_law_international": [
+   457
+  ],
+  "src_pc_gamer": [
+   244
+  ],
+  "src_popcornflix": [
+   102
+  ],
+  "src_travel_film_archive": [
+   779
+  ]
+ },
+ "source_spread": {
+  "src_92ny_books": {
+   "before": [
+    800,
+    840
+   ],
+   "all_46_allowed": [
+    745,
+    800,
+    840
+   ],
+   "legitimate_only": [
+    745,
+    800,
+    840
+   ]
+  },
+  "src_atlas_obscura": {
+   "before": [
+    96
+   ],
+   "all_46_allowed": [
+    96,
+    818
+   ],
+   "legitimate_only": [
+    96
+   ]
+  },
+  "src_berkman_klein": {
+   "before": [
+    290,
+    469,
+    690,
+    916
+   ],
+   "all_46_allowed": [
+    290,
+    469,
+    690,
+    745,
+    916
+   ],
+   "legitimate_only": [
+    290,
+    469,
+    690,
+    745,
+    916
+   ]
+  },
+  "src_film_detective": {
+   "before": [
+    103,
+    109,
+    110,
+    111,
+    141,
+    145,
+    171,
+    172,
+    173,
+    175,
+    176,
+    177,
+    188,
+    189,
+    190
+   ],
+   "all_46_allowed": [
+    103,
+    109,
+    110,
+    111,
+    141,
+    145,
+    171,
+    172,
+    173,
+    175,
+    176,
+    177,
+    188,
+    189,
+    190
+   ],
+   "legitimate_only": [
+    103,
+    109,
+    110,
+    111,
+    141,
+    145,
+    171,
+    172,
+    173,
+    175,
+    176,
+    177,
+    188,
+    189,
+    190
+   ]
+  },
+  "src_filmrise_movies": {
+   "before": [
+    37,
+    101,
+    118,
+    143,
+    152,
+    218
+   ],
+   "all_46_allowed": [
+    37,
+    101,
+    118,
+    143,
+    152,
+    153,
+    218
+   ],
+   "legitimate_only": [
+    37,
+    101,
+    118,
+    143,
+    152,
+    153,
+    218
+   ]
+  },
+  "src_folding_ideas": {
+   "before": [
+    690
+   ],
+   "all_46_allowed": [
+    690,
+    812
+   ],
+   "legitimate_only": [
+    690,
+    812
+   ]
+  },
+  "src_gresham_medicine": {
+   "before": [
+    90,
+    471,
+    695,
+    746
+   ],
+   "all_46_allowed": [
+    90,
+    471,
+    695,
+    745,
+    746,
+    793
+   ],
+   "legitimate_only": [
+    90,
+    471,
+    695,
+    745,
+    746
+   ]
+  },
+  "src_harvard_law_international": {
+   "before": [
+    450,
+    457
+   ],
+   "all_46_allowed": [
+    450,
+    457,
+    745,
+    916
+   ],
+   "legitimate_only": [
+    450,
+    457,
+    745,
+    916
+   ]
+  },
+  "src_pc_gamer": {
+   "before": [
+    244
+   ],
+   "all_46_allowed": [
+    244,
+    812
+   ],
+   "legitimate_only": [
+    244,
+    812
+   ]
+  },
+  "src_popcornflix": {
+   "before": [
+    34,
+    37,
+    102,
+    118,
+    143,
+    149,
+    150,
+    151,
+    152,
+    153,
+    155,
+    157,
+    177,
+    178,
+    179,
+    180
+   ],
+   "all_46_allowed": [
+    34,
+    37,
+    102,
+    118,
+    143,
+    149,
+    150,
+    151,
+    152,
+    153,
+    155,
+    157,
+    177,
+    178,
+    179,
+    180
+   ],
+   "legitimate_only": [
+    34,
+    37,
+    102,
+    118,
+    143,
+    149,
+    150,
+    151,
+    152,
+    153,
+    155,
+    157,
+    177,
+    178,
+    179,
+    180
+   ]
+  },
+  "src_travel_film_archive": {
+   "before": [
+    89,
+    418,
+    440,
+    449,
+    779
+   ],
+   "all_46_allowed": [
+    89,
+    171,
+    418,
+    440,
+    449,
+    779
+   ],
+   "legitimate_only": [
+    89,
+    171,
+    418,
+    440,
+    449,
+    779
+   ]
+  }
+ },
+ "legitimate_projection": {
+  "useful_programmes": 37,
+  "hours": 43.94,
+  "channels": {
+   "153": {
+    "name": "Comedy Cinema",
+    "rule": "FILM",
+    "before": {
+     "programmes": 22,
+     "hours": 32.5
+    },
+    "after": {
+     "programmes": 39,
+     "hours": 58.18
+    },
+    "standing_before": "TARGET",
+    "standing_after": "TARGET"
+   },
+   "171": {
+    "name": "Cinema 1920s",
+    "rule": "FILM",
+    "before": {
+     "programmes": 20,
+     "hours": 28.47
+    },
+    "after": {
+     "programmes": 26,
+     "hours": 34.69
+    },
+    "standing_before": "TARGET",
+    "standing_after": "TARGET"
+   },
+   "745": {
+    "name": "Public Health",
+    "rule": "SHORT_FORM",
+    "before": {
+     "programmes": 38,
+     "hours": 12.42
+    },
+    "after": {
+     "programmes": 49,
+     "hours": 22.44
+    },
+    "standing_before": "BELOW_VIABLE",
+    "standing_after": "VIABLE"
+   },
+   "812": {
+    "name": "Fortnite",
+    "rule": "LONGFORM",
+    "before": {
+     "programmes": 0,
+     "hours": 0
+    },
+    "after": {
+     "programmes": 2,
+     "hours": 0.53
+    },
+    "standing_before": "BELOW_VIABLE",
+    "standing_after": "BELOW_VIABLE"
+   },
+   "916": {
+    "name": "Politics & Policy",
+    "rule": "LONGFORM",
+    "before": {
+     "programmes": 12,
+     "hours": 6.4
+    },
+    "after": {
+     "programmes": 13,
+     "hours": 7.88
+    },
+    "standing_before": "VIABLE",
+    "standing_after": "VIABLE"
+   }
+  },
+  "removed_from_any_channel": {}
+ },
+ "all_46_projection": {
+  "changed_channels": {
+   "153": {
+    "before": {
+     "programmes": 22,
+     "hours": 32.5
+    },
+    "routes_only": {
+     "programmes": 22,
+     "hours": 32.5
+    },
+    "after": {
+     "programmes": 44,
+     "hours": 66.07
+    }
+   },
+   "171": {
+    "before": {
+     "programmes": 20,
+     "hours": 28.47
+    },
+    "routes_only": {
+     "programmes": 20,
+     "hours": 28.47
+    },
+    "after": {
+     "programmes": 27,
+     "hours": 36.3
+    }
+   },
+   "745": {
+    "before": {
+     "programmes": 38,
+     "hours": 12.42
+    },
+    "routes_only": {
+     "programmes": 38,
+     "hours": 12.42
+    },
+    "after": {
+     "programmes": 49,
+     "hours": 22.44
+    }
+   },
+   "793": {
+    "before": {
+     "programmes": 85,
+     "hours": 35.7
+    },
+    "routes_only": {
+     "programmes": 85,
+     "hours": 35.7
+    },
+    "after": {
+     "programmes": 87,
+     "hours": 37.62
+    }
+   },
+   "812": {
+    "before": {
+     "programmes": 0,
+     "hours": 0
+    },
+    "routes_only": {
+     "programmes": 0,
+     "hours": 0
+    },
+    "after": {
+     "programmes": 2,
+     "hours": 0.53
+    }
+   },
+   "818": {
+    "before": {
+     "programmes": 30,
+     "hours": 5.43
+    },
+    "routes_only": {
+     "programmes": 30,
+     "hours": 5.43
+    },
+    "after": {
+     "programmes": 31,
+     "hours": 5.49
+    }
+   },
+   "916": {
+    "before": {
+     "programmes": 12,
+     "hours": 6.4
+    },
+    "routes_only": {
+     "programmes": 12,
+     "hours": 6.4
+    },
+    "after": {
+     "programmes": 13,
+     "hours": 7.88
+    }
+   }
+  },
+  "removed_from_any_channel": {}
+ }
+}

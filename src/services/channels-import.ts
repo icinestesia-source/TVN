@@ -1,6 +1,7 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme, ProgrammeType } from '../types/programme.ts'
+import { reachesArchive, type ChannelEditorial } from './channel-curation.ts'
 import { inOrder, inventoryOf, liveStreamOf, refreshOrigin, type ChannelSource } from './channel-sources.ts'
 import type { ArchiveLookup } from './user-archive.ts'
 import { planArchive, runningOrder } from './user-depth.ts'
@@ -10,6 +11,12 @@ export interface ImportedVideo {
   title: string
   durationSec: number
   watched?: boolean
+  /** Upload date (YYYY-MM-DD), when the source listed one. */
+  published?: string
+  /** The year the programme belongs to, when stated. */
+  year?: number
+  /** YouTube playlists this programme was found in, for a filter's playlist rule. */
+  lists?: string[]
 }
 
 export interface ImportedSource {
@@ -48,6 +55,8 @@ export interface StoredSource {
   emptySlot?: true
   /** The named user whose tab lists the channel (src/data/user-network/users.ts); none means TVN's. */
   owner?: string
+  /** The viewer's editorial notes (src/services/channel-curation.ts). Metadata only: nothing here changes what plays. */
+  editorial?: ChannelEditorial
 }
 
 export const EMPTY_SLOT_PREFIX = 'slot:'
@@ -451,7 +460,9 @@ export function channelsFromSources(
       source.channelSources.some((item) => item.enabled && (item.kind === 'collection' || (item.kind === 'youtube' && `yt:${item.ref}` === source.id)))
     const ownPlayable = playable(pool)
     const ordered = (source.runningOrder?.length ?? 0) > 0
-    const archive = archived && !ordered ? planArchive(ownPlayable, playable(options.archive?.({ id: source.id, name: source.listName ?? source.name })?.videos ?? [])) : []
+    // ARCHIVE and ALL hold their back catalogue as eligible programmes already, spread across the span: no recency weighting.
+    const wide = source.channelSources ? reachesArchive(source.channelSources) : false
+    const archive = archived && !ordered && !wide ? planArchive(ownPlayable, playable(options.archive?.({ id: source.id, name: source.listName ?? source.name })?.videos ?? [])) : []
     // A collection none of whose videos can play embedded still lists them when the uploader has nothing
     // else playable, so the channel explains the refusal instead of vanishing.
     const own = ownPlayable.length > 0 || archive.length === 0 ? (ownPlayable.length > 0 ? ownPlayable : pool) : []
@@ -459,7 +470,7 @@ export function channelsFromSources(
     const description = [
       `Imported collection. ${own.length} programmes`,
       archive.length > 0 ? ` plus ${archive.length} earlier uploads from the same channel` : '',
-      ordered ? ' in your running order on a clock schedule.' : ' on a clock schedule.',
+      ordered ? ' in your running order on a clock schedule.' : wide ? ' from across the archive on a clock schedule.' : ' on a clock schedule.',
       refusedCount > 0 ? ` ${refusedCount} of its videos cannot play outside YouTube.` : '',
     ].join('')
     channels.push({ ...base, description })
@@ -469,7 +480,9 @@ export function channelsFromSources(
     // The viewer's own order plays exactly as set, on a loop; otherwise TVN weaves in repeats and earlier uploads.
     const order = ordered
       ? inOrder(own, source.runningOrder).map(entry)
-      : runningOrder(
+      : wide
+        ? own.map(entry)
+        : runningOrder(
           own.map(entry),
           archive.map((video) => ({ key: video.id, item: { video, earlier: true, programmeId: `${id}-a-${video.id}` }, repeat: false })),
         )
@@ -552,7 +565,7 @@ function holdingProgramme(channelId: string, name: string): Programme {
   }
 }
 
-function programmeTypeFor(durationSec: number): ProgrammeType {
+export function programmeTypeFor(durationSec: number): ProgrammeType {
   if (durationSec >= 75 * 60) return 'film'
   if (durationSec < 8 * 60) return 'short'
   return 'episode'

@@ -43,6 +43,8 @@ const VIDEO_ID = /^[0-9A-Za-z_-]{11}$/
 const PLAYLIST_ID = /^(?:PL|OL|UU|FL)[0-9A-Za-z_-]{10,64}$/
 const MIN_SECONDS = 61
 const KEEP = 60
+/** ARCHIVE and ALL keep every embeddable video the page lists (one page; no continuation is followed). */
+const WIDE_KEEP = 200
 const CONCURRENCY = 8
 const HEADERS = {
   'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36',
@@ -198,7 +200,8 @@ async function embeddable(id: string, read: typeof fetch): Promise<boolean> {
   }
 }
 
-export async function resolveChannel(raw: string, read: typeof fetch = fetch): Promise<ResolvedChannel> {
+export async function resolveChannel(raw: string, read: typeof fetch = fetch, options: { wide?: boolean } = {}): Promise<ResolvedChannel> {
+  const keep = options.wide ? WIDE_KEEP : KEEP
   const input = parseChannelInput(raw)
   if (!input) throw new ChannelError(400, 'That is not a YouTube channel or video link')
   if (input.kind === 'playlist') {
@@ -206,7 +209,7 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch): P
     if (!data) throw new ChannelError(404, 'YouTube has no playlist at that link')
     const listed = videosFromPlaylistPage(data).filter((video) => video.durationSec >= MIN_SECONDS)
     if (listed.length === 0) throw new ChannelError(404, 'That playlist has no videos TVN can schedule')
-    const kept = await embeddableVideos(listed, read)
+    const kept = await embeddableVideos(listed, read, keep)
     if (kept.videos.length === 0) throw new ChannelError(422, 'That playlist does not allow its videos to play outside YouTube')
     return { channelId: input.id, sourceType: 'youtube-playlist', title: playlistTitleFrom(data) ?? input.id, videos: kept.videos, scanned: listed.length, refused: kept.refused }
   }
@@ -226,32 +229,33 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch): P
   const listed = videosFromPlaylistPage(data).filter((video) => video.durationSec >= MIN_SECONDS)
   if (listed.length === 0) throw new ChannelError(404, 'That channel has no videos TVN can schedule')
 
-  const { videos, refused } = await embeddableVideos(listed, read)
+  const { videos, refused } = await embeddableVideos(listed, read, keep)
   if (videos.length === 0) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
   return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos, scanned: listed.length, refused }
 }
 
-/** The first KEEP listed videos whose publishers allow embedded playback. */
-async function embeddableVideos(listed: readonly ResolvedVideo[], read: typeof fetch): Promise<{ videos: ResolvedVideo[]; refused: number }> {
+/** The first `keep` listed videos whose publishers allow embedded playback. */
+async function embeddableVideos(listed: readonly ResolvedVideo[], read: typeof fetch, keep = KEEP): Promise<{ videos: ResolvedVideo[]; refused: number }> {
   const verdicts = new Array<boolean | undefined>(listed.length)
   let next = 0
   const kept = () => verdicts.filter(Boolean).length
   await Promise.all(
     Array.from({ length: Math.min(CONCURRENCY, listed.length) }, async () => {
-      while (next < listed.length && kept() < KEEP) {
+      while (next < listed.length && kept() < keep) {
         const index = next++
         verdicts[index] = await embeddable(listed[index].id, read)
       }
     }),
   )
-  return { videos: listed.filter((_, index) => verdicts[index]).slice(0, KEEP), refused: verdicts.filter((verdict) => verdict === false).length }
+  return { videos: listed.filter((_, index) => verdicts[index]).slice(0, keep), refused: verdicts.filter((verdict) => verdict === false).length }
 }
 
 export async function handleChannelRequest(url: URL, read: typeof fetch = fetch): Promise<{ status: number; body: unknown }> {
   const link = url.searchParams.get('url') ?? ''
   if (!link.trim() || link.length > 500) return { status: 400, body: { error: 'Paste a YouTube channel or video link' } }
   try {
-    return { status: 200, body: await resolveChannel(link, read) }
+    const mode = url.searchParams.get('mode')
+    return { status: 200, body: await resolveChannel(link, read, { wide: mode === 'archive' || mode === 'all' }) }
   } catch (error) {
     if (error instanceof ChannelError) return { status: error.status, body: { error: error.message } }
     return { status: 500, body: { error: 'The channel could not be read' } }

@@ -3,6 +3,8 @@ import { watchUrl } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
 import type { ChannelEdit } from '../services/channel-editor.ts'
+import { reachesArchive } from '../services/channel-curation.ts'
+import type { ImportedVideo } from '../services/channels-import.ts'
 import {
   ADDABLE_KINDS,
   inOrder,
@@ -19,6 +21,7 @@ import type { Channel } from '../types/channel.ts'
 import { formatDuration, padChannel } from '../utils/time.ts'
 import { useClock } from '../utils/use-clock.ts'
 import type { EditorScope } from '../view/channel-edit.ts'
+import { EditorialPanel, SourceFilterPanel } from './ChannelCuration.tsx'
 import { SourceDetails } from './SourceDetails.tsx'
 
 /** Enter and Space press these controls; they must not also reach the Guide. */
@@ -103,6 +106,8 @@ export function ChannelEditor({
   onRescan,
   onDelete,
   onClose,
+  onExport,
+  archiveOf,
   initial = null,
 }: {
   channel: Channel
@@ -112,6 +117,10 @@ export function ChannelEditor({
   onRescan: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
   onDelete: (channelNumber: number) => Promise<string>
   onClose: () => void
+  /** EXPORT CHANNEL (user channels): the channel as shown, as a tvn-channel-v1 file or its readable manifest. */
+  onExport?: (channelNumber: number, edit: ChannelEdit, as: 'json' | 'md') => Promise<string>
+  /** TVN's shipped back catalogue for a source, so the filter preview counts what ARCHIVE and ALL would add. */
+  archiveOf?: (source: ChannelSource) => readonly ImportedVideo[]
   /** The channel as already read, shown until the editor's own read completes. */
   initial?: ChannelEdit | null
 }) {
@@ -125,6 +134,8 @@ export function ChannelEditor({
   const [kind, setKind] = useState<SourceKind | 'auto'>('auto')
   const [confirming, setConfirming] = useState(false)
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set())
+  const [notesOpen, setNotesOpen] = useState(false)
+  const curates = scope === 'user'
   const now = useClock(30_000)
   const rootRef = useRef<HTMLElement>(null)
   const linkRef = useRef<HTMLInputElement>(null)
@@ -294,6 +305,17 @@ export function ChannelEditor({
                   {open ? (
                     <SourceDetails source={source} number={number} disabled={busy !== null} onInfo={(info) => setSource(source.id, { info })} />
                   ) : null}
+                  {open && curates && (source.kind === 'youtube' || source.kind === 'collection') ? (
+                    <SourceFilterPanel
+                      source={source}
+                      archive={archiveOf?.(source)}
+                      disabled={busy !== null}
+                      onApply={(filter, mode) => {
+                        setSource(source.id, { filter, mode: mode === 'recent' ? undefined : mode })
+                        setNote(filter || mode !== 'recent' ? 'FILTER APPLIED · SAVE TO KEEP IT' : 'FILTER CLEARED · SAVE TO KEEP IT')
+                      }}
+                    />
+                  ) : null}
                   {open && !isStreamSource(source) ? (
                     held.length === 0 ? (
                       <p className="editor-videos-empty">
@@ -350,6 +372,24 @@ export function ChannelEditor({
                 + Add source
               </button>
             )}
+            {curates ? (
+              <>
+                <div className="editor-lineup-head">
+                  <button
+                    type="button"
+                    className="tab editor-expand"
+                    aria-expanded={notesOpen}
+                    aria-label={`${notesOpen ? 'Hide' : 'Show'} the editorial notes`}
+                    onKeyDown={keepKey}
+                    onClick={() => setNotesOpen((current) => !current)}
+                  >
+                    {notesOpen ? '−' : '+'}
+                  </button>
+                  <p className="editor-heading">Editorial · curation{edit.editorial?.purpose?.trim() ? ` · ${edit.editorial.purpose.trim().slice(0, 60)}` : ''}</p>
+                </div>
+                {notesOpen ? <EditorialPanel editorial={edit.editorial} disabled={busy !== null} onChange={(editorial) => change({ ...edit, editorial })} /> : null}
+              </>
+            ) : null}
             <div className="editor-lineup-head">
               <p className="editor-heading">Running order · {ownOrder ? 'yours' : 'automatic'}</p>
               {ownOrder ? (
@@ -371,7 +411,9 @@ export function ChannelEditor({
                 <p className="guide-tool-note">
                   {ownOrder
                     ? 'The channel plays these in this order, then starts again. Save to keep it.'
-                    : 'TVN plays these in turn, with repeats and earlier uploads between them. Move one to set your own order.'}
+                    : reachesArchive(edit.sources)
+                      ? 'TVN plays these in turn, from across the archive. Move one to set your own order.'
+                      : 'TVN plays these in turn, with repeats and earlier uploads between them. Move one to set your own order.'}
                 </p>
                 <ol className="editor-lineup" aria-label="Running order">
                   {lineup.map((video, index) => (
@@ -435,6 +477,16 @@ export function ChannelEditor({
             <button type="button" className="tune-key" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('save', () => onSave(number, edit))}>
               {busy === 'save' ? 'Saving…' : 'Save'}
             </button>
+            {curates && onExport ? (
+              <>
+                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'json'))}>
+                  Export channel
+                </button>
+                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'md'))}>
+                  Export manifest
+                </button>
+              </>
+            ) : null}
           </>
         ) : null}
         <button type="button" className="tab" onKeyDown={keepKey} onClick={onClose}>
