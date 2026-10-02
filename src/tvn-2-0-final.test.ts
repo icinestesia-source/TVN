@@ -135,3 +135,18 @@ describe('TVN 2.0 final: regenerating the originals cannot bring back 586 Punk 9
     expect(originals.cards['586']).toBeUndefined()
   })
 })
+
+describe('TVN 2.0 final: the diagnostic names the build and the reserved channels', () => {
+  it('says which application, commit and build is running, and what 000, 555, 586 and 1000 are', async () => {
+    const { channelIdentityLine, BUILD_INFO } = await import('./build-info.ts')
+    const { userTestDiagnostic } = await import('./services/diagnostic.ts')
+    const { channelByNumber } = await import('./data/catalogue.ts')
+    expect(BUILD_INFO.app).toBe('TVN')
+    expect(channelIdentityLine()).toBe('000 TVN · 555 Daft Punk · 586 Live · 1000 Local Media')
+    const text = userTestDiagnostic(channelByNumber(555)!, Date.UTC(2026, 9, 2, 20), { playerStatus: 'playing' })
+    expect(text).toMatch(/^Build: TVN · commit \S+ · built \S+ · id \S+$/m)
+    expect(text).toContain('Channels: 000 TVN · 555 Daft Punk · 586 Live · 1000 Local Media')
+    const config = readFileSync('vite.config.ts', 'utf8')
+    expect(config).toContain('if (process.env.COMMIT_REF) return process.env.COMMIT_REF.slice(0, 7)')
+  })
+})

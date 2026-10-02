@@ -110,6 +110,6 @@ describe('channel pools kept between visits', () => {
     const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
     expect(provider).toMatch(/const savedPools = readSavedPools\(\)\.catch\(\(\) => null\)[\s\S]{0,140}offerSavedPools\(await savedPools\)\s+await hydrateLibrary\(\)/)
     expect(provider).toMatch(/afterPaint\(\(\) => void saveDeferredLibrary\(\)\.catch\(\(\) => undefined\)\.then\(keepPools\)\)/)
-    expect(readFileSync('vite.config.ts', 'utf8')).toMatch(/define: \{ __TVN_BUILD__: JSON\.stringify\(Date\.now\(\)\.toString\(36\)\) \}/)
+    expect(readFileSync('vite.config.ts', 'utf8')).toMatch(/const builtAt = Date\.now\(\)[\s\S]*__TVN_BUILD__: JSON\.stringify\(builtAt\.toString\(36\)\)/)
   })
 })

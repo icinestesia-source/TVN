@@ -1,3 +1,4 @@
+import { BUILD_INFO, channelIdentityLine } from '../build-info.ts'
 import { mediaLibrary } from '../director/library.ts'
 import { CATALOGUE_VERSION, POLICY_VERSION } from '../director/network.ts'
 import { dynamicChannel, DYNAMIC_VERSION } from '../dynamic/providers.ts'
@@ -40,7 +41,9 @@ export function userTestDiagnostic(channel: Channel, nowMs: number, context: Dia
   const lines = [
     'TVN DIAGNOSTIC · LOCAL ONLY · NOTHING IS SENT',
     `Time: ${iso(nowMs)} (${zone})`,
+    `Build: ${BUILD_INFO.app} · commit ${BUILD_INFO.commit} · built ${BUILD_INFO.builtAt} · id ${BUILD_INFO.build}`,
     `Versions: ${CATALOGUE_VERSION} · ${DYNAMIC_VERSION} · ${ORIGINALS_VERSION} · ${POLICY_VERSION}`,
+    `Channels: ${channelIdentityLine()}`,
     `Channel: ${pad(channel.number)} ${channel.name}`,
     `Airing: ${airingClass(channel, programme)}`,
     `Programme: ${programme.title}`,

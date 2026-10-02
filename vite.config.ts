@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import type { Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
@@ -19,10 +20,28 @@ function channelApi(): Plugin {
   }
 }
 
+/** The commit being built: Netlify names it in COMMIT_REF; a local build asks git. */
+function buildCommit(): string {
+  if (process.env.COMMIT_REF) return process.env.COMMIT_REF.slice(0, 7)
+  try {
+    const head = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+    const dirty = execSync('git status --porcelain --untracked-files=no', { encoding: 'utf8' }).trim()
+    return dirty ? `${head}+changes` : head
+  } catch {
+    return 'unknown'
+  }
+}
+
+const builtAt = Date.now()
+
 export default defineConfig({
   plugins: [react(), channelApi()],
   // Each build has its own id; channel pools kept by an earlier build are never reused by a later one.
-  define: { __TVN_BUILD__: JSON.stringify(Date.now().toString(36)) },
+  define: {
+    __TVN_BUILD__: JSON.stringify(builtAt.toString(36)),
+    __TVN_COMMIT__: JSON.stringify(buildCommit()),
+    __TVN_BUILT_AT__: JSON.stringify(new Date(builtAt).toISOString()),
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'server/**/*.test.ts'],
