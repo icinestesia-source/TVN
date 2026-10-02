@@ -2,17 +2,17 @@ import { isSessionProgramme } from '../session/session-channel.ts'
 import type { TvContextValue } from '../state/tv-context.ts'
 import type { TvCommand } from '../types/input.ts'
 import type { Programme } from '../types/programme.ts'
-import { openTvnSettings } from './tvn-settings-store.ts'
+import { openRandomSettings } from './tvn-settings-store.ts'
 
 /** The actions that may sit in the corners of the information overlay's control pad. */
-export type ShortcutId = 'remote' | 'tvn' | 'random' | 'fullscreen' | 'captions'
+export type ShortcutId = 'remote' | 'settings' | 'random' | 'fullscreen' | 'captions'
 
 export type Corner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
 
 /** One action per corner, never the same action twice. */
 export type ShortcutAssignment = Record<Corner, ShortcutId>
 
-export const SHORTCUT_IDS: readonly ShortcutId[] = ['remote', 'fullscreen', 'tvn', 'random', 'captions']
+export const SHORTCUT_IDS: readonly ShortcutId[] = ['remote', 'fullscreen', 'settings', 'random', 'captions']
 
 export const CORNERS: readonly Corner[] = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight']
 
@@ -26,7 +26,7 @@ export const CORNER_LABELS: Record<Corner, string> = {
 export const DEFAULT_SHORTCUTS: ShortcutAssignment = {
   topLeft: 'remote',
   topRight: 'fullscreen',
-  bottomLeft: 'tvn',
+  bottomLeft: 'settings',
   bottomRight: 'random',
 }
 
@@ -38,8 +38,8 @@ export interface ShortcutContext {
   subtitles: boolean
   remoteOpen: boolean
   surfing: boolean
-  /** Opens the TVN settings dialog. */
-  openSettings: () => void
+  /** Opens the Random settings: the Random Cycle's timing. */
+  openRandomSettings: () => void
   dispatch: (command: TvCommand) => void
 }
 
@@ -60,8 +60,10 @@ interface ShortcutBase {
 export interface ShortcutDefinition extends ShortcutBase {
   run: (context: ShortcutContext) => void
   pressed?: (context: ShortcutContext) => boolean
-  /** A right-click or a touch hold. */
+  /** A long press, by touch or mouse. */
   hold?: (context: ShortcutContext) => void
+  /** A right-click. Touch has none: the same options are in Settings. */
+  menu?: (context: ShortcutContext) => void
 }
 
 export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
@@ -74,16 +76,13 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
     run: (context) => context.dispatch({ type: 'remote' }),
     pressed: (context) => context.remoteOpen,
   },
-  tvn: {
-    id: 'tvn',
-    label: 'TVN',
-    name: 'TVN surf',
-    title: 'Surf random channels · right-click or hold for TVN settings',
-    unavailable: 'TVN surf is not available',
+  settings: {
+    id: 'settings',
+    label: '⚙',
+    name: 'Settings',
+    unavailable: 'Settings are not available',
     available: () => true,
-    run: (context) => context.dispatch({ type: 'surf' }),
-    pressed: (context) => context.surfing,
-    hold: (context) => context.openSettings(),
+    run: (context) => context.dispatch({ type: 'guide-tool', tool: 'options' }),
   },
   fullscreen: {
     id: 'fullscreen',
@@ -106,9 +105,14 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
     id: 'random',
     label: 'R',
     name: 'Random channel',
+    title: 'Random channel · hold to start or stop Random Cycle · right-click for Random settings',
     unavailable: 'Random channel is not available',
     available: () => true,
     run: (context) => context.dispatch({ type: 'random-channel' }),
+    // Lit while the Random Cycle runs.
+    pressed: (context) => context.surfing,
+    hold: (context) => context.dispatch({ type: 'surf' }),
+    menu: (context) => context.openRandomSettings(),
   },
 }
 
@@ -118,7 +122,7 @@ export type CornerActions = {
   subtitles: boolean
   remoteOpen: boolean
   surfing: boolean
-  openSettings: () => void
+  openRandomSettings: () => void
   dispatch: (command: TvCommand) => void
 }
 
@@ -130,10 +134,10 @@ export function cornerActions(
     subtitles: tv.subtitles,
     remoteOpen: tv.remoteOpen,
     surfing: tv.surfing,
-    // The settings take the remote's place, as they did from the TVN button.
-    openSettings: () => {
+    // The Random settings take the remote's place.
+    openRandomSettings: () => {
       if (tv.remoteOpen) tv.dispatch({ type: 'remote' })
-      openTvnSettings()
+      openRandomSettings()
     },
     dispatch: tv.dispatch,
   }
@@ -165,9 +169,11 @@ export function asShortcuts(value: unknown): ShortcutAssignment {
   if (!value || typeof value !== 'object') return { ...DEFAULT_SHORTCUTS }
   const record = value as Partial<Record<Corner, unknown>>
   const stored = CORNERS.map((corner) => record[corner])
+  // TVN (Random surf) became Settings when Random moved onto R.
+  const renamed = stored.map((id) => (id === 'tvn' ? 'settings' : id))
   // The original-source corner moved to the Channel Editor's programme lists; its corner takes the free action.
-  const free = SHORTCUT_IDS.find((id) => !stored.includes(id))
-  const picked = stored.map((id) => (id === 'source' ? free : id))
+  const free = SHORTCUT_IDS.find((id) => !renamed.includes(id))
+  const picked = renamed.map((id) => (id === 'source' ? free : id))
   const valid = picked.every((id) => SHORTCUT_IDS.includes(id as ShortcutId)) && new Set(picked).size === CORNERS.length
   if (!valid) return { ...DEFAULT_SHORTCUTS }
   return Object.fromEntries(CORNERS.map((corner, index) => [corner, picked[index]])) as ShortcutAssignment

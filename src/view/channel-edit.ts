@@ -37,6 +37,8 @@ export function createLongPress(
     clear: (id) => clearTimeout(id),
   },
   delayMs = LONG_PRESS_MS,
+  /** A held mouse button counts too (where a right-click means something else). */
+  mouse = false,
 ) {
   let timer = 0
   let origin: { x: number; y: number } | null = null
@@ -50,7 +52,7 @@ export function createLongPress(
     down(point: PressPoint) {
       cancel()
       firedAt = 0
-      if (point.pointerType === 'mouse') return
+      if (point.pointerType === 'mouse' && !mouse) return
       origin = { x: point.clientX, y: point.clientY }
       timer = timers.set(() => {
         timer = 0
@@ -65,6 +67,10 @@ export function createLongPress(
     },
     up: cancel,
     cancel,
+    /** A hold is under way and has not fired yet. */
+    holding(): boolean {
+      return origin !== null
+    },
     /** The browser's own context menu fired; during a touch hold (Android does this) it is the same hold. */
     opened() {
       if (!origin) return

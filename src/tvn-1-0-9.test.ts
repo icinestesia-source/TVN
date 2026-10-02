@@ -131,9 +131,9 @@ describe('Guide terminology: NOW · ADD · MEDIA', () => {
   })
 
   it('IMPORT behind the + row restores a User Network file', () => {
-    expect(guide).toMatch(/tool === 'network' \? \(\s*<UserNetworkImportTools [^\n]*onApply=\{tv\.importUserNetwork\} \/>/)
+    expect(guide).toMatch(/tool === 'network' \? \(\s*<UserNetworkImportTools [^\n]*onApply=\{tv\.importUserNetwork\} onApplyComplete=\{tv\.importTvn\} \/>/)
     expect(guide).toContain("onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}")
-    const footer = renderToStaticMarkup(createElement(UserNetworkImportTools, { userChannels: 3, onApply: async () => '' }))
+    const footer = renderToStaticMarkup(createElement(UserNetworkImportTools, { userChannels: 3, onApply: async () => '', onApplyComplete: async () => '' }))
     expect(footer).toMatch(/aria-label="Import User Network"/)
     expect(footer).not.toContain('Restore a User Network file')
     expect(labelsOf(footer)).toEqual(['Choose file'])
@@ -261,9 +261,9 @@ describe('IMPORT: restoring a User Network export', () => {
 
   it('applies nothing until the file is valid and the viewer confirms the replacement', () => {
     const tool = addSource.slice(addSource.indexOf('export function UserNetworkImportTools'), addSource.indexOf('export function UserNetworkTools'))
-    expect(tool).toMatch(/if \(!read\.ok\) \{\s*setNote\(`NOT A TVN USER NETWORK FILE[^\n]*\n\s*return\s*\}/)
-    expect(tool.indexOf('setPending({ document: read.value')).toBeGreaterThan(tool.indexOf('if (!read.ok)'))
-    expect(tool).toContain('Import User Network? This will replace your current User Network')
+    expect(tool).toMatch(/if \(!read\.ok\) \{\s*setNote\([^\n]*NOT A TVN USER NETWORK FILE[^\n]*\n\s*return\s*\}/)
+    expect(tool.indexOf("setPending({ kind: 'network', document: read.value")).toBeGreaterThan(tool.indexOf('if (!read.ok)'))
+    expect(tool).toMatch(/'Import User Network\? This will replace'\}\{' '\}\s*your current User Network/)
     expect(tool).toContain("key('Yes, replace it', () => void apply(), 'tab remove-key')")
     expect(tool).toContain("key('Keep mine', () => setPending(null))")
     expect(tool.match(/onApply\(/g)).toHaveLength(1)

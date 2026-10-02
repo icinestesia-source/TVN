@@ -135,7 +135,9 @@ describe('subtitles toggle', () => {
     expect(next.showing()).toBe(false)
 
     const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
-    expect(provider.match(/setSubtitles\(/g)).toHaveLength(1)
+    // The toggle, and a confirmed complete restore.
+    expect(provider.match(/setSubtitles\(/g)).toHaveLength(2)
+    expect(provider.slice(provider.indexOf('const importTvn = useCallback(')).indexOf('setSubtitles(settings.subtitles)')).toBeGreaterThan(0)
     const stage = readFileSync('src/player/YoutubeStage.tsx', 'utf8')
     expect(stage).toMatch(/captionsRef\.current!\.loadRequested\(\)\s+player\.loadVideoById/)
     expect(stage).toMatch(/cc_load_policy: captionsRef\.current!\.enabled \? 1 : 0/)

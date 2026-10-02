@@ -24,7 +24,7 @@ import {
   type ShortcutAssignment,
   type ShortcutContext,
 } from './view/info-shortcuts.ts'
-import { closeTvnSettings, openTvnSettings, tvnSettingsOpen } from './view/tvn-settings-store.ts'
+import { closeRandomSettings, openRandomSettings, randomSettingsOpen } from './view/tvn-settings-store.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const css = read('src/styles/guide.css')
@@ -109,7 +109,7 @@ const DEFAULT_NAMES = [
   'Previous programme',
   'Guide',
   'Next programme',
-  'TVN surf',
+  'Settings',
   'Next watched channel',
   'Channel down',
   'Random channel',
@@ -126,15 +126,15 @@ const context = (overrides: Partial<ShortcutContext> = {}): ShortcutContext => (
   subtitles: false,
   remoteOpen: false,
   surfing: false,
-  openSettings: () => {},
+  openRandomSettings: () => {},
   dispatch: () => {},
   ...overrides,
 })
 
 describe('information overlay: 3×3 control pad', () => {
-  it('1. the default layout is REMOTE ↑|CH+ ⛶ / ← GUIDE → / TVN ↓|CH− R, nine cells', () => {
+  it('1. the default layout is REMOTE ↑|CH+ ⛶ / ← GUIDE → / ⚙ ↓|CH− R, nine cells', () => {
     const { tree, list } = pad()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'R'])
     expect(cells(tree)).toHaveLength(9)
     expect((tree as ReactElement<{ className: string }>).props.className).toBe('info-actions info-pad has-history')
     expect((tree as ReactElement<{ role: string }>).props.role).toBe('group')
@@ -171,10 +171,10 @@ describe('information overlay: 3×3 control pad', () => {
     expect(block('.info-pad > .info-square')).toMatch(/width: auto;\s*height: auto;\s*justify-self: stretch;\s*align-self: stretch;/)
   })
 
-  it('6. the corners default to Remote, Fullscreen, TVN and Random', () => {
-    expect(DEFAULT_SHORTCUTS).toEqual({ topLeft: 'remote', topRight: 'fullscreen', bottomLeft: 'tvn', bottomRight: 'random' })
+  it('6. the corners default to Remote, Fullscreen, Settings and Random', () => {
+    expect(DEFAULT_SHORTCUTS).toEqual({ topLeft: 'remote', topRight: 'fullscreen', bottomLeft: 'settings', bottomRight: 'random' })
     const grid = cells(pad().tree)
-    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Remote control', 'Fullscreen', 'TVN surf', 'Random channel'])
+    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Remote control', 'Fullscreen', 'Settings', 'Random channel'])
   })
 
   it('7. ↑ goes back through the watched channels; CH+ beside it steps up the channel numbers', () => {
@@ -238,43 +238,58 @@ describe('information overlay: 3×3 control pad', () => {
     expect(String(open.props.className)).toContain('is-on')
   })
 
-  it('12. TVN surfs on a click, lights while surfing, and opens the TVN settings on a hold or right-click, never both', () => {
+  it('12. ⚙ opens Settings: the OPTIONS panel, with no hold or menu of its own', () => {
     const { sent, settings, press, find } = pad()
-    const tvn = find('TVN surf')
-    expect(tvn.props['aria-haspopup']).toBe('dialog')
-    expect(tvn.props.title).toBe('Surf random channels · right-click or hold for TVN settings')
-    press('TVN surf')
-    expect(sent).toEqual([{ type: 'surf' }])
+    const gear = find('Settings')
+    expect(gear.label).toBe('⚙')
+    expect(gear.props['aria-haspopup']).toBeUndefined()
+    expect(gear.props.onContextMenu).toBeUndefined()
+    press('Settings')
+    expect(sent).toEqual([{ type: 'guide-tool', tool: 'options' }])
+    expect(settings).toEqual([])
+  })
+
+  it('13. R: a click tunes one random channel, a hold starts or stops the Random Cycle, a right-click opens Random settings', () => {
+    const { sent, settings, press, find } = pad()
+    const r = find('Random channel')
+    expect(r.label).toBe('R')
+    expect(r.props.title).toBe('Random channel · hold to start or stop Random Cycle · right-click for Random settings')
+    expect(r.props['aria-haspopup']).toBe('dialog')
+    press('Random channel')
+    expect(sent).toEqual([{ type: 'random-channel' }])
+    expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
+    expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
+    // Right-click (a mouse) opens the Random settings and never surfs.
     const opened = { prevented: false, stopped: false }
-    ;(tvn.props.onContextMenu as (event: unknown) => void)({
+    ;(r.props.onPointerDown as (event: unknown) => void)({ pointerType: 'mouse', button: 2, clientX: 0, clientY: 0, stopPropagation: () => {} })
+    ;(r.props.onContextMenu as (event: unknown) => void)({
       preventDefault: () => void (opened.prevented = true),
       stopPropagation: () => void (opened.stopped = true),
     })
     expect(settings).toEqual(['open'])
     expect(opened).toEqual({ prevented: true, stopped: true })
-    // The click that ends a hold does not also surf.
-    expect(actionsSource).toContain('if (hold && cornerHold.swallowClick()) return')
-    expect(pad({ surfing: true }).find('TVN surf').props['aria-pressed']).toBe(true)
-    expect(provider).toContain("case 'surf':")
-  })
-
-  it('13. R is the existing Random channel command', () => {
-    const { sent, press, find } = pad()
-    press('Random channel')
     expect(sent).toEqual([{ type: 'random-channel' }])
-    expect(find('Random channel').label).toBe('R')
-    expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
-    expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
+    // The hold is the existing Random Cycle command, not a second implementation.
+    expect(SHORTCUTS.random.hold).toBeDefined()
+    const held: TvCommand[] = []
+    SHORTCUTS.random.hold!(context({ dispatch: (command) => void held.push(command) }))
+    expect(held).toEqual([{ type: 'surf' }])
+    expect(provider).toContain("case 'surf':")
+    // The click that ends a hold does not also tune.
+    expect(actionsSource).toContain('if (hold && cornerHold.swallowClick()) return')
+    expect(pad({ surfing: true }).find('Random channel').props['aria-pressed']).toBe(true)
   })
 
   it('14. the pad holds no links out of TVN: originals open from the Channel Editor programme lists', () => {
     expect(pad().list.some((control) => control.props.href !== undefined)).toBe(false)
     expect(registrySource).not.toContain('href')
     // A corner saved as the old original-source key takes the action not already on the pad.
-    expect(asShortcuts({ topLeft: 'remote', topRight: 'source', bottomLeft: 'tvn', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
-    expect(asShortcuts({ topLeft: 'remote', topRight: 'source', bottomLeft: 'tvn', bottomRight: 'fullscreen' })).toEqual({
-      topLeft: 'remote', topRight: 'random', bottomLeft: 'tvn', bottomRight: 'fullscreen',
+    expect(asShortcuts({ topLeft: 'remote', topRight: 'source', bottomLeft: 'settings', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
+    expect(asShortcuts({ topLeft: 'remote', topRight: 'source', bottomLeft: 'settings', bottomRight: 'fullscreen' })).toEqual({
+      topLeft: 'remote', topRight: 'random', bottomLeft: 'settings', bottomRight: 'fullscreen',
     })
+    // A corner saved as the old TVN (surf) key becomes Settings.
+    expect(asShortcuts({ topLeft: 'remote', topRight: 'fullscreen', bottomLeft: 'settings', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
   })
 
   it('15. Fullscreen, when chosen, is the existing fullscreen command, and is disabled where the browser cannot', () => {
@@ -345,22 +360,22 @@ describe('information overlay: 3×3 control pad', () => {
     expect(provider.slice(provider.indexOf('savePreferences({'), provider.indexOf('savePreferences({') + 500)).toContain('infoShortcuts,')
   })
 
-  it('19. Reset to defaults restores Remote, Fullscreen, TVN, Random', () => {
+  it('19. Reset to defaults restores Remote, Fullscreen, Settings, Random', () => {
     expect(provider).toContain('const resetInfoShortcuts = useCallback(() => setInfoShortcuts({ ...DEFAULT_SHORTCUTS }), [])')
     expect(remote).toContain('onClick={tv.resetInfoShortcuts}')
     expect(remote).toContain('Reset to defaults')
   })
 
   it('20. choosing an action already in use swaps the two corners; an unused one replaces; a bad saved record falls back', () => {
-    expect(assignShortcut(DEFAULT_SHORTCUTS, 'topLeft', 'random')).toEqual({ topLeft: 'random', topRight: 'fullscreen', bottomLeft: 'tvn', bottomRight: 'remote' })
-    expect(assignShortcut(DEFAULT_SHORTCUTS, 'bottomLeft', 'fullscreen')).toEqual({ topLeft: 'remote', topRight: 'tvn', bottomLeft: 'fullscreen', bottomRight: 'random' })
+    expect(assignShortcut(DEFAULT_SHORTCUTS, 'topLeft', 'random')).toEqual({ topLeft: 'random', topRight: 'fullscreen', bottomLeft: 'settings', bottomRight: 'remote' })
+    expect(assignShortcut(DEFAULT_SHORTCUTS, 'bottomLeft', 'fullscreen')).toEqual({ topLeft: 'remote', topRight: 'settings', bottomLeft: 'fullscreen', bottomRight: 'random' })
     expect(assignShortcut(DEFAULT_SHORTCUTS, 'topLeft', 'captions')).toEqual({ ...DEFAULT_SHORTCUTS, topLeft: 'captions' })
     expect(assignShortcut(DEFAULT_SHORTCUTS, 'topRight', 'fullscreen')).toEqual(DEFAULT_SHORTCUTS)
     for (const corner of CORNERS) {
       for (const id of SHORTCUT_IDS) expect(new Set(Object.values(assignShortcut(DEFAULT_SHORTCUTS, corner, id))).size).toBe(4)
     }
-    expect(asShortcuts({ topLeft: 'random', topRight: 'random', bottomLeft: 'tvn', bottomRight: 'remote' })).toEqual(DEFAULT_SHORTCUTS)
-    expect(asShortcuts({ topLeft: 'favourite', topRight: 'fullscreen', bottomLeft: 'tvn', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
+    expect(asShortcuts({ topLeft: 'random', topRight: 'random', bottomLeft: 'settings', bottomRight: 'remote' })).toEqual(DEFAULT_SHORTCUTS)
+    expect(asShortcuts({ topLeft: 'favourite', topRight: 'fullscreen', bottomLeft: 'settings', bottomRight: 'random' })).toEqual(DEFAULT_SHORTCUTS)
     expect(asShortcuts(null)).toEqual(DEFAULT_SHORTCUTS)
     expect(remote).toContain('onChange={(event) => tv.setInfoShortcut(corner, event.target.value as ShortcutId)}')
   })
@@ -369,16 +384,16 @@ describe('information overlay: 3×3 control pad', () => {
     expect(pad().names).toEqual(DEFAULT_NAMES)
     const swapped = pad({ assignment: { topLeft: 'captions', topRight: 'random', bottomLeft: 'fullscreen', bottomRight: 'remote' } }).names
     expect([swapped[0], swapped[3], swapped[7], swapped[10]]).toEqual(['Subtitles/captions', 'Random channel', 'Fullscreen', 'Remote control'])
-    expect(SHORTCUT_IDS.map((id) => SHORTCUTS[id].name)).toEqual(['Remote control', 'Fullscreen', 'TVN surf', 'Random channel', 'Subtitles/captions'])
+    expect(SHORTCUT_IDS.map((id) => SHORTCUTS[id].name)).toEqual(['Remote control', 'Fullscreen', 'Settings', 'Random channel', 'Subtitles/captions'])
     expect(remote).toContain('{SHORTCUTS[id].name}')
   })
 
-  it('22. the TVN settings open and close through one store, and offer the four corners by name', () => {
-    expect(tvnSettingsOpen()).toBe(false)
-    openTvnSettings()
-    expect(tvnSettingsOpen()).toBe(true)
-    closeTvnSettings()
-    expect(tvnSettingsOpen()).toBe(false)
+  it('22. the Random settings open and close through one store, and offer the four corners by name', () => {
+    expect(randomSettingsOpen()).toBe(false)
+    openRandomSettings()
+    expect(randomSettingsOpen()).toBe(true)
+    closeRandomSettings()
+    expect(randomSettingsOpen()).toBe(false)
     expect(remote).toContain('<legend className="tvn-settings-head">Information Overlay shortcuts</legend>')
     expect(remote).toContain('{CORNERS.map((corner) => (')
     expect(remote).toContain('{CORNER_LABELS[corner]}')
@@ -427,13 +442,13 @@ describe('information overlay: 3×3 control pad', () => {
     const sent: TvCommand[] = []
     const actions = cornerActions({ infoShortcuts: DEFAULT_SHORTCUTS, subtitles: false, remoteOpen: true, surfing: false, dispatch: (command) => void sent.push(command) })
     try {
-      actions.openSettings()
+      actions.openRandomSettings()
       expect(sent).toEqual([{ type: 'remote' }])
-      expect(tvnSettingsOpen()).toBe(true)
+      expect(randomSettingsOpen()).toBe(true)
     } finally {
-      closeTvnSettings()
+      closeRandomSettings()
     }
-    expect(remote).toContain('if (tv.remoteOpen) closeTvnSettings()')
+    expect(remote).toContain('if (tv.remoteOpen) closeRandomSettings()')
   })
 
   it('29. tuning, history and manual playback are untouched; the settings menu never reaches the television keys', () => {

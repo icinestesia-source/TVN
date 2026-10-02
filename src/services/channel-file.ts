@@ -40,7 +40,10 @@ const slug = (name: string) =>
     .replace(/^-|-$/g, '')
     .slice(0, 40) || 'Channel'
 
-export function channelFilename(record: Pick<StoredSource, 'channelNumber' | 'name'>, extension: 'json' | 'md' = 'json'): string {
+/** What a channel's EXPORT writes: the channel file, its manifest as JSON, or the manifest as readable text. */
+export type ChannelExportKind = 'json' | 'manifest' | 'md'
+
+export function channelFilename(record: Pick<StoredSource, 'channelNumber' | 'name'>, extension: 'json' | 'md' | 'manifest.json' = 'json'): string {
   return `TVN_Channel_${record.channelNumber}_${slug(record.name)}.${extension}`
 }
 

@@ -44,3 +44,60 @@ export function anchorTime(scrollLeft: number, offsetPx: number, windowStartMs: 
 export function anchoredScrollLeft(timeMs: number, offsetPx: number, windowStartMs: number, pxPerMinute: number): number {
   return Math.max(0, ((timeMs - windowStartMs) / 60_000) * pxPerMinute - offsetPx)
 }
+
+/** The zooms the Guide may open at: the lowest that frames the listings usefully is chosen. */
+export const OPENING_ZOOMS = [1, 1.5, 2, 3, 4, 5, 6] as const
+/** The share of the listed time whose programmes must show their titles for a zoom to be useful. */
+export const OPENING_READABLE_SHARE = 0.6
+
+export interface OpeningFrame {
+  nowMs: number
+  /** The standard (1x) pixels per minute. */
+  basePx: number
+  viewportWidth: number
+  /** How much of the past stays in view when the Guide opens. */
+  leadMs: number
+  /** A cell's title shows once the cell is wider than this. */
+  titleMinPx: number
+}
+
+/**
+ * The share of the time on screen, across the given rows, taken by programmes wide enough to show their titles
+ * at `zoom`. Rows count by time on screen, so a row of short clips weighs no more than a row holding one film.
+ */
+export function readableShare(rows: readonly (readonly { startMs: number; endMs: number }[])[], zoom: number, frame: OpeningFrame): number {
+  const px = frame.basePx * zoom
+  const leadPx = Math.min((frame.leadMs / 60_000) * px, Math.max(0, frame.viewportWidth) * 0.45)
+  const fromMs = frame.nowMs - (leadPx / px) * 60_000
+  const toMs = fromMs + (frame.viewportWidth / px) * 60_000
+  let shown = 0
+  let readable = 0
+  for (const row of rows) {
+    for (const slot of row) {
+      const visible = Math.min(slot.endMs, toMs) - Math.max(slot.startMs, fromMs)
+      if (visible <= 0) continue
+      shown += visible
+      if (((slot.endMs - slot.startMs) / 60_000) * px - 3 > frame.titleMinPx) readable += visible
+    }
+  }
+  return shown > 0 ? readable / shown : 1
+}
+
+/**
+ * The zoom the Guide opens at: the lowest that lets most of the listings around NOW show their titles. One
+ * short programme does not raise it; a screen of short clips does. When no zoom gets there, the one that shows
+ * the most titles (the lowest of equals).
+ */
+export function openingZoom(rows: readonly (readonly { startMs: number; endMs: number }[])[], frame: OpeningFrame): number {
+  let best: number = GUIDE_ZOOM_MIN
+  let bestShare = -1
+  for (const zoom of OPENING_ZOOMS) {
+    const share = readableShare(rows, zoom, frame)
+    if (share >= OPENING_READABLE_SHARE) return zoom
+    if (share > bestShare + 1e-9) {
+      best = zoom
+      bestShare = share
+    }
+  }
+  return best
+}

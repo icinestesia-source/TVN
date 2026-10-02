@@ -4,21 +4,20 @@ import { sleepLabel } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
 import { useTv } from '../state/tv-context.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
-import { closeTvnSettings, useTvnSettingsOpen } from '../view/tvn-settings-store.ts'
+import { closeRandomSettings, useRandomSettingsOpen } from '../view/tvn-settings-store.ts'
 
 const KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
 /**
- * The remote and the TVN settings, opened from the information overlay's REMOTE and TVN keys (a hold or a
- * right-click on TVN opens the settings).
+ * The remote and the Random settings, opened from the information overlay's REMOTE key and a right-click on R.
  */
 export function TouchRemote() {
   const tv = useTv()
-  const settingsOpen = useTvnSettingsOpen()
+  const settingsOpen = useRandomSettingsOpen()
 
   // The remote and the settings share a place; the one opened last takes it.
   useEffect(() => {
-    if (tv.remoteOpen) closeTvnSettings()
+    if (tv.remoteOpen) closeRandomSettings()
   }, [tv.remoteOpen])
 
   return (
@@ -27,15 +26,15 @@ export function TouchRemote() {
         <section
           className="remote-panel tvn-settings"
           role="dialog"
-          aria-label="TVN settings"
+          aria-label="Random settings"
           onKeyDown={(event) => {
             if (event.key !== 'Escape') return
             event.stopPropagation()
-            closeTvnSettings()
+            closeRandomSettings()
           }}
         >
-          <p className="tvn-settings-head">TVN settings</p>
-          <p className="tvn-settings-note">Random surf. Click TVN to start or stop; each hop comes after a random wait in this range.</p>
+          <p className="tvn-settings-head">Random settings</p>
+          <p className="tvn-settings-note">Random Cycle. Hold R to start or stop it; each hop comes after a random wait in this range.</p>
           <label className="tvn-range">
             <span>Minimum</span>
             <input
@@ -85,7 +84,7 @@ export function TouchRemote() {
             type="button"
             className="tvn-about-link"
             onClick={() => {
-              closeTvnSettings()
+              closeRandomSettings()
               openAbout()
             }}
           >
@@ -93,9 +92,9 @@ export function TouchRemote() {
           </button>
           <div className="remote-foot">
             <button type="button" aria-pressed={tv.surfing} onClick={tv.toggleSurf}>
-              {tv.surfing ? 'Stop surf' : 'Start surf'}
+              {tv.surfing ? 'Stop Random Cycle' : 'Start Random Cycle'}
             </button>
-            <button type="button" className="remote-close" onClick={() => closeTvnSettings()}>
+            <button type="button" className="remote-close" onClick={() => closeRandomSettings()}>
               Close
             </button>
           </div>

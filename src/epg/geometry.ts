@@ -10,6 +10,13 @@ export const GUIDE_EXTEND_MS = 4 * 60 * 60 * 1000
 export const GUIDE_MAX_WINDOW_MS = 36 * 60 * 60 * 1000
 
 export const ROW_HEIGHT = 52
+/** A programme cell shows its title once it is wider than this. */
+export const TITLE_MIN_PX = 72
+
+/** The Guide's standard (1x) scale for a window this wide. */
+export function basePxPerMinute(windowWidth: number): number {
+  return windowWidth < 720 ? 4.6 : windowWidth < 1100 ? 6.2 : 8
+}
 export const TIME_HEADER_HEIGHT = 36
 
 export function durationWidthPx(durationSeconds: number, pxPerMinute: number): number {

@@ -1,5 +1,6 @@
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
+import { playbackLabel } from '../view/playback-label.ts'
 import { formatDuration, formatElapsed, formatRange, padChannel } from '../utils/time.ts'
 
 export function shownDescription(programme: Programme): string | null {
@@ -47,8 +48,9 @@ export function ProgrammeInfo({
   const elapsed = Math.min(programme.durationSeconds, Math.max(0, (now - startMs) / 1000))
   const description = shownDescription(programme)
   const label = networkLabel(channel)
-  // Airing now is what the bar shows by default, so it goes unsaid; only the exceptions are named.
-  const status = picked ? 'From Guide · Now returns to air' : stream ? 'Live' : live ? null : later ? 'Later' : 'Already broadcast'
+  const kind = playbackLabel(channel, programme)
+  // Airing now, or picked from the Guide and playing, goes unsaid; a Guide slot at another time says when it is.
+  const status = picked || stream || live ? null : later ? 'Later' : 'Already broadcast'
 
   return (
     <div className="info-main">
@@ -59,7 +61,8 @@ export function ProgrammeInfo({
       </p>
       <h2 className="info-title">{programme.title}</h2>
       <p className="info-time">
-        {stream ? <span>{channel.mediaKind === 'audio' ? 'Live audio' : 'Live stream'}</span> : null}
+        {/* Gold when the viewer picked it in the Guide: playing, but not what is on air now. */}
+        <span className={picked ? 'info-kind is-picked' : 'info-kind'}>{kind}</span>
         {stream ? null : <span>{formatRange(startMs, endMs)}</span>}
         {stream ? null : <span>{formatDuration(programme.durationSeconds)}</span>}
         {live && !stream ? (

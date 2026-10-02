@@ -9,6 +9,7 @@ import {
 } from '../epg/geometry.ts'
 import { searchGuideChannels, stepGuideChannel } from '../epg/navigation.ts'
 import { clampZoom } from '../epg/zoom.ts'
+import { guideOpeningZoom } from '../epg/opening-zoom.ts'
 import { commandFromGamepad } from '../input/gamepad.ts'
 import { commandFromKeyEvent } from '../input/keyboard.ts'
 import { tunerStep } from '../input/tuner.ts'
@@ -45,7 +46,7 @@ import {
 import { lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, clearUserChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
 import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
-import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile } from '../services/channel-file.ts'
+import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
 import type { ChannelSource } from '../services/channel-sources.ts'
@@ -57,6 +58,7 @@ import { loadOverrides, setVideoOverride, subscribeOverrides, videoOverride } fr
 import { defaultFavouritesDue, loadPreferences, savePreferences } from '../services/preferences.ts'
 import { placeStarterFavourites, starterFavouriteSources } from '../services/default-favourites.ts'
 import {
+  asShortcuts,
   assignShortcut,
   DEFAULT_SHORTCUTS,
   fullscreenAvailable,
@@ -76,6 +78,8 @@ import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, sleep } from '../utils/time.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
+import { buildTvnExport, serialiseTvnExport, tvnExportFilename, validateTvnExport, type TvnExport } from '../services/tvn-export.ts'
+import { asTransition, loadTransition, saveTransition, TRANSITIONS, type TransitionId } from './transitions.ts'
 import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
@@ -120,8 +124,6 @@ const VOLUME_MS = 1200
 const NUMERIC_MS = 1600
 // A refused or failed first programme is usually replaced within a second or two (the refusal fallback).
 const STARTUP_RETRY_MS = 4000
-const MIN_STATIC_MS = 520
-const SETTLE_MS = 220
 /** Loading shown after director cache, library, shipped network and user network; 100 once tuned. */
 const STARTUP_STEPS = [10, 30, 75, 90] as const
 
@@ -247,6 +249,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const surfingRef = useRef(surfing)
   const [surfHops, setSurfHops] = useState(0)
   const [surfRange, setSurfRangeState] = useState<SurfRange>(() => loadSurfRange())
+  const [transition, setTransitionState] = useState<TransitionId>(() => loadTransition())
+  const transitionRef = useRef(transition)
   const [infoShortcuts, setInfoShortcuts] = useState<ShortcutAssignment>(stored.infoShortcuts)
   const noticeSeen = useNoticeAcknowledged()
 
@@ -326,6 +330,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   volumeRef.current = volume
   mutedRef.current = muted
+  const favouritesRef = useRef(favourites)
+  favouritesRef.current = favourites
+  const guideSplitRef = useRef(guideSplit)
+  guideSplitRef.current = guideSplit
+  const infoShortcutsRef = useRef(infoShortcuts)
+  infoShortcutsRef.current = infoShortcuts
+  const surfRangeRef = useRef(surfRange)
+  surfRangeRef.current = surfRange
   pausedRef.current = paused
   guideOpenRef.current = guideOpen
   guideModeRef.current = guideMode
@@ -539,7 +551,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       current: () => generation === tokenRef.current,
       load: () => loadProgramme(target, Date.now()),
       holdStatic: async () => {
-        const remain = MIN_STATIC_MS - (performance.now() - staticSince.current)
+        const remain = TRANSITIONS[transitionRef.current].minMs - (performance.now() - staticSince.current)
         if (remain > 0) await sleep(remain)
       },
       // Whatever was asked for an abandoned channel must not stay on the one still being watched.
@@ -610,6 +622,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       setGuideWindow(nextWindow)
       setGuideCursor(nextCursor)
       setGuideNote(null)
+      setGuideZoomState(guideOpeningZoom(visibleRef.current, nextCursor.channelNumber, now, window.innerWidth, window.innerHeight))
     }
     guideModeRef.current = mode
     guideOpenRef.current = mode !== 'closed'
@@ -709,7 +722,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     window.clearTimeout(settleTimer.current)
     settleTimer.current = window.setTimeout(() => {
       void commitTuneRef.current(generation, number, origin)
-    }, SETTLE_MS)
+    }, TRANSITIONS[transitionRef.current].settleMs)
   }
 
   commitNumericRef.current = () => {
@@ -1796,6 +1809,30 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return `EXPORTED ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${users > 0 ? ` · ${users} ${users === 1 ? 'USER' : 'USERS'}` : ''}`
   }, [])
 
+  const exportTvn = useCallback(async () => {
+    const now = new Date()
+    const document = buildTvnExport({
+      stored: await loadStoredSources(),
+      users: usersRef.current,
+      favourites: favouritesRef.current,
+      settings: {
+        volume: volumeRef.current,
+        muted: mutedRef.current,
+        subtitles: subtitlesRef.current,
+        sleepMinutes: sleepMinutesRef.current,
+        guideSplit: guideSplitRef.current,
+        infoShortcuts: infoShortcutsRef.current,
+        surfRange: surfRangeRef.current,
+        transition: transitionRef.current,
+      },
+      now,
+      uploaderOf: uploaderIdFor,
+    })
+    downloadText(tvnExportFilename(now), serialiseTvnExport(document))
+    const count = document.userNetwork.channels.length
+    return `TVN EXPORTED · ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'} · ${document.favourites.length} FAVOURITES · SETTINGS`
+  }, [])
+
   /** The editor's scope for this channel number, checked again on every action rather than trusted from the view. */
   const scopeOf = (number: number) => {
     const target = channelByNumber(number)
@@ -1828,6 +1865,51 @@ export function TvProvider({ children }: { children: ReactNode }) {
       }`
     },
     [installSources],
+  )
+
+  /**
+   * Restore a complete TVN export the viewer has confirmed. The whole file is checked again first; the User
+   * Network is restored next, and only once that has succeeded do Favourites and settings follow.
+   */
+  const importTvn = useCallback(
+    async (document: TvnExport) => {
+      const checked = validateTvnExport(document)
+      if (!checked.ok) throw new Error(`Not a complete TVN export · ${checked.errors[0]}`)
+      const restored = await importUserNetwork(checked.value.userNetwork)
+      const { favourites: favouriteNumbers, settings } = checked.value
+      setFavourites([...favouriteNumbers])
+      if (settings.volume !== undefined) {
+        volumeRef.current = settings.volume
+        setVolume(settings.volume)
+      }
+      if (settings.muted !== undefined) {
+        mutedRef.current = settings.muted
+        setMuted(settings.muted)
+      }
+      if (settings.subtitles !== undefined) {
+        subtitlesRef.current = settings.subtitles
+        setSubtitles(settings.subtitles)
+      }
+      if (settings.sleepMinutes !== undefined) {
+        sleepMinutesRef.current = settings.sleepMinutes
+        setSleepMinutes(settings.sleepMinutes)
+      }
+      if (settings.guideSplit !== undefined) setGuideSplit(clampGuideSplit(settings.guideSplit))
+      if (settings.infoShortcuts !== undefined) setInfoShortcuts(asShortcuts(settings.infoShortcuts))
+      if (settings.surfRange !== undefined) {
+        const range = asSurfRange(settings.surfRange)
+        saveSurfRange(range)
+        setSurfRangeState(range)
+      }
+      if (settings.transition !== undefined) {
+        transitionRef.current = asTransition(settings.transition)
+        saveTransition(transitionRef.current)
+        setTransitionState(transitionRef.current)
+      }
+      playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
+      return restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')
+    },
+    [importUserNetwork],
   )
 
   const openChannelEdit = useCallback(async (number: number): Promise<ChannelEdit | null> => {
@@ -1883,7 +1965,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   )
 
   const exportChannelFile = useCallback(
-    async (number: number, edit: ChannelEdit, as: 'json' | 'md') => {
+    async (number: number, edit: ChannelEdit, as: ChannelExportKind) => {
       if (scopeOf(number).scope !== 'user') throw new Error('Only your own channels can be exported')
       // What the editor shows, unsaved changes included, on a copy: exporting never saves.
       const shown = applyChannelEdit(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, Date.now())
@@ -1891,6 +1973,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (!record) throw new Error('That channel is no longer in your User Network')
       if (as === 'md') {
         downloadText(channelFilename(record, 'md'), manifestText(userChannelManifest(record), record), 'text/markdown')
+        return 'READABLE MANIFEST EXPORTED'
+      }
+      if (as === 'manifest') {
+        downloadText(channelFilename(record, 'manifest.json'), `${JSON.stringify(userChannelManifest(record), null, 2)}\n`)
         return 'CHANNEL MANIFEST EXPORTED'
       }
       downloadText(channelFilename(record), serialiseChannelFile(buildChannelFile(record, new Date(), uploaderIdFor)))
@@ -2002,6 +2088,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const next = asSurfRange(range, moved)
     saveSurfRange(next)
     setSurfRangeState(next)
+  }, [])
+
+  const setTransition = useCallback((id: TransitionId) => {
+    const next = asTransition(id)
+    transitionRef.current = next
+    saveTransition(next)
+    setTransitionState(next)
   }, [])
 
   const setInfoShortcut = useCallback((corner: Corner, id: ShortcutId) => {
@@ -2139,6 +2232,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       toggleSurf,
       surfRange,
       setSurfRange,
+      transition,
+      setTransition,
       infoShortcuts,
       setInfoShortcut,
       resetInfoShortcuts,
@@ -2165,6 +2260,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       removeUserChannels,
       exportUserNetwork,
       importUserNetwork,
+      exportTvn,
+      importTvn,
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
@@ -2197,6 +2294,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       removeUserChannels,
       exportUserNetwork,
       importUserNetwork,
+      exportTvn,
+      importTvn,
       activateGuide,
       channel,
       debugOpen,
@@ -2236,6 +2335,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       toggleSurf,
       surfRange,
       setSurfRange,
+      transition,
+      setTransition,
       infoShortcuts,
       setInfoShortcut,
       resetInfoShortcuts,

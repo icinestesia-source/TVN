@@ -3,6 +3,8 @@ import {
   ROW_HEIGHT,
   TIME_HEADER_HEIGHT,
   openScrollLeft,
+  basePxPerMinute,
+  TITLE_MIN_PX,
   programmeFlags,
   slotFrame,
   timeX,
@@ -671,7 +673,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onCancel={() => tv.dispatch({ type: 'cancel' })}
         />
       ) : tool === 'network' ? (
-        <UserNetworkImportTools userChannels={userChannels.filter((channel) => !channel.emptySlot).length} onApply={tv.importUserNetwork} />
+        <UserNetworkImportTools userChannels={userChannels.filter((channel) => !channel.emptySlot).length} onApply={tv.importUserNetwork} onApplyComplete={tv.importTvn} />
       ) : tool === 'add' ? (
         <UserNetworkTools
           userChannels={userNumbers.length}
@@ -846,7 +848,7 @@ function ProgrammeRow({
               onActivate()
             }}
           >
-            {frame.width > 72 ? <span className="prog-title">{slot.programme.title}</span> : null}
+            {frame.width > TITLE_MIN_PX ? <span className="prog-title">{slot.programme.title}</span> : null}
             {frame.width > 168 ? (
               <span className="prog-time">{isLiveStream(slot.programme) ? 'Live' : formatRange(slot.startMs, slot.endMs)}</span>
             ) : null}
@@ -1052,8 +1054,7 @@ function useTimelinePinch(
 
 function initialPxPerMinute(): number {
   if (typeof window === 'undefined') return 8
-  const width = window.innerWidth
-  return width < 720 ? 4.6 : width < 1100 ? 6.2 : 8
+  return basePxPerMinute(window.innerWidth)
 }
 
 function usePxPerMinute(): number {
@@ -1061,8 +1062,7 @@ function usePxPerMinute(): number {
 
   useEffect(() => {
     const apply = () => {
-      const width = window.innerWidth
-      setPx(width < 720 ? 4.6 : width < 1100 ? 6.2 : 8)
+      setPx(basePxPerMinute(window.innerWidth))
     }
     apply()
     window.addEventListener('resize', apply)

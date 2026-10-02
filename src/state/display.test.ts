@@ -73,12 +73,12 @@ describe('bottom controls', () => {
     expect(remoteLabels.slice(-4)).toEqual(['Close', 'Credits', 'Pause', 'Sleep 60'])
   })
 
-  it('TVN surfs on a click and opens its settings on a right-click or a hold, never both', () => {
+  it('R tunes at random on a click, runs the Random Cycle on a hold, and opens Random settings on a right-click, never both', () => {
     const shortcuts = readFileSync('src/view/info-shortcuts.ts', 'utf8')
-    expect(shortcuts).toMatch(/tvn: \{[^}]*run: \(context\) => context\.dispatch\(\{ type: 'surf' \}\),\s*pressed: \(context\) => context\.surfing,\s*hold: \(context\) => context\.openSettings\(\),/)
+    expect(shortcuts).toMatch(/random: \{[^}]*run: \(context\) => context\.dispatch\(\{ type: 'random-channel' \}\),[\s\S]*?hold: \(context\) => context\.dispatch\(\{ type: 'surf' \}\),\s*menu: \(context\) => context\.openRandomSettings\(\),/)
     const pad = readFileSync('src/components/InfoActions.tsx', 'utf8')
     expect(pad).toContain('if (hold && cornerHold.swallowClick()) return')
-    expect(pad).toMatch(/onContextMenu=\{\s*hold\s*\? \(event\) => \{\s*event\.preventDefault\(\)\s*event\.stopPropagation\(\)\s*cornerHold\.opened\(\)\s*hold\(context\)/)
+    expect(pad).toMatch(/cornerHold\.cancel\(\)\s*menu\(context\)/)
     expect(readFileSync('src/styles/stage2.css', 'utf8')).not.toContain('.remote-bar')
   })
 })

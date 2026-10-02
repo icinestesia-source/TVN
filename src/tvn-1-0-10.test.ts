@@ -173,7 +173,7 @@ describe('RESTORE rebuilds the users and ownership', () => {
     ).toMatchObject({ ok: true })
     // The Guide reads and validates before it asks, and applies only the validated document.
     const tools = read('src/components/GuideAdd.tsx')
-    expect(tools.indexOf('readUserNetworkFile(await file.text())')).toBeLessThan(tools.indexOf('setPending({ document: read.value'))
+    expect(tools.indexOf('readRestoreFile(await file.text())')).toBeLessThan(tools.indexOf("setPending({ kind: 'network', document: read.value"))
   })
 
   it('replaces the users with the file’s, by id, and leaves favourites on their numbers', () => {

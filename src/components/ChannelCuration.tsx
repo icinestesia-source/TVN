@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import {
   cleanFilter,
   EDITORIAL_LIMITS,
@@ -11,6 +11,7 @@ import {
   sourceModeOf,
   widenSource,
   type ChannelEditorial,
+  type SourceDraft,
   type SourceFilter,
   type SourceMode,
 } from '../services/channel-curation.ts'
@@ -82,19 +83,27 @@ function filterOf(draft: Draft): SourceFilter | undefined {
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 
 /**
- * One scheduled source's filter and mode. The preview counts what the draft would make eligible from what
- * the source already holds; nothing is fetched, saved or reordered until APPLY (then the editor's SAVE).
+ * One scheduled source's mode and filter, in the order they act: MODE (how far back the source reaches), FILTER
+ * (which of its programmes are eligible), PREVIEW (what that makes eligible from what the source already holds),
+ * then RESCAN (fetch again with them). Nothing is fetched or saved until APPLY or APPLY & RESCAN; the editor's
+ * own RESCAN also uses a draft not yet applied, and SAVE keeps it.
  */
 export function SourceFilterPanel({
   source,
   archive = [],
   disabled,
   onApply,
+  onRescan,
+  onDraft,
 }: {
   source: ChannelSource
   archive?: readonly ImportedVideo[]
   disabled: boolean
   onApply: (filter: SourceFilter | undefined, mode: SourceMode) => void
+  /** Applies the draft and rescans the channel with it. */
+  onRescan?: (filter: SourceFilter | undefined, mode: SourceMode) => void
+  /** The draft while it differs from what the source has, or null once it matches again. */
+  onDraft?: (draft: SourceDraft | null) => void
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(source))
   const set = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }))
@@ -105,6 +114,12 @@ export function SourceFilterPanel({
     [source, archive, JSON.stringify(filter), draft.mode],
   )
   const changed = !same(filter, cleanFilter(source.filter)) || draft.mode !== sourceModeOf(source)
+  const filterKey = JSON.stringify(filter ?? null)
+  useEffect(() => {
+    onDraft?.(changed ? { filter, mode: draft.mode } : null)
+    // The draft is reported when it changes; the callback itself may be a new function each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [changed, filterKey, draft.mode])
   const id = `curation-${source.id}`
   const field = (label: string, key: keyof Draft, props: { placeholder?: string; inputMode?: 'numeric' | 'decimal'; wide?: boolean } = {}) => (
     <label className={props.wide ? 'curation-field is-wide' : 'curation-field'}>
@@ -125,9 +140,14 @@ export function SourceFilterPanel({
   return (
     <div className="curation" role="group" aria-labelledby={`${id}-head`}>
       <p className="editor-heading" id={`${id}-head`}>
-        Filter · {SOURCE_MODE_LABELS[sourceModeOf(source)]}
-        {source.filter ? ' · on' : ''}
+        Mode · filter · preview · rescan
+        <span className="curation-state">
+          {SOURCE_MODE_LABELS[sourceModeOf(source)]}
+          {source.filter ? ' · filter on' : ''}
+          {changed ? ' · not applied yet' : ''}
+        </span>
       </p>
+      <p className="curation-step">1 · Mode</p>
       <label className="curation-field is-wide">
         <span>Source mode</span>
         <select value={draft.mode} disabled={disabled} onKeyDown={keepKey} onChange={(event) => set({ mode: event.target.value as SourceMode })}>
@@ -139,6 +159,7 @@ export function SourceFilterPanel({
         </select>
         <small>{MODE_NOTES[draft.mode]}</small>
       </label>
+      <p className="curation-step">2 · Filter</p>
       <p className="curation-sub">Include</p>
       <div className="curation-grid">
         {field('Title contains any of', 'terms', { placeholder: 'comma separated', wide: true })}
@@ -158,6 +179,7 @@ export function SourceFilterPanel({
         <input type="checkbox" checked={draft.shorts} disabled={disabled} onKeyDown={keepKey} onChange={() => set({ shorts: !draft.shorts })} />
         <span>Shorts</span>
       </label>
+      <p className="curation-step">3 · Preview · from what this source already holds</p>
       <p className="curation-count" role="status" aria-label="Filter preview">
         <span>Matches {preview.matches}</span>
         <span>Excluded {preview.excluded}</span>
@@ -185,10 +207,16 @@ export function SourceFilterPanel({
           ))}
         </ol>
       ) : null}
+      <p className="curation-step">4 · Rescan · fetches the source again with this mode and filter</p>
       <div className="curation-actions">
         <button type="button" className="tab" disabled={disabled || !changed} onKeyDown={keepKey} onClick={() => onApply(filter, draft.mode)}>
           Apply filter
         </button>
+        {onRescan ? (
+          <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={() => onRescan(filter, draft.mode)}>
+            {changed ? 'Apply & rescan' : 'Rescan with this filter'}
+          </button>
+        ) : null}
         <button
           type="button"
           className="tab"

@@ -322,3 +322,21 @@ export function cleanEditorial(raw: unknown): ChannelEditorial | undefined {
   if (typeof programmes === 'number' && Number.isFinite(programmes) && programmes > 0) out.targetProgrammes = Math.min(Math.round(programmes), EDITORIAL_LIMITS.programmes)
   return Object.keys(out).length ? out : undefined
 }
+
+/** A source's mode and filter as set in Edit Channel but not yet applied. */
+export interface SourceDraft {
+  filter: SourceFilter | undefined
+  mode: SourceMode
+}
+
+/**
+ * The sources with these drafts applied, so a rescan uses the mode and filter the curator has just set. Sources
+ * without a draft are returned as they are; Recent is stored as no mode.
+ */
+export function withSourceDrafts<T extends Pick<ChannelSource, 'id' | 'filter' | 'mode'>>(sources: readonly T[], drafts: ReadonlyMap<string, SourceDraft>): T[] {
+  return sources.map((source) => {
+    const draft = drafts.get(source.id)
+    if (!draft) return source
+    return { ...source, filter: cleanFilter(draft.filter), mode: draft.mode === 'recent' ? undefined : draft.mode }
+  })
+}

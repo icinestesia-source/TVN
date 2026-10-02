@@ -55,7 +55,7 @@ export function FeedbackRoute() {
   )
 }
 
-/** About · Sources · Legal: reached from TVN settings, the credits and the first-run notice. */
+/** About · Sources · Legal: reached from Settings, the Random settings, the credits and the first-run notice. */
 export function AboutPanel() {
   const ref = useRef<HTMLElement>(null)
   useEffect(() => {

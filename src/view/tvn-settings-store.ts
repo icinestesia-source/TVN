@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-/** Whether the TVN settings dialog is open; the TVN key in the information overlay opens it on a hold. */
+/** Whether the Random settings dialog is open; a right-click on R in the information overlay opens it. */
 let open = false
 const listeners = new Set<() => void>()
 
@@ -15,22 +15,22 @@ function subscribe(listener: () => void) {
   }
 }
 
-export function tvnSettingsOpen(): boolean {
+export function randomSettingsOpen(): boolean {
   return open
 }
 
-export function openTvnSettings(): void {
+export function openRandomSettings(): void {
   if (open) return
   open = true
   emit()
 }
 
-export function closeTvnSettings(): void {
+export function closeRandomSettings(): void {
   if (!open) return
   open = false
   emit()
 }
 
-export function useTvnSettingsOpen(): boolean {
-  return useSyncExternalStore(subscribe, tvnSettingsOpen, () => false)
+export function useRandomSettingsOpen(): boolean {
+  return useSyncExternalStore(subscribe, randomSettingsOpen, () => false)
 }

@@ -264,7 +264,7 @@ describe('unchanged around it', () => {
   })
 
   it('keeps the 3×3 pad with Fullscreen and MULTI in ↓’s place', () => {
-    expect(SHORTCUT_IDS).toEqual(['remote', 'fullscreen', 'tvn', 'random', 'captions'])
+    expect(SHORTCUT_IDS).toEqual(['remote', 'fullscreen', 'settings', 'random', 'captions'])
     expect(DEFAULT_SHORTCUTS.topRight).toBe('fullscreen')
     expect(read('src/components/InfoActions.tsx')).toContain("MULTI holds ↓'s place")
   })

@@ -488,6 +488,30 @@ span.editor-expand { border-color: transparent; }
 
 .curation.editorial { padding-left: 4px; }
 
+.editor-manifest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+
+.curation-step {
+  margin: 10px 0 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  color: var(--gold);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.curation-state {
+  margin-left: 8px;
+  color: var(--muted);
+}
+
 .curation-sub {
   margin: 6px 0 0;
   color: var(--muted);
@@ -1105,6 +1129,16 @@ span.editor-expand { border-color: transparent; }
 
 .info-status.is-alert { color: var(--danger); }
 
+.info-kind {
+  font-family: var(--font-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.info-kind.is-picked { color: var(--gold); }
+
 .info-desc {
   align-self: center;
   color: #d5e0ec;
@@ -1229,7 +1263,6 @@ span.editor-expand { border-color: transparent; }
 .info-pad > .is-fullscreen { font-size: 17px; }
 
 .info-pad > .is-remote,
-.info-pad > .is-tvn,
 .info-pad > .is-captions,
 .info-pad > .is-random {
   font-family: var(--font-ui);
@@ -1244,7 +1277,9 @@ span.editor-expand { border-color: transparent; }
   letter-spacing: 0.02em;
 }
 
-.info-pad > .is-tvn {
+.info-pad > .is-settings { font-size: 17px; }
+
+.info-pad > .is-random {
   -webkit-touch-callout: none;
   user-select: none;
 }

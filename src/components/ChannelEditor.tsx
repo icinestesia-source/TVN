@@ -3,7 +3,8 @@ import { watchUrl } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
 import type { ChannelEdit } from '../services/channel-editor.ts'
-import { reachesArchive } from '../services/channel-curation.ts'
+import type { ChannelExportKind } from '../services/channel-file.ts'
+import { reachesArchive, withSourceDrafts, type SourceDraft } from '../services/channel-curation.ts'
 import type { ImportedVideo } from '../services/channels-import.ts'
 import {
   ADDABLE_KINDS,
@@ -117,8 +118,11 @@ export function ChannelEditor({
   onRescan: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
   onDelete: (channelNumber: number) => Promise<string>
   onClose: () => void
-  /** EXPORT CHANNEL (user channels): the channel as shown, as a tvn-channel-v1 file or its readable manifest. */
-  onExport?: (channelNumber: number, edit: ChannelEdit, as: 'json' | 'md') => Promise<string>
+  /**
+   * EXPORT (user channels), the channel as shown: its tvn-channel-v1 file, or its editorial manifest as JSON
+   * (tvn-editorial-manifest-v1) or readable text.
+   */
+  onExport?: (channelNumber: number, edit: ChannelEdit, as: ChannelExportKind) => Promise<string>
   /** TVN's shipped back catalogue for a source, so the filter preview counts what ARCHIVE and ALL would add. */
   archiveOf?: (source: ChannelSource) => readonly ImportedVideo[]
   /** The channel as already read, shown until the editor's own read completes. */
@@ -135,6 +139,8 @@ export function ChannelEditor({
   const [confirming, setConfirming] = useState(false)
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set())
   const [notesOpen, setNotesOpen] = useState(false)
+  // Filters set on a source but not applied yet: the editor's RESCAN uses them too.
+  const [drafts, setDrafts] = useState<ReadonlyMap<string, SourceDraft>>(new Map())
   const curates = scope === 'user'
   const now = useClock(30_000)
   const rootRef = useRef<HTMLElement>(null)
@@ -146,6 +152,7 @@ export function ChannelEditor({
     setNote(null)
     setAdding(false)
     setConfirming(false)
+    setDrafts(new Map())
     onLoad(number).then(
       (loaded) => {
         if (!live) return
@@ -187,6 +194,27 @@ export function ChannelEditor({
     const ids = lineup.map((video) => video.id)
     ;[ids[index], ids[to]] = [ids[to], ids[index]]
     change({ ...edit, order: ids })
+  }
+
+  const noteDraft = (id: string, draft: SourceDraft | null) =>
+    setDrafts((current) => {
+      if (!draft && !current.has(id)) return current
+      const next = new Map(current)
+      if (draft) next.set(id, draft)
+      else next.delete(id)
+      return next
+    })
+  /** Rescans with every source's mode and filter as set now, applied ones and drafts alike. */
+  const rescan = (base: ChannelEdit, extra?: ReadonlyMap<string, SourceDraft>) => {
+    const all = new Map([...drafts, ...(extra ?? [])])
+    const next = all.size > 0 ? { ...base, sources: withSourceDrafts(base.sources, all) } : base
+    if (all.size > 0) setEdit(next)
+    void run('rescan', async () => {
+      const result = await onRescan(number, next)
+      setEdit(result.edit)
+      setDrafts(new Map())
+      return result.message
+    })
   }
 
   const run = async (label: string, work: () => Promise<string>) => {
@@ -260,6 +288,11 @@ export function ChannelEditor({
               />
             </label>
             <p className="editor-heading">Sources</p>
+            {curates ? (
+              <p className="guide-tool-note">
+                A channel can draw on several sources, each with its own mode and filter. Open a source to set them, check the preview, then rescan.
+              </p>
+            ) : null}
             <ul className="editor-sources">
               {edit.sources.length === 0 ? <li className="editor-empty">No sources yet</li> : null}
               {edit.sources.map((source) => {
@@ -312,8 +345,10 @@ export function ChannelEditor({
                       disabled={busy !== null}
                       onApply={(filter, mode) => {
                         setSource(source.id, { filter, mode: mode === 'recent' ? undefined : mode })
-                        setNote(filter || mode !== 'recent' ? 'FILTER APPLIED · SAVE TO KEEP IT' : 'FILTER CLEARED · SAVE TO KEEP IT')
+                        setNote(filter || mode !== 'recent' ? 'FILTER APPLIED · RESCAN TO FETCH WITH IT · SAVE TO KEEP IT' : 'FILTER CLEARED · SAVE TO KEEP IT')
                       }}
+                      onDraft={(draft) => noteDraft(source.id, draft)}
+                      onRescan={(filter, mode) => rescan(edit, new Map([[source.id, { filter, mode }]]))}
                     />
                   ) : null}
                   {open && !isStreamSource(source) ? (
@@ -388,6 +423,17 @@ export function ChannelEditor({
                   <p className="editor-heading">Editorial · curation{edit.editorial?.purpose?.trim() ? ` · ${edit.editorial.purpose.trim().slice(0, 60)}` : ''}</p>
                 </div>
                 {notesOpen ? <EditorialPanel editorial={edit.editorial} disabled={busy !== null} onChange={(editorial) => change({ ...edit, editorial })} /> : null}
+                {onExport ? (
+                  <div className="editor-manifest" role="group" aria-label="Channel manifest">
+                    <span className="guide-tool-note">Manifest: what the channel holds now, beside these notes and each source's filter.</span>
+                    <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'manifest'))}>
+                      Export manifest
+                    </button>
+                    <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'md'))}>
+                      Readable manifest
+                    </button>
+                  </div>
+                ) : null}
               </>
             ) : null}
             <div className="editor-lineup-head">
@@ -464,15 +510,10 @@ export function ChannelEditor({
               className="tab"
               disabled={busy !== null}
               onKeyDown={keepKey}
-              onClick={() =>
-                void run('rescan', async () => {
-                  const result = await onRescan(number, edit)
-                  setEdit(result.edit)
-                  return result.message
-                })
-              }
+              title={drafts.size > 0 ? 'Rescans with the filter changes not applied yet' : undefined}
+              onClick={() => rescan(edit)}
             >
-              {busy === 'rescan' ? 'Rescanning…' : 'Rescan channel'}
+              {busy === 'rescan' ? 'Rescanning…' : drafts.size > 0 ? 'Apply filters & rescan' : 'Rescan channel'}
             </button>
             <button type="button" className="tune-key" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('save', () => onSave(number, edit))}>
               {busy === 'save' ? 'Saving…' : 'Save'}
@@ -481,9 +522,6 @@ export function ChannelEditor({
               <>
                 <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'json'))}>
                   Export channel
-                </button>
-                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'md'))}>
-                  Export manifest
                 </button>
               </>
             ) : null}

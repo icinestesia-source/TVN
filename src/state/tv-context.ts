@@ -7,6 +7,7 @@ import type { GuideMode } from '../view/guide-mode.ts'
 import type { Corner, ShortcutAssignment, ShortcutId } from '../view/info-shortcuts.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
 import type { ChannelEdit } from '../services/channel-editor.ts'
+import type { ChannelExportKind } from '../services/channel-file.ts'
 
 export interface GuideCursor {
   channelNumber: number
@@ -42,7 +43,7 @@ export interface TvContextValue {
   /** Narrows the listed guide rows only; tuning, favourites and airing ignore it. */
   guideQuery: string
   setGuideQuery: (query: string) => void
-  /** The Guide's timeline zoom for this session: 1 is the standard scale; NOW restores it. */
+  /** The Guide's timeline zoom: chosen for the listings when the Guide opens, then the viewer's; NOW restores 1. */
   guideZoom: number
   setGuideZoom: (zoom: number) => void
   guideOpen: boolean
@@ -80,12 +81,15 @@ export interface TvContextValue {
   /** Streaming has stopped for inactivity; any key, click or touch wakes the television. */
   asleep: boolean
   wake: () => void
-  /** TVN surf: random channels, each after a random wait within `surfRange`. */
+  /** The Random Cycle (surf): random channels, each after a random wait within `surfRange`. */
   surfing: boolean
   toggleSurf: () => void
   surfRange: import('./surf.ts').SurfRange
   /** A TVN setting; `moved` is the end the viewer changed, which wins if the two cross. */
   setSurfRange: (range: import('./surf.ts').SurfRange, moved?: 'min' | 'max') => void
+  /** How a channel change is presented (src/state/transitions.ts), a saved setting. Never waits for the player. */
+  transition: import('./transitions.ts').TransitionId
+  setTransition: (id: import('./transitions.ts').TransitionId) => void
   /** The actions in the corners of the information overlay's control pad, a saved setting. */
   infoShortcuts: ShortcutAssignment
   /** Puts an action in a corner, swapping it with the corner's current action. */
@@ -144,6 +148,10 @@ export interface TvContextValue {
   exportUserNetwork: () => Promise<string>
   /** Replace the User Network (1001+) with a validated, confirmed tvn-user-network-v1 document. */
   importUserNetwork: (document: import('../services/user-network-export.ts').UserNetworkExport) => Promise<string>
+  /** COMPLETE TVN EXPORT (tvn-export-v1): the User Network, Favourites and portable settings in one file. */
+  exportTvn: () => Promise<string>
+  /** Restores a confirmed complete export; a file that fails validation changes nothing. */
+  importTvn: (document: import('../services/tvn-export.ts').TvnExport) => Promise<string>
   /**
    * The Channel Editor, for one channel at a time. A 1001+ channel is read from and saved to the User
    * Network; a curated channel's change is kept in this browser, over the shipped channel.
@@ -156,7 +164,7 @@ export interface TvContextValue {
    * EXPORT CHANNEL: download one user channel, as the editor shows it, as a tvn-channel-v1 file (`json`) or its
    * readable manifest (`md`). Reads only: nothing is saved.
    */
-  exportChannelFile: (channelNumber: number, edit: ChannelEdit, as: 'json' | 'md') => Promise<string>
+  exportChannelFile: (channelNumber: number, edit: ChannelEdit, as: ChannelExportKind) => Promise<string>
   /** Add a validated tvn-channel-v1 file as a new channel for `owner`, on the lowest free user number. */
   importChannelFile: (text: string, owner: string) => Promise<{ message: string; number: number }>
   /** TVN's shipped back catalogue for a channel source, which ARCHIVE and ALL add to it; for the editor's preview. */

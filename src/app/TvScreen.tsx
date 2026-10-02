@@ -27,6 +27,7 @@ import { useAboutOpen, useNoticeAcknowledged } from '../legal/about-store.ts'
 import { START_HOLD_COPY } from '../player/autoplay.ts'
 import { AboutPanel } from '../legal/AboutPanel.tsx'
 import { FirstRunNotice } from '../legal/FirstRunNotice.tsx'
+import { TRANSITIONS } from '../state/transitions.ts'
 
 function useViewportWidth(): number {
   const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1280 : window.innerWidth))
@@ -107,7 +108,7 @@ export function TvScreen() {
         ) : (
           <MultiviewGrid width={width} />
         )}
-        {tv.tuningNumber !== null && single ? <StaticOverlay channelNumber={tv.tuningNumber} /> : null}
+        {tv.tuningNumber !== null && single && TRANSITIONS[tv.transition].showsStatic ? <StaticOverlay channelNumber={tv.tuningNumber} /> : null}
         {tv.credits ? <CreditsRoll /> : null}
         {tv.screenEdit !== null ? <ScreenEditor /> : info ? <NowNextOverlay leaving={info === 'closing'} /> : null}
         {tv.overlay === 'volume' ? <VolumeOsd volume={tv.volume} muted={tv.muted} /> : null}

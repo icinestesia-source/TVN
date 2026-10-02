@@ -6,6 +6,7 @@ import { USER_NAME_MAX, type NetworkUser } from '../data/user-network/users.ts'
 import { GUIDE_ZOOM_MAX, GUIDE_ZOOM_MIN, GUIDE_ZOOM_STEP } from '../epg/zoom.ts'
 import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
+import { TRANSITION_IDS, TRANSITIONS } from '../state/transitions.ts'
 import { useTv } from '../state/tv-context.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
 
@@ -164,7 +165,7 @@ function UserRow({ user, channels, onStatus }: { user: NetworkUser; channels: nu
 
 /**
  * OPTIONS: every viewer setting in one place, in the Guide. Users (TVN and the named users, which can be
- * renamed or deleted), picture and sound, sleep, the Guide, random surf, the information overlay's shortcuts,
+ * renamed or deleted), picture and sound, sleep, the Guide, random surf, the information overlay’s shortcuts,
  * the User Network file, and About.
  */
 export function GuideOptions() {
@@ -232,6 +233,25 @@ export function GuideOptions() {
           <Row label="Subtitles">{toggle(tv.subtitles, ['On', 'Off'], () => tv.dispatch({ type: 'subtitles' }))}</Row>
         </Card>
 
+        <Card title="Channel change">
+          <div className="options-choices" role="radiogroup" aria-label="Channel change">
+            {TRANSITION_IDS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={tv.transition === id}
+                className={tv.transition === id ? 'tab is-on' : 'tab'}
+                onKeyDown={keepKey}
+                onClick={() => tv.setTransition(id)}
+              >
+                {TRANSITIONS[id].label}
+              </button>
+            ))}
+          </div>
+          <p className="options-note">{TRANSITIONS[tv.transition].note}</p>
+        </Card>
+
         <Card title="Sleep">
           <p className="options-note">Stop streaming after this long without use.</p>
           <div className="options-choices" role="radiogroup" aria-label="Sleep after">
@@ -273,8 +293,8 @@ export function GuideOptions() {
           </Row>
         </Card>
 
-        <Card title="Random surf">
-          <p className="options-note">TVN on the remote starts and stops it; each hop comes after a random wait in this range.</p>
+        <Card title="Random Cycle">
+          <p className="options-note">Hold R to start or stop it (T on a keyboard); each hop comes after a random wait in this range.</p>
           <label className="options-row">
             <span className="options-label">Minimum</span>
             <span className="options-control">
@@ -303,7 +323,7 @@ export function GuideOptions() {
               <output className="options-value">{tv.surfRange.maxSeconds} s</output>
             </span>
           </label>
-          <Row label="Surf">{toggle(tv.surfing, ['Stop', 'Start'], tv.toggleSurf)}</Row>
+          <Row label="Random Cycle">{toggle(tv.surfing, ['Stop', 'Start'], tv.toggleSurf)}</Row>
         </Card>
 
         <Card title="Information overlay shortcuts">
@@ -328,11 +348,18 @@ export function GuideOptions() {
           </div>
         </Card>
 
-        <Card title="User Network file">
-          <p className="options-note">Your user channels are kept in this browser. Save them to a file, or bring a saved file back.</p>
+        <Card title="Save & restore">
+          <p className="options-note">
+            Everything here is kept in this browser. The complete export saves your users, User Network channels, Favourites and settings;
+            Restore takes it or a User Network file, and asks before replacing anything. Single channels and their manifests are in Edit
+            Channel.
+          </p>
           <div className="options-choices">
+            <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => void run(tv.exportTvn)}>
+              Complete export
+            </button>
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => void run(tv.exportUserNetwork)}>
-              Export
+              User Network only
             </button>
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}>
               Restore

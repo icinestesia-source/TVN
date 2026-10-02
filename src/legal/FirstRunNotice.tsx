@@ -1,7 +1,7 @@
 import { acknowledgeNotice, openAbout } from './about-store.ts'
 import { GOOGLE_PRIVACY, YOUTUBE_TERMS } from './legal-text.ts'
 
-/** Shown once per browser; About · Sources · Legal stays in TVN settings afterwards. */
+/** Shown once per browser; About · Sources · Legal stays in Settings afterwards. */
 export function FirstRunNotice() {
   return (
     <section className="first-run" role="dialog" aria-label="About TVN" onKeyDown={(event) => event.stopPropagation()}>

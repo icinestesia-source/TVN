@@ -64,7 +64,7 @@ function bar(overrides: Partial<Parameters<typeof InfoActions>[0]> = {}) {
 describe('information controls: the 3×3 pad round GUIDE', () => {
   it('1. renders REMOTE ↑|CH+ ⛶ / ← GUIDE → / TVN ↓|CH− R with the accessible names', () => {
     const { list } = bar()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', 'TVN', '↓', 'CH−', 'R'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'R'])
     const named = Object.fromEntries(list.map((control) => [control.label, control.props['aria-label']]))
     expect(named['↑']).toBe('Previous watched channel')
     expect(named['CH+']).toBe('Channel up')
@@ -266,7 +266,7 @@ describe('Guide timeline zoom', () => {
     expect(css).toMatch(/\.guide-zoom \{[^}]*max-width: 132px;/)
     expect(read('src/styles/tokens.css')).toContain('--channel-col: 280px')
     for (const width of ['210px', '148px', '112px']) expect(css).toContain(`--channel-col: ${width}`)
-    expect(guide).toContain('return width < 720 ? 4.6 : width < 1100 ? 6.2 : 8')
+    expect(read('src/epg/geometry.ts')).toContain('return windowWidth < 720 ? 4.6 : windowWidth < 1100 ? 6.2 : 8')
     // At 1x, the phone Guide opens exactly where it always did.
     const now = Date.UTC(2026, 9, 1, 12, 10)
     const start = Date.UTC(2026, 9, 1, 6)

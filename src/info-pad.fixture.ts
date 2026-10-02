@@ -30,7 +30,7 @@ export function padProps({
     subtitles,
     remoteOpen,
     surfing,
-    openSettings: () => void settings.push('open'),
+    openRandomSettings: () => void settings.push('open'),
     dispatch,
   }
   return {

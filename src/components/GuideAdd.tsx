@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from 'react'
 import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
-import { readUserNetworkFile } from '../services/user-network-restore.ts'
+import { readRestoreFile, type TvnExport } from '../services/tvn-export.ts'
 import type { GuideTool } from '../types/input.ts'
 import { USER_NAME_MAX } from '../data/user-network/users.ts'
 import { padChannel } from '../utils/time.ts'
@@ -357,13 +357,19 @@ const MAX_NETWORK_FILE_BYTES = 20 * 1024 * 1024
 export function UserNetworkImportTools({
   userChannels,
   onApply,
+  onApplyComplete,
 }: {
   userChannels: number
   onApply: (document: UserNetworkExport) => Promise<string>
+  onApplyComplete: (document: TvnExport) => Promise<string>
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
-  const [pending, setPending] = useState<{ document: UserNetworkExport; channels: number; empty: number; users: number; filename: string } | null>(null)
+  const [pending, setPending] = useState<
+    | { kind: 'network'; document: UserNetworkExport; channels: number; empty: number; users: number; filename: string }
+    | { kind: 'complete'; document: TvnExport; channels: number; empty: number; users: number; favourites: number; filename: string }
+    | null
+  >(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const first = useRef<HTMLButtonElement>(null)
 
@@ -379,13 +385,16 @@ export function UserNetworkImportTools({
     }
     setNote('READING…')
     try {
-      const read = readUserNetworkFile(await file.text())
+      const read = readRestoreFile(await file.text())
       if (!read.ok) {
-        setNote(`NOT A TVN USER NETWORK FILE · ${read.errors[0].toUpperCase()}`)
+        setNote(`${read.kind === 'complete' ? 'NOT A COMPLETE TVN EXPORT' : 'NOT A TVN USER NETWORK FILE'} · ${read.errors[0].toUpperCase()}`)
         return
       }
       setNote(null)
-      setPending({ document: read.value, channels: read.channels, empty: read.empty, users: read.users, filename: file.name })
+      if (read.kind === 'complete') {
+        const empty = read.value.userNetwork.channels.filter((channel) => channel.state === 'empty').length
+        setPending({ kind: 'complete', document: read.value, channels: read.channels, empty, users: read.users, favourites: read.favourites, filename: file.name })
+      } else setPending({ kind: 'network', document: read.value, channels: read.channels, empty: read.empty, users: read.users, filename: file.name })
     } catch {
       setNote('THAT FILE COULD NOT BE READ')
     }
@@ -393,12 +402,12 @@ export function UserNetworkImportTools({
 
   const apply = async () => {
     if (!pending) return
-    const { document } = pending
+    const chosen = pending
     setPending(null)
     setBusy(true)
-    setNote('IMPORTING USER NETWORK…')
+    setNote(chosen.kind === 'complete' ? 'RESTORING TVN…' : 'IMPORTING USER NETWORK…')
     try {
-      setNote(await onApply(document))
+      setNote(chosen.kind === 'complete' ? await onApplyComplete(chosen.document) : await onApply(chosen.document))
     } catch (caught) {
       setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE IMPORTED'))
     } finally {
@@ -429,8 +438,11 @@ export function UserNetworkImportTools({
       <div className="info-actions">
         {pending ? (
           <>
-            <span className="remove-ask" role="alertdialog" aria-label="Import User Network?">
-              Import User Network? This will replace your current User Network
+            <span className="remove-ask" role="alertdialog" aria-label={pending.kind === 'complete' ? 'Restore complete TVN export?' : 'Import User Network?'}>
+              {pending.kind === 'complete'
+                ? `Restore complete TVN export? This will replace your Favourites (with ${pending.favourites}), your settings and`
+                : 'Import User Network? This will replace'}{' '}
+              your current User Network
               {userChannels > 0 ? ` (${userChannels} ${userChannels === 1 ? 'channel' : 'channels'})` : ''} with {pending.channels}{' '}
               {pending.channels === 1 ? 'channel' : 'channels'}
               {pending.empty > 0 ? `, ${pending.empty} empty,` : ''} from {pending.filename}.

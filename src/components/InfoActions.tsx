@@ -41,9 +41,11 @@ function keepKey(event: KeyboardEvent<HTMLElement>) {
   if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
 }
 
-/** One hold timer for the corner keys, kept across the bar's once-a-second renders (every hold does the same). */
+/** One hold timer for the corner keys, kept across the bar's once-a-second renders. A held mouse button counts. */
 let holdAction: () => void = () => {}
-const cornerHold = createLongPress(() => holdAction())
+const cornerHold = createLongPress(() => holdAction(), undefined, undefined, true)
+/** How the last press on a corner began: a touch hold also raises the context menu on some phones. */
+let lastPointer = 'mouse'
 
 function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutContext) {
   const available = shortcut.available(context)
@@ -51,6 +53,8 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
   const action = available ? shortcut : null
   const pressed = action?.pressed?.(context)
   const hold = action?.hold
+  // A right-click opens the key's menu; a key without one treats it as its hold.
+  const menu = action?.menu ?? hold
   if (hold) holdAction = () => hold(context)
   return (
     <button
@@ -59,16 +63,17 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
       className={pressed ? `${className} is-on` : className}
       disabled={!available}
       aria-pressed={pressed}
-      aria-haspopup={hold ? 'dialog' : undefined}
+      aria-haspopup={action?.menu ? 'dialog' : undefined}
       title={available ? (shortcut.title ?? shortcut.name) : shortcut.unavailable}
       aria-label={shortcut.name}
       onKeyDown={keepKey}
       onPointerDown={
-        hold
+        hold || menu
           ? (event) => {
               // The bar's own hold edits the channel; this one is the key's.
               event.stopPropagation()
-              cornerHold.down(event)
+              lastPointer = event.pointerType
+              if (hold && event.button === 0) cornerHold.down(event)
             }
           : undefined
       }
@@ -77,12 +82,19 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
       onPointerCancel={hold ? cornerHold.cancel : undefined}
       onPointerLeave={hold ? cornerHold.cancel : undefined}
       onContextMenu={
-        hold
+        menu
           ? (event) => {
               event.preventDefault()
               event.stopPropagation()
-              cornerHold.opened()
-              hold(context)
+              if (lastPointer !== 'mouse') {
+                // The phone's own menu during a touch hold: the hold itself, once.
+                const holding = cornerHold.holding()
+                cornerHold.opened()
+                if (holding && hold) hold(context)
+                return
+              }
+              cornerHold.cancel()
+              menu(context)
             }
           : undefined
       }
@@ -103,11 +115,12 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
 /**
  * The information bar's controls, one 3×3 pad wherever the bar appears, in the Guide and over the picture.
  * The gold Guide key in the centre keeps the size of the Watch key it replaced, and its corners hold the
- * viewer's shortcuts:
+ * viewer's shortcuts. R tunes at random on a click, starts or stops the Random Cycle on a hold, and opens the
+ * Random settings on a right-click; ⚙ opens Settings:
  *
  *   REMOTE  ↑ CH+  ⛶
  *   ←      GUIDE   →
- *   TVN     ↓ CH−  R
+ *   ⚙       ↓ CH−  R
  *
  * ↑ and ↓ move back and forward through the channels watched; until ↑ has been used there is nowhere
  * forward to go, so ↓'s place holds MULTI. CH+ and CH− share their cells and step along the channel numbers. ← and → step back and forth along the channel's programmes (in the Guide they move
@@ -139,7 +152,7 @@ export function InfoActions({
     subtitles: corners.subtitles,
     remoteOpen: corners.remoteOpen,
     surfing: corners.surfing,
-    openSettings: corners.openSettings,
+    openRandomSettings: corners.openRandomSettings,
     dispatch: corners.dispatch,
   }
   const corner = (at: Corner) => cornerKey(at, SHORTCUTS[corners.assignment[at]], context)
