@@ -3,6 +3,7 @@ import type { StoredSource } from './channels-import.ts'
 import { sourcesOf } from './channel-editor.ts'
 import { canonicalYouTubeUrl, youTubeSourceType, type ChannelSource, type SourceInfo, type SourceKind } from './channel-sources.ts'
 import type { UploaderOf } from './user-network.ts'
+import { checkUserName, ownerOf, TVN_OWNER, USER_ID } from '../data/user-network/users.ts'
 
 /**
  * A portable copy of the viewer's User Network (1001+): which channels exist, on which numbers, made
@@ -50,6 +51,8 @@ export interface ExportSource {
 
 export interface ExportChannel {
   number: number
+  /** TVN_OWNER, or the id of a named user in `users`. Absent in files from before named users. */
+  owner?: string
   name: string
   state: 'populated' | 'empty'
   /** Listed in the Guide and on the air. */
@@ -63,11 +66,22 @@ export interface ExportChannel {
   sources: ExportSource[]
 }
 
+/** A named user, by the stable id its channels name as `owner`. TVN is built in and never listed here. */
+export interface ExportUser {
+  id: string
+  name: string
+}
+
+/**
+ * Named users are an addition to tvn-user-network-v1, not a new format: a file with `users` gives every channel
+ * an `owner` (TVN_OWNER or one of those ids); a file without them, from before named users, is all TVN's.
+ */
 export interface UserNetworkExport {
   format: typeof USER_NETWORK_FORMAT
   version: typeof USER_NETWORK_VERSION
   exportedAt: string
   numbering: { first: number; limit: number }
+  users?: ExportUser[]
   channels: ExportChannel[]
 }
 
@@ -121,11 +135,13 @@ function exportSource(source: ChannelSource, uploaderOf: UploaderOf): ExportSour
   return { ...base, url: shareableUrl(source.url) }
 }
 
-function exportChannel(record: StoredSource, uploaderOf: UploaderOf): ExportChannel {
+function exportChannel(record: StoredSource, uploaderOf: UploaderOf, users: readonly ExportUser[]): ExportChannel {
   const number = record.channelNumber as number
-  if (record.emptySlot) return { number, name: record.name, state: 'empty', enabled: true, edited: false, sources: [] }
+  const owner = ownerOf(record.owner, users)
+  if (record.emptySlot) return { number, owner, name: record.name, state: 'empty', enabled: true, edited: false, sources: [] }
   return {
     number,
+    owner,
     name: record.name,
     state: 'populated',
     enabled: record.automatic,
@@ -136,17 +152,28 @@ function exportChannel(record: StoredSource, uploaderOf: UploaderOf): ExportChan
   }
 }
 
-/** The export document for the stored User Network. Reads only; the records passed in are never changed. */
-export function buildUserNetworkExport(stored: readonly StoredSource[], now: Date, uploaderOf: UploaderOf = () => null): UserNetworkExport {
+/**
+ * The export document for the stored User Network and its named users. Reads only; the records passed in are
+ * never changed. A channel whose owner is not among `users` is exported as TVN's, so the file never names an
+ * owner it does not list.
+ */
+export function buildUserNetworkExport(
+  stored: readonly StoredSource[],
+  now: Date,
+  uploaderOf: UploaderOf = () => null,
+  users: readonly ExportUser[] = [],
+): UserNetworkExport {
+  const listed = users.map(({ id, name }) => ({ id, name }))
   const channels = stored
     .filter((record) => record.channelNumber !== null && record.channelNumber >= USER_NUMBER_START && record.channelNumber < USER_NUMBER_LIMIT)
-    .map((record) => exportChannel(record, uploaderOf))
+    .map((record) => exportChannel(record, uploaderOf, listed))
     .sort((a, b) => a.number - b.number)
   return {
     format: USER_NETWORK_FORMAT,
     version: USER_NETWORK_VERSION,
     exportedAt: now.toISOString(),
     numbering: { first: USER_NUMBER_START, limit: USER_NUMBER_LIMIT },
+    users: listed,
     channels,
   }
 }
@@ -213,7 +240,9 @@ function carriesSecret(raw: string): boolean {
 
 /**
  * Check a file against tvn-user-network-v1 before anything is built from it. Returns every problem
- * found, so IMPORT refuses a file whole rather than half-apply it.
+ * found, so IMPORT refuses a file whole rather than half-apply it. Users and owners are checked with the
+ * channels: a duplicate or malformed user, a user claiming TVN, or a channel naming an owner the file does
+ * not list refuses the whole file.
  */
 export function validateUserNetworkExport(data: unknown): { ok: true; value: UserNetworkExport } | { ok: false; errors: string[] } {
   const errors: string[] = []
@@ -226,6 +255,26 @@ export function validateUserNetworkExport(data: unknown): { ok: true; value: Use
     errors.push('channels is not a list')
     return { ok: false, errors }
   }
+  const userIds = new Set<string>()
+  const hasUsers = data.users !== undefined
+  if (hasUsers && !Array.isArray(data.users)) errors.push('users is not a list')
+  else if (hasUsers) {
+    const named: ExportUser[] = []
+    ;(data.users as unknown[]).forEach((user, index) => {
+      const at = `users[${index}]`
+      if (!isRecord(user) || typeof user.id !== 'string' || typeof user.name !== 'string') {
+        errors.push(`${at} is not a user`)
+        return
+      }
+      if (user.id === TVN_OWNER) errors.push(`${at} claims TVN, which is built in`)
+      else if (!USER_ID.test(user.id)) errors.push(`${at}.id is not a user id`)
+      else if (userIds.has(user.id)) errors.push(`${at}.id ${user.id} appears twice`)
+      const checked = checkUserName(user.name, named)
+      if (!checked.ok) errors.push(`${at}.name: ${checked.error}`)
+      userIds.add(user.id)
+      named.push({ id: user.id, name: user.name })
+    })
+  }
   const seen = new Set<number>()
   data.channels.forEach((channel, index) => {
     const at = `channels[${index}]`
@@ -237,6 +286,11 @@ export function validateUserNetworkExport(data: unknown): { ok: true; value: Use
     if (typeof number !== 'number' || !Number.isInteger(number) || number < USER_NUMBER_START || number >= USER_NUMBER_LIMIT) errors.push(`${at}.number is not a User Network number`)
     else if (seen.has(number)) errors.push(`${at}.number ${number} appears twice`)
     else seen.add(number)
+    if (channel.owner === undefined) {
+      if (hasUsers) errors.push(`${at}.owner is missing`)
+    } else if (typeof channel.owner !== 'string' || (channel.owner !== TVN_OWNER && !userIds.has(channel.owner))) {
+      errors.push(`${at}.owner is not TVN or a listed user`)
+    }
     if (typeof channel.name !== 'string' || !channel.name.trim()) errors.push(`${at}.name is missing`)
     if (channel.state !== 'populated' && channel.state !== 'empty') errors.push(`${at}.state must be populated or empty`)
     if (typeof channel.enabled !== 'boolean') errors.push(`${at}.enabled is not true or false`)

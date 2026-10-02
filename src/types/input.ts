@@ -6,7 +6,7 @@ export type NavDirection = 'up' | 'down' | 'left' | 'right'
  * Guide actions that happen inside the Guide: MEDIA at channel 000, IMPORT (a User Network file) and ADD
  * at the foot of the User Network, and EDIT, the Channel Editor for one channel (right-click, long-press, or E).
  */
-export type GuideTool = 'media' | 'network' | 'add' | 'edit'
+export type GuideTool = 'media' | 'network' | 'add' | 'edit' | 'users' | 'options'
 
 /**
  * Commands a keyboard, on-screen remote, or future gamepad can emit.
@@ -43,7 +43,8 @@ export type TvCommand =
   | { type: 'remote' }
   /** CREDITS on the remote: the credit roll over the picture, on and off. */
   | { type: 'credits' }
-  | { type: 'sleep-cycle' }
+  /** The next sleep choice, or exactly `minutes` (OPTIONS). */
+  | { type: 'sleep-cycle'; minutes?: number }
   | { type: 'info' }
   | { type: 'play-pause' }
   | { type: 'mute' }

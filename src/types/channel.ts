@@ -40,6 +40,8 @@ export interface Channel {
   mediaKind?: MediaKind
   /** default catalogue, imported collection, a future hand-built channel, or the temporary session channel 000. */
   origin?: 'default' | 'user-import' | 'user-created' | 'session'
+  /** The named user whose User Network tab lists this user channel; none means TVN's. */
+  owner?: string
   /** Stable filter id. Display name stays in `category`. */
   categoryId?: string
   /** Canonical plan group. Separate from the visible category label. */

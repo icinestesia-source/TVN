@@ -30,6 +30,7 @@ import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterTemplate } from
 import { claimStarterInstall, setStarterState, starterIds, starterState, withoutStarter } from '../data/user-network/starter.ts'
 import {
   channelsFromSources,
+  emptySlotRecord,
   migrateLegacyUserNumbers,
   planImport,
   type ParsedExport,
@@ -56,7 +57,7 @@ import {
 } from '../view/info-shortcuts.ts'
 import { loadStoredSources, saveStoredSources } from '../services/user-db.ts'
 import { buildUserNetworkExport, downloadText, exportFilename, serialiseUserNetworkExport, type UserNetworkExport } from '../services/user-network-export.ts'
-import { favouritesAfterRestore, recordsFromExport, resolveRestored, restoreUserNetwork } from '../services/user-network-restore.ts'
+import { favouritesAfterRestore, recordsFromExport, resolveRestored, restoreUserNetwork, usersFromExport } from '../services/user-network-restore.ts'
 import { isRefusalCode, learnRefusal, refusedVideos } from '../services/embed-refusals.ts'
 import { uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
 import type { Channel } from '../types/channel.ts'
@@ -64,7 +65,7 @@ import type { Programme } from '../types/programme.ts'
 import type { GuideTool, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, sleep } from '../utils/time.ts'
-import { nextSleepMinutes, sleepPhase } from './sleep.ts'
+import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
 import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
@@ -89,6 +90,7 @@ import { isOnAir } from '../network/airing.ts'
 import { confirmStart, soundHeld, viewerInteracted, type StartHold } from '../player/autoplay.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './history.ts'
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
+import { addUser, checkUserName, loadUsers, releaseUserChannels, saveUsers, userFilter, type NetworkUser } from '../data/user-network/users.ts'
 import {
   TvContext,
   type GuideCursor,
@@ -156,6 +158,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [subtitles, setSubtitles] = useState(stored.subtitles)
   const [favourites, setFavourites] = useState<number[]>(stored.favouriteChannelNumbers)
   const [guideFilter, setGuideFilter] = useState<GuideFilter>(stored.guideFilter)
+  const [networkUsers, setNetworkUsers] = useState<NetworkUser[]>(() => loadUsers())
+  const usersRef = useRef<NetworkUser[]>(networkUsers)
+  const userIds = () => new Set(usersRef.current.map((user) => user.id))
+  /** The named users, kept, stored and listed at once, so channels built straight after see them. */
+  const commitUsers = (next: NetworkUser[]) => {
+    usersRef.current = next
+    saveUsers(next)
+    setNetworkUsers(next)
+  }
   const [guideMode, setGuideMode] = useState<GuideMode>('closed')
   const [guideSplit, setGuideSplit] = useState(stored.guideSplit)
   const [multiviewMode, setMultiviewMode] = useState<MultiviewMode>(stored.multiviewMode)
@@ -165,6 +176,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [guideTool, setGuideTool] = useState<GuideToolState | null>(null)
   const guideToolRef = useRef<GuideToolState | null>(null)
   const editingRef = useRef<() => boolean>(() => false)
+  const panelOpenRef = useRef<() => GuideTool | null>(() => null)
   /** The Channel Editor opened over the picture (outside the Guide), for this channel number. */
   const [screenEdit, setScreenEdit] = useState<number | null>(null)
   const screenEditRef = useRef<number | null>(null)
@@ -518,6 +530,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setGuideTool(null)
         return
       }
+    } else if (panelOpenRef.current() === kind) {
+      // + and OPTIONS close again when pressed a second time.
+      closeGuideTool()
+      return
     } else {
       if (guideModeRef.current === 'closed') openGuide('expanded')
       setGuideQuery('')
@@ -534,6 +550,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   /** The Channel Editor stands while the Guide cursor is still on the channel it opened for. */
   editingRef.current = () => guideToolRef.current?.kind === 'edit' && guideToolRef.current.cursor === cursorRef.current
+  /** The + (new user) or OPTIONS panel standing in the Guide, if either is. */
+  panelOpenRef.current = () => {
+    const held = guideToolRef.current
+    return held && (held.kind === 'users' || held.kind === 'options') && held.cursor === cursorRef.current ? held.kind : null
+  }
 
   /** Every channel change comes through here and leaves a Guide pick behind, unless it is the tune that plays one. */
   const requestTune = (number: number, keepPick = false) => {
@@ -735,7 +756,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!videoId || !isRefusalCode(detail) || !learnRefusal(videoId)) return
     if (channel.origin === 'user-import') {
       void loadStoredSources().then((sources) => {
-        const built = channelsFromSources(migrateLegacyUserNumbers(sources).sources, { refused: refusedVideos(), archive: uploaderArchive })
+        const built = channelsFromSources(migrateLegacyUserNumbers(sources).sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
         installUserCatalogue(built.channels, built.programmes)
         loadedKey.current = ''
         syncLive(Date.now())
@@ -970,7 +991,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (debugOpen) setDebugOpen(false)
         else if (remoteOpen) setRemoteOpen(false)
         else if (screenEditRef.current !== null) closeScreenEdit()
-        else if (guideOpenRef.current && editingRef.current()) closeGuideTool()
+        else if (guideOpenRef.current && (editingRef.current() || panelOpenRef.current())) closeGuideTool()
         else if (guideOpenRef.current) {
           closeGuide()
           showOverlay('info', INFO_MS)
@@ -1065,7 +1086,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setCreditsOn(!creditsRef.current)
         break
       case 'sleep-cycle': {
-        const next = nextSleepMinutes(sleepMinutesRef.current)
+        const next = command.minutes !== undefined && SLEEP_CHOICES.includes(command.minutes) ? command.minutes : nextSleepMinutes(sleepMinutesRef.current)
         sleepMinutesRef.current = next
         setSleepMinutes(next)
         flash(next > 0 ? `SLEEP IN ${next} MINUTES` : 'SLEEP OFF', 1600)
@@ -1320,7 +1341,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (network) {
           const migrated = migrateLegacyUserNumbers(network.sources)
           if (migrated.migrated > 0) await saveStoredSources(migrated.sources)
-          const built = channelsFromSources(migrated.sources, { refused: refusedVideos(), archive: uploaderArchive })
+          const built = channelsFromSources(migrated.sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
           installUserCatalogue(built.channels, built.programmes)
         }
         return independentNetworkLoaded(librarySnapshot().media)
@@ -1371,6 +1392,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       mode: { library: boolean; automatic: boolean },
       options?: {
         filename?: string
+        owner?: string
         onPhase?: (phase: import('../library/types.ts').ImportPhase, counts?: import('../library/types.ts').IngestCounts) => void
       },
     ) => {
@@ -1383,8 +1405,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
         channels.map((item) => item.number),
         Date.now(),
       )
+      const before = new Set(existing.map((source) => source.id))
+      const owner = options?.owner
+      if (owner) plan.sources = plan.sources.map((source) => (before.has(source.id) ? source : { ...source, owner }))
       await saveStoredSources(plan.sources)
-      const built = channelsFromSources(plan.sources, { refused: refusedVideos(), archive: uploaderArchive })
+      const built = channelsFromSources(plan.sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
       installUserCatalogue(built.channels, built.programmes)
       const hours = (parsed.totalSeconds / 3600).toFixed(1)
       const scheduleNote =
@@ -1400,25 +1425,39 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   /** Rebuild 1001+ from the stored sources; a removed channel that was on screen hands over to 001. */
   const installSources = useCallback((sources: readonly StoredSource[]) => {
-    const built = channelsFromSources(sources, { refused: refusedVideos(), archive: uploaderArchive })
+    const built = channelsFromSources(sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
     installUserCatalogue(built.channels, built.programmes)
     if (!channelByNumber(channelRef.current)) requestTune(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const addChannel = useCallback(
-    async (link: string) => {
+    async (link: string, owner?: string) => {
       const found = await lookUpChannel(link)
       const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
       const result = addChannelSource(existing, found, Date.now(), uploaderIdFor)
       if (result.status === 'full') throw new Error('The User Network is full')
       if (result.status === 'duplicate') return { number: result.number, message: `${found.title} IS ALREADY ON ${result.number}` }
+      if (owner && result.status === 'added') {
+        result.sources = result.sources.map((source) => (source.channelNumber === result.number ? { ...source, owner } : source))
+      }
       await saveStoredSources(result.sources)
       installSources(result.sources)
       const verb = result.status === 'updated' ? 'UPDATED' : 'ADDED'
       return { number: result.number, message: `${found.title} ${verb} ON ${result.number} · ${found.videos.length} VIDEOS` }
     },
     [installSources],
+  )
+
+  const createNetworkUser = useCallback(
+    (name: string, closePanel = false) => {
+      const next = addUser(usersRef.current, name, Date.now())
+      commitUsers(next.users)
+      setGuideFilter(userFilter(next.user.id))
+      if (closePanel) closeGuideTool()
+      return next.user
+    },
+    [],
   )
 
   /** Add the starter network after the viewer's own channels; anything already present is left as it is. */
@@ -1479,12 +1518,46 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
+  const renameNetworkUser = useCallback(
+    (id: string, name: string) => {
+      const checked = checkUserName(name, usersRef.current.filter((user) => user.id !== id))
+      if (!checked.ok) throw new Error(checked.error)
+      commitUsers(usersRef.current.map((user) => (user.id === id ? { ...user, name: checked.name } : user)))
+      return `RENAMED ${checked.name}`
+    },
+    [],
+  )
+
+  /** Remove a named user. Its channels either move to TVN (owner cleared) or are removed with it. */
+  const deleteNetworkUser = useCallback(
+    async (id: string, channels: 'move' | 'remove') => {
+      const user = usersRef.current.find((item) => item.id === id)
+      if (!user) return 'THAT USER IS ALREADY GONE'
+      const existing = await loadStoredSources()
+      const owned = existing.filter((source) => source.owner === id && !source.emptySlot)
+      const remaining = releaseUserChannels(existing, id, channels, (source) =>
+        source.channelNumber === null || source.emptySlot ? source : emptySlotRecord(source.channelNumber, Date.now()),
+      )
+      commitUsers(usersRef.current.filter((item) => item.id !== id))
+      if (remaining.some((source, index) => source !== existing[index])) {
+        await saveStoredSources(remaining)
+        installSources(remaining)
+      }
+      if (guideFilter === userFilter(id)) setGuideFilter('user')
+      const count = `${owned.length} ${owned.length === 1 ? 'CHANNEL' : 'CHANNELS'}`
+      if (owned.length === 0) return `${user.name} DELETED`
+      return channels === 'remove' ? `${user.name} DELETED WITH ${count}` : `${user.name} DELETED · ${count} MOVED TO TVN`
+    },
+    [guideFilter, installSources],
+  )
+
   const exportUserNetwork = useCallback(async () => {
     const now = new Date()
-    const document = buildUserNetworkExport(await loadStoredSources(), now, uploaderIdFor)
+    const document = buildUserNetworkExport(await loadStoredSources(), now, uploaderIdFor, usersRef.current)
     downloadText(exportFilename(now), serialiseUserNetworkExport(document))
     const count = document.channels.length
-    return `EXPORTED ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'}`
+    const users = document.users?.length ?? 0
+    return `EXPORTED ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${users > 0 ? ` · ${users} ${users === 1 ? 'USER' : 'USERS'}` : ''}`
   }, [])
 
   /** The editor's scope for this channel number, checked again on every action rather than trusted from the view. */
@@ -1506,10 +1579,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
       await saveStoredSources(next)
       if (starterState() === 'pending') setStarterState('installed')
       setFavourites((current) => favouritesAfterRestore(current, resolved.records))
+      const users = usersFromExport(document)
+      commitUsers(users)
+      setGuideFilter((current) => (current.startsWith('user:') && !users.some((user) => userFilter(user.id) === current) ? 'user' : current))
       installSources(next)
       const count = resolved.records.length
       const empty = resolved.records.filter((record) => record.emptySlot).length
       return `USER NETWORK IMPORTED · ${count} ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${empty > 0 ? ` · ${empty} EMPTY` : ''}${
+        users.length > 0 ? ` · ${users.length} ${users.length === 1 ? 'USER' : 'USERS'}` : ''
+      }${
         resolved.failed > 0 ? ` · ${resolved.failed} ${resolved.failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : ''
       }`
     },
@@ -1800,6 +1878,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       extendGuide,
       applyImport,
       addChannel,
+      networkUsers,
+      createNetworkUser,
+      renameNetworkUser,
+      deleteNetworkUser,
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,
@@ -1823,6 +1905,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       playSession,
       importSession,
       addChannel,
+      networkUsers,
+      createNetworkUser,
+      renameNetworkUser,
+      deleteNetworkUser,
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,

@@ -3,6 +3,7 @@ import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
 import { readUserNetworkFile } from '../services/user-network-restore.ts'
 import type { GuideTool } from '../types/input.ts'
+import { USER_NAME_MAX } from '../data/user-network/users.ts'
 import { padChannel } from '../utils/time.ts'
 
 /** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
@@ -22,9 +23,10 @@ function viewerMessage(caught: unknown, fallback: string): string {
 }
 
 /**
- * NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself.
- * ADD opens the Add Channel row, MEDIA builds channel 000 from local files. Importing a User Network file
- * lives behind the + row at the foot of the User Network.
+ * OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself. OPTIONS holds
+ * the users and every viewer setting.
+ * ADD opens the Add Channel row, MEDIA builds channel 000 from local files. New users and channel-list
+ * imports live behind the + tab (after TVN and the users, before FAV).
  */
 export function GuideActions({
   tool,
@@ -45,6 +47,7 @@ export function GuideActions({
   )
   return (
     <div className="guide-import guide-actions">
+      {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
       {action('Now', picked, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
       {action('Add', tool === 'add', () => onTool('add'))}
       {action('Media', tool === 'media', () => onTool('media'))}
@@ -227,6 +230,123 @@ export function SessionImportTools({ onImport }: { onImport: (files: readonly Fi
   )
 }
 
+/**
+ * The Guide footer while + is open: a new named user (its own User Network tab), or a channel list file
+ * imported as a new user named after the file. The Guide holds the name and the note, so + pressed again
+ * can add the typed name or close; Esc closes without adding anyone.
+ */
+export function NewUserTools({
+  name,
+  note,
+  onName,
+  onNote,
+  onCreate,
+  onImportList,
+  onCancel,
+}: {
+  name: string
+  note: string | null
+  onName: (name: string) => void
+  onNote: (note: string | null) => void
+  /** The answer is a short line for the viewer; a refused name throws. */
+  onCreate: (name: string) => string
+  onImportList: (file: File) => Promise<string>
+  onCancel: () => void
+}) {
+  const setName = onName
+  const setNote = onNote
+  const [busy, setBusy] = useState(false)
+  const nameInput = useRef<HTMLInputElement>(null)
+  const listInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    nameInput.current?.focus()
+  }, [])
+
+  const create = (event: FormEvent | KeyboardEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    if (busy) return
+    try {
+      setNote(onCreate(name))
+      setName('')
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THAT USER COULD NOT BE CREATED'))
+    }
+  }
+
+  const importList = async (file: File) => {
+    setBusy(true)
+    setNote('READING CHANNEL LIST…')
+    try {
+      setNote((await onImportList(file)) || null)
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THAT CHANNEL LIST COULD NOT BE IMPORTED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <footer className="guide-info guide-tool" aria-label="New user">
+      <div className="info-main">
+        <p className="info-kicker">
+          <span className="info-net">User</span>
+          <span>1001+</span>
+          <span>New user</span>
+        </p>
+        <form className="add-channel" onSubmit={create} onKeyDown={keepKey}>
+          <input
+            ref={nameInput}
+            type="text"
+            value={name}
+            placeholder="Name of the new user"
+            aria-label="Name of the new user"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={USER_NAME_MAX}
+            disabled={busy}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') create(event)
+              else if (event.key === 'Escape') {
+                event.preventDefault()
+                event.stopPropagation()
+                onCancel()
+              }
+            }}
+          />
+          <button type="submit" className="tune-key" disabled={busy || !name.trim()}>
+            Add user
+          </button>
+        </form>
+        {note ? (
+          <p className="guide-tool-status" role="status">
+            {note}
+          </p>
+        ) : null}
+      </div>
+      <div className="info-actions">
+        <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => listInput.current?.click()}>
+          Import channel list
+        </button>
+      </div>
+      <input
+        ref={listInput}
+        className="sr"
+        type="file"
+        accept=".json,.txt,application/json"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0]
+          event.currentTarget.value = ''
+          if (file) void importList(file)
+        }}
+      />
+    </footer>
+  )
+}
+
 /** A User Network file is a few hundred kilobytes at most; anything far larger is not one. */
 const MAX_NETWORK_FILE_BYTES = 20 * 1024 * 1024
 
@@ -243,7 +363,7 @@ export function UserNetworkImportTools({
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
-  const [pending, setPending] = useState<{ document: UserNetworkExport; channels: number; empty: number; filename: string } | null>(null)
+  const [pending, setPending] = useState<{ document: UserNetworkExport; channels: number; empty: number; users: number; filename: string } | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const first = useRef<HTMLButtonElement>(null)
 
@@ -265,7 +385,7 @@ export function UserNetworkImportTools({
         return
       }
       setNote(null)
-      setPending({ document: read.value, channels: read.channels, empty: read.empty, filename: file.name })
+      setPending({ document: read.value, channels: read.channels, empty: read.empty, users: read.users, filename: file.name })
     } catch {
       setNote('THAT FILE COULD NOT BE READ')
     }
@@ -314,6 +434,9 @@ export function UserNetworkImportTools({
               {userChannels > 0 ? ` (${userChannels} ${userChannels === 1 ? 'channel' : 'channels'})` : ''} with {pending.channels}{' '}
               {pending.channels === 1 ? 'channel' : 'channels'}
               {pending.empty > 0 ? `, ${pending.empty} empty,` : ''} from {pending.filename}.
+              {pending.users > 0
+                ? ` Its ${pending.users} ${pending.users === 1 ? 'user replaces' : 'users replace'} yours.`
+                : ' It has no named users: every channel goes to TVN.'}
             </span>
             {key('Yes, replace it', () => void apply(), 'tab remove-key')}
             {key('Keep mine', () => setPending(null))}
@@ -342,12 +465,11 @@ export function UserNetworkImportTools({
 }
 
 /**
- * The Guide footer while ADD (or +) is open: a new channel from a link, IMPORT of a User Network file, and the
- * rest of the User Network's tools. Removing always asks first.
+ * The Guide footer while ADD is open: RESTORE of a User Network file saved with EXPORT, and the rest of the
+ * User Network's tools. Removing always asks first.
  */
 export function UserNetworkTools({
   userChannels,
-  onNewChannel,
   onImportNetwork,
   onImportList,
   onLoadTest,
@@ -355,9 +477,7 @@ export function UserNetworkTools({
   onRemoveAll,
 }: {
   userChannels: number
-  /** Puts the cursor in the Add Channel row's link box. */
-  onNewChannel?: () => void
-  /** Opens IMPORT: a User Network file saved with EXPORT. */
+  /** Opens IMPORT: a User Network file saved with EXPORT, replacing the User Network. */
   onImportNetwork?: () => void
   /** A channel list file (a TVN export or a list of YouTube links) joins 1001+. */
   onImportList: (file: File) => Promise<string>
@@ -422,8 +542,7 @@ export function UserNetworkTools({
           </>
         ) : (
           <>
-            {onNewChannel ? key('New channel', onNewChannel, 'tune-key') : null}
-            {onImportNetwork ? key('Import', onImportNetwork) : null}
+            {onImportNetwork ? key('Restore', onImportNetwork) : null}
             {key('Channel list', () => listInput.current?.click())}
             {key('Add starter network', () => void run(onLoadTest))}
             {userChannels > 0 ? key('Remove starter…', () => setConfirming('starter'), 'tab remove-key') : null}

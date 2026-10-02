@@ -18,7 +18,7 @@ export function guideToolTarget(
   nowMs: number,
   requested?: number,
 ): { filter: GuideFilter; cursor: { channelNumber: number; timeMs: number } } {
-  if (kind === 'edit') return { filter, cursor: { channelNumber: requested ?? cursor.channelNumber, timeMs: cursor.timeMs } }
+  if (kind === 'edit' || kind === 'users' || kind === 'options') return { filter, cursor: { channelNumber: requested ?? cursor.channelNumber, timeMs: cursor.timeMs } }
   if (kind === 'media') {
     const session = channels.find((item) => item.number === SESSION_CHANNEL_NUMBER)
     return {
@@ -26,7 +26,7 @@ export function guideToolTarget(
       cursor: { channelNumber: SESSION_CHANNEL_NUMBER, timeMs: nowMs },
     }
   }
-  const nextFilter: GuideFilter = filter === 'all' || filter === 'user' ? filter : 'user'
+  const nextFilter: GuideFilter = filter === 'all' || filter === 'user' || filter.startsWith('user:') ? filter : 'user'
   const listed = channels.filter((item) => channelMatchesFilter(item, nextFilter, favourites))
   const channelNumber = listed.some((item) => item.number === cursor.channelNumber)
     ? cursor.channelNumber

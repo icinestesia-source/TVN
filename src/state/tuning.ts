@@ -57,7 +57,7 @@ export function randomTarget(current: number, universe: ChannelUniverse = WHOLE_
 
 /** What CH+, CH- or R says when the chosen tab has nothing to tune. */
 export function emptyUniverseNote(filter: GuideFilter): string {
-  return filter === 'favourites' ? 'NO FAVOURITES TO TUNE' : filter === 'user' ? 'NO TVN CHANNELS TO TUNE' : 'NO CHANNELS TO TUNE'
+  return filter === 'favourites' ? 'NO FAVOURITES TO TUNE' : filter === 'user' ? 'NO TVN CHANNELS TO TUNE' : filter.startsWith('user:') ? 'NO CHANNELS FOR THIS USER YET' : 'NO CHANNELS TO TUNE'
 }
 
 /** A committed tune. The channel left becomes Previous; landing back on the origin leaves history alone. */

@@ -22,6 +22,8 @@ export type GuideFilter =
   | 'geography'
   | 'law'
   | 'science'
+  /** One named user's User Network tab (src/data/user-network/users.ts). */
+  | `user:${string}`
 
 export type MultiviewMode = '1' | '2' | '4' | '9'
 

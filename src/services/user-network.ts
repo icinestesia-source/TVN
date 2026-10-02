@@ -162,6 +162,8 @@ export function clearUserChannel(
   const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
   if (at < 0) return { sources, status: 'missing' }
   if (existing[at].emptySlot) return { sources, status: 'already-empty' }
-  sources[at] = emptySlotRecord(channelNumber, now)
+  // The slot stays in the tab it was cleared from.
+  const owner = existing[at].owner
+  sources[at] = { ...emptySlotRecord(channelNumber, now), ...(owner ? { owner } : {}) }
   return { sources, status: 'cleared' }
 }

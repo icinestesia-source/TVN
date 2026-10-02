@@ -31,7 +31,9 @@ import { hasPicture, searchSession, SESSION_CHANNEL } from '../session/session-c
 import { channelActions, cornerActions, type ChannelActions, type CornerActions } from '../view/info-shortcuts.ts'
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
-import { AddChannelForm, GuideActions, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
+import { GuideOptions } from './GuideOptions.tsx'
+import { AddChannelForm, GuideActions, NewUserTools, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
+import { filterUserId, freeUserName, userFilter } from '../data/user-network/users.ts'
 import { ChannelEditor } from './ChannelEditor.tsx'
 import { useEditPress } from './use-edit-press.ts'
 import { createLongPress, editorScope } from '../view/channel-edit.ts'
@@ -159,7 +161,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     userChannels.find((channel) => channel.emptySlot)?.number ?? (userNumbers.length > 0 ? Math.max(...userNumbers) + 1 : USER_NUMBER_START)
   // The + row (ADD USER CHANNEL) closes the list wherever the whole User Network is listed. It is a control,
   // not a channel: it has no number and allocates nothing until a source is imported.
-  const addRow = !searching && (tv.guideFilter === 'all' || tv.guideFilter === 'user')
+  const owner = filterUserId(tv.guideFilter) ?? undefined
+  const addRow = !searching && (tv.guideFilter === 'all' || tv.guideFilter === 'user' || owner !== undefined)
   const rowCount = tv.visibleChannels.length + (addRow ? 1 : 0)
   const addInput = useRef<HTMLInputElement>(null)
   // MEDIA, IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
@@ -186,25 +189,25 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   }, [tv.guideTool])
 
   const addLink = async (link: string) => {
-    const result = await tv.addChannel(link)
+    const result = await tv.addChannel(link, owner)
     if (result.number !== null) tv.focusGuide(result.number, Date.now())
     return result.message
   }
 
-  const importList = async (file: File) => {
+  const importList = async (file: File, listOwner = owner) => {
     const text = await file.text()
-    if (text.includes(USER_NETWORK_FORMAT)) throw new Error('A User Network file: use + then IMPORT to restore it')
+    if (text.includes(USER_NETWORK_FORMAT)) throw new Error('A User Network file: use OPTIONS then RESTORE to restore it')
     const links = channelLinksFrom(text)
     if (!links) {
       const parsed = parseChannelsExport(text)
-      await tv.applyImport(parsed, { library: true, automatic: true }, { filename: file.name })
+      await tv.applyImport(parsed, { library: true, automatic: true }, { filename: file.name, owner: listOwner })
       return `${parsed.sources.length} ${parsed.sources.length === 1 ? 'CHANNEL' : 'CHANNELS'} IMPORTED`
     }
     let added = 0
     const failed: string[] = []
     for (const link of links) {
       try {
-        await tv.addChannel(link)
+        await tv.addChannel(link, listOwner)
         added += 1
       } catch {
         failed.push(link)
@@ -216,10 +219,37 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const openAddRow = () => {
     if (tool !== 'add') tv.dispatch({ type: 'guide-tool', tool: 'add' })
   }
-  // + opens the User Network tools (New channel · Import · …) and the Add Channel row, exactly as ADD does.
-  const plusAddRow = () => {
-    if (tool !== 'add') openAddRow()
-    else addInput.current?.focus()
+
+  const createUser = (name: string) => {
+    const user = tv.createNetworkUser(name)
+    return `${user.name} ADDED · ADD CHANNELS TO IT WITH + ADD CHANNEL`
+  }
+  const [newUserName, setNewUserName] = useState('')
+  const [newUserNote, setNewUserNote] = useState<string | null>(null)
+  useEffect(() => {
+    if (tool === 'users') return
+    setNewUserName('')
+    setNewUserNote(null)
+  }, [tool])
+  // + while its panel is open: a typed name becomes the new user; with no name the panel just closes.
+  const pressPlus = () => {
+    if (tool === 'users' && newUserName.trim()) {
+      try {
+        tv.createNetworkUser(newUserName, true)
+      } catch (caught) {
+        // A refused name explains itself (checkUserName); anything else is a plain failure.
+        setNewUserNote(caught instanceof Error && caught.message ? caught.message.toUpperCase() : 'THAT USER COULD NOT BE CREATED')
+      }
+      return
+    }
+    tv.dispatch({ type: 'guide-tool', tool: 'users' })
+  }
+  // A channel list from + becomes a new user named after the file, and its tab opens.
+  const importListAsUser = async (file: File) => {
+    const user = tv.createNetworkUser(freeUserName(file.name.replace(/\.[^.]+$/, ''), tv.networkUsers))
+    const message = await importList(file, user.id)
+    tv.dispatch({ type: 'guide-filter', filter: userFilter(user.id) })
+    return `${user.name} · ${message}`
   }
   const sessionMatches = searching && focusedChannel?.origin === 'session' ? searchSession(tv.guideQuery) : []
   const numbers = useMemo(() => tv.visibleChannels.map((channel) => channel.number), [tv.visibleChannels])
@@ -398,7 +428,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
             [
               ['all', 'All'],
               ['user', 'TVN'],
-              ['favourites', 'Fav'],
+              ...tv.networkUsers.map((user) => [userFilter(user.id), user.name] as const),
             ] as const
           ).map(([filter, label]) => (
             <button
@@ -412,6 +442,25 @@ export function Guide({ closing = false }: { closing?: boolean }) {
               {label}
             </button>
           ))}
+          <button
+            type="button"
+            className={tool === 'users' ? 'tab guide-plus is-on' : 'tab guide-plus'}
+            aria-pressed={tool === 'users'}
+            aria-label="New user or import a channel list"
+            title="New user or import a channel list"
+            onClick={pressPlus}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tv.guideFilter === 'favourites'}
+            className={tv.guideFilter === 'favourites' ? 'tab is-on' : 'tab'}
+            onClick={() => tv.dispatch({ type: 'guide-filter', filter: 'favourites' })}
+          >
+            Fav
+          </button>
         </div>
         <GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />
         <GuideActions
@@ -425,14 +474,16 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         </button>
       </header>
 
-      {tv.visibleChannels.length === 0 ? (
+      {tool === 'options' ? (
+        <GuideOptions />
+      ) : tv.visibleChannels.length === 0 ? (
         <div className="guide-empty">
           <p>{searching ? 'No channels found' : emptyGuideCopy(tv.guideFilter)}</p>
           {addRow ? (
             <>
               <p className="guide-empty-note">Your User Network starts at {padChannel(USER_NUMBER_START)} and is kept in this browser.</p>
               <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onExport={tv.exportUserNetwork} onFocus={openAddRow} inputRef={addInput} />
-              <TestChannelsButton onLoad={tv.loadTestChannels} />
+              {owner ? null : <TestChannelsButton onLoad={tv.loadTestChannels} />}
             </>
           ) : null}
         </div>
@@ -511,10 +562,9 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                     className="channel-cell is-user add-cell"
                     style={{ position: 'absolute', top: tv.visibleChannels.length * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT }}
                   >
-                    <button type="button" className="ch-tune add-plus" onClick={plusAddRow} aria-label="Add user channel" title="Add user channel" data-add-row="">
-                      <span className="ch-number" aria-hidden="true">
-                        +
-                      </span>
+                    <button type="button" className="ch-tune" onClick={openAddRow} aria-label={`Add a channel as ${padChannel(nextNumber)}`} data-add-row="">
+                      <span className="ch-number">{padChannel(nextNumber)}</span>
+                      <span className="ch-name">+ Add channel</span>
                     </button>
                   </div>
                 ) : null}
@@ -601,12 +651,21 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         />
       ) : tool === 'media' ? (
         <SessionImportTools onImport={tv.importSession} />
+      ) : tool === 'options' ? null : tool === 'users' ? (
+        <NewUserTools
+          name={newUserName}
+          note={newUserNote}
+          onName={setNewUserName}
+          onNote={setNewUserNote}
+          onCreate={createUser}
+          onImportList={importListAsUser}
+          onCancel={() => tv.dispatch({ type: 'cancel' })}
+        />
       ) : tool === 'network' ? (
         <UserNetworkImportTools userChannels={userChannels.filter((channel) => !channel.emptySlot).length} onApply={tv.importUserNetwork} />
       ) : tool === 'add' ? (
         <UserNetworkTools
           userChannels={userNumbers.length}
-          onNewChannel={() => addInput.current?.focus()}
           onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}
           onImportList={importList}
           onLoadTest={tv.loadTestChannels}
@@ -956,6 +1015,7 @@ function GuideSearch({ query, onChange }: { query: string; onChange: (query: str
 function emptyGuideCopy(filter: string): string {
   if (filter === 'favourites') return 'No favourite channels'
   if (filter === 'user') return 'No user channels'
+  if (filter.startsWith('user:')) return 'No channels for this user yet'
   return 'No channels'
 }
 

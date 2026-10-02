@@ -61,23 +61,19 @@ function install(sources: readonly StoredSource[]) {
 
 afterEach(() => installUserCatalogue([], new Map()))
 
-describe('+ after the last User Network channel', () => {
+describe('+ Add channel after the last User Network channel', () => {
   const add = guide.slice(guide.indexOf('{addRow ? (\n                  <div\n                    className="channel-cell is-user add-cell"'), guide.indexOf('<div className="guide-grid"'))
 
-  it('is the row immediately after the last listed channel, with no channel number', () => {
+  it('is the row immediately after the last listed channel: the next number and + Add channel', () => {
     expect(add).toContain('top: tv.visibleChannels.length * ROW_HEIGHT')
-    expect(add).toMatch(/aria-label="Add user channel"/)
-    expect(add).toMatch(/<span className="ch-number" aria-hidden="true">\s*\+\s*<\/span>/)
-    expect(add).not.toContain('padChannel(')
-    expect(add).not.toContain('nextNumber')
+    expect(add).toContain('<span className="ch-number">{padChannel(nextNumber)}</span>')
+    expect(add).toContain('<span className="ch-name">+ Add channel</span>')
     expect(guide).toContain('const rowCount = tv.visibleChannels.length + (addRow ? 1 : 0)')
   })
 
-  it('opens and focuses the existing Add Channel row; there is no second Add Channel', () => {
-    expect(add).toContain('onClick={plusAddRow}')
-    const body = guide.slice(guide.indexOf('const plusAddRow = () => {'), guide.indexOf('const sessionMatches'))
-    expect(body).toContain('openAddRow()')
-    expect(body).toContain('addInput.current?.focus()')
+  it('opens the existing Add Channel row; there is no second Add Channel', () => {
+    expect(add).toContain('onClick={openAddRow}')
+    const body = guide.slice(guide.indexOf('const openAddRow = () => {'), guide.indexOf('const createUser'))
     for (const write of ['addChannel', 'saveStoredSources', 'favourite', 'claimUserNumber']) expect(body).not.toContain(write)
     expect(guide.match(/<AddChannelForm /g)).toHaveLength(2)
     expect(addSource.match(/export function AddChannelForm/g)).toHaveLength(1)
@@ -107,7 +103,7 @@ describe('+ after the last User Network channel', () => {
     const user = listChannels().filter((channel) => channelMatchesFilter(channel, 'user', []))
     expect(user.map((channel) => channel.number)).toEqual([1001, 1002, 1003])
     expect(listChannels().every((channel) => Number.isInteger(channel.number))).toBe(true)
-    expect(guide).toContain("const addRow = !searching && (tv.guideFilter === 'all' || tv.guideFilter === 'user')")
+    expect(guide).toContain("const addRow = !searching && (tv.guideFilter === 'all' || tv.guideFilter === 'user' || owner !== undefined)")
   })
 
   it('leaves FAVOURITES as it was', () => {
@@ -120,7 +116,7 @@ describe('+ after the last User Network channel', () => {
 describe('Guide terminology: NOW · ADD · MEDIA', () => {
   it('reads NOW, ADD, MEDIA in that order, each opening its own tool; IMPORT is not at the top', () => {
     const html = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect(labelsOf(html)).toEqual(['Now', 'Add', 'Media'])
+    expect(labelsOf(html)).toEqual(['Options', 'Now', 'Add', 'Media'])
     expect(addSource).not.toContain("action('Import'")
     expect(addSource).toContain("action('Add', tool === 'add', () => onTool('add')")
     expect(addSource).toContain("action('Media', tool === 'media', () => onTool('media')")

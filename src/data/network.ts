@@ -85,7 +85,7 @@ export function inNetworkDirectory(number: number): boolean {
 }
 
 export function channelMatchesFilter(
-  channel: { number: number; enabled: boolean; origin?: string; mediaKind?: MediaKind; categoryId?: string },
+  channel: { number: number; enabled: boolean; origin?: string; owner?: string; mediaKind?: MediaKind; categoryId?: string },
   filter: string,
   favourites: readonly number[],
 ): boolean {
@@ -96,7 +96,9 @@ export function channelMatchesFilter(
   if (curated && !inNetworkDirectory(channel.number)) return false
   if (filter === 'all') return true
   if (filter === 'favourites') return favourites.includes(channel.number)
-  if (filter === 'user') return channel.origin === 'user-import' || channel.origin === 'user-created'
+  const userChannel = channel.origin === 'user-import' || channel.origin === 'user-created'
+  if (filter === 'user') return userChannel && !channel.owner
+  if (filter.startsWith('user:')) return userChannel && channel.owner === filter.slice('user:'.length)
   if (filter === 'retrotv') return channel.number < USER_NUMBER_START && channel.origin !== 'user-import' && channel.origin !== 'user-created'
   const kind: MediaKind = channel.mediaKind ?? 'video'
   const category = channel.categoryId ?? ''

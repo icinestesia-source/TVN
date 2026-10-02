@@ -145,7 +145,7 @@ describe('opening the Channel Editor from the Guide', () => {
 
   it('inside the editor, Enter never tunes and Escape returns to the Guide', () => {
     expect(provider).toContain('if (guideOpenRef.current && editingRef.current()) break')
-    expect(provider).toContain('else if (guideOpenRef.current && editingRef.current()) closeGuideTool()')
+    expect(provider).toContain('else if (guideOpenRef.current && (editingRef.current() || panelOpenRef.current())) closeGuideTool()')
   })
 })
 
@@ -556,7 +556,7 @@ describe('editing curated 001–999 channels', () => {
 describe('existing Guide interactions', () => {
   it('keeps NOW, ADD, MEDIA, SEARCH, programme selection and the ADD CHANNEL row', () => {
     const actions = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect(actions).toMatch(/>Now<[\s\S]*>Add<[\s\S]*>Media</)
+    expect(actions).toMatch(/>Options<[\s\S]*>Now<[\s\S]*>Add<[\s\S]*>Media</)
     expect(actions).not.toMatch(/>Import</)
     expect(commandFromKey('Home', plain, true)).toEqual({ type: 'guide-now' })
     expect(commandFromKey('u', plain, false)).toEqual({ type: 'media' })

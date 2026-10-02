@@ -84,13 +84,14 @@ export function bandLabel(channelNumber: number): string {
  * channel, switch to the network that contains it.
  */
 export function guideFilterForChannel(
-  channel: { number: number; enabled: boolean; origin?: string },
+  channel: { number: number; enabled: boolean; origin?: string; owner?: string },
   filter: GuideFilter,
   favourites: readonly number[],
 ): GuideFilter {
   if (channelMatchesFilter(channel, filter, favourites)) return filter
-  const network: GuideFilter =
-    channel.number >= 1001 || channel.origin === 'user-import' || channel.origin === 'user-created'
+  const network: GuideFilter = channel.owner
+    ? `user:${channel.owner}`
+    : channel.number >= 1001 || channel.origin === 'user-import' || channel.origin === 'user-created'
       ? 'user'
       : 'all'
   if (channelMatchesFilter(channel, network, favourites)) return network

@@ -3,17 +3,20 @@ import { cleanName, keptOrder } from './channel-editor.ts'
 import { canonicalYouTubeUrl, inventoryOf, type ChannelSource } from './channel-sources.ts'
 import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, type ImportedVideo, type StoredSource } from './channels-import.ts'
 import { ADDED_PREFIX } from './user-network.ts'
+import { TVN_OWNER, type NetworkUser } from '../data/user-network/users.ts'
 import { storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
 
 /**
- * IMPORT behind the Guide's + row: a tvn-user-network-v1 file restores the viewer's User Network (1001+).
+ * RESTORE (OPTIONS → User Network file, or ADD's footer): a tvn-user-network-v1 file restores the viewer's
+ * User Network (1001+), its named users and which of them owns each channel. Not IMPORT CHANNEL LIST under +,
+ * which merges a channel list into one new user and leaves everything else alone.
  * It is a restore, not a merge: the file's channels replace every 1001+ channel in this browser, on the
  * file's own numbers. TVN channels 001–999, Channel 000 and anything kept outside the User Network are
  * left exactly as they are. Nothing is changed until the file has passed validation and the viewer has
  * confirmed; a file that fails is refused whole.
  */
 
-export type ReadResult = { ok: true; value: UserNetworkExport; channels: number; empty: number } | { ok: false; errors: string[] }
+export type ReadResult = { ok: true; value: UserNetworkExport; channels: number; empty: number; users: number } | { ok: false; errors: string[] }
 
 /** Parse and validate the text of a chosen file. Reads only. */
 export function readUserNetworkFile(text: string): ReadResult {
@@ -26,7 +29,7 @@ export function readUserNetworkFile(text: string): ReadResult {
   const checked = validateUserNetworkExport(data)
   if (!checked.ok) return checked
   const empty = checked.value.channels.filter((channel) => channel.state === 'empty').length
-  return { ok: true, value: checked.value, channels: checked.value.channels.length, empty }
+  return { ok: true, value: checked.value, channels: checked.value.channels.length, empty, users: checked.value.users?.length ?? 0 }
 }
 
 const cleanVideos = (videos: readonly { id: string; title: string; durationSec: number }[] = []): ImportedVideo[] =>
@@ -79,9 +82,10 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
   return doc.channels
     .filter((channel) => channel.number >= USER_NUMBER_START && channel.number < USER_NUMBER_LIMIT)
     .map((channel): StoredSource => {
+      const owner = channel.owner && channel.owner !== TVN_OWNER ? { owner: channel.owner } : {}
       if (channel.state === 'empty') {
         taken.add(`slot:${channel.number}`)
-        return { ...emptySlotRecord(channel.number, now), name: cleanName(channel.name, EMPTY_SLOT_NAME) }
+        return { ...emptySlotRecord(channel.number, now), name: cleanName(channel.name, EMPTY_SLOT_NAME), ...owner }
       }
       const sources = channel.sources.map(channelSource)
       const id = recordId(channel, sources, taken, seen)
@@ -95,12 +99,22 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
         automatic: channel.enabled,
         updatedAt: now,
         ...(channel.runningOrder?.length ? { runningOrder: [...channel.runningOrder] } : {}),
+        ...owner,
       }
       const plain = !channel.edited && sources.length === 1 && ((first.kind === 'youtube' && Boolean(first.ref)) || first.kind === 'collection')
       if (plain && first.kind === 'youtube') return { ...record, sourceType: first.youtube === 'playlist' ? 'youtube-playlist' : 'youtube-channel' }
       if (plain) return { ...record, ...(channel.listName ? { listName: channel.listName } : {}) }
       return { ...record, channelSources: sources, ...(channel.listName ? { listName: channel.listName } : {}) }
     })
+}
+
+/**
+ * The named users after a restore: exactly the file's, by their own ids. RESTORE rebuilds the User Network
+ * the file describes, so users only in this browser go; a file from before named users leaves none, and
+ * every channel it restores is TVN's.
+ */
+export function usersFromExport(doc: UserNetworkExport): NetworkUser[] {
+  return (doc.users ?? []).map(({ id, name }) => ({ id, name: name.replace(/\s+/g, ' ').trim() }))
 }
 
 export interface RestoreDeps {

@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
-import { AddChannelForm, GuideActions, SessionImportTools, UserNetworkTools } from './components/GuideAdd.tsx'
+import { AddChannelForm, GuideActions, NewUserTools, SessionImportTools, UserNetworkTools } from './components/GuideAdd.tsx'
 import { channelByNumber, channels, listChannels } from './data/catalogue.ts'
 import { installUserCatalogue } from './data/user-overlay.ts'
 import { commandFromKey } from './input/keyboard.ts'
@@ -109,11 +109,10 @@ describe('ADD', () => {
     expect(markup).not.toMatch(/Yes, remove/)
   })
 
-  it('+ offers a new channel or an IMPORT of a User Network file, first in the footer', () => {
+  it('ADD keeps RESTORE of a User Network file first in its footer', () => {
     const markup = renderToStaticMarkup(
       createElement(UserNetworkTools, {
         userChannels: 3,
-        onNewChannel: () => undefined,
         onImportNetwork: () => undefined,
         onImportList: async () => '',
         onLoadTest: async () => '',
@@ -122,10 +121,19 @@ describe('ADD', () => {
       }),
     )
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels.slice(0, 2)).toEqual(['New channel', 'Import'])
-    expect(guide).toContain('className="ch-tune add-plus" onClick={plusAddRow}')
-    expect(guide).toContain('onNewChannel={() => addInput.current?.focus()}')
+    expect(labels[0]).toBe('Restore')
     expect(guide).toContain("onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}")
+  })
+
+  it('the + tab offers a named new user or a channel list imported as a new user', () => {
+    const markup = renderToStaticMarkup(
+      createElement(NewUserTools, { name: '', note: null, onName: () => {}, onNote: () => {}, onCreate: () => '', onImportList: async () => '', onCancel: () => {} }),
+    )
+    expect(markup).toMatch(/aria-label="New user"/)
+    expect(markup).toMatch(/placeholder="Name of the new user"/)
+    expect([...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Add user', 'Import channel list'])
+    expect(markup).not.toContain('Restore a User Network file')
+    expect(guide).toMatch(/<NewUserTools[\s\S]{0,300}onCreate=\{createUser\}[\s\S]{0,80}onImportList=\{importListAsUser\}/)
   })
 })
 
@@ -133,7 +141,7 @@ describe('MEDIA (channel 000 from local files)', () => {
   it('is a visible Guide action, after NOW and ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'media', picked: false, onNow: () => undefined, onTool: () => undefined }))
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Now', 'Add', 'Media'])
+    expect(labels).toEqual(['Options', 'Now', 'Add', 'Media'])
     expect(markup).toMatch(/aria-pressed="true"[^>]*>Media</)
   })
 

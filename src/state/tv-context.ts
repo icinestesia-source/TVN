@@ -110,14 +110,24 @@ export interface TvContextValue {
     mode: { library: boolean; automatic: boolean },
     options?: {
       filename?: string
+      /** The named user whose tab lists the channels this import adds. */
+      owner?: string
       onPhase?: (
         phase: import('../library/types.ts').ImportPhase,
         counts?: import('../library/types.ts').IngestCounts,
       ) => void
     },
   ) => Promise<void>
-  /** Add a YouTube channel from a channel or video link as the last user channel (or refresh it if present). */
-  addChannel: (link: string) => Promise<{ number: number | null; message: string }>
+  /** Add a YouTube channel from a channel or video link as the last user channel (or refresh it if present); `owner` lists it on that user's tab. */
+  addChannel: (link: string, owner?: string) => Promise<{ number: number | null; message: string }>
+  /** Named users, each a User Network tab after TVN (src/data/user-network/users.ts). */
+  networkUsers: readonly import('../data/user-network/users.ts').NetworkUser[]
+  /** Create a named user and show its (empty) tab. Throws a viewer-readable reason for a refused name. */
+  createNetworkUser: (name: string, closePanel?: boolean) => import('../data/user-network/users.ts').NetworkUser
+  /** Rename a named user; throws a viewer-readable reason for a refused name. */
+  renameNetworkUser: (id: string, name: string) => string
+  /** Delete a named user (after OPTIONS asks): its channels move to TVN, or are removed with it. */
+  deleteNetworkUser: (id: string, channels: 'move' | 'remove') => Promise<string>
   /** Add the bundled starter network after the viewer's own channels, skipping any already present. */
   loadTestChannels: () => Promise<string>
   /** Remove the starter network's channels (edited or not) and remember that the viewer removed it. */

@@ -46,6 +46,8 @@ export interface StoredSource {
   sourceType?: 'youtube-channel' | 'youtube-playlist'
   /** A cleared user channel: the number is kept, nothing airs, and the next added channel fills it. */
   emptySlot?: true
+  /** The named user whose tab lists the channel (src/data/user-network/users.ts); none means TVN's. */
+  owner?: string
 }
 
 export const EMPTY_SLOT_PREFIX = 'slot:'
@@ -378,7 +380,8 @@ export function planImport(
 
 export function channelsFromSources(
   sources: readonly StoredSource[],
-  options: { refused?: ReadonlySet<string>; archive?: ArchiveLookup } = {},
+  /** `users`: the named users' ids; a channel whose owner is not among them lists under TVN. */
+  options: { refused?: ReadonlySet<string>; archive?: ArchiveLookup; users?: ReadonlySet<string> } = {},
 ): {
   channels: Channel[]
   programmes: Map<string, Programme[]>
@@ -413,6 +416,7 @@ export function channelsFromSources(
       sources: [{ kind: 'youtube-channel', id: source.id, label: source.name }],
       scheduleMode: 'loop',
       phaseOffsetSeconds: phaseFor(source.id),
+      ...(source.owner && (!options.users || options.users.has(source.owner)) ? { owner: source.owner } : {}),
     }
 
     if (source.emptySlot) {

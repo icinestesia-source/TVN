@@ -59,6 +59,7 @@ function clampVolume(value: unknown): number {
 function asFilter(value: unknown): GuideFilter {
   // The Guide no longer has a TVN-only tab; All lists those channels.
   if (value === 'retrotv') return 'all'
+  if (typeof value === 'string' && /^user:u[a-z0-9]+$/.test(value)) return value as GuideFilter
   return typeof value === 'string' && FILTERS.includes(value as GuideFilter) ? (value as GuideFilter) : 'all'
 }
 
