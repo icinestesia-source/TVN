@@ -227,7 +227,7 @@ describe('CREATE GUIDE FROM… search', () => {
 
   it('shows the words beside GUIDE, which turns green while the Guide is watched', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, following: true, query: 'Daft Punk', onNow: () => {}, onTool: () => {} }))
-    expect(markup).toMatch(/class="tab guide-follow is-current[^"]*is-following"/)
+    expect(markup).toMatch(/class="tab guide-follow is-on[^"]*is-following"/)
     expect(markup).toContain('<span class="guide-query"')
     expect(markup.indexOf('Daft Punk')).toBeLessThan(markup.indexOf('Options'))
     expect(renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))).not.toContain('guide-query')

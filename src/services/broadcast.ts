@@ -15,6 +15,7 @@ import { SESSION_CHANNEL_NUMBER, sessionBroadcast, sessionGuideSlots } from '../
 import { refusedVideos } from './embed-refusals.ts'
 import { isOnAir } from '../network/airing.ts'
 import { setTvnLookup, TVN_CHANNEL_NUMBER, tvnBroadcast, tvnGuideSlots } from '../tvn/tvn-channel.ts'
+import { loadSurfRange, surfDelayMs } from '../state/surf.ts'
 
 export function scheduleRequest(channel: Channel, nowMs: number): ScheduleRequest<Programme> {
   return {
@@ -38,7 +39,14 @@ setListingLookup((number, nowMs) => {
   return { name: listed.name, title: snap.current.programme.title, endMs: snap.current.endMs, nextTitle: snap.next.programme.title, nextStartMs: snap.next.startMs }
 })
 
-setTvnLookup({ channels: listChannels, broadcastOf: (channel, nowMs) => broadcast(channel, nowMs), onAir: isOnAir, refused: refusedVideos })
+// 000 surfs on after the same wait as the Random Cycle, read afresh for each choice.
+setTvnLookup({
+  channels: listChannels,
+  broadcastOf: (channel, nowMs) => broadcast(channel, nowMs),
+  onAir: isOnAir,
+  refused: refusedVideos,
+  dwellMs: () => surfDelayMs(loadSurfRange()),
+})
 
 function liveListing(channel: Channel): Programme | null {
   if (!isLiveStreamChannel(channel)) return null

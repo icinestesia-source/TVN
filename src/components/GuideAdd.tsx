@@ -63,7 +63,7 @@ export function GuideActions({
   )
   return (
     <div className="guide-import guide-actions">
-      <GuideTab open={open} following={following} onOpen={openGuide} onSearch={onGuideSearch ?? openGuide} />
+      <GuideTab active={tool !== 'options' && tool !== 'add' && tool !== 'media'} open={open} following={following} onOpen={openGuide} onSearch={onGuideSearch ?? openGuide} />
       {query ? (
         <span className="guide-query" title={`This Guide was created from “${query}”`}>
           {query}
@@ -78,10 +78,11 @@ export function GuideActions({
 }
 
 /**
- * GUIDE names the screen the viewer is in, so it always reads as selected here, in white rather than yellow.
+ * GUIDE is the screen's own section: it carries the gold active underline whenever the listings are showing,
+ * and gives it up to OPTIONS, ADD or MEDIA. Green, a Guide choosing what plays, colours only its text.
  * A click or a tap opens the viewer's Guide at once; a right-click or a hold opens CREATE GUIDE FROM….
  */
-function GuideTab({ open, following, onOpen, onSearch }: { open: boolean; following: boolean; onOpen: () => void; onSearch: () => void }) {
+function GuideTab({ active, open, following, onOpen, onSearch }: { active: boolean; open: boolean; following: boolean; onOpen: () => void; onSearch: () => void }) {
   const [press] = useState(() => createGuidePress())
   const actions = { open: onOpen, search: onSearch }
   useEffect(() => press.cancel, [press])
@@ -90,8 +91,8 @@ function GuideTab({ open, following, onOpen, onSearch }: { open: boolean; follow
   return (
     <button
       type="button"
-      className={`tab guide-follow is-current${open ? ' is-open' : ''}${following ? ' is-following' : ''}`}
-      aria-current="page"
+      className={`tab guide-follow${active ? ' is-on' : ''}${open ? ' is-open' : ''}${following ? ' is-following' : ''}`}
+      aria-current={active ? 'page' : undefined}
       aria-expanded={open}
       aria-label={`${label}. Right-click or hold to create a Guide from words`}
       title={following ? 'TVN is following a Guide · right-click or hold: Create Guide from…' : 'Right-click or hold: Create Guide from…'}

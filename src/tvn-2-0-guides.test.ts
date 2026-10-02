@@ -187,10 +187,9 @@ describe('TVN 2.0 · playing a Guide', () => {
 
     const header = (following: boolean, tool: 'guides' | null) => renderToStaticMarkup(createElement(GuideActions, { tool, picked: true, following, onNow: () => {}, onTool: () => {} }))
     expect(header(false, 'guides')).not.toContain('is-following')
-    expect(header(true, null)).toContain('guide-follow is-current is-following')
-    expect(header(false, null)).toMatch(/class="tab guide-follow is-current"[^>]*aria-current="page"[^>]*aria-expanded="false"/)
-    expect(header(false, 'guides')).toContain('class="tab guide-follow is-current is-open"')
-    expect(header(false, 'guides')).not.toMatch(/class="[^"]*\bis-on\b[^"]*"[^>]*>Guide</)
+    expect(header(true, null)).toContain('guide-follow is-on is-following')
+    expect(header(false, null)).toMatch(/class="tab guide-follow is-on"[^>]*aria-current="page"[^>]*aria-expanded="false"/)
+    expect(header(false, 'guides')).toContain('class="tab guide-follow is-on is-open"')
     const add = readFileSync('src/components/GuideAdd.tsx', 'utf8')
     expect(add).toMatch(/onContextMenu=\{\(event\) => \{\s+event\.preventDefault\(\)\s+press\.contextMenu\(actions\)/)
     expect(add).toContain('onClick={() => press.click(actions)}')

@@ -28,12 +28,12 @@ export function TvnChannelPanel({ onChooseAnother, onClose }: { onChooseAnother:
           <span>TVN channel</span>
         </p>
         <p className="guide-tool-note">
-          000 chooses a programme airing now elsewhere on TVN, plays it, then chooses another. It never copies a programme and learns nothing about
-          you.
+          000 surfs TVN for you: it joins a programme airing now elsewhere on TVN, then changes channel after the Random Cycle wait set in
+          Options. It never copies a programme and learns nothing about you.
         </p>
         <label className="editor-check tvn-setting">
           <input type="checkbox" checked={settings.autoNext} onKeyDown={keepKey} onChange={() => setTvnChannelSettings({ autoNext: !settings.autoNext })} />
-          <span>Automatically choose another programme</span>
+          <span>Keep surfing</span>
         </label>
         <label className="editor-check tvn-setting">
           <input type="checkbox" checked={settings.includeUser} onKeyDown={keepKey} onChange={() => setTvnChannelSettings({ includeUser: !settings.includeUser })} />

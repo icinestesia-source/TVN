@@ -3,8 +3,9 @@ import type { Programme } from '../types/programme.ts'
 import type { BroadcastPosition, GuideSlot, ScheduleSnapshot } from '../types/schedule.ts'
 
 /**
- * Channel 000, TVN: the network's own channel. It picks a programme airing now elsewhere on the network,
- * joins it where it is, and when it ends picks another. It refers to programming; it never copies media,
+ * Channel 000, TVN: the network's own channel surfer. It picks a programme airing now elsewhere on the
+ * network, joins it where it is, and after the viewer's Random Cycle wait (or sooner, if the programme ends)
+ * picks another, for as long as the viewer stays on 000. It refers to programming; it never copies media,
  * learns nothing about the viewer, and never lists a future it has not chosen.
  */
 export const TVN_CHANNEL_NUMBER = 0
@@ -15,7 +16,7 @@ export const TVN_CHANNEL: Channel = {
   number: TVN_CHANNEL_NUMBER,
   name: 'TVN',
   shortName: 'TVN',
-  description: 'TVN’s own channel: a programme airing elsewhere on the network, then another.',
+  description: 'TVN’s own channel: TVN surfs the network for you, one channel after another.',
   logo: 'TVN',
   color: '#1b3a5c',
   category: 'TVN',
@@ -29,7 +30,7 @@ export const TVN_CHANNEL: Channel = {
 }
 
 export interface TvnChannelSettings {
-  /** Choose another programme when the current one ends. */
+  /** Keep surfing: another choice after each Random Cycle wait, or when the programme ends. */
   autoNext: boolean
   /** Choose from the viewer's User Network (1001+) as well as 001–999. */
   includeUser: boolean
@@ -54,6 +55,8 @@ export interface TvnLookup {
   broadcastOf: (channel: Channel, nowMs: number) => ScheduleSnapshot<Programme>
   onAir: (channel: Channel) => boolean
   refused: () => ReadonlySet<string>
+  /** How long 000 stays with a choice before surfing on: the Random Cycle's wait. */
+  dwellMs?: () => number
 }
 
 interface Choice {
@@ -64,6 +67,8 @@ interface Choice {
   endMs: number
   /** When 000 joined it; its Guide slot starts here. */
   joinedMs: number
+  /** When 000 surfs on: the Random Cycle wait from joining, or the programme's end if that comes first. */
+  untilMs: number
 }
 
 let lookup: TvnLookup | null = null
@@ -153,7 +158,7 @@ const programmeKey = (programme: Programme) => programme.videoId ?? programme.me
 const sourceKey = (programme: Programme, channelNumber: number) => programme.creator?.trim().toLowerCase() || `channel:${channelNumber}`
 
 /** What `channel` airs now, if 000 could join it: a real programme with a picture, not refused, with enough left. */
-function airingOn(channel: Channel, nowMs: number): Omit<Choice, 'joinedMs'> | null {
+function airingOn(channel: Channel, nowMs: number): Omit<Choice, 'joinedMs' | 'untilMs'> | null {
   if (!lookup) return null
   let snap: ScheduleSnapshot<Programme>
   try {
@@ -185,8 +190,8 @@ export function chooseTvn(nowMs: number): boolean {
   const recentProgrammes = new Set(history.map((item) => programmeKey(item.programme)))
   const recentSources = new Set(history.slice(0, RECENT_SOURCES).map((item) => item.source))
   const last = history[0]
-  const strict: Omit<Choice, 'joinedMs'>[] = []
-  const eased: Omit<Choice, 'joinedMs'>[] = []
+  const strict: Omit<Choice, 'joinedMs' | 'untilMs'>[] = []
+  const eased: Omit<Choice, 'joinedMs' | 'untilMs'>[] = []
   for (const channel of pool.slice(0, TRIES)) {
     const found = airingOn(channel, nowMs)
     if (!found) continue
@@ -200,15 +205,35 @@ export function chooseTvn(nowMs: number): boolean {
   const next = strict[0] ?? eased[0]
   if (choice) aired = [...aired, { ...choice, endMs: Math.min(choice.endMs, Math.max(nowMs, choice.joinedMs)) }].slice(-HISTORY)
   holding = false
-  choice = next ? { ...next, joinedMs: nowMs } : null
+  // Surfing on waits the Random Cycle's time; with auto-next off the choice simply plays to its end.
+  const dwell = tvnChannelSettings().autoNext ? lookup.dwellMs?.() : undefined
+  choice = next ? { ...next, joinedMs: nowMs, untilMs: dwell === undefined ? next.endMs : Math.min(next.endMs, nowMs + Math.max(1000, dwell)) } : null
   changed()
   return choice !== null
 }
 
 /** Coming to 000: a new choice unless one is still running. Picks even with auto-next off. */
 export function enterTvn(nowMs: number): void {
-  if (choice && nowMs >= choice.startMs && nowMs < choice.endMs) return
+  if (choice && nowMs >= choice.startMs && nowMs < choice.untilMs) return
   chooseTvn(nowMs)
+}
+
+/**
+ * Playing 000 at the present: chooses when it has nothing, and surfs on when the choice's time is up with
+ * auto-next on. Only the player watching 000 drives this; the Guide and any other look at 000 only read.
+ */
+export function driveTvn(nowMs: number): void {
+  keepRunning(nowMs)
+}
+
+/** The sampled programme really ended (the player said so) before its listed end: surf on now, or hold. */
+export function endedTvn(nowMs: number, videoId: string | null): boolean {
+  if (!choice || !videoId || choice.programme.videoId !== videoId) return false
+  if (tvnChannelSettings().autoNext) return chooseTvn(nowMs)
+  choice = { ...choice, endMs: Math.min(choice.endMs, nowMs), untilMs: Math.min(choice.untilMs, nowMs) }
+  holding = true
+  changed()
+  return true
 }
 
 /** The current choice was refused or the viewer asked for another. */
@@ -216,7 +241,7 @@ export function chooseAnotherTvn(nowMs: number): boolean {
   return chooseTvn(nowMs)
 }
 
-export function tvnChoice(): { channelNumber: number; programme: Programme; startMs: number; endMs: number } | null {
+export function tvnChoice(): { channelNumber: number; programme: Programme; startMs: number; endMs: number; untilMs: number } | null {
   return choice
 }
 
@@ -273,10 +298,12 @@ function snapshot(current: BroadcastPosition<Programme>, nowMs: number): Schedul
   }
 }
 
-/** Keeps 000 running at the present: chooses when it has nothing, and when a choice ends with auto-next on. */
+/** Keeps 000 running at the present: chooses when it has nothing, and when a choice's time is up with auto-next on. */
 function keepRunning(nowMs: number): void {
   if (Math.abs(nowMs - clock()) > PRESENT_MS) return
-  if (choice && nowMs < choice.endMs) return
+  if (choice && nowMs < choice.untilMs) return
+  // Auto-next turned off during a wait: the choice plays on to its end, then holds.
+  if (choice && nowMs < choice.endMs && !tvnChannelSettings().autoNext) return
   if (!choice && aired.length === 0) {
     chooseTvn(nowMs)
     return
@@ -290,7 +317,6 @@ function keepRunning(nowMs: number): void {
 }
 
 export function tvnBroadcast(nowMs: number): ScheduleSnapshot<Programme> {
-  keepRunning(nowMs)
   if (choice && nowMs >= choice.startMs && nowMs < choice.endMs) return snapshot(position(relayed(choice), choice.startMs, choice.endMs, nowMs, 0), nowMs)
   const past = aired.find((item) => nowMs >= Math.max(item.joinedMs, item.startMs) && nowMs < item.endMs)
   if (past) return snapshot(position(relayed(past), past.startMs, past.endMs, nowMs, -1), nowMs)
@@ -302,7 +328,6 @@ export function tvnBroadcast(nowMs: number): ScheduleSnapshot<Programme> {
 
 /** The Guide row: what 000 has shown, what it shows now, then "TVN Selection · To be selected" and nothing invented. */
 export function tvnGuideSlots(startMs: number, endMs: number): GuideSlot<Programme>[] {
-  keepRunning(clock())
   const shown = [...aired, ...(choice ? [choice] : [])]
   const slots: GuideSlot<Programme>[] = []
   let floor = -Infinity

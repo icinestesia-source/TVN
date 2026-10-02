@@ -211,7 +211,7 @@ describe('Multi View', () => {
   it('Surf runs in Multi View through the same timer, and single-picture Surf is unchanged', () => {
     const provider = read('src/state/TvProvider.tsx')
     expect(provider).toContain("if (!surfing || asleep || guideOpen || screenEdit !== null || startupPhase !== 'ready' || !noticeSeen) return")
-    expect(provider).toMatch(/if \(multiviewRef\.current === '1'\) \{\s+const picked = randomChannel\(channelRef\.current\)\s+if \(picked\) requestTune\(picked\.number\)/)
+    expect(provider).toMatch(/if \(multiviewRef\.current === '1'\) \{[\s\S]{0,200}?if \(channelRef\.current === TVN_CHANNEL_NUMBER\) return setSurfHops\(\(hops\) => hops \+ 1\)\s+const picked = randomChannel\(channelRef\.current\)\s+if \(picked\) requestTune\(picked\.number\)/)
     expect(provider).toContain('const next = surfTile(tilesRef.current, audioFocusRef.current, candidates)')
     expect(provider.match(/surfDelayMs\(/g)?.length).toBe(1)
   })
@@ -359,7 +359,7 @@ describe('viewing history: Back and Forward', () => {
     expect(provider.match(/commitChannel\(\{ channelNumber: heard, previousNumber: previousRef\.current \}, false\)/g)?.length).toBe(3)
     // Random and Surf tune through requestTune, so their destinations are recorded like any other.
     expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
-    expect(provider).toMatch(/if \(multiviewRef\.current === '1'\) \{\s+const picked = randomChannel\(channelRef\.current\)\s+if \(picked\) requestTune\(picked\.number\)/)
+    expect(provider).toMatch(/if \(multiviewRef\.current === '1'\) \{[\s\S]{0,200}?if \(channelRef\.current === TVN_CHANNEL_NUMBER\) return setSurfHops\(\(hops\) => hops \+ 1\)\s+const picked = randomChannel\(channelRef\.current\)\s+if \(picked\) requestTune\(picked\.number\)/)
   })
 
   it('a Surf or Random journey can be retraced and followed again, never re-rolled', () => {

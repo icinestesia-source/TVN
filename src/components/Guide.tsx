@@ -322,6 +322,29 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // OPTIONS (or a filter with nothing in it) takes the listings away; they come back where they were.
+  const gridShown = tool !== 'options' && tv.visibleChannels.length > 0
+  const gridHidden = useRef(false)
+  useLayoutEffect(() => {
+    if (!gridShown) {
+      gridHidden.current = true
+      return
+    }
+    const grid = gridRef.current
+    if (!grid || !gridHidden.current) return
+    gridHidden.current = false
+    grid.scrollLeft = scrollLeft
+    grid.scrollTop = scrollTop
+    if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
+    if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
+    setScrollTop(grid.scrollTop)
+    setScrollLeft(grid.scrollLeft)
+    setViewport(grid.clientHeight)
+    setViewWidth(grid.clientWidth)
+    // Only the listings coming back restores them; scrolling meanwhile is handled above and below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridShown])
+
   // A new scale keeps the anchored time exactly where it was on screen by moving scrollLeft.
   useLayoutEffect(() => {
     const before = drawn.current

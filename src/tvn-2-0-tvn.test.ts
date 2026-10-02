@@ -25,6 +25,8 @@ import { clearSession, replaceSession, searchSession, SESSION_CHANNEL, SESSION_C
 import { DEFAULT_TRANSITION_SETTINGS } from './state/transitions.ts'
 import {
   chooseAnotherTvn,
+  driveTvn,
+  endedTvn,
   enterTvn,
   MIN_REMAINING_MS,
   resetTvnChannel,
@@ -154,6 +156,7 @@ describe('000 TVN: the network’s own sampler', () => {
 
   it('stays 000 TVN while showing another channel’s programme, which it names without claiming', () => {
     now = T0 + MIN
+    driveTvn(now)
     const snap = tvnBroadcast(now)
     const choice = tvnChoice()!
     expect(snap.channelId).toBe('ch-tvn')
@@ -168,12 +171,13 @@ describe('000 TVN: the network’s own sampler', () => {
   })
 
   it('chooses another when the programme ends, never straight back to the same channel, programme or source', () => {
-    tvnBroadcast(now)
+    driveTvn(now)
     const seen: { channel: number; programme: string; source: string }[] = []
     for (let step = 0; step < 40; step += 1) {
       const choice = tvnChoice()!
       seen.push({ channel: choice.channelNumber, programme: choice.programme.videoId!, source: choice.programme.creator! })
       now = choice.endMs
+      driveTvn(now)
       const snap = tvnBroadcast(now)
       expect(snap.current.programme.relay, `step ${step}`).toBeDefined()
     }
@@ -224,6 +228,7 @@ describe('000 TVN: the network’s own sampler', () => {
   })
 
   it('the Guide shows NOW as the current choice and NEXT as “TVN Selection · To be selected”, nothing invented', () => {
+    driveTvn(now)
     const slots = tvnGuideSlots(now - 2 * SLOT, now + 6 * SLOT)
     expect(slots).toHaveLength(2)
     expect(slots[0].programme.relay?.channelNumber).toBe(tvnChoice()!.channelNumber)
@@ -344,5 +349,150 @@ describe('555 Daft Punk, acquired deeper', () => {
     expect(guide.matched).toBeGreaterThanOrEqual(150)
     expect(guide.picks.some((pick) => /Da Funk|Around The World|One More Time|Harder, Better/i.test(pick.entry.programme.title))).toBe(true)
     expect(index.entries.some((entry) => entry.channel.number === 0 || entry.channel.number === 1000)).toBe(false)
+  })
+})
+
+describe('000 TVN: a continuous channel surfer on the Random Cycle wait', () => {
+  const DWELL = 3 * MIN
+  let now = T0
+  let seed = 7
+  let dwell = DWELL
+  beforeEach(() => {
+    resetTvnChannel()
+    refused.clear()
+    now = T0 + 2 * MIN
+    seed = 7
+    dwell = DWELL
+    setTvnRandom(
+      () => {
+        seed = (seed * 16807) % 2147483647
+        return seed / 2147483647
+      },
+      () => now,
+    )
+    setTvnLookup({ channels: () => network, broadcastOf: airing, onAir: (item) => item.enabled, refused: () => refused, dwellMs: () => dwell })
+  })
+
+  it('surfs on after each wait, stays 000 throughout, and joins every channel where it is now', () => {
+    const seen: number[] = []
+    driveTvn(now)
+    for (let hop = 0; hop < 3; hop += 1) {
+      const choice = tvnChoice()!
+      seen.push(choice.channelNumber)
+      expect(choice.untilMs - now, `hop ${hop}`).toBe(DWELL)
+      const snap = tvnBroadcast(now)
+      expect(snap.channelId).toBe('ch-tvn')
+      expect(snap.current.programme.relay?.channelNumber).toBe(choice.channelNumber)
+      // Joined at the source's present position, not from the programme's start.
+      expect(snap.current.seekSeconds).toBeCloseTo((now - choice.startMs) / 1000, 3)
+      expect(snap.current.seekSeconds).toBeGreaterThan(0)
+      now += DWELL - 1000
+      driveTvn(now)
+      expect(tvnChoice()).toBe(choice)
+      now += 1000
+      driveTvn(now)
+      expect(tvnChoice()).not.toBe(choice)
+    }
+    expect(new Set(seen).size).toBe(3)
+  })
+
+  it('surfs on as soon as the programme ends when that comes before the wait', () => {
+    dwell = 60 * MIN
+    driveTvn(now)
+    const first = tvnChoice()!
+    expect(first.untilMs).toBe(first.endMs)
+    now = first.endMs
+    driveTvn(now)
+    expect(tvnChoice()!.channelNumber).not.toBe(first.channelNumber)
+  })
+
+  it('with Keep surfing off it makes one choice and holds it to its end; the wait never forces another', () => {
+    setTvnChannelSettings({ autoNext: false })
+    enterTvn(now)
+    const first = tvnChoice()!
+    expect(first.untilMs).toBe(first.endMs)
+    now += DWELL * 2
+    driveTvn(now)
+    expect(tvnChoice()).toBe(first)
+    now = first.endMs + 1000
+    driveTvn(now)
+    expect(tvnChoice()).toBe(first)
+    expect(tvnBroadcast(now).current.programme.id).toBe('tvn-holding')
+  })
+
+  it('switching Keep surfing off during a wait lets the choice play on, then holds', () => {
+    driveTvn(now)
+    const first = tvnChoice()!
+    setTvnChannelSettings({ autoNext: false })
+    now = first.untilMs + 1000
+    driveTvn(now)
+    expect(tvnChoice()).toBe(first)
+    expect(tvnBroadcast(now).current.programme.relay?.channelNumber).toBe(first.channelNumber)
+  })
+
+  it('a new Random Cycle wait applies from the next choice', () => {
+    driveTvn(now)
+    const first = tvnChoice()!
+    dwell = 10_000
+    expect(tvnChoice()!.untilMs).toBe(first.untilMs)
+    now = first.untilMs
+    driveTvn(now)
+    expect(tvnChoice()!.untilMs - now).toBe(10_000)
+  })
+
+  it('Choose another picks at once and restarts the wait', () => {
+    driveTvn(now)
+    const first = tvnChoice()!
+    now += MIN
+    chooseAnotherTvn(now)
+    const next = tvnChoice()!
+    expect(next.channelNumber).not.toBe(first.channelNumber)
+    expect(next.untilMs - now).toBe(DWELL)
+  })
+
+  it('surfs on when the player reports the sampled video really ended, and ignores an ENDED from one it has left', () => {
+    driveTvn(now)
+    const first = tvnChoice()!
+    expect(endedTvn(now + 1000, 'some-earlier-video')).toBe(false)
+    expect(tvnChoice()).toBe(first)
+    expect(endedTvn(now + 1000, first.programme.videoId)).toBe(true)
+    expect(tvnChoice()!.channelNumber).not.toBe(first.channelNumber)
+  })
+
+  it('looking at 000 (the Guide, the bar, a search) never makes or moves a choice', () => {
+    expect(tvnGuideSlots(now - SLOT, now + 4 * SLOT).at(-1)?.programme.title).toBe('TVN Selection')
+    expect(tvnChoice()).toBeNull()
+    driveTvn(now)
+    const first = tvnChoice()!
+    now = first.untilMs + 5000
+    tvnGuideSlots(now - SLOT, now + 4 * SLOT)
+    tvnBroadcast(now)
+    tvnBroadcast(now + 5 * SLOT)
+    expect(tvnChoice()).toBe(first)
+  })
+
+  it('never samples a live broadcast, while a recorded live performance stays eligible', () => {
+    const live = (on: Channel, nowMs: number) => {
+      const snap = airing(on, nowMs)
+      const playback = on.number <= 6 ? 'live' : undefined
+      const title = on.number <= 6 ? 'Live now' : 'Live at the Roundhouse (recorded)'
+      return { ...snap, current: { ...snap.current, programme: { ...snap.current.programme, title, playback, programmeType: on.number <= 6 ? 'live' : 'performance' } as Programme } }
+    }
+    setTvnLookup({ channels: () => network, broadcastOf: live, onAir: (item) => item.enabled, refused: () => refused, dwellMs: () => dwell })
+    for (let step = 0; step < 100; step += 1) {
+      chooseAnotherTvn(now)
+      expect(tvnChoice()!.channelNumber).toBeGreaterThan(6)
+    }
+  })
+
+  it('surfing is driven only by watching 000: no timer of its own, Random Cycle timing reused, and the Random Cycle stays on 000', () => {
+    const tvn = read('src/tvn/tvn-channel.ts')
+    expect(tvn).not.toMatch(/setTimeout|setInterval/)
+    expect(read('src/services/broadcast.ts')).toContain('dwellMs: () => surfDelayMs(loadSurfRange()),')
+    const provider = read('src/state/TvProvider.tsx')
+    expect(provider).toContain("if (current.origin === 'tvn') driveTvn(nowMs)")
+    expect(provider).toContain("if (target.origin === 'tvn') driveTvn(nowMs)")
+    expect(provider).toContain('if (channelRef.current === TVN_CHANNEL_NUMBER) return setSurfHops((hops) => hops + 1)')
+    expect(provider).toMatch(/if \(sampled && tvnChoice\(\) !== sampled\) presentTvnSurf\(\)/)
   })
 })

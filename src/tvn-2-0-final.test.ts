@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LONG_PRESS_MS } from './view/channel-edit.ts'
 import { createGuidePress } from './view/guide-press.ts'
+import { GuideActions } from './components/GuideAdd.tsx'
+import type { GuideTool } from './types/input.ts'
 
 const mouse = { pointerType: 'mouse', clientX: 5, clientY: 5 }
 const touch = { pointerType: 'touch', clientX: 5, clientY: 5 }
@@ -148,5 +152,35 @@ describe('TVN 2.0 final: the diagnostic names the build and the reserved channel
     expect(text).toContain('Channels: 000 TVN · 555 Daft Punk · 586 Live · 1000 Local Media')
     const config = readFileSync('vite.config.ts', 'utf8')
     expect(config).toContain('if (process.env.COMMIT_REF) return process.env.COMMIT_REF.slice(0, 7)')
+  })
+})
+
+describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
+  const header = (tool: GuideTool | null, following = false) =>
+    renderToStaticMarkup(createElement(GuideActions, { tool, picked: false, following, query: following ? 'Music' : null, onNow: () => {}, onTool: () => {} }))
+  const active = (markup: string) => [...markup.matchAll(/class="tab[^"]*\bis-on\b[^"]*"[^>]*>([A-Za-z]+)</g)].map((match) => match[1])
+
+  it('one section carries the gold underline: GUIDE while the listings show, OPTIONS, ADD or MEDIA while they are open', () => {
+    expect(active(header(null))).toEqual(['Guide'])
+    expect(active(header('guides'))).toEqual(['Guide'])
+    expect(active(header('options'))).toEqual(['Options'])
+    expect(active(header('add'))).toEqual(['Add'])
+    expect(active(header('media'))).toEqual(['Media'])
+    expect(header('options')).not.toMatch(/aria-current="page"[^>]*>Guide</)
+  })
+
+  it('a Guide choosing what plays keeps GUIDE green, apart from which section is active', () => {
+    expect(header(null, true)).toContain('class="tab guide-follow is-on is-following"')
+    expect(header('options', true)).toContain('class="tab guide-follow is-following"')
+    const css = readFileSync('src/styles/guide.css', 'utf8')
+    expect(css).toContain('.tab.guide-follow.is-following { color: var(--follow); font-weight: 600; }')
+    expect(css).not.toMatch(/\.tab\.guide-follow\.is-current/)
+    expect(css).toMatch(/\.tab\.is-on \{\s+color: var\(--gold\);\s+border-bottom-color: var\(--gold\);/)
+  })
+
+  it('closing OPTIONS brings the listings straight back where they were, never a blank grid', () => {
+    const guide = readFileSync('src/components/Guide.tsx', 'utf8')
+    expect(guide).toContain("const gridShown = tool !== 'options' && tv.visibleChannels.length > 0")
+    expect(guide).toMatch(/if \(!grid \|\| !gridHidden\.current\) return\s+gridHidden\.current = false\s+grid\.scrollLeft = scrollLeft\s+grid\.scrollTop = scrollTop/)
   })
 })

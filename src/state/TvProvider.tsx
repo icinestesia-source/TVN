@@ -138,7 +138,7 @@ import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
 import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
-import { chooseAnotherTvn, enterTvn, setTvnChannelSettings, tvnChannelSettings, tvnChoice } from '../tvn/tvn-channel.ts'
+import { chooseAnotherTvn, driveTvn, endedTvn, enterTvn, setTvnChannelSettings, TVN_CHANNEL_NUMBER, tvnChannelSettings, tvnChoice } from '../tvn/tvn-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, type StartupPhase } from './startup.ts'
 
 /** RESTORE and channel-file IMPORT read YouTube sources at their own modes and add TVN's shipped back catalogue to ARCHIVE and ALL. */
@@ -496,6 +496,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const loadProgramme = async (target: Channel, nowMs: number) => {
     const load = ++loadToken.current
+    if (target.origin === 'tvn') driveTvn(nowMs)
     passRefused(target, nowMs)
     const scheduleStart = performance.now()
     const airing = liveAiring(target, nowMs, videoOverride(target.number))
@@ -621,7 +622,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
     // Coming to 000 chooses, unless its choice is still running; even with auto-next off.
-    const choosing = target.origin === 'tvn' && Date.now() >= (tvnChoice()?.endMs ?? 0)
+    const choosing = target.origin === 'tvn' && Date.now() >= (tvnChoice()?.untilMs ?? 0)
     if (target.origin === 'tvn') enterTvn(Date.now())
 
     if (target.number === origin) {
@@ -953,6 +954,16 @@ export function TvProvider({ children }: { children: ReactNode }) {
     },
   }
 
+  /** 000 surfing on is TVN changing channel inside 000: the viewer's transition, then the bar naming the new origin. */
+  const presentTvnSurf = () => {
+    const settings = transitionRef.current
+    if (startupSettledRef.current && settings.id !== 'instant') {
+      presentationRef.current = { session: ++presentationSession.current, number: TVN_CHANNEL_NUMBER, settings }
+      setPresentation(presentationRef.current)
+    }
+    showOverlay('info', INFO_MS)
+  }
+
   const syncLive = useCallback((nowMs: number) => {
     if (multiviewRef.current !== '1') return
     if (tuningRef.current || pausedRef.current || !playerReadyRef.current || !bootedRef.current) return
@@ -966,11 +977,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
         return
       }
     }
+    const sampled = current.origin === 'tvn' ? tvnChoice() : null
+    if (current.origin === 'tvn') driveTvn(nowMs)
     passRefused(current, nowMs)
     const snap = onScreen(current, nowMs)
     const key = liveKey(current.id, snap.current.programme.id, snap.current.startMs)
     if (key === loadedKey.current) return
     loadedKey.current = key
+    if (sampled && tvnChoice() !== sampled) presentTvnSurf()
     const player = playerRef.current
     if (!player) return
     const command = playbackCommand(snap.current.programme, snap.current.seekSeconds, videoOverride(current.number))
@@ -1061,6 +1075,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const manual = multiviewRef.current === '1' && !tuningRef.current ? manualAiring(watching, Date.now()) : null
       const playing = manual ? { channelNumber: watching, programmeId: manual.programme.id, videoId: manual.programme.videoId } : null
       if (guideEndAdvances(guideRunRef.current, asked, playing)) guideEngine.current.advance(true)
+      // 000's sampled programme ending for real surfs on at once; an ENDED from a video it has left is ignored.
+      if (asked?.channelNumber === TVN_CHANNEL_NUMBER && watching === TVN_CHANNEL_NUMBER && multiviewRef.current === '1' && !tuningRef.current && endedTvn(Date.now(), asked.videoId)) {
+        loadedKey.current = ''
+        syncLive(Date.now())
+      }
     }
     if (status !== 'error') return
     // The failure belongs to what the player was asked for, not to whichever channel is on screen now.
@@ -2526,8 +2545,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const here = channelByNumber(channelRef.current)
     if (here?.origin !== 'tvn' || tuningRef.current || multiviewRef.current !== '1' || !playerRef.current || !playerReadyRef.current) return
     loadedKey.current = ''
+    presentTvnSurf()
     void loadProgramme(here, now)
-    showOverlay('info', INFO_MS)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -2579,6 +2598,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!surfing || asleep || guideOpen || screenEdit !== null || startupPhase !== 'ready' || !noticeSeen) return
     const id = window.setTimeout(() => {
       if (multiviewRef.current === '1') {
+        // 000 is itself TVN surfing, on the same wait: the Random Cycle leaves the viewer there.
+        if (channelRef.current === TVN_CHANNEL_NUMBER) return setSurfHops((hops) => hops + 1)
         const picked = randomChannel(channelRef.current)
         if (picked) requestTune(picked.number)
       } else {
