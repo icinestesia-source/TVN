@@ -31,7 +31,7 @@ import { hasPicture, searchSession, SESSION_CHANNEL } from '../session/session-c
 import { channelActions, cornerActions, type ChannelActions, type CornerActions } from '../view/info-shortcuts.ts'
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
-import { AddChannelForm, GuideActions, SessionImportTools, UserNetworkTools } from './GuideAdd.tsx'
+import { AddChannelForm, GuideActions, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
 import { ChannelEditor } from './ChannelEditor.tsx'
 import { useEditPress } from './use-edit-press.ts'
 import { createLongPress, editorScope } from '../view/channel-edit.ts'
@@ -39,6 +39,7 @@ import { isLiveStream } from '../dynamic/stream.ts'
 import { manualAiring } from '../player/manual.ts'
 import { parseChannelsExport } from '../services/channels-import.ts'
 import { channelLinksFrom } from '../services/user-network.ts'
+import { USER_NETWORK_FORMAT } from '../services/user-network-export.ts'
 import { USER_NUMBER_START } from '../data/network.ts'
 import { listChannels } from '../data/catalogue.ts'
 import {
@@ -156,11 +157,12 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   // A new channel fills the lowest empty slot before opening a number after the last.
   const nextNumber =
     userChannels.find((channel) => channel.emptySlot)?.number ?? (userNumbers.length > 0 ? Math.max(...userNumbers) + 1 : USER_NUMBER_START)
-  // The Add Channel row closes the list wherever the whole User Network is listed.
+  // The + row (ADD USER CHANNEL) closes the list wherever the whole User Network is listed. It is a control,
+  // not a channel: it has no number and allocates nothing until a source is imported.
   const addRow = !searching && (tv.guideFilter === 'all' || tv.guideFilter === 'user')
   const rowCount = tv.visibleChannels.length + (addRow ? 1 : 0)
   const addInput = useRef<HTMLInputElement>(null)
-  // IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
+  // MEDIA, IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
   const tool = tv.guideTool && tv.guideTool.cursor === tv.guideCursor ? tv.guideTool.kind : null
   const manual = manualAiring(tv.channel.number, now)
   const picked = manual !== null
@@ -191,6 +193,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 
   const importList = async (file: File) => {
     const text = await file.text()
+    if (text.includes(USER_NETWORK_FORMAT)) throw new Error('A User Network file: use IMPORT at the top to restore it')
     const links = channelLinksFrom(text)
     if (!links) {
       const parsed = parseChannelsExport(text)
@@ -212,6 +215,11 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 
   const openAddRow = () => {
     if (tool !== 'add') tv.dispatch({ type: 'guide-tool', tool: 'add' })
+  }
+  // + opens the existing Add Channel row, exactly as ADD does, and puts the cursor in its link box.
+  const plusAddRow = () => {
+    if (tool !== 'add') openAddRow()
+    else addInput.current?.focus()
   }
   const sessionMatches = searching && focusedChannel?.origin === 'session' ? searchSession(tv.guideQuery) : []
   const numbers = useMemo(() => tv.visibleChannels.map((channel) => channel.number), [tv.visibleChannels])
@@ -503,9 +511,10 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                     className="channel-cell is-user add-cell"
                     style={{ position: 'absolute', top: tv.visibleChannels.length * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT }}
                   >
-                    <button type="button" className="ch-tune" onClick={openAddRow} aria-label={`Add a channel as ${padChannel(nextNumber)}`}>
-                      <span className="ch-number">{padChannel(nextNumber)}</span>
-                      <span className="ch-name">+ Add channel</span>
+                    <button type="button" className="ch-tune add-plus" onClick={plusAddRow} aria-label="Add user channel" title="Add user channel" data-add-row="">
+                      <span className="ch-number" aria-hidden="true">
+                        +
+                      </span>
                     </button>
                   </div>
                 ) : null}
@@ -590,8 +599,10 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onDelete={editScope === 'curated' ? tv.restoreCuratedChannel : tv.deleteUserChannel}
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
         />
-      ) : tool === 'import' ? (
+      ) : tool === 'media' ? (
         <SessionImportTools onImport={tv.importSession} />
+      ) : tool === 'network' ? (
+        <UserNetworkImportTools userChannels={userChannels.filter((channel) => !channel.emptySlot).length} onApply={tv.importUserNetwork} />
       ) : tool === 'add' ? (
         <UserNetworkTools
           userChannels={userNumbers.length}

@@ -78,7 +78,7 @@ export function commandFromKey(
       return { type: 'guide-filter' }
     case 'u':
     case 'U':
-      return { type: 'import' }
+      return { type: 'media' }
     case 'y':
     case 'Y':
       return { type: 'user-channels' }

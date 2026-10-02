@@ -55,7 +55,8 @@ import {
   type ShortcutId,
 } from '../view/info-shortcuts.ts'
 import { loadStoredSources, saveStoredSources } from '../services/user-db.ts'
-import { buildUserNetworkExport, downloadText, exportFilename, serialiseUserNetworkExport } from '../services/user-network-export.ts'
+import { buildUserNetworkExport, downloadText, exportFilename, serialiseUserNetworkExport, type UserNetworkExport } from '../services/user-network-export.ts'
+import { favouritesAfterRestore, recordsFromExport, resolveRestored, restoreUserNetwork } from '../services/user-network-restore.ts'
 import { isRefusalCode, learnRefusal, refusedVideos } from '../services/embed-refusals.ts'
 import { uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
 import type { Channel } from '../types/channel.ts'
@@ -297,6 +298,16 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
   const tuned = (): Tuned => ({ channelNumber: channelRef.current, previousNumber: previousRef.current })
 
+  /**
+   * MULTI: the selected window becomes the channel heard, and the one information bar (the same INFO as
+   * single viewing) shows what that window is airing. Multi View stays as it is.
+   */
+  const selectTile = (index: number): number | undefined => {
+    audioFocusRef.current = index
+    setAudioFocus(index)
+    return tilesRef.current[index]
+  }
+
   const showOverlay = (mode: OverlayMode, ms: number) => {
     setOverlay(mode)
     window.clearTimeout(overlayTimer.current)
@@ -484,8 +495,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * IMPORT and ADD open the Guide where they happen: channel 000 for IMPORT, the foot of the User Network
-   * for ADD. The tool holds until the viewer moves the Guide cursor on.
+   * MEDIA, IMPORT and ADD open the Guide where they happen: channel 000 for MEDIA, the foot of the User
+   * Network for IMPORT and ADD. The tool holds until the viewer moves the Guide cursor on.
    */
   const openGuideTool = (kind: GuideTool, channelNumber?: number) => {
     if (kind === 'edit' && !guideOpenRef.current) {
@@ -1018,29 +1029,24 @@ export function TvProvider({ children }: { children: ReactNode }) {
           gridDelta(command.direction, layout.columns),
           tilesRef.current.length,
         )
-        audioFocusRef.current = nextFocus
-        setAudioFocus(nextFocus)
-        const heard = tilesRef.current[nextFocus]
-        if (heard) {
-          startup.noteUserTune()
-          commitChannel({ channelNumber: heard, previousNumber: previousRef.current }, false)
-        }
+        const heard = selectTile(nextFocus)
+        if (!heard) break
+        startup.noteUserTune()
+        commitChannel({ channelNumber: heard, previousNumber: previousRef.current }, false)
+        showOverlay('info', INFO_MS)
         break
       }
       case 'focus-tile': {
         if (multiviewRef.current === '1') break
-        const nextFocus = Math.min(Math.max(command.index, 0), Math.max(0, tilesRef.current.length - 1))
-        audioFocusRef.current = nextFocus
-        setAudioFocus(nextFocus)
-        const heard = tilesRef.current[nextFocus]
-        if (heard) {
-          startup.noteUserTune()
-          commitChannel({ channelNumber: heard, previousNumber: previousRef.current }, false)
-        }
+        const heard = selectTile(Math.min(Math.max(command.index, 0), Math.max(0, tilesRef.current.length - 1)))
+        if (!heard) break
+        startup.noteUserTune()
+        commitChannel({ channelNumber: heard, previousNumber: previousRef.current }, false)
+        showOverlay('info', INFO_MS)
         break
       }
-      case 'import':
-        openGuideTool('import')
+      case 'media':
+        openGuideTool('media')
         break
       case 'guide-tool':
         openGuideTool(command.tool, command.channelNumber)
@@ -1491,6 +1497,25 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return { target, scope, shipped: shipped as NonNullable<typeof shipped> }
   }
 
+  /** Replace the User Network with a validated export the viewer has confirmed; 001–999 and 000 are not touched. */
+  const importUserNetwork = useCallback(
+    async (document: UserNetworkExport) => {
+      const now = Date.now()
+      const resolved = await resolveRestored(recordsFromExport(document, now), { resolveYouTube: (url) => lookUpChannel(url) }, now)
+      const next = restoreUserNetwork(await loadStoredSources(), resolved.records)
+      await saveStoredSources(next)
+      if (starterState() === 'pending') setStarterState('installed')
+      setFavourites((current) => favouritesAfterRestore(current, resolved.records))
+      installSources(next)
+      const count = resolved.records.length
+      const empty = resolved.records.filter((record) => record.emptySlot).length
+      return `USER NETWORK IMPORTED · ${count} ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${empty > 0 ? ` · ${empty} EMPTY` : ''}${
+        resolved.failed > 0 ? ` · ${resolved.failed} ${resolved.failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : ''
+      }`
+    },
+    [installSources],
+  )
+
   const openChannelEdit = useCallback(async (number: number): Promise<ChannelEdit | null> => {
     const { scope, shipped } = scopeOf(number)
     if (scope === 'curated') return curatedEditOf(shipped, loadCuratedEdit(number))
@@ -1779,6 +1804,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       removeStarterNetwork,
       removeUserChannels,
       exportUserNetwork,
+      importUserNetwork,
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
@@ -1801,6 +1827,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       removeStarterNetwork,
       removeUserChannels,
       exportUserNetwork,
+      importUserNetwork,
       activateGuide,
       channel,
       debugOpen,

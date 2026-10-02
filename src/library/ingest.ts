@@ -268,6 +268,12 @@ export function reconcileLibrary(
 
   for (const existing of existingMedia) {
     if (seen.has(existing.id)) continue
+    // Shipped programmes belong to the TVN catalogue, not to any list the viewer imports; another list leaves them be.
+    if (existing.ingestedFrom === 'youtube-discovery') {
+      media.push(existing)
+      unchanged += 1
+      continue
+    }
     const memberships = existing.memberships.map((membership) => ({ ...membership, present: false }))
     const lost = lostPresentMembership(existing.memberships, memberships)
     if (lost) missingFromImport += 1

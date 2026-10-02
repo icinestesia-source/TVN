@@ -180,13 +180,45 @@ export function storedKindOf(sourceType: ExportSourceType): SourceKind {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
+const SECRET_FIELD = /^(?:api[-_]?key|key|keys|token|access[-_]?token|refresh[-_]?token|id[-_]?token|secret|client[-_]?secret|password|passwd|authorization|auth|cookie|credentials?)$/i
+const SECRET_VALUE = /AIza[0-9A-Za-z_-]{30,}|\bya29\.[0-9A-Za-z_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/
+
+/** Every place in a document that names or holds something secret; such a file is refused, never cleaned up. */
+function secretsIn(value: unknown, at: string, found: string[]): void {
+  if (found.length >= 5) return
+  if (typeof value === 'string') {
+    if (SECRET_VALUE.test(value)) found.push(`${at} holds a key`)
+    return
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => secretsIn(item, `${at}[${index}]`, found))
+    return
+  }
+  if (!isRecord(value)) return
+  for (const [name, item] of Object.entries(value)) {
+    if (SECRET_FIELD.test(name)) found.push(`${at}.${name} is a secret field`)
+    else secretsIn(item, `${at}.${name}`, found)
+  }
+}
+
+/** An address that carries credentials or a secret-looking query parameter. */
+function carriesSecret(raw: string): boolean {
+  try {
+    const url = new URL(raw)
+    return Boolean(url.username || url.password) || [...url.searchParams.keys()].some((name) => SECRET_PARAM.test(name))
+  } catch {
+    return false
+  }
+}
+
 /**
  * Check a file against tvn-user-network-v1 before anything is built from it. Returns every problem
- * found, so a later IMPORT can refuse a file whole rather than half-apply it.
+ * found, so IMPORT refuses a file whole rather than half-apply it.
  */
 export function validateUserNetworkExport(data: unknown): { ok: true; value: UserNetworkExport } | { ok: false; errors: string[] } {
   const errors: string[] = []
   if (!isRecord(data)) return { ok: false, errors: ['Not a TVN User Network file'] }
+  secretsIn(data, 'file', errors)
   if (data.format !== USER_NETWORK_FORMAT) errors.push(`Unknown format ${JSON.stringify(data.format)}`)
   if (data.version !== USER_NETWORK_VERSION) errors.push(`Unsupported version ${JSON.stringify(data.version)}`)
   if (typeof data.exportedAt !== 'string' || Number.isNaN(Date.parse(data.exportedAt))) errors.push('exportedAt is not a date')
@@ -223,6 +255,8 @@ export function validateUserNetworkExport(data: unknown): { ok: true; value: Use
       }
       if (!SOURCE_TYPES.includes(source.sourceType as ExportSourceType)) errors.push(`${where}.sourceType is unknown`)
       if (typeof source.url !== 'string' || (source.url !== '' && shareableUrl(source.url) === '')) errors.push(`${where}.url is not a web address`)
+      else if (carriesSecret(source.url)) errors.push(`${where}.url carries a secret`)
+      if (source.providerId !== undefined && typeof source.providerId !== 'string') errors.push(`${where}.providerId is not text`)
       if (typeof source.enabled !== 'boolean') errors.push(`${where}.enabled is not true or false`)
       if (typeof source.label !== 'string') errors.push(`${where}.label is missing`)
       if ((source.sourceType === 'youtube-channel' || source.sourceType === 'youtube-playlist') && !source.url) errors.push(`${where} has no YouTube address`)

@@ -110,21 +110,21 @@ describe('ADD', () => {
   })
 })
 
-describe('IMPORT', () => {
-  it('is a visible Guide action again, next to NOW and ADD', () => {
-    const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'import', picked: false, onNow: () => undefined, onTool: () => undefined }))
+describe('MEDIA (channel 000 from local files)', () => {
+  it('is a visible Guide action, after NOW, IMPORT and ADD', () => {
+    const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'media', picked: false, onNow: () => undefined, onTool: () => undefined }))
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Now', 'Import', 'Add'])
-    expect(markup).toMatch(/aria-pressed="true"[^>]*>Import</)
+    expect(labels).toEqual(['Now', 'Import', 'Add', 'Media'])
+    expect(markup).toMatch(/aria-pressed="true"[^>]*>Media</)
   })
 
   it('takes the Guide to channel 000 at the current time under a filter that lists it', () => {
     for (const filter of ['retrotv', 'user', 'favourites'] as const) {
-      const target = guideToolTarget('import', filter, [], { channelNumber: 12, timeMs: T0 - HOUR }, listChannels(), T0)
+      const target = guideToolTarget('media', filter, [], { channelNumber: 12, timeMs: T0 - HOUR }, listChannels(), T0)
       expect(target.filter).toBe('all')
       expect(target.cursor).toEqual({ channelNumber: SESSION_CHANNEL_NUMBER, timeMs: T0 })
     }
-    expect(guideToolTarget('import', 'favourites', [0], { channelNumber: 12, timeMs: T0 }, listChannels(), T0).filter).toBe('favourites')
+    expect(guideToolTarget('media', 'favourites', [0], { channelNumber: 12, timeMs: T0 }, listChannels(), T0).filter).toBe('favourites')
   })
 
   it('shows the existing FOLDER / FILES importer inline in the Guide footer, wired to channel 000', () => {
@@ -133,7 +133,7 @@ describe('IMPORT', () => {
     expect(markup).toMatch(/>Files</)
     expect(markup).not.toMatch(/role="dialog"/)
     expect(guide).toContain('<SessionImportTools onImport={tv.importSession} />')
-    expect(provider).toMatch(/case 'import':\s+openGuideTool\('import'\)/)
+    expect(provider).toMatch(/case 'media':\s+openGuideTool\('media'\)/)
     expect(readdirSync('src/components')).not.toContain('ImportPanel.tsx')
   })
 })

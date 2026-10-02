@@ -141,18 +141,18 @@ describe('channel 000 before import', () => {
     const card = renderToStaticMarkup(createElement(SessionCard))
     expect(card).toContain('000')
     expect(card).toContain(SESSION_CARD_COPY.title)
-    expect(card).toContain('SELECT IMPORT IN THE GUIDE, THEN FOLDER OR FILES, TO CREATE A TEMPORARY CHANNEL')
+    expect(card).toContain('SELECT MEDIA IN THE GUIDE, THEN FOLDER OR FILES, TO CREATE A TEMPORARY CHANNEL')
     const slots = guideSlots(SESSION_CHANNEL, T0 - 60 * MIN, T0 + 120 * MIN)
     expect(slots.length).toBeGreaterThan(0)
     expect(slots.every((slot) => slot.programme.title === 'Import media')).toBe(true)
   })
 
-  it('C: IMPORT replaces the obsolete guide key text and reaches channel 000 inside the Guide', () => {
+  it('C: MEDIA replaces the obsolete guide key text and reaches channel 000 inside the Guide', () => {
     const guide = readFileSync('src/components/Guide.tsx', 'utf8')
     expect(guide).not.toMatch(/Arrows · Enter · Home · Esc/i)
     expect(guide).not.toContain('guide-help')
     expect(guide).toContain('<SessionImportTools onImport={tv.importSession} />')
-    expect(actions()).toMatch(/<button[^>]*>Import<\/button>/)
+    expect(actions()).toMatch(/<button[^>]*>Media<\/button>/)
     expect(importTools()).toMatch(/<button[^>]*>Files<\/button>/)
   })
 

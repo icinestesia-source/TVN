@@ -234,6 +234,8 @@
 }
 
 .add-cell .ch-name { color: var(--gold); }
+.add-cell .add-plus .ch-number { color: var(--gold); }
+.add-cell .add-plus:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 
 .guide-empty .add-channel {
   justify-content: center;

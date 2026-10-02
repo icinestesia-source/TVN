@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from 'react'
 import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
+import type { UserNetworkExport } from '../services/user-network-export.ts'
+import { readUserNetworkFile } from '../services/user-network-restore.ts'
 import type { GuideTool } from '../types/input.ts'
 import { padChannel } from '../utils/time.ts'
 
@@ -19,7 +21,10 @@ function viewerMessage(caught: unknown, fallback: string): string {
   return message && message.length <= 90 && !/[<>{}]/.test(message) ? message.toUpperCase() : fallback
 }
 
-/** NOW, IMPORT and ADD: ordinary Guide actions beside SEARCH. IMPORT and ADD open in the Guide itself. */
+/**
+ * NOW · IMPORT · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself.
+ * IMPORT restores a User Network file, ADD opens the Add Channel row, MEDIA builds channel 000 from local files.
+ */
 export function GuideActions({
   tool,
   picked,
@@ -40,13 +45,14 @@ export function GuideActions({
   return (
     <div className="guide-import guide-actions">
       {action('Now', picked, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
-      {action('Import', tool === 'import', () => onTool('import'))}
+      {action('Import', tool === 'network', () => onTool('network'))}
       {action('Add', tool === 'add', () => onTool('add'))}
+      {action('Media', tool === 'media', () => onTool('media'))}
     </div>
   )
 }
 
-/** A box for a YouTube channel or video link; the channel joins the bottom of the guide. EXPORT, after ADD, downloads the User Network. */
+/** A box for a YouTube channel or video link; IMPORT brings that source in as a User Channel. EXPORT, after it, downloads the User Network. */
 export function AddChannelForm({
   nextNumber,
   onAdd,
@@ -119,7 +125,7 @@ export function AddChannelForm({
         }}
       />
       <button type="submit" className="tab" disabled={busy || !link.trim()}>
-        {busy ? 'Adding…' : 'Add'}
+        {busy ? 'Importing…' : 'Import'}
       </button>
       {onExport ? (
         <button type="button" className="tab" title="Download your User Network (1001+) as a JSON file" disabled={exporting} onClick={runExport}>
@@ -135,7 +141,7 @@ export function AddChannelForm({
   )
 }
 
-/** The Guide footer while IMPORT is open: channel 000 from a folder or files on this device. */
+/** The Guide footer while MEDIA is open: channel 000 from a folder or files on this device. */
 export function SessionImportTools({ onImport }: { onImport: (files: readonly File[]) => Promise<string> }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -175,12 +181,12 @@ export function SessionImportTools({ onImport }: { onImport: (files: readonly Fi
   }
 
   return (
-    <footer className="guide-info guide-tool" aria-label="Import">
+    <footer className="guide-info guide-tool" aria-label="Media">
       <div className="info-main">
         <p className="info-kicker">
           <span className="info-net">Session</span>
           <span>{padChannel(0)}</span>
-          <span>Import</span>
+          <span>Media</span>
         </p>
         <p className="guide-tool-note">A temporary channel from video or audio on this device, for this session only. Nothing is uploaded.</p>
         {note ? (
@@ -216,6 +222,124 @@ export function SessionImportTools({ onImport }: { onImport: (files: readonly Fi
         tabIndex={-1}
         aria-hidden="true"
         onChange={(event) => fromInput(event.currentTarget)}
+      />
+    </footer>
+  )
+}
+
+/** A User Network file is a few hundred kilobytes at most; anything far larger is not one. */
+const MAX_NETWORK_FILE_BYTES = 20 * 1024 * 1024
+
+/**
+ * The Guide footer while IMPORT is open: restore a TVN User Network file. The file is read and checked
+ * first; replacing the viewer's User Network always asks, and a refused file changes nothing.
+ */
+export function UserNetworkImportTools({
+  userChannels,
+  onApply,
+}: {
+  userChannels: number
+  onApply: (document: UserNetworkExport) => Promise<string>
+}) {
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const [pending, setPending] = useState<{ document: UserNetworkExport; channels: number; empty: number; filename: string } | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const first = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    first.current?.focus()
+  }, [])
+
+  const choose = async (file: File) => {
+    setPending(null)
+    if (file.size > MAX_NETWORK_FILE_BYTES) {
+      setNote('THAT FILE IS TOO LARGE TO BE A TVN USER NETWORK')
+      return
+    }
+    setNote('READING…')
+    try {
+      const read = readUserNetworkFile(await file.text())
+      if (!read.ok) {
+        setNote(`NOT A TVN USER NETWORK FILE · ${read.errors[0].toUpperCase()}`)
+        return
+      }
+      setNote(null)
+      setPending({ document: read.value, channels: read.channels, empty: read.empty, filename: file.name })
+    } catch {
+      setNote('THAT FILE COULD NOT BE READ')
+    }
+  }
+
+  const apply = async () => {
+    if (!pending) return
+    const { document } = pending
+    setPending(null)
+    setBusy(true)
+    setNote('IMPORTING USER NETWORK…')
+    try {
+      setNote(await onApply(document))
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE IMPORTED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const key = (label: string, action: () => void, className = 'tab') => (
+    <button type="button" className={className} disabled={busy} onKeyDown={keepKey} onClick={action}>
+      {label}
+    </button>
+  )
+
+  return (
+    <footer className="guide-info guide-tool" aria-label="Import User Network">
+      <div className="info-main">
+        <p className="info-kicker">
+          <span className="info-net">TVN</span>
+          <span>1001+</span>
+          <span>Import</span>
+        </p>
+        <p className="guide-tool-note">
+          Restore a User Network file saved with EXPORT. It replaces your User Network in this browser; TVN channels 001–999 and Channel 000 stay as
+          they are.
+        </p>
+        {note ? (
+          <p className="guide-tool-status" role="status">
+            {note}
+          </p>
+        ) : null}
+      </div>
+      <div className="info-actions">
+        {pending ? (
+          <>
+            <span className="remove-ask" role="alertdialog" aria-label="Import User Network?">
+              Import User Network? This will replace your current User Network
+              {userChannels > 0 ? ` (${userChannels} ${userChannels === 1 ? 'channel' : 'channels'})` : ''} with {pending.channels}{' '}
+              {pending.channels === 1 ? 'channel' : 'channels'}
+              {pending.empty > 0 ? `, ${pending.empty} empty,` : ''} from {pending.filename}.
+            </span>
+            {key('Yes, replace it', () => void apply(), 'tab remove-key')}
+            {key('Keep mine', () => setPending(null))}
+          </>
+        ) : (
+          <button ref={first} type="button" className="tune-key" disabled={busy} onKeyDown={keepKey} onClick={() => fileInput.current?.click()}>
+            Choose file
+          </button>
+        )}
+      </div>
+      <input
+        ref={fileInput}
+        className="sr"
+        type="file"
+        accept=".json,application/json"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0]
+          event.currentTarget.value = ''
+          if (file) void choose(file)
+        }}
       />
     </footer>
   )

@@ -1,7 +1,7 @@
 import { independentSourceRecords } from '../data/independent/network.ts'
 import { defaultNetworkItems } from '../data/network/catalog.ts'
 import { setMediaLibrary } from '../director/library.ts'
-import { expandPlayableCatalogue } from './playable-catalogue.ts'
+import { expandPlayableCatalogue, shippedRecordSupersedes } from './playable-catalogue.ts'
 import { programmeForDirector } from './source-editorial.ts'
 import { userLibraryMode } from './mode.ts'
 import { reconcileLibrary } from './ingest.ts'
@@ -400,7 +400,7 @@ export async function commitPlayableCatalogue(
     }
     const existing = next[at]
     if (existing && isUserNetworkMedia(existing)) continue
-    if (existing?.ingestedFrom === 'youtube-discovery' && existing.updatedAt >= item.updatedAt) continue
+    if (existing?.ingestedFrom === 'youtube-discovery' && !shippedRecordSupersedes(existing, item)) continue
     next[at] = item
     if (item.sourceId) touched.add(item.sourceId)
   }

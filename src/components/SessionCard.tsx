@@ -4,8 +4,8 @@ import { SESSION_CHANNEL } from '../session/session-channel.ts'
 const BARS = ['#c4c4c4', '#c4c400', '#00c4c4', '#00c400', '#c400c4', '#c40000', '#0000c4']
 
 export const SESSION_CARD_COPY = {
-  title: 'Import',
-  note: 'SELECT IMPORT IN THE GUIDE, THEN FOLDER OR FILES, TO CREATE A TEMPORARY CHANNEL',
+  title: 'Media',
+  note: 'SELECT MEDIA IN THE GUIDE, THEN FOLDER OR FILES, TO CREATE A TEMPORARY CHANNEL',
 } as const
 
 /** Channel 000 before anything is imported: a deliberate card, never a blank screen. */

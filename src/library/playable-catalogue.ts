@@ -88,6 +88,35 @@ function mediaFromRow(
   }
 }
 
+const sameNumbers = (a: readonly number[] = [], b: readonly number[] = []) => a.length === b.length && a.every((value, index) => value === b[index])
+
+/** What the shipped catalogue alone decides about a programme: its listing and every channel route. */
+function sameCatalogueFacts(a: LibraryMedia, b: LibraryMedia): boolean {
+  const memberships = (item: LibraryMedia) => (item.memberships ?? []).map((membership) => `${membership.sourceId}:${membership.present}`).join('|')
+  return (
+    a.title === b.title &&
+    a.durationSeconds === b.durationSeconds &&
+    a.sourceId === b.sourceId &&
+    a.publishedAt === b.publishedAt &&
+    a.original?.year === b.original?.year &&
+    sameNumbers(a.explicitChannelIncludes, b.explicitChannelIncludes) &&
+    sameNumbers(a.curatedChannels, b.curatedChannels) &&
+    sameNumbers(a.eraChannels, b.eraChannels) &&
+    sameNumbers(a.genreChannels, b.genreChannels) &&
+    memberships(a) === memberships(b)
+  )
+}
+
+/**
+ * The shipped catalogue is the authority on its own programmes: a stored copy that lists or routes one
+ * differently is replaced whatever its stamp says, since a stamp can be newer only because the browser
+ * touched the record. A programme the viewer has corrected is kept unless the catalogue itself is newer.
+ */
+export function shippedRecordSupersedes(stored: LibraryMedia, shipped: LibraryMedia): boolean {
+  if ((stored.userEditedMetadata ?? []).length > 0) return stored.updatedAt < shipped.updatedAt
+  return !sameCatalogueFacts(stored, shipped) || stored.updatedAt < shipped.updatedAt
+}
+
 /** Accepts the compact v2 catalogue or the original array of full records. */
 export function expandPlayableCatalogue(raw: unknown): LibraryMedia[] {
   if (Array.isArray(raw)) return raw as LibraryMedia[]
