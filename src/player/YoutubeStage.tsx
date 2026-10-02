@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
 import { CaptionController } from './captions.ts'
 import { loadYouTubeApi } from './load-api.ts'
+import { PLAYER_LOAD_TIMEOUT_MS, playingRequested } from './picture.ts'
 import { notePlayback } from './trace.ts'
 import type { LoadResult, PlayerHandle, PlayerLoadRequest, PlayerStatus } from './types.ts'
 import type { YouTubePlayer } from '../types/youtube.ts'
@@ -88,9 +89,16 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
     }
     window.clearInterval(watchRef.current)
     window.clearTimeout(timeoutRef.current)
-    notePlayback({ playerState: 'playing', actualVideoId: actual, lastError: null })
-    onStatusRef.current('playing')
+    // Loaded is not playing: YouTube shows its own still and play button until PLAYING, which onStateChange reports.
+    notePlayback({ actualVideoId: actual, lastError: null })
     finish(id, 'playing')
+  }
+
+  const reportPlaying = (player: YouTubePlayer) => {
+    const data = player.getVideoData?.() as { video_id?: string; isLive?: boolean } | undefined
+    if (!playingRequested(requestedRef.current, data?.video_id || null, liveRequestRef.current, data?.isLive)) return
+    notePlayback({ playerState: 'playing', actualVideoId: data?.video_id ?? null, lastError: null })
+    onStatusRef.current('playing')
   }
 
   executeRef.current = (id: number, request: PlayerLoadRequest) => {
@@ -133,7 +141,7 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
       player.stopVideo()
       onStatusRef.current('error', 'timeout')
       finish(id, 'error')
-    }, 12000)
+    }, PLAYER_LOAD_TIMEOUT_MS)
 
     const startSeconds = Number.isFinite(request.startSeconds)
       ? Math.max(0, Math.floor(request.startSeconds))
@@ -248,6 +256,7 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
                 if (previewRef.current && event.data === 1) event.target.setPlaybackQuality?.('small')
                 confirmLoaded(requestId.current, event.target)
               }
+              if (event.data === 1) reportPlaying(event.target)
               if (event.data === 0 && loopRef.current && !holdRef.current) {
                 event.target.seekTo(0, true)
                 event.target.playVideo()
@@ -257,6 +266,9 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
             },
             onApiChange: (event) => captionsRef.current!.modulesChanged(event.target),
             onError: (event) => {
+              // An error while the player is still on another video than the one last asked for is that video's.
+              const actual = actualId(event.target)
+              if (actual && requestedRef.current && actual !== requestedRef.current) return
               window.clearInterval(watchRef.current)
               notePlayback({ playerState: 'error', lastError: String(event.data) })
               event.target.stopVideo()

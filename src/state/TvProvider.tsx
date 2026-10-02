@@ -7,7 +7,7 @@ import {
   GUIDE_MAX_WINDOW_MS,
   windowAround,
 } from '../epg/geometry.ts'
-import { guideFilterForChannel, searchGuideChannels, stepGuideChannel } from '../epg/navigation.ts'
+import { searchGuideChannels, stepGuideChannel } from '../epg/navigation.ts'
 import { clampZoom } from '../epg/zoom.ts'
 import { commandFromGamepad } from '../input/gamepad.ts'
 import { commandFromKeyEvent } from '../input/keyboard.ts'
@@ -16,9 +16,10 @@ import { deliver, playbackCommand, type PlaybackCommand } from '../player/comman
 import { subtitlesNotice } from '../player/captions.ts'
 import { notePlayback } from '../player/trace.ts'
 import { notePhase, notePress } from '../player/tune-timing.ts'
-import { commitTune, createPictureWait } from './tune-commit.ts'
+import { commitTune } from './tune-commit.ts'
 import { liveAiring, pauseViewing } from '../player/viewing.ts'
-import { clearManual, onScreen, pickTunes, selectProgramme, stepFrom } from '../player/manual.ts'
+import { clearManual, manualAiring, onScreen, pickTunes, selectProgramme, stepFrom } from '../player/manual.ts'
+import { afterRefusal, arrive, fallbackProgramme, giveUp, type Recovery } from '../player/refusal-fallback.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
 import { liveKey } from '../scheduler/calculate.ts'
 import { adjacentSlotTime, slotContaining } from '../scheduler/window.ts'
@@ -26,10 +27,13 @@ import { beginScheduleBootstrap, endScheduleBootstrap, hydrateDirector } from '.
 import { primeDirector } from '../director/director.ts'
 import { markLiveUnavailable } from '../dynamic/runtime.ts'
 import { loadUserLibraryMode, setUserLibraryMode, userLibraryMode } from '../library/mode.ts'
-import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary } from '../library/store.ts'
+import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary, saveDeferredLibrary } from '../library/store.ts'
 import { guideSlots } from '../services/broadcast.ts'
-import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
+import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
 import { claimStarterInstall, setStarterState, starterIds, starterState, withoutStarter } from '../data/user-network/starter.ts'
+import { afterPaint } from './after-paint.ts'
+import { keepCalculatedPools, offerSavedPools, readSavedPools } from '../library/pool-cache.ts'
+import { PLAYER_LOAD_TIMEOUT_MS } from '../player/picture.ts'
 import {
   channelsFromSources,
   emptySlotRecord,
@@ -39,7 +43,7 @@ import {
   type StoredSource,
 } from '../services/channels-import.ts'
 import { lookUpChannel } from '../services/add-channel.ts'
-import { addChannelSource, clearUserChannel, planTestChannels, removeUserChannels as withoutUserChannels } from '../services/user-network.ts'
+import { addChannelSource, clearUserChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
 import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile } from '../services/channel-file.ts'
 import { manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
@@ -74,7 +78,7 @@ import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
 import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
-import { commitTuned, emptyUniverseNote, randomTarget, stepTarget, type Tuned } from './tuning.ts'
+import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
 import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, type StartupPhase } from './startup.ts'
@@ -114,6 +118,8 @@ import {
 const INFO_MS = 6000
 const VOLUME_MS = 1200
 const NUMERIC_MS = 1600
+// A refused or failed first programme is usually replaced within a second or two (the refusal fallback).
+const STARTUP_RETRY_MS = 4000
 const MIN_STATIC_MS = 520
 const SETTLE_MS = 220
 /** Loading shown after director cache, library, shipped network and user network; 100 once tuned. */
@@ -146,11 +152,19 @@ const SCREEN_EDIT_COMMANDS: ReadonlySet<TvCommand['type']> = new Set([
   'debug',
 ])
 
+
+/** The channel pools worked out this visit, kept for the next once the set is on screen. */
+const keepPools = () => void keepCalculatedPools().catch(() => undefined)
+
 export function TvProvider({ children }: { children: ReactNode }) {
   setUserLibraryMode(loadUserLibraryMode())
   ensureDefaultNetwork()
   beginScheduleBootstrap()
   const [starterDue] = useState(() => claimStarterInstall())
+  // The first channel is on screen: playing, paused, a slate, or a failure its replacement did not follow in time.
+  // The startup logo holds until then.
+  const [startupSettled, setStartupSettled] = useState(false)
+  const [startupFailed, setStartupFailed] = useState(false)
   const [favouritesSeeded] = useState(() => defaultFavouritesDue())
   const stored = useRef(loadPreferences()).current
   const initialNumber = channelByNumber(stored.lastChannelNumber)?.number ?? 1
@@ -202,7 +216,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [guideWindow, setGuideWindow] = useState(() => windowAround(Date.now()))
   const [guideNote, setGuideNote] = useState<GuideNote>(null)
   const [tuningNumber, setTuningNumber] = useState<number | null>(null)
-  const [pictureWaiting, setPictureWaiting] = useState(false)
+  const [pictureLive, setPictureLive] = useState(false)
+  const pictureLiveRef = useRef(false)
+  /** The automatic recovery from refused programmes since the viewer's last tune or the last picture that played. */
+  const recoveryRef = useRef<Recovery | null>(null)
+  /** A refusal that arrived while its tune was still settling, for the channel that tune commits to. */
+  const recoveryDue = useRef<{ channelNumber: number; cause: 'refused' | 'unplayable' } | null>(null)
+  /** The next tune is the recovery falling forward, not the viewer: it keeps the recovery going. */
+  const autoTuneRef = useRef(false)
+  const recoverRef = useRef<(channelNumber: number, cause: 'refused' | 'unplayable') => void>(() => {})
   const [numeric, setNumeric] = useState('')
   const [overlay, setOverlay] = useState<OverlayMode>('none')
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('loading-api')
@@ -262,7 +284,6 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const pendingNumberRef = useRef<number | null>(null)
   const staticSince = useRef(0)
   const settleTimer = useRef(0)
-  const [pictureWait] = useState(() => createPictureWait(setPictureWaiting))
   /** The channel and video the single-view player was last asked for: a player error belongs to this. */
   const askedRef = useRef<{ channelNumber: number; videoId: string | null } | null>(null)
   const failureTimer = useRef(0)
@@ -291,13 +312,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [guideQuery, setGuideQuery] = useState('')
   const [guideZoom, setGuideZoomState] = useState(1)
   const setGuideZoom = useCallback((zoom: number) => setGuideZoomState(clampZoom(zoom)), [])
-  const guideChannels = useMemo(() => {
+  const guideList = useMemo(() => {
     const listed = listChannels().filter((item) => channelMatchesFilter(item, guideFilter, favourites))
-    return guideFilter === 'favourites' ? inFavouriteOrder(listed, favourites) : listed
-  }, [catalogueVersion, favourites, guideFilter])
+    return guideRows(guideFilter === 'favourites' ? inFavouriteOrder(listed, favourites) : listed, channelByNumber(channelNumber), guideFilter)
+  }, [catalogueVersion, favourites, guideFilter, channelNumber])
+  const guideVisiting = guideList.visiting
   const visibleChannels = useMemo(
-    () => searchGuideChannels(guideChannels, guideQuery, (item, needle) => item.origin === 'session' && searchSession(needle).length > 0),
-    [guideChannels, guideQuery],
+    () => searchGuideChannels(guideList.rows, guideQuery, (item, needle) => item.origin === 'session' && searchSession(needle).length > 0),
+    [guideList, guideQuery],
   )
   const guideQueryRef = useRef(guideQuery)
   guideQueryRef.current = guideQuery
@@ -354,21 +376,29 @@ export function TvProvider({ children }: { children: ReactNode }) {
   // A video already known to refuse embedding never reaches YouTube, whose player would sit on a dead play button.
   const deliverLive = async (player: PlayerHandle, command: PlaybackCommand, channelNumber: number) => {
     askedRef.current = { channelNumber, videoId: command.videoId }
+    pictureLiveRef.current = false
+    setPictureLive(false)
     if (!command.videoId || !refusedVideos().has(command.videoId)) return deliver(player, command)
     await deliver(player, { ...command, videoId: null, kind: 'holding' })
     setPlayerStatus('error')
     setPlayerDetail('150')
+    // Nothing on this channel within reach will play: the recovery moves on from it.
+    recoverRef.current(channelNumber, 'unplayable')
     return 'error' as const
   }
 
   const loadProgramme = async (target: Channel, nowMs: number) => {
     const load = ++loadToken.current
+    passRefused(target, nowMs)
     const scheduleStart = performance.now()
     const airing = liveAiring(target, nowMs, videoOverride(target.number))
     notePhase(target.number, 'programmeAt', { scheduleMs: performance.now() - scheduleStart })
     loadedKey.current = airing.key
     const player = playerRef.current
-    if (!player) return 'slate' as const
+    if (!player) {
+      setStartupSettled(true)
+      return 'slate' as const
+    }
     const command = airing.command
     notePlayback({
       channelNumber: target.number,
@@ -380,6 +410,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     notePhase(target.number, 'answeredAt', { result })
     // A later load owns the player now; this one must not seek or replace what it is showing.
     if (load !== loadToken.current) return result
+    if (result === 'slate') setStartupSettled(true)
+    if (result === 'error') setStartupFailed(true)
     if (pausedRef.current) {
       player.pause()
       return result
@@ -404,6 +436,54 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
     loadedKey.current = liveKey(target.id, fresh.current.programme.id, fresh.current.startMs)
     return result
+  }
+
+  /**
+   * When the programme due on this channel is known to be refused, its next programme that will play is
+   * played instead, from its beginning: a fallback over the schedule, which is not changed. True when the
+   * channel has something to play.
+   */
+  /** The channel the viewer is on: the one a settling tune is committing to, else the one tuned. */
+  const watchingNumber = () => (tuningRef.current ? (pendingNumberRef.current ?? channelRef.current) : channelRef.current)
+
+  const passRefused = (target: Channel, nowMs: number): boolean => {
+    const snap = onScreen(target, nowMs)
+    const videoId = snap.current.programme.videoId
+    const refused = refusedVideos()
+    if (!videoId || !refused.has(videoId) || videoOverride(target.number)) return true
+    const from = manualAiring(target.number, nowMs)?.slot ?? snap.current
+    const next = fallbackProgramme(target, from, refused)
+    if (!next) return false
+    selectProgramme(target.number, next.programme, nowMs, { startMs: next.startMs, endMs: next.endMs })
+    return true
+  }
+
+  recoverRef.current = (channelNumber, cause) => {
+    if (multiviewRef.current !== '1' || channelNumber !== watchingNumber()) return
+    if (tuningRef.current) {
+      recoveryDue.current = { channelNumber, cause }
+      return
+    }
+    const current = channelByNumber(channelNumber)
+    if (!current) return
+    const now = Date.now()
+    const step = cause === 'refused' ? afterRefusal(recoveryRef.current, channelNumber) : { action: 'next-channel' as const, recovery: giveUp(recoveryRef.current, channelNumber) }
+    recoveryRef.current = step.recovery
+    if (step.action === 'next-programme') {
+      if (passRefused(current, now)) {
+        loadedKey.current = ''
+        void loadProgramme(current, now)
+        return
+      }
+      recoveryRef.current = giveUp(step.recovery, channelNumber)
+    }
+    const failed = new Set(recoveryRef.current.failedChannels)
+    const target = fallForwardTarget(channelNumber, { filter: guideFilter, favourites }, failed)
+    // Every channel worth trying has been tried: the unavailable card stays rather than going round again.
+    if (target === null) return
+    recoveryRef.current = arrive(recoveryRef.current, target)
+    autoTuneRef.current = true
+    requestTune(target)
   }
 
   const resumeViewing = () => {
@@ -476,8 +556,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setTuningNumber(null)
         playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || soundHeld(startHoldRef.current, startCheckRef.current, viewerInteracted()))
         showOverlay('info', INFO_MS)
+        const due = recoveryDue.current
+        recoveryDue.current = null
+        if (due?.channelNumber === target.number) recoverRef.current(due.channelNumber, due.cause)
       },
-      awaitPicture: pictureWait.wait,
     })
   }
 
@@ -520,11 +602,6 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const openGuide = (mode: GuideMode) => {
     if (guideModeRef.current === 'closed' && mode !== 'closed') {
-      const watching = channelByNumber(channelRef.current)
-      if (watching) {
-        const nextFilter = guideFilterForChannel(watching, guideFilter, favourites)
-        if (nextFilter !== guideFilter) setGuideFilter(nextFilter)
-      }
       const now = Date.now()
       const nextWindow = windowAround(now)
       const nextCursor = { channelNumber: channelRef.current, timeMs: now }
@@ -599,8 +676,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
     if (!keepPick) clearManual()
+    if (!autoTuneRef.current) recoveryRef.current = null
+    autoTuneRef.current = false
+    recoveryDue.current = null
     notePress(target.number)
-    pictureWait.stop()
     closeScreenEdit(true)
     startup.noteUserTune()
     const generation = ++tokenRef.current
@@ -747,6 +826,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (tuningRef.current || pausedRef.current || !playerReadyRef.current || !bootedRef.current) return
     const current = channelByNumber(channelRef.current)
     if (!current) return
+    passRefused(current, nowMs)
     const snap = onScreen(current, nowMs)
     const key = liveKey(current.id, snap.current.programme.id, snap.current.startMs)
     if (key === loadedKey.current) return
@@ -754,6 +834,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const player = playerRef.current
     if (!player) return
     const command = playbackCommand(snap.current.programme, snap.current.seekSeconds, videoOverride(current.number))
+    // The same video already playing at the same place (a refresh after a failure elsewhere): nothing to reload.
+    const asked = askedRef.current
+    if (asked?.channelNumber === current.number && asked.videoId === command.videoId && pictureLiveRef.current && Math.abs(player.currentTime() - command.startSeconds) < 3) return
     notePlayback({
       channelNumber: current.number,
       provider: snap.current.programme.source,
@@ -822,6 +905,18 @@ export function TvProvider({ children }: { children: ReactNode }) {
     setPlayerDetail(detail ?? '')
     const asked = askedRef.current
     if (status === 'playing' && asked) notePhase(asked.channelNumber, 'playingAt')
+    if (status === 'playing') {
+      pictureLiveRef.current = true
+      setPictureLive(true)
+      setStartupSettled(true)
+      if (asked?.channelNumber === watchingNumber()) recoveryRef.current = null
+    }
+    // A paused picture is the picture: a start the browser would not autoplay shows it, not the logo.
+    if (status === 'paused') setStartupSettled(true)
+    if (status === 'ended') {
+      pictureLiveRef.current = false
+      setPictureLive(false)
+    }
     if (status !== 'error') return
     // The failure belongs to what the player was asked for, not to whichever channel is on screen now.
     const channel = asked ? channelByNumber(asked.channelNumber) : undefined
@@ -837,9 +932,16 @@ export function TvProvider({ children }: { children: ReactNode }) {
       failuresRef.current.push({ videoId, reason: detail || 'playback failed' })
       refreshAfterFailure()
     }
-    // A publisher refusal is permanent: schedule without that video and retune in place.
+    // A publisher refusal is permanent: remembered, and the channel plays its next programme instead. It
+    // counts only when it is the refusal of what this channel is meant to be playing now.
+    const meant = videoId !== null && channel.number === watchingNumber() && liveAiring(channel, now, videoOverride(channel.number)).command.videoId === videoId
+    if (videoId && isRefusalCode(detail) && refusedVideos().has(videoId)) {
+      if (meant) recoverRef.current(channel.number, 'refused')
+      return
+    }
     if (!videoId || !isRefusalCode(detail) || !learnRefusal(videoId)) return
     failureScopes.current.add(channel.origin === 'user-import' ? 'user' : 'library')
+    if (meant) recoverRef.current(channel.number, 'refused')
   }, [syncLive, refreshAfterFailure])
 
   const focusGuide = useCallback((nextChannel: number, timeMs: number) => {
@@ -922,7 +1024,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     pendingNumberRef.current = null
     staticSince.current = 0
     playerReadyRef.current = false
-    pictureWait.stop()
+    setPictureLive(false)
     loadedKey.current = ''
     closeGuide()
     setRemoteOpen(false)
@@ -1401,8 +1503,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (!cancel) setStartupProgress(STARTUP_STEPS[step])
       }
       try {
+        const savedPools = readSavedPools().catch(() => null)
         await hydrateDirector().catch(() => undefined)
         reached(0)
+        offerSavedPools(await savedPools)
         await hydrateLibrary()
         reached(1)
         await loadShippedIndependentCatalogue().catch(() => 0)
@@ -1456,6 +1560,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
       stop()
     }
   }, [startup, stored])
+
+  // The library save the start left for later waits until the set has painted, and behind a starter install,
+  // whose own library write already covers it.
+  useEffect(() => {
+    if (startupPhase !== 'ready' || starterDue) return
+    return afterPaint(() => void saveDeferredLibrary().catch(() => undefined).then(keepPools))
+  }, [startupPhase, starterDue])
 
   const setSourceOverride = useCallback((channelNumber: number, videoId: string | null) => {
     setVideoOverride(channelNumber, videoId)
@@ -1535,41 +1646,91 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  /** Add the starter network after the viewer's own channels; anything already present is left as it is. */
-  const loadTestChannels = useCallback(
-    async (automatic = false) => {
-      if (automatic && starterState() !== 'pending') return ''
-      const parsed = await readStarterTemplate()
-      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
-      await ingestParsed(parsed, { filename: BUILT_IN_CATALOGUE_ID })
-      const plan = planTestChannels(existing, parsed, Date.now(), uploaderIdFor)
-      if (plan.added.length > 0) await saveStoredSources(plan.sources)
-      setStarterState('installed')
-      if (plan.added.length === 0) return 'THE STARTER NETWORK IS ALREADY INSTALLED'
-      installSources(plan.sources)
-      const range = plan.added.length === 1 ? `${plan.added[0]}` : `${plan.added[0]}–${plan.added[plan.added.length - 1]}`
-      return `${plan.added.length} STARTER CHANNELS ADDED ON ${range}${plan.skipped > 0 ? ` · ${plan.skipped} ALREADY PRESENT` : ''}`
+  /**
+   * The starter's YouTube channels and playlists arrive as addresses: they are read through the keyless
+   * lookup after the install, a few at a time, and each fills in only if the viewer has not changed it since.
+   */
+  const resolveStarterSources = useCallback(
+    async (pending: readonly StoredSource[]) => {
+      if (pending.length === 0) return
+      const resolved = await resolveRestored(pending, restoreDeps, Date.now())
+      const found = new Map(resolved.records.map((record) => [record.id, record]))
+      const latest = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      let changed = false
+      const next = latest.map((record) => {
+        const read = found.get(record.id)
+        if (!read || read.videos.length === 0 || record.videos.length > 0 || record.channelNumber !== read.channelNumber) return record
+        changed = true
+        return {
+          ...record,
+          videos: read.videos,
+          ...(read.channelSources ? { channelSources: read.channelSources } : {}),
+          ...(read.runningOrder?.length ? { runningOrder: read.runningOrder } : {}),
+        }
+      })
+      if (!changed) return
+      await saveStoredSources(next)
+      installSources(next)
     },
     [installSources],
   )
 
+  /** Add the starter network after the viewer's own channels; anything already present is left as it is. */
+  const loadTestChannels = useCallback(
+    async (automatic = false) => {
+      if (automatic && starterState() !== 'pending') return ''
+      const now = Date.now()
+      const starter = recordsFromExport(await readStarterNetwork(), now)
+      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      await ingestParsed(starterCollections(starter), { filename: BUILT_IN_CATALOGUE_ID })
+      const plan = planStarterNetwork(existing, starter, now, uploaderIdFor)
+      if (plan.added.length > 0) await saveStoredSources(plan.sources)
+      setStarterState('installed')
+      if (plan.added.length === 0) return 'THE STARTER NETWORK IS ALREADY INSTALLED'
+      installSources(plan.sources)
+      const added = new Set(plan.added)
+      void resolveStarterSources(plan.sources.filter((record) => added.has(record.channelNumber ?? -1) && !record.emptySlot && record.videos.length === 0)).catch(() => undefined)
+      const range = plan.added.length === 1 ? `${plan.added[0]}` : `${plan.added[0]}–${plan.added[plan.added.length - 1]}`
+      return `${plan.added.length} STARTER CHANNELS ADDED ON ${range}${plan.skipped > 0 ? ` · ${plan.skipped} ALREADY PRESENT` : ''}`
+    },
+    [installSources, resolveStarterSources],
+  )
+
+  // However the first load goes (blocked autoplay, a load that never starts, a card or radio), the logo gives way
+  // once the player's own load timeout has passed.
+  useEffect(() => {
+    if (startupPhase !== 'ready' || startupSettled) return
+    const timer = window.setTimeout(() => setStartupSettled(true), PLAYER_LOAD_TIMEOUT_MS)
+    return () => window.clearTimeout(timer)
+  }, [startupPhase, startupSettled])
+
+  // A failed first programme keeps the logo up while its replacement loads, but not for the whole load timeout.
+  useEffect(() => {
+    if (startupPhase !== 'ready' || startupSettled || !startupFailed) return
+    const timer = window.setTimeout(() => setStartupSettled(true), STARTUP_RETRY_MS)
+    return () => window.clearTimeout(timer)
+  }, [startupPhase, startupSettled, startupFailed])
+
   const starterRanRef = useRef(false)
   useEffect(() => {
     if (startupPhase !== 'ready' || (!starterDue && !favouritesSeeded) || starterRanRef.current) return
+    // A fresh install's starter channels wait until the first picture is up (or the start has settled otherwise).
+    if (starterDue && !startupSettled) return
     starterRanRef.current = true
     const installed = starterDue ? loadTestChannels(true).catch(() => undefined) : Promise.resolve()
+    if (starterDue) void installed.then(() => afterPaint(() => void saveDeferredLibrary().catch(() => undefined).then(keepPools)))
     if (!favouritesSeeded) return
     void installed
       .then(async () => {
-        const expected = starterFavouriteSources(await readStarterTemplate(), uploaderIdFor)
+        const expected = starterFavouriteSources(recordsFromExport(await readStarterNetwork(), 0))
         const sources = migrateLegacyUserNumbers(await loadStoredSources()).sources
         setFavourites((current) => placeStarterFavourites(current, expected, sources))
       })
       .catch(() => undefined)
-  }, [startupPhase, starterDue, favouritesSeeded, loadTestChannels])
+  }, [startupPhase, starterDue, favouritesSeeded, loadTestChannels, startupSettled])
 
   const removeStarterNetwork = useCallback(async () => {
-    const ids = starterIds(await readStarterTemplate())
+    const ids = starterIds(await readStarterTemplate(), recordsFromExport(await readStarterNetwork(), 0))
     const existing = await loadStoredSources()
     const remaining = withoutStarter(existing, ids)
     setStarterState('removed')
@@ -1935,6 +2096,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       canGoForward: canGoForward(history),
       startHold,
       visibleChannels,
+      guideVisiting,
       volume,
       muted,
       paused,
@@ -1959,7 +2121,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideWindow,
       guideNote,
       tuningNumber,
-      pictureWaiting,
+      pictureLive,
+      startupSettled,
       numeric,
       overlay,
       playerStatus,
@@ -2083,8 +2246,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       subtitles,
       syncLive,
       tuningNumber,
-      pictureWaiting,
+      pictureLive,
+      startupSettled,
       visibleChannels,
+      guideVisiting,
       volume,
       multiviewMode,
       tiles,

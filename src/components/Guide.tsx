@@ -547,6 +547,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       key={channel.id}
                       channel={channel}
                       watching={channel.number === tv.channel.number}
+                      visiting={channel.number === tv.guideVisiting}
                       selected={channel.number === tv.guideCursor.channelNumber}
                       userNetwork={channel.number >= 1001}
                       offAir={!isOnAir(channel)}
@@ -708,6 +709,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 function ChannelCell({
   channel,
   watching,
+  visiting,
   selected,
   userNetwork,
   offAir,
@@ -718,6 +720,8 @@ function ChannelCell({
 }: {
   channel: Channel
   watching: boolean
+  /** Watched although the selected tab does not list it: shown here, not part of the tab. */
+  visiting: boolean
   selected: boolean
   userNetwork: boolean
   offAir: boolean
@@ -733,7 +737,7 @@ function ChannelCell({
   const point = (event: PointerEvent<HTMLButtonElement>) => ({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })
   return (
     <div
-      className={`channel-cell${selected ? ' is-selected' : ''}${watching ? ' is-watching' : ''}${userNetwork ? ' is-user' : ''}${offAir ? ' is-off-air' : ''}`}
+      className={`channel-cell${selected ? ' is-selected' : ''}${watching ? ' is-watching' : ''}${visiting ? ' is-visiting' : ''}${userNetwork ? ' is-user' : ''}${offAir ? ' is-off-air' : ''}`}
       style={{ height: ROW_HEIGHT }}
     >
       <button
@@ -754,8 +758,8 @@ function ChannelCell({
         onPointerUp={press.up}
         onPointerCancel={press.cancel}
         onPointerLeave={press.cancel}
-        title={offAir ? `${channel.name} · Off air` : undefined}
-        aria-label={`${padChannel(channel.number)} ${channel.name}${offAir ? ', off air' : ''}`}
+        title={visiting ? `${channel.name} · Watching, not in this tab` : offAir ? `${channel.name} · Off air` : undefined}
+        aria-label={`${padChannel(channel.number)} ${channel.name}${visiting ? ', watching, not in this tab' : ''}${offAir ? ', off air' : ''}`}
       >
         <span className="ch-number">{padChannel(channel.number)}</span>
         <span className="ch-name">{channel.name}</span>

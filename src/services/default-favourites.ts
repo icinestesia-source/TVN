@@ -1,6 +1,5 @@
 import { USER_NUMBER_START } from '../data/network.ts'
-import type { ParsedExport, StoredSource } from './channels-import.ts'
-import { planTestChannels } from './user-network.ts'
+import type { StoredSource } from './channels-import.ts'
 
 /**
  * A new viewer's Favourites, in the order the tab lists them. Seeded once, when no preferences have
@@ -28,14 +27,12 @@ export const DEFAULT_FAVOURITES: readonly number[] = [
   1080, // Sporting Logically
 ]
 
-type UploaderOf = Parameters<typeof planTestChannels>[3]
-
-/** For each default favourite in the starter User Network, the starter source a fresh install numbers it to. */
-export function starterFavouriteSources(template: ParsedExport, uploaderOf?: UploaderOf): Map<number, string> {
-  const fresh = new Map(planTestChannels([], template, 0, uploaderOf).sources.map((source) => [source.channelNumber, source.id]))
+/** For each default favourite in the starter User Network, the starter channel a fresh install numbers it to. */
+export function starterFavouriteSources(fresh: readonly StoredSource[]): Map<number, string> {
+  const ids = new Map(fresh.filter((source) => !source.emptySlot).map((source) => [source.channelNumber, source.id]))
   const expected = new Map<number, string>()
   for (const number of DEFAULT_FAVOURITES) {
-    const id = number >= USER_NUMBER_START ? fresh.get(number) : undefined
+    const id = number >= USER_NUMBER_START ? ids.get(number) : undefined
     if (id !== undefined) expected.set(number, id)
   }
   return expected

@@ -7,49 +7,22 @@
 export interface TuneCommitSteps {
   /** Still the tune the viewer asked for last. */
   current: () => boolean
-  /** Asks the provider for the channel's airing; settles when the player answers, whatever it answers. */
+  /** Asks the provider for the channel's airing; the picture follows the player's own state, not this. */
   load: () => Promise<unknown>
   /** What is left of the minimum static. */
   holdStatic: () => Promise<void>
   commit: () => void
   /** The viewer moved on before this tune committed. */
   abandon: () => void
-  /** The channel committed before its player answered. */
-  awaitPicture: (answer: Promise<unknown>) => void
 }
 
 export async function commitTune(steps: TuneCommitSteps): Promise<'committed' | 'abandoned'> {
-  let answered = false
-  const answer = steps
-    .load()
-    .catch(() => 'error' as const)
-    .finally(() => {
-      answered = true
-    })
+  void steps.load().catch(() => 'error' as const)
   await steps.holdStatic()
   if (!steps.current()) {
     steps.abandon()
     return 'abandoned'
   }
   steps.commit()
-  if (!answered) steps.awaitPicture(answer)
   return 'committed'
-}
-
-/** Only the latest tune's answer may lift the waiting picture; an earlier channel's late answer cannot. */
-export function createPictureWait(set: (waiting: boolean) => void) {
-  let latest = 0
-  return {
-    wait(answer: Promise<unknown>) {
-      const mine = ++latest
-      set(true)
-      void answer.finally(() => {
-        if (latest === mine) set(false)
-      })
-    },
-    stop() {
-      latest += 1
-      set(false)
-    },
-  }
 }

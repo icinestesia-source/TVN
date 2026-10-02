@@ -180,7 +180,7 @@ describe('seeding once, for a new viewer only', () => {
 })
 
 describe('User Network favourites', () => {
-  const expected = starterFavouriteSources(template, uploaderIdFor)
+  const expected = starterFavouriteSources(planTestChannels([], template, 0, uploaderIdFor).sources)
 
   it('resolve to the starter channels a fresh install numbers them to', () => {
     const sources = showFreshStarter()
@@ -240,7 +240,7 @@ describe('the Favourites tab', () => {
     )
     expect(listed.map((channel) => channel.number)).toEqual(DEFAULT_FAVOURITES)
     expect(listed.every((channel) => channel === channelByNumber(channel.number))).toBe(true)
-    expect(provider).toContain("return guideFilter === 'favourites' ? inFavouriteOrder(listed, favourites) : listed")
+    expect(provider).toContain("return guideRows(guideFilter === 'favourites' ? inFavouriteOrder(listed, favourites) : listed, channelByNumber(channelNumber), guideFilter)")
   })
 
   it('leaves every other tab in channel order', () => {

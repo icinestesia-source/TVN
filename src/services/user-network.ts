@@ -121,6 +121,50 @@ export function planTestChannels(
 }
 
 /**
+ * Install the shipped starter network (its channels as restored from the file) beside the viewer's own.
+ * Each channel keeps its own number when that number is free and otherwise follows the viewer's channels;
+ * a channel already present (the same channel, the same name, or the same uploader) is left exactly as it is.
+ */
+export function planStarterNetwork(
+  existing: readonly StoredSource[],
+  starter: readonly StoredSource[],
+  now: number,
+  uploaderOf: UploaderOf = () => null,
+): { sources: StoredSource[]; added: number[]; skipped: number } {
+  const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
+  const ids = new Set(sources.map((source) => source.id))
+  const names = new Set(sources.filter((source) => !source.emptySlot).map((source) => source.name.trim().toLowerCase()))
+  const uploaders = new Set(sources.map((source) => uploaderIdOf(source, uploaderOf)).filter((id): id is string => id !== null))
+  const taken = new Set(sources.map((source) => source.channelNumber))
+  const added: number[] = []
+  let skipped = 0
+  const wanted = starter.filter((incoming) => {
+    const uploader = uploaderIdOf(incoming, uploaderOf)
+    const present = ids.has(incoming.id) || (!incoming.emptySlot && names.has(incoming.name.trim().toLowerCase())) || (uploader !== null && uploaders.has(uploader))
+    if (present) skipped += 1
+    return !present
+  })
+  const place = (incoming: StoredSource, number: number) => {
+    sources.push({ ...incoming, videos: incoming.videos.map((video) => ({ ...video })), channelNumber: number, updatedAt: now })
+    taken.add(number)
+    added.push(number)
+  }
+  // Every channel whose own number is free takes it first, so a renumbered one never displaces another.
+  const moved: StoredSource[] = []
+  for (const incoming of wanted) {
+    const own = incoming.channelNumber
+    if (own !== null && !taken.has(own)) place(incoming, own)
+    else if (!incoming.emptySlot) moved.push(incoming)
+  }
+  for (const incoming of moved) {
+    const number = claimUserNumber(sources)
+    if (number === null) break
+    place(incoming, number)
+  }
+  return { sources, added: added.sort((a, b) => a - b), skipped }
+}
+
+/**
  * A channel list file may be a TVN export (channels with their videos) or a plain list of YouTube links:
  * `["https://…", …]`, `{ "channels": ["https://…"] }` or `{ "channels": [{ "url": "https://…" }] }`.
  * Returns the links, or null when the file is an export.
@@ -166,4 +210,20 @@ export function clearUserChannel(
   const owner = existing[at].owner
   sources[at] = { ...emptySlotRecord(channelNumber, now), ...(owner ? { owner } : {}) }
   return { sources, status: 'cleared' }
+}
+
+/** The starter's channels that carry their own programmes, as the media library takes them in. */
+export function starterCollections(starter: readonly StoredSource[]): ParsedExport {
+  const sources = starter
+    .filter((record) => !record.emptySlot && record.videos.length > 0)
+    .map((record) => ({ id: record.id, name: record.name, videos: record.videos.map((video) => ({ ...video })) }))
+  const videos = sources.flatMap((source) => source.videos)
+  return {
+    version: 'tvn-user-network-v1',
+    sources,
+    videoCount: videos.length,
+    totalSeconds: videos.reduce((total, video) => total + video.durationSec, 0),
+    watchedCount: 0,
+    warnings: [],
+  }
 }

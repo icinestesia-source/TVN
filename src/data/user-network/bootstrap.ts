@@ -11,6 +11,8 @@ import {
 import { loadShippedRefusals } from '../../services/embed-refusals.ts'
 import { loadShippedArchive } from '../../services/user-archive.ts'
 import { loadStoredSources } from '../../services/user-db.ts'
+import type { UserNetworkExport } from '../../services/user-network-export.ts'
+import { readUserNetworkFile } from '../../services/user-network-restore.ts'
 
 export const BUILT_IN_CATALOGUE_ID = 'retrotv-user-network'
 export const BUILT_IN_CATALOGUE_VERSION = '2.4'
@@ -147,7 +149,22 @@ export async function applyBuiltInCatalogues(input: {
   }
 }
 
-/** The bundled starter network template (1001–1081), read fresh each time and never written to. */
+/** The shipped starter User Network: a TVN User Network export, numbered as it is to be installed. */
+export const STARTER_NETWORK_FILE = '/user-network/starter-network.json'
+
+/** The starter network as shipped, read fresh each time and never written to. */
+export async function readStarterNetwork(): Promise<UserNetworkExport> {
+  const response = await fetch(STARTER_NETWORK_FILE)
+  if (!response.ok) throw new Error(`Could not read ${STARTER_NETWORK_FILE}`)
+  const read = readUserNetworkFile(await response.text())
+  if (!read.ok) throw new Error(`${STARTER_NETWORK_FILE} is not a TVN User Network file`)
+  return read.value
+}
+
+/**
+ * The starter network TVN shipped before 1.0.13 (1001–1081), read fresh each time and never written to.
+ * Still read so Remove starter finds the channels it installed in browsers that have them.
+ */
 export async function readStarterTemplate(): Promise<ParsedExport> {
   return mergeParsedExports((await readCatalogueTexts()).texts.map((text) => parseChannelsExport(text)))
 }

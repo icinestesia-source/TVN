@@ -18,6 +18,8 @@ function channelApi(): Plugin {
 
 export default defineConfig({
   plugins: [react(), channelApi()],
+  // Each build has its own id; channel pools kept by an earlier build are never reused by a later one.
+  define: { __TVN_BUILD__: JSON.stringify(Date.now().toString(36)) },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'server/**/*.test.ts'],

@@ -68,6 +68,26 @@
   animation: startup-out 420ms ease-out forwards;
 }
 
+.startup-noise {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0.92;
+}
+
+.startup-noise-frames {
+  display: block;
+  width: 100%;
+  height: 400%;
+  image-rendering: pixelated;
+  animation: startup-noise 0.26s steps(4) infinite;
+}
+
+@keyframes startup-noise {
+  to { transform: translateY(-100%); }
+}
+
+
 .startup-ident {
   position: absolute;
   inset: 0;
@@ -116,10 +136,10 @@
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
-  fill: #f2f2f2;
+  fill: var(--ring-colour, #f2f2f2);
   paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.7);
-  stroke-width: 0.8px;
+  stroke: rgba(0, 0, 0, 0.85);
+  stroke-width: 1.1px;
 }
 
 .startup-ring-text tspan {
@@ -218,8 +238,8 @@
 /* A brighter letter runs clockwise round the ring, the rest dimmed behind it. */
 @keyframes ring-chase {
   0% { opacity: 1; }
-  12% { opacity: 0.5; }
-  100% { opacity: 0.5; }
+  12% { opacity: 0.75; }
+  100% { opacity: 0.75; }
 }
 
 @keyframes startup-out {
@@ -230,7 +250,8 @@
   .startup-message.is-pulsing,
   .startup[aria-busy='true'] .startup-logo,
   .startup-ring,
-  .startup-ring-text tspan { animation: none; }
+  .startup-ring-text tspan,
+  .startup-noise-frames { animation: none; }
   .startup.is-leaving { animation-duration: 1ms; }
 }
 

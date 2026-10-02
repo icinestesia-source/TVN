@@ -775,6 +775,8 @@ span.editor-expand { border-color: transparent; }
 }
 
 .channel-cell.is-watching .ch-number { color: var(--gold); }
+.channel-cell.is-visiting { box-shadow: inset 3px 0 0 rgba(242, 242, 242, 0.35); }
+.channel-cell.is-visiting .ch-name { font-style: italic; }
 
 .channel-cell.is-user .ch-name { color: #d5e4f2; }
 .channel-cell.is-off-air .ch-number,

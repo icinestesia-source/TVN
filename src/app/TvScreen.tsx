@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createWheelStepper, swipeStep } from '../input/gestures.ts'
 import { PlayerStage } from '../player/PlayerStage.tsx'
+import { pictureOwner } from '../player/picture.ts'
 import { SessionCard } from '../components/SessionCard.tsx'
 import { screenFace } from './screen-face.ts'
 import { useTv } from '../state/tv-context.ts'
@@ -68,6 +69,7 @@ export function TvScreen() {
   const single = tv.multiviewMode === '1'
   const programme = onScreen(tv.channel, now).current.programme
   const face = screenFace(tv.channel, programme, tv.playerStatus)
+  const owner = pictureOwner({ face, live: tv.pictureLive, paused: tv.paused })
   const audio = face === 'radio'
   const showCard = face === 'card'
   const shell = [
@@ -92,7 +94,7 @@ export function TvScreen() {
         {single ? (
           <div className={face === 'picture' ? 'stage' : 'stage is-card'}>
             <PlayerStage playerRef={tv.playerRef} onReady={tv.onPlayerReady} onStatus={tv.onPlayerStatus} captions={tv.subtitles} />
-            {tv.pictureWaiting && face === 'picture' ? (
+            {owner === 'cover' ? (
               <div className="stage-waiting" aria-hidden="true">
                 <Noise />
               </div>

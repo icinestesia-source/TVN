@@ -337,7 +337,8 @@ describe('MULTI: the information bar follows the selected window', () => {
     return renderToStaticMarkup(createElement(TvContext.Provider, { value }, createElement(NowNextOverlay)))
   }
   const kicker = (html: string) => (html.match(/<p class="info-kicker">([\s\S]*?)<\/p>/)?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-  const title = (html: string) => html.match(/<h2 class="info-title"[^>]*>([^<]*)</)?.[1] ?? ''
+  const decode = (text: string) => text.replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+  const title = (html: string) => decode(html.match(/<h2 class="info-title"[^>]*>([^<]*)</)?.[1] ?? '')
 
   beforeAll(() => {
     resetDirector()

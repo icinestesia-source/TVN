@@ -31,7 +31,7 @@ export function selectProgramme(
 }
 
 /** How many slots with nothing to show (the schedule's holding cards) Prev and Next look past. */
-const STEP_REACH = 24
+export const STEP_REACH = 24
 
 /**
  * The programme before (-1) or after (1) the one on screen, in the channel's running order. A holding card

@@ -66,6 +66,31 @@ describe('startup loading presentation', () => {
     expect(screen('ready')).toContain('startup is-leaving')
   })
 
+  it('B2: the logo stays over the static until the first channel is on screen, then fades off over the picture', () => {
+    const app = readFileSync('src/App.tsx', 'utf8')
+    expect(app.match(/<StartupScreen\b/g)).toHaveLength(1)
+    expect(app).toMatch(/const phase = !ready \? startupPhase : startupSettled \? 'ready' : 'loading'/)
+    expect(app).toMatch(/<StartupScreen phase=\{phase\} progress=\{ready \? 100 : startupProgress\} onLeft=\{\(\) => setCurtain\(false\)\} \/>/)
+    expect(app.indexOf('<TvScreen />')).toBeLessThan(app.indexOf('<StartupScreen'))
+    const held = renderToStaticMarkup(createElement(StartupScreen, { phase: 'loading', progress: 100 }))
+    expect(held).toMatch(/class="startup"/)
+    expect(held).toMatch(/<img[^>]*class="startup-logo"/)
+    expect(held).not.toContain('static-ident')
+    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    expect(provider).toMatch(/setPictureLive\(true\)\s+setStartupSettled\(true\)/)
+    expect(provider).toMatch(/if \(load !== loadToken\.current\) return result\s+if \(result === 'slate'\) setStartupSettled\(true\)\s+if \(result === 'error'\) setStartupFailed\(true\)/)
+    expect(provider).toMatch(/if \(startupPhase !== 'ready' \|\| startupSettled \|\| !startupFailed\) return\s+const timer = window\.setTimeout\(\(\) => setStartupSettled\(true\), STARTUP_RETRY_MS\)/)
+    expect(provider).toMatch(/if \(status === 'paused'\) setStartupSettled\(true\)/)
+    expect(provider).toMatch(/if \(startupPhase !== 'ready' \|\| startupSettled\) return\s+const timer = window\.setTimeout\(\(\) => setStartupSettled\(true\), PLAYER_LOAD_TIMEOUT_MS\)/)
+  })
+
+  it('B3: the static behind the logo keeps moving while the start is busy: its frames are stepped by a CSS transform', () => {
+    expect(screen('loading')).toContain('<div class="startup-noise" aria-hidden="true"><canvas class="startup-noise-frames"></canvas></div>')
+    const css = readFileSync('src/styles/overlays.css', 'utf8')
+    expect(css).toMatch(/\.startup-noise-frames \{[^}]*animation: startup-noise 0\.26s steps\(4\) infinite;/)
+    expect(css).toMatch(/@keyframes startup-noise \{\s*to \{ transform: translateY\(-100%\); \}/)
+  })
+
   it('C: is not driven by a timer: an instant load is ready at once, a slow one waits', async () => {
     vi.useFakeTimers()
     const phases: string[] = []

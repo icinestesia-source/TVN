@@ -11,7 +11,8 @@ import type { SourceFilter } from './services/channel-curation.ts'
 import { inventoryOf, type ChannelSource } from './services/channel-sources.ts'
 import { channelsFromSources, type ImportedVideo, type StoredSource } from './services/channels-import.ts'
 import { commitHistory, EMPTY_HISTORY, type ViewingHistory } from './state/history.ts'
-import { commitTune, createPictureWait } from './state/tune-commit.ts'
+import { pictureOwner, playingRequested } from './player/picture.ts'
+import { commitTune } from './state/tune-commit.ts'
 import { commitTuned, stepTarget, type Tuned } from './state/tuning.ts'
 
 const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
@@ -66,28 +67,36 @@ function tuner(start: number, player: ReturnType<typeof delayedProvider>) {
   let generation = 0
   let tuned: Tuned = { channelNumber: start, previousNumber: null }
   let history: ViewingHistory = commitHistory(EMPTY_HISTORY, start, null)
-  let waiting = false
+  // The picture follows the player as the provider tracks it: a new request covers it, PLAYING for the
+  // video last asked for uncovers it, and a failure hands it to the unavailable card.
+  let live = false
+  let failed = false
+  let requested: number | null = null
   const statics: Deferred<void>[] = []
-  const wait = createPictureWait((value) => {
-    waiting = value
-  })
   const press = (number: number, options: { holdStatic?: boolean } = {}) => {
     const mine = ++generation
     const origin = tuned.channelNumber
-    wait.stop()
     const hold = deferred<void>()
     statics.push(hold)
     if (!options.holdStatic) hold.resolve()
     return commitTune({
       current: () => mine === generation,
-      load: () => player.load(number),
+      load: () => {
+        requested = number
+        live = false
+        failed = false
+        return player.load(number).then((result) => {
+          if (result === 'playing' && playingRequested(String(requested), String(number), false, undefined)) live = true
+          if (result === 'error' && requested === number) failed = true
+          return result
+        })
+      },
       holdStatic: () => hold.promise,
       abandon: () => {},
       commit: () => {
         tuned = commitTuned(tuned, number, origin)
         history = commitHistory(history, number, null)
       },
-      awaitPicture: wait.wait,
     })
   }
   return {
@@ -96,7 +105,7 @@ function tuner(start: number, player: ReturnType<typeof delayedProvider>) {
     endStatic: (index: number) => statics[index].resolve(),
     tuned: () => tuned,
     history: () => history.entries.map((entry) => (typeof entry === 'number' ? entry : (entry as { channelNumber: number }).channelNumber)),
-    waiting: () => waiting,
+    waiting: () => pictureOwner({ face: failed ? 'card' : 'picture', live, paused: false }) === 'cover',
   }
 }
 
@@ -107,10 +116,9 @@ afterEach(() => {
 })
 
 describe('asynchronous channel tuning', () => {
-  it('commits the channel before a delayed player answers, and lifts the waiting picture when it does', async () => {
+  it('commits the channel before a delayed player answers, and lifts the waiting picture when it plays', async () => {
     const events: string[] = []
     const answer = deferred<string>()
-    const wait = createPictureWait((waiting) => events.push(waiting ? 'waiting' : 'picture'))
     const result = await commitTune({
       current: () => true,
       load: () => {
@@ -122,26 +130,27 @@ describe('asynchronous channel tuning', () => {
       },
       commit: () => events.push('committed'),
       abandon: () => events.push('abandoned'),
-      awaitPicture: wait.wait,
     })
     expect(result).toBe('committed')
-    expect(events).toEqual(['asked', 'static', 'committed', 'waiting'])
-    answer.resolve('playing')
+    expect(events).toEqual(['asked', 'static', 'committed'])
+    const player = delayedProvider()
+    const tv = tuner(101, player)
+    await tv.press(225)
+    expect(tv.waiting()).toBe(true)
+    player.answer(225)
     await flush()
-    expect(events.at(-1)).toBe('picture')
+    expect(tv.waiting()).toBe(false)
   })
 
-  it('a player that answers within the static commits with no waiting picture', async () => {
-    const events: string[] = []
-    await commitTune({
-      current: () => true,
-      load: async () => 'playing',
-      holdStatic: () => flush(),
-      commit: () => events.push('committed'),
-      abandon: () => events.push('abandoned'),
-      awaitPicture: () => events.push('waiting'),
-    })
-    expect(events).toEqual(['committed'])
+  it('a player that plays within the static commits with no waiting picture', async () => {
+    const player = delayedProvider()
+    const tv = tuner(101, player)
+    const pending = tv.press(225, { holdStatic: true })
+    player.answer(225)
+    await flush()
+    tv.endStatic(0)
+    expect(await pending).toBe('committed')
+    expect(tv.waiting()).toBe(false)
   })
 
   it('a provider that never answers cannot hold the channel, and CH+ and CH- still move at once', async () => {
@@ -197,21 +206,16 @@ describe('asynchronous channel tuning', () => {
     await flush()
     expect(tv.waiting()).toBe(false)
     const rejected = deferred<string>()
-    let waiting = false
     const result = await commitTune({
       current: () => true,
       load: () => rejected.promise,
       holdStatic: async () => {},
       commit: () => {},
       abandon: () => {},
-      awaitPicture: createPictureWait((value) => {
-        waiting = value
-      }).wait,
     })
     rejected.reject(new Error('player gone'))
     await flush()
     expect(result).toBe('committed')
-    expect(waiting).toBe(false)
     expect(await tv.press(787)).toBe('committed')
     expect(tv.tuned().channelNumber).toBe(787)
   })
@@ -234,11 +238,9 @@ describe('the provider tunes this way', () => {
     expect(commit).toMatch(/await commitTune\(\{/)
     expect(commit).toMatch(/load: \(\) => loadProgramme\(target, Date\.now\(\)\)/)
     expect(commit).not.toMatch(/await loadProgramme/)
-    expect(commit).toMatch(/awaitPicture: pictureWait\.wait/)
   })
 
-  it('a new tune drops the previous channel’s waiting picture; Multi View still commits at once', () => {
-    expect(request).toMatch(/pictureWait\.stop\(\)/)
+  it('Multi View still commits at once', () => {
     const multi = request.slice(request.indexOf("if (multiviewRef.current !== '1') {"), request.indexOf('if (pendingOrigin.current === null)'))
     expect(multi).toMatch(/commitChannel\(commitTuned\(tuned\(\), target\.number\)\)/)
     expect(multi).not.toMatch(/loadProgramme|commitTune\(/)
@@ -246,7 +248,7 @@ describe('the provider tunes this way', () => {
 
   it('the waiting picture is noise inside the stage, beneath INFO, and only for a picture channel', () => {
     const screen = readFileSync('src/app/TvScreen.tsx', 'utf8')
-    expect(screen).toMatch(/tv\.pictureWaiting && face === 'picture'/)
+    expect(screen).toMatch(/owner === 'cover' \? \(\s*<div className="stage-waiting"/)
     expect(readFileSync('src/styles/shell.css', 'utf8')).toMatch(/\.stage-waiting \{[^}]*pointer-events: none/)
   })
 

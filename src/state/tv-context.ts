@@ -31,6 +31,8 @@ export interface TvContextValue {
   /** What the browser held back at startup until the viewer's first key or tap. */
   startHold: StartHold
   visibleChannels: readonly Channel[]
+  /** The channel being watched, shown in the Guide although the selected tab does not list it; null when it does. */
+  guideVisiting: number | null
   volume: number
   muted: boolean
   paused: boolean
@@ -58,8 +60,10 @@ export interface TvContextValue {
   guideWindow: { startMs: number; endMs: number }
   guideNote: GuideNote
   tuningNumber: number | null
-  /** The tuned channel's player has not answered yet; the picture shows noise until it does. */
-  pictureWaiting: boolean
+  /** The airing the player was last asked for has reached PLAYING; until then TVN's noise owns the picture. */
+  pictureLive: boolean
+  /** The first channel is on screen (playing, a card, or the player gave up); the startup logo holds until then. */
+  startupSettled: boolean
   numeric: string
   overlay: OverlayMode
   playerStatus: PlayerStatus

@@ -90,6 +90,7 @@ export function resetLibraryForTests(): void {
   media = []
   sources = []
   writer = null
+  deferredSave = null
   hydrated = false
   hydrating = null
   defaultsReady = false
@@ -164,8 +165,26 @@ const idbWriter: LibraryWriter = {
   },
 }
 
+/** A save the start left for later. Every write stores the whole library, so any that succeeds first covers it. */
+let deferredSave: ImportSession | null = null
+
 async function activeWriter(): Promise<LibraryWriter> {
-  return writer ?? idbWriter
+  const target = writer ?? idbWriter
+  return {
+    read: () => target.read(),
+    write: async (snapshot) => {
+      const due = deferredSave
+      await target.write(snapshot)
+      if (deferredSave === due) deferredSave = null
+    },
+  }
+}
+
+/** Makes the save the start deferred, unless a later write already has. */
+export async function saveDeferredLibrary(): Promise<void> {
+  const session = deferredSave
+  if (!session) return
+  await (await activeWriter()).write({ media, sources, session })
 }
 
 export async function hydrateLibrary(): Promise<LibrarySnapshot> {
@@ -376,6 +395,7 @@ export async function commitPlayableCatalogue(
   items: readonly LibraryMedia[],
   session: ImportSession,
   authoritative = false,
+  persisted: 'await' | 'deferred' = 'await',
 ): Promise<number> {
   const previousMedia = media
   const previousSources = sources
@@ -412,6 +432,11 @@ export async function commitPlayableCatalogue(
   media = next
   const now = session.completedAt ?? session.startedAt
   for (const sourceId of touched) syncIndependentSourceCount(sourceId, now)
+  if (persisted === 'deferred') {
+    deferredSave = session
+    publish()
+    return added
+  }
   try {
     await (await activeWriter()).write({ media, sources, session })
   } catch (caught) {
@@ -423,7 +448,10 @@ export async function commitPlayableCatalogue(
   return added
 }
 
-/** Loads programmes the resolver has already accepted. */
+/**
+ * Loads programmes the resolver has already accepted. They are fetched and compared on every start, so
+ * saving them never holds the start (see saveDeferredLibrary): a save that is lost is made again next time.
+ */
 export async function loadShippedIndependentCatalogue(): Promise<number> {
   let response: Response
   try {
@@ -455,7 +483,7 @@ export async function loadShippedIndependentCatalogue(): Promise<number> {
     missingFromImport: 0,
     errors: 0,
     status: 'complete',
-  }, true)
+  }, true, 'deferred')
 }
 
 /** Records an import session without adding a playable item. */

@@ -6,6 +6,7 @@ import type { EligibilityExplanation } from '../director/eligibility.ts'
 import type { MediaItem, TemplateBlock } from '../director/types.ts'
 import type { ProgrammeType } from '../types/programme.ts'
 import type { LibraryMedia, SourceRecord } from './types.ts'
+import { noteCalculatedPools, takeSavedPools } from './pool-cache.ts'
 
 export interface LibraryQuery {
   text?: string
@@ -257,6 +258,11 @@ export function channelTier(number: number): keyof typeof Precedence {
 function uniquePoolsFor(items: readonly MediaItem[]): Map<number, MediaItem[]> {
   const cached = uniquePools.get(items)
   if (cached) return cached
+  const saved = takeSavedPools(items)
+  if (saved) {
+    uniquePools.set(items, saved)
+    return saved
+  }
   const result = new Map<number, MediaItem[]>()
   const claims = new Map<MediaItem, number[]>()
   const sizes = new Map<number, number>()
@@ -334,6 +340,7 @@ function uniquePoolsFor(items: readonly MediaItem[]): Map<number, MediaItem[]> {
   }
   for (const [number, pool] of splitGeneralMixes(general)) result.set(number, pool)
   uniquePools.set(items, result)
+  noteCalculatedPools(items, result)
   return result
 }
 

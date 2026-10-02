@@ -34,9 +34,11 @@ function steppable(universe: ChannelUniverse): Channel[] {
 
 /**
  * Where CH+ or CH- lands: stepped from the channel being watched, or from a tune that is still settling.
- * ALL is the whole network exactly as before. In TVN or FAVOURITES the step wraps around that tab's list; a
- * channel outside the list enters it at its first channel going up and its last going down. Null when the
- * tab has nothing to tune.
+ * ALL is the whole network exactly as before. In any other tab the step wraps around that tab's list. From
+ * a channel outside it (a number typed from elsewhere) the step comes back in: in a tab listed by number, at
+ * the next listed channel above going up or below going down, wrapping at the ends; in FAVOURITES, which
+ * has the viewer's own order, at its first channel going up and its last going down. Null when the tab has
+ * nothing to tune.
  */
 export function stepTarget(tuned: Tuned, pending: number | null, delta: 1 | -1): number
 export function stepTarget(tuned: Tuned, pending: number | null, delta: 1 | -1, universe: ChannelUniverse): number | null
@@ -46,8 +48,43 @@ export function stepTarget(tuned: Tuned, pending: number | null, delta: 1 | -1, 
   const list = steppable(universe)
   if (list.length === 0) return null
   const index = list.findIndex((channel) => channel.number === from)
-  if (index < 0) return (delta > 0 ? list[0] : list[list.length - 1]).number
-  return list[(index + delta + list.length) % list.length].number
+  if (index >= 0) return list[(index + delta + list.length) % list.length].number
+  if (universe.filter !== 'favourites') {
+    const entry = delta > 0 ? list.find((channel) => channel.number > from) : list.findLast((channel) => channel.number < from)
+    if (entry) return entry.number
+  }
+  return (delta > 0 ? list[0] : list[list.length - 1]).number
+}
+
+/**
+ * Where an automatic recovery falls forward to from a channel that will not play: the next channel CH+
+ * would reach in the selected tab (entering it from outside the same way), passing over every channel
+ * this recovery has already given up on. Null once the tab has nothing left to try.
+ */
+export function fallForwardTarget(from: number, universe: ChannelUniverse, failed: ReadonlySet<number>): number | null {
+  const seen = new Set<number>([from])
+  let at = from
+  for (;;) {
+    const next = stepTarget({ channelNumber: at, previousNumber: null }, null, 1, universe)
+    if (next === null || seen.has(next)) return null
+    if (!failed.has(next)) return next
+    seen.add(next)
+    at = next
+  }
+}
+
+/**
+ * The Guide's rows for the selected tab. The channel being watched, when the tab does not list it, is shown
+ * among them for as long as it is watched (at the top of FAVOURITES, in number order elsewhere): a row on
+ * screen only, never a member of the tab, a favourite, or anything saved or exported.
+ */
+export function guideRows(listed: readonly Channel[], watching: Channel | undefined, filter: GuideFilter): { rows: Channel[]; visiting: number | null } {
+  if (!watching || listed.some((channel) => channel.number === watching.number)) return { rows: [...listed], visiting: null }
+  if (filter === 'favourites') return { rows: [watching, ...listed], visiting: watching.number }
+  const at = listed.findIndex((channel) => channel.number > watching.number)
+  const rows = [...listed]
+  rows.splice(at < 0 ? rows.length : at, 0, watching)
+  return { rows, visiting: watching.number }
 }
 
 /** R: any other on-air channel of the tab, with the same rules as the whole network; the current one only when it is the sole choice. */

@@ -1,8 +1,8 @@
 import type { ParsedExport, StoredSource } from '../../services/channels-import.ts'
 
 /**
- * The bundled starter User Network (1001–1081): the template is the shipped catalogue files and is
- * never written to; once installed, the channels are the viewer's own stored sources like any other.
+ * The bundled starter User Network (1001–1116): the shipped starter network file, never written to; once
+ * installed, the channels are the viewer's own stored sources like any other.
  *
  * pending   due: installed after the viewer's own channels once startup is ready (retried if interrupted)
  * installed the starter set was installed, automatically or on request
@@ -54,8 +54,9 @@ export function claimStarterInstall(store: Store | null = browserStore()): boole
   return starterState(store) === 'pending'
 }
 
-export function starterIds(template: ParsedExport): Set<string> {
-  return new Set(template.sources.map((source) => source.id))
+/** The ids of the channels the starter installs: the current starter network's, and the template's TVN shipped before it. */
+export function starterIds(template: ParsedExport, network: readonly { id: string }[] = []): Set<string> {
+  return new Set([...template.sources.map((source) => source.id), ...network.map((source) => source.id)])
 }
 
 /** Every stored channel except those that came from the starter template, edited or not. */
