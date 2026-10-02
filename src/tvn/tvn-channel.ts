@@ -162,7 +162,8 @@ function airingOn(channel: Channel, nowMs: number): Omit<Choice, 'joinedMs'> | n
     return null
   }
   const { programme, startMs, endMs } = snap.current
-  if (programme.kind !== 'programme' || programme.liveStream || (!programme.videoId && !programme.mediaUrl)) return null
+  // Live by type: a stream (`liveStream`) or a YouTube live broadcast or cam (`playback: 'live'`), whatever its channel.
+  if (programme.kind !== 'programme' || programme.liveStream || programme.playback === 'live' || (!programme.videoId && !programme.mediaUrl)) return null
   if (programme.videoId && lookup.refused().has(programme.videoId)) return null
   if (endMs - nowMs < MIN_REMAINING_MS) return null
   return { programme, channelNumber: channel.number, source: sourceKey(programme, channel.number), startMs, endMs }

@@ -202,4 +202,6 @@ export interface FrozenDailySchedule {
   poolSize?: number
   /** Provider config a live or rolling channel's day was compiled under. */
   dynamicVersion?: string
+  /** The channel the day was compiled for. Older stored days omit it. */
+  channelName?: string
 }

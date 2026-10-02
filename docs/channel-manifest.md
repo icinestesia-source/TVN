@@ -8,9 +8,9 @@ Generated from the shipped catalogue (119627 programmes, 56714 h). Full records:
 | EXCLUDED | 21 |
 | GENERATED | 6 |
 | NEEDS_AUDIO_PROVIDER | 49 |
-| NEEDS_CONTENT | 39 |
+| NEEDS_CONTENT | 38 |
 | NEEDS_LIVE_PROVIDER | 29 |
-| PLAYABLE | 248 |
+| PLAYABLE | 249 |
 | PLAYABLE_STRONG | 492 |
 | PLAYABLE_THIN | 53 |
 | RETROTV_ORIGINAL | 1 |
@@ -572,7 +572,7 @@ Generated from the shipped catalogue (119627 programmes, 56714 h). Full records:
 | 552 | Unsigned | music | PLAYABLE_STRONG | 300 | 185.5 | Audiotree | None required; keep differentiated. |
 | 553 | Indie Sessions | music | PLAYABLE_STRONG | 298 | 79.3 | Blogothèque | None required; keep differentiated. |
 | 554 | DJ Sets | music | PLAYABLE_STRONG | 304 | 484.6 | Boiler Room | None required; keep differentiated. |
-| 555 | Live | music | PLAYABLE_STRONG | 227 | 82.3 | Paste Magazine | None required; keep differentiated. |
+| 555 | Daft Punk | music | PLAYABLE | 179 | 17.2 | Daft Punk | None required; keep differentiated. |
 | 556 | Concerts | music | PLAYABLE_STRONG | 300 | 137.2 | NPR Music | None required; keep differentiated. |
 | 557 | Sessions | music | PLAYABLE | 300 | 19.2 | COLORS | None required; keep differentiated. |
 | 558 | Unplugged | music | PLAYABLE_STRONG | 300 | 81.9 | Mahogany Sessions | None required; keep differentiated. |
@@ -603,7 +603,7 @@ Generated from the shipped catalogue (119627 programmes, 56714 h). Full records:
 | 583 | Metal 80 | music | PLAYABLE | 64 | 5.3 | Def Leppard | None required; keep differentiated. |
 | 584 | Metal 90 | music | PLAYABLE | 62 | 5.1 | Def Leppard | None required; keep differentiated. |
 | 585 | Punk 77 | music | PLAYABLE_THIN | 1 | 0.1 | KEXP | Needs programmes with verified release-year metadata; years are never inferred. |
-| 586 | Punk 90 | music | NEEDS_CONTENT | 0 | 0 |  | Needs programmes with verified release-year metadata; years are never inferred. |
+| 586 | Live | music | PLAYABLE_STRONG | 227 | 82.3 | Paste Magazine | None required; keep differentiated. |
 | 587 | Soul 70 | music | PLAYABLE_THIN | 2 | 0.4 | KEXP | Needs programmes with verified release-year metadata; years are never inferred. |
 | 588 | Disco 79 | music | NEEDS_CONTENT | 0 | 0 |  | Needs programmes with verified release-year metadata; years are never inferred. |
 | 589 | Synth 84 | music | NEEDS_CONTENT | 0 | 0 |  | Needs programmes with verified release-year metadata; years are never inferred. |

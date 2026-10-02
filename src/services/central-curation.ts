@@ -152,7 +152,8 @@ export function reconcileOverride(
   const current = shippedBaseline(shipped, programmeIds)
   const was = edit.baseline
   const conflicts: string[] = []
-  if (was && was.name !== current.name) conflicts.push(`TVN renamed ${label} from ${was.name} to ${current.name}`)
+  const renamed = Boolean(was && was.name !== current.name)
+  if (renamed) conflicts.push(`TVN renamed ${label} from ${was?.name} to ${current.name} · its curation is set aside, not applied`)
   const poolIds = originals.flatMap((source) => source.videos.map((video) => video.id))
   const known = new Set([...programmeIds, ...poolIds])
   const ownProgrammes = edit.sources.some((source) => source.kind !== 'tvn' && (source.videos?.length ?? 0) > 0)
@@ -164,7 +165,8 @@ export function reconcileOverride(
   conflicts.push(...sources.conflicts)
   const next = canonicalEdit(shipped, { ...edit, originals: sources.kept }, programmeIds, poolIds)
   return {
-    edit: { channelNumber: edit.channelNumber, ...next, savedAt: edit.savedAt, baseline: current, ...(conflicts.length ? { conflicts } : {}) },
+    // A renamed channel keeps the baseline the override was made against, so it is never laid over its successor.
+    edit: { channelNumber: edit.channelNumber, ...next, savedAt: edit.savedAt, baseline: renamed && was ? was : current, ...(conflicts.length ? { conflicts } : {}) },
     conflicts,
   }
 }

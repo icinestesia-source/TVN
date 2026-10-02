@@ -21,7 +21,7 @@ const HOMES: Record<number, string> = { 654: 'src_icheme', 103: 'src_film_detect
 const ACTIVATED = [...CURATED.filter((channel) => channel !== 109 && channel !== 110), ...Object.keys(DECADES).map(Number), 654]
 const FILM_SOURCES = ['src_popcornflix', 'src_movie_central', 'src_mst3k', 'src_filmrise']
 const FORMAT_CHANNELS = [187, 192]
-const YEAR_CHANNELS = [544, 547, 586, 588, 589]
+const YEAR_CHANNELS = [544, 547, 588, 589]
 const PUBLIC_DOMAIN = [87, 802]
 const HORROR_FAMILY = [141, 142, 143, 145, 183, 184, 187]
 const CLASSIC_FILM_SLOTS = [109, 110, 141, 145, 188, 189, 190]

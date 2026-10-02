@@ -3,7 +3,7 @@ import type { Programme } from '../types/programme.ts'
 import type { GuideSlot, ScheduleSnapshot } from '../types/schedule.ts'
 import { calculateSchedule } from '../scheduler/calculate.ts'
 import { slotsOverlapping } from '../scheduler/window.ts'
-import { compiledWithoutProgrammes, containsExcluded, forgetFrozen, forgetRange, frozenHistory, readFrozen, resetScheduleMemory, scheduleIsCurrent, writeFrozen } from './cache.ts'
+import { compiledWithoutProgrammes, containsExcluded, forgetFrozen, forgetRange, frozenHistory, readFrozen, resetScheduleMemory, scheduleBootstrapping, scheduleIsCurrent, writeFrozen } from './cache.ts'
 import { compileDay } from './compile.ts'
 import { setUserLibraryMode, schedulingPool } from '../library/mode.ts'
 import { getChannelMedia } from '../library/query.ts'
@@ -116,6 +116,33 @@ function channelHasProgrammes(channelNumber: number, broadcastDate: string): boo
   return present
 }
 
+/** The channel a day is compiled for, as TVN ships it; a viewer's rename of their copy is not a new channel. */
+let identityOf = (channel: Channel): string => channel.name
+
+export function setChannelIdentity(next: (channel: Channel) => string): void {
+  identityOf = next
+}
+
+/**
+ * A day frozen for whatever held this number before. Numbers are editorial slots: when TVN moves a channel,
+ * the day kept for the old one must not air under the new one. A day records the channel it was compiled
+ * for; one kept before days did is judged by its programmes instead, stale only when the channel carries
+ * none of them now.
+ */
+function compiledForAnother(channel: Channel, broadcastDate: string, schedule: FrozenDailySchedule): boolean {
+  if (schedule.channelName !== undefined) return schedule.channelName !== identityOf(channel)
+  if (scheduleBootstrapping()) return false
+  const library = mediaLibrary()
+  const known = anotherChecked.get(schedule)
+  if (known?.library === library) return known.result
+  const ids = schedule.blocks.flatMap((block) => block.children).flatMap((child) => (!child.fallback && child.mediaItemId ? [child.mediaItemId] : []))
+  const pool = ids.length ? new Set(channelPool(library, channel.number, broadcastDate).map((item) => item.id)) : new Set<string>()
+  const result = pool.size > 0 && !ids.some((id) => pool.has(id))
+  anotherChecked.set(schedule, { library, result })
+  return result
+}
+const anotherChecked = new WeakMap<FrozenDailySchedule, { library: readonly MediaItem[]; result: boolean }>()
+
 /** A dynamic channel's day compiled under an earlier provider config is recompiled. */
 function dynamicStale(channelNumber: number, schedule: FrozenDailySchedule): boolean {
   return isDynamicChannel(channelNumber) && schedule.dynamicVersion !== DYNAMIC_VERSION
@@ -133,7 +160,8 @@ export function getSchedule(
     (!scheduleIsCurrent(cached) ||
       dynamicStale(channel.number, cached) ||
       containsExcluded(cached) ||
-      (compiledWithoutProgrammes(cached) && channelHasProgrammes(channel.number, broadcastDate)))
+      (compiledWithoutProgrammes(cached) && channelHasProgrammes(channel.number, broadcastDate)) ||
+      compiledForAnother(channel, broadcastDate, cached))
   if (cached && stale) forgetFrozen(channel.number, broadcastDate)
   else if (cached) {
     directorStats.cacheHits += 1
@@ -163,6 +191,7 @@ export function getSchedule(
   else directorStats.eagerCompiles += 1
   directorStats.lastAccess = 'miss'
   if (isDynamicChannel(channel.number)) compiled.dynamicVersion = DYNAMIC_VERSION
+  compiled.channelName = identityOf(channel)
   writeFrozen(compiled)
   return compiled
 }

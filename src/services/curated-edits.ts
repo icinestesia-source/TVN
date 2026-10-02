@@ -89,6 +89,56 @@ export function baselineChanged(saved: CuratedEdit, current: CuratedBaseline): b
   return Boolean(was && (was.name !== current.name || was.fingerprint !== current.fingerprint))
 }
 
+/**
+ * Whether an override was made for another channel than the one TVN now ships at its number. Numbers are
+ * editorial slots, so such an override is never laid over the channel that has taken the slot.
+ */
+export function madeForAnother(saved: CuratedEdit, shipped: Pick<Channel, 'name'>): boolean {
+  return Boolean(saved.baseline && saved.baseline.name !== shipped.name)
+}
+
+/** The overrides laid over the network now: those set aside for another channel are left out. */
+export function appliedCuratedEdits(
+  shippedAt: (channelNumber: number) => Pick<Channel, 'name'> | undefined,
+  store: Store | null = browserStore(),
+): Record<string, CuratedEdit> {
+  return Object.fromEntries(
+    Object.entries(loadCuratedEdits(store)).filter(([, edit]) => {
+      const shipped = shippedAt(edit.channelNumber)
+      return shipped !== undefined && !madeForAnother(edit, shipped)
+    }),
+  )
+}
+
+/**
+ * Overrides follow the channel they were made for. When TVN moves a channel to another number, its override
+ * moves with it, found again by the one shipped channel that carries the name it was made against. One whose
+ * channel cannot be found again, or whose new number already has its own override, stays where it was and
+ * is set aside (`madeForAnother`).
+ */
+export function followMovedChannels<T extends Pick<Channel, 'number' | 'name'>>(
+  all: Readonly<Record<string, CuratedEdit>>,
+  shipped: readonly T[],
+  baselineOf: (channel: T) => CuratedBaseline,
+): { edits: Record<string, CuratedEdit>; moved: string[] } {
+  const edits = { ...all }
+  const moved: string[] = []
+  const at = new Map(shipped.map((channel) => [channel.number, channel]))
+  for (const edit of Object.values(all)) {
+    const was = edit.baseline?.name
+    const here = at.get(edit.channelNumber)
+    if (!was || (here && here.name === was)) continue
+    const found = shipped.filter((channel) => channel.name === was && channel.number >= 1 && channel.number <= 999)
+    if (found.length !== 1 || edits[String(found[0].number)]) continue
+    const target = found[0]
+    const line = `TVN moved ${was} from ${String(edit.channelNumber).padStart(3, '0')} to ${String(target.number).padStart(3, '0')} · your curation moved with it`
+    delete edits[String(edit.channelNumber)]
+    edits[String(target.number)] = { ...edit, channelNumber: target.number, baseline: baselineOf(target), conflicts: [...(edit.conflicts ?? []), line] }
+    moved.push(line)
+  }
+  return { edits, moved }
+}
+
 /** What the editor shows for a curated channel: the viewer's saved change, or the channel as shipped. */
 export function curatedEditOf(channel: Pick<Channel, 'number' | 'name'>, saved: CuratedEdit | null): ChannelEdit {
   const shippedNotes = shippedEditorial(channel.number)

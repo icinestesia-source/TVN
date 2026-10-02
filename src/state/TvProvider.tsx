@@ -25,7 +25,7 @@ import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
 import { liveKey } from '../scheduler/calculate.ts'
 import { adjacentSlotTime, slotContaining } from '../scheduler/window.ts'
 import { beginScheduleBootstrap, endScheduleBootstrap, hydrateDirector } from '../director/cache.ts'
-import { primeDirector } from '../director/director.ts'
+import { primeDirector, setChannelIdentity } from '../director/director.ts'
 import { markLiveUnavailable } from '../dynamic/runtime.ts'
 import { loadUserLibraryMode, setUserLibraryMode, userLibraryMode } from '../library/mode.ts'
 import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary, saveDeferredLibrary, subscribeLibrary } from '../library/store.ts'
@@ -59,13 +59,16 @@ import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCur
 import type { SourceMode } from '../services/channel-curation.ts'
 import { classifySourceUrl, type ChannelSource } from '../services/channel-sources.ts'
 import {
+  appliedCuratedEdits,
   baselineChanged,
   buildCuratedEdit,
   canonicalEdit,
   clearCuratedEdit,
   curatedEditOf,
+  followMovedChannels,
   loadCuratedEdit,
   loadCuratedEdits,
+  madeForAnother,
   replaceCuratedEdits,
   saveCuratedEdit,
   shippedBaseline,
@@ -188,13 +191,17 @@ const poolIdsOf = (number: number) => originalsOf(number).flatMap((source) => so
 /** Only an override that decides about original sources, or arranges TVN's programmes, reads them. */
 const readsOriginals = (edit: CuratedEdit) => Boolean(edit.originals?.length || edit.order?.length || edit.excluded?.length || edit.sources.some((source) => source.kind !== 'tvn' && source.enabled))
 
+setChannelIdentity((channel) => shippedChannel(channel.number)?.name ?? channel.name)
+
 /** Lay the viewer's saved changes to curated channels over the shipped ones, in this browser only. */
 function installCurated() {
   const built: Channel[] = []
   const programmes = new Map<string, Programme[]>()
-  for (const edit of Object.values(loadCuratedEdits())) {
+  const { edits, moved } = followMovedChannels(loadCuratedEdits(), channels, (shipped) => shippedBaseline(shipped, shippedIds(shipped)))
+  if (moved.length) replaceCuratedEdits(Object.values(edits))
+  for (const edit of Object.values(edits)) {
     const shipped = shippedChannel(edit.channelNumber)
-    if (!shipped) continue
+    if (!shipped || madeForAnother(edit, shipped)) continue
     const made = buildCuratedEdit(shipped, edit, refusedVideos(), shippedProgrammes(shipped.id), readsOriginals(edit) ? originalsOf(shipped.number) : [])
     built.push(made.channel)
     if (made.programmes) programmes.set(shipped.id, made.programmes)
@@ -1216,7 +1223,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const again = rescan && state !== null && library.current?.id === state.guideId
     const query = (again ? state.query : text).replace(/\s+/g, ' ').trim().slice(0, 60)
     if (!query) throw new Error('Type what the Guide should be about')
-    const edits = loadCuratedEdits()
+    const edits = appliedCuratedEdits(shippedChannel)
     const editorialFor = (number: number) => (number <= 999 ? (edits[String(number)]?.editorial ?? shippedEditorial(number)) : userEditorialRef.current.get(number))
     const stamp = JSON.stringify([Object.values(edits).map((edit) => [edit.channelNumber, edit.editorial ?? null]), [...userEditorialRef.current]])
     const index = searchIndex(editorialFor, refusedVideos(), stamp)
@@ -2254,7 +2261,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
    */
   const restoreCentralCuration = async (central: CentralCuration): Promise<string> => {
     const now = Date.now()
-    const read = overridesFromExport(central)
+    const followed = followMovedChannels(Object.fromEntries(overridesFromExport(central).map((edit) => [String(edit.channelNumber), edit])), channels, (shipped) => shippedBaseline(shipped, shippedIds(shipped)))
+    const read = Object.values(followed.edits)
     const resolved = await resolveRestored(read.map(overrideRecord), restoreDeps, now)
     const register = await loadRegister()
     const kept: CuratedEdit[] = []
@@ -2263,8 +2271,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const shipped = shippedChannel(edit.channelNumber)
       const sources = resolved.records[index]?.channelSources ?? edit.sources
       const result = reconcileOverride({ ...edit, sources }, shipped, shipped ? shippedProgrammes(shipped.id).map((programme) => programme.id) : [], shipped ? originalsOf(shipped.number, register) : [])
-      if (result.edit) kept.push(result.edit)
-      conflicts.push(...result.conflicts)
+      // Only a move adds notes before reconciling; they stay with the override.
+      const carried = edit.conflicts ?? []
+      if (result.edit) kept.push(carried.length ? { ...result.edit, conflicts: [...carried, ...(result.edit.conflicts ?? [])] } : result.edit)
+      conflicts.push(...carried, ...result.conflicts)
     })
     replaceCuratedEdits(kept)
     installCurated()
@@ -2323,6 +2333,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const { scope, shipped } = scopeOf(number)
     if (scope === 'curated') {
       const saved = loadCuratedEdit(number)
+      if (saved && madeForAnother(saved, shipped)) {
+        const label = String(number).padStart(3, '0')
+        return { ...curatedEditOf(shipped, null), review: [`Your curation of ${saved.baseline?.name} is set aside, not applied: TVN now has ${shipped.name} at ${label} · saving here replaces it`] }
+      }
       const edit = curatedEditOf(shipped, saved)
       const changed = saved && baselineChanged(saved, shippedBaseline(shipped, shippedIds(shipped))) ? ['TVN has changed this channel since you curated it'] : []
       const sources = reconcileOriginals(saved?.originals, originalsOf(number, await loadRegister()), String(number).padStart(3, '0')).conflicts

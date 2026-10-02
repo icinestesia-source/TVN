@@ -362,13 +362,6 @@
    "caption": "OFF AIR · NO SERVICE PLANNED",
    "reason": "Rarity cannot be verified from any official field; an unverifiable label is not programmed."
   },
-  "586": {
-   "class": "UNRESOLVED",
-   "subtype": "METADATA_UNAVAILABLE",
-   "title": "Not broadcasting",
-   "caption": "OFF AIR · PROGRAMME DETAILS NOT YET VERIFIED",
-   "reason": "Epitaph's official videos with verified release years are dated 2014-2021; none are 1990s."
-  },
   "588": {
    "class": "UNRESOLVED",
    "subtype": "INSUFFICIENT_EXISTING_INVENTORY",

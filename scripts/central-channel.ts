@@ -2,6 +2,12 @@
  * Applies one central channel definition from src/data/central-sources.json to the shipped catalogue:
  * reads each source through TVN's keyless resolver, keeps what its filter admits, and makes those the
  * channel's only programmes. A deliberate editorial change, run by hand: `node scripts/central-channel.ts 555`.
+ *
+ * 001–999 numbers are editorial slots, not identities. A weak, empty or redundant channel concept may be
+ * renamed, reprogrammed, moved, merged or replaced; a channel carries its identity in its definition (name,
+ * sources, filters, editorial notes), and its number is only where TVN places it. The User Network (1001+) is
+ * a reservoir of publishers to draw sources from: a curator decides what deserves a central slot, and the
+ * channel made from them need not carry any publisher's name. User Channels are never promoted automatically.
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolveChannel } from '../server/youtube-channel.ts'
@@ -36,6 +42,14 @@ function compactWith(raw: string, value: Record<string, unknown>, changed: reado
   const text = `{${parts.join(',')}}`
   if (changed.length === 0 && text !== raw) throw new Error('The catalogue could not be split safely')
   return text
+}
+
+// The slot's present channel is never displaced silently: move it to another number first (its name in the
+// canonical network, its programmes' channel, its manifest targets and any DEDICATED home in src/director/fit.ts),
+// or retire it deliberately with --replace.
+const occupant = (readJson(NETWORK) as { channels: { number: number; name: string }[] }).channels.find((item) => item.number === number)
+if (occupant && occupant.name !== definition.name && !process.argv.includes('--replace')) {
+  throw new Error(`Channel ${number} is ${occupant.name}, not ${definition.name}. Move ${occupant.name} to a free number first, or pass --replace to retire it.`)
 }
 
 const playableText = readFileSync(PLAYABLE, 'utf8')

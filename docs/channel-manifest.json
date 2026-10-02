@@ -9,10 +9,10 @@
   "totals": {
     "DELIBERATELY_UNAVAILABLE": 62,
     "PLAYABLE_STRONG": 492,
-    "PLAYABLE": 248,
+    "PLAYABLE": 249,
     "PLAYABLE_THIN": 53,
     "EXCLUDED": 21,
-    "NEEDS_CONTENT": 39,
+    "NEEDS_CONTENT": 38,
     "GENERATED": 6,
     "NEEDS_LIVE_PROVIDER": 29,
     "RETROTV_ORIGINAL": 1,
@@ -27286,17 +27286,23 @@
     {
       "number": 555,
       "displayNumber": "555",
-      "name": "Live",
+      "name": "Daft Punk",
       "category": "music",
-      "identity": "Live: the music channel for live programming.",
-      "scope": "Home publishers: Paste Magazine (single-subject; they air only on their home channels). Programmes about live; native publishers KEXP, Vevo Official Music Network air without a title match.",
+      "identity": "Daft Punk: the music channel for daft punk programming.",
+      "scope": "Home publishers: Daft Punk - Official Videos, Daft Punk - Homework (Full Album), Daft Punk - Discovery (Full Album), Daft Punk - Human After All (Official Album Playlist), Daft Punk - Human After All (Remixes) (Official Audio), Daft Punk - Alive 1997 (Full Album), Daft Punk - Alive 2007 (Full Album), Daft Punk - Daft Club (Official Album Playlist), Daft Punk - Random Access Memories (10th Anniversary Edition), Daft Punk Essentials, Daft Punk (single-subject; they air only on their home channels). Programmes whose titles are about daft, punk.",
       "distinction": "specialist channel. No material programme overlap with neighbouring channels.",
       "sourceStrategy": "SOURCE_ROUTED",
       "anchorSources": [
-        "Paste Magazine"
+        "Daft Punk"
       ],
-      "secondarySources": [],
-      "eligibility": "Home publishers: Paste Magazine (single-subject; they air only on their home channels). Programmes about live; native publishers KEXP, Vevo Official Music Network air without a title match.",
+      "secondarySources": [
+        "Daft Punk - Official Videos",
+        "Daft Punk - Random Access Memories (10th Anniversary Edition)",
+        "Daft Punk - Human After All (Remixes) (Official Audio)",
+        "Daft Punk - Alive 2007 (Full Album)",
+        "Daft Punk - Daft Club (Official Album Playlist)"
+      ],
+      "eligibility": "Home publishers: Daft Punk - Official Videos, Daft Punk - Homework (Full Album), Daft Punk - Discovery (Full Album), Daft Punk - Human After All (Official Album Playlist), Daft Punk - Human After All (Remixes) (Official Audio), Daft Punk - Alive 1997 (Full Album), Daft Punk - Alive 2007 (Full Album), Daft Punk - Daft Club (Official Album Playlist), Daft Punk - Random Access Memories (10th Anniversary Edition), Daft Punk Essentials, Daft Punk (single-subject; they air only on their home channels). Programmes whose titles are about daft, punk.",
       "exclusions": [
         "religious programming, preaching and worship (major musical, artistic and historical works are not excluded for their terminology)",
         "space programming",
@@ -27307,16 +27313,56 @@
         "home-only publishers of other channels",
         "British Pathé (805), KOFA (114) and Orbital Bacon (225) owned catalogues"
       ],
-      "programmes": 227,
-      "hours": 82.3,
+      "programmes": 179,
+      "hours": 17.2,
       "sources": {
-        "src_paste": {
-          "programmes": 227,
-          "hours": 82.3
+        "src_daftpunk": {
+          "programmes": 57,
+          "hours": 6
+        },
+        "src_daftpunk_videos": {
+          "programmes": 31,
+          "hours": 2.3
+        },
+        "src_daftpunk_ram": {
+          "programmes": 17,
+          "hours": 1.6
+        },
+        "src_daftpunk_haa_remixes": {
+          "programmes": 15,
+          "hours": 1.4
+        },
+        "src_daftpunk_alive2007": {
+          "programmes": 13,
+          "hours": 1.4
+        },
+        "src_daftpunk_daftclub": {
+          "programmes": 14,
+          "hours": 1.2
+        },
+        "src_daftpunk_discovery": {
+          "programmes": 13,
+          "hours": 1
+        },
+        "src_daftpunk_alive1997": {
+          "programmes": 1,
+          "hours": 0.8
+        },
+        "src_daftpunk_homework": {
+          "programmes": 8,
+          "hours": 0.6
+        },
+        "src_daftpunk_essentials": {
+          "programmes": 5,
+          "hours": 0.5
+        },
+        "src_daftpunk_haa": {
+          "programmes": 5,
+          "hours": 0.4
         }
       },
-      "status": "PLAYABLE_STRONG",
-      "reason": "227 distinct programmes, 82.3 h.",
+      "status": "PLAYABLE",
+      "reason": "179 distinct programmes, 17.2 h.",
       "nextStep": "None required; keep differentiated.",
       "inGuide": true,
       "tier": "Specialist"
@@ -29105,15 +29151,17 @@
     {
       "number": 586,
       "displayNumber": "586",
-      "name": "Punk 90",
+      "name": "Live",
       "category": "music",
-      "identity": "Punk 90: the music channel for punk 90 programming.",
-      "scope": "Programmes whose titles are about punk, 19, 20 90' s, 20 9.",
-      "distinction": "specialist channel. No programming to overlap.",
+      "identity": "Live: the music channel for live programming.",
+      "scope": "Home publishers: Paste Magazine (single-subject; they air only on their home channels). Programmes about live; native publishers KEXP, Vevo Official Music Network air without a title match.",
+      "distinction": "specialist channel. No material programme overlap with neighbouring channels.",
       "sourceStrategy": "SOURCE_ROUTED",
-      "anchorSources": [],
+      "anchorSources": [
+        "Paste Magazine"
+      ],
       "secondarySources": [],
-      "eligibility": "Programmes whose titles are about punk, 19, 20 90' s, 20 9.",
+      "eligibility": "Home publishers: Paste Magazine (single-subject; they air only on their home channels). Programmes about live; native publishers KEXP, Vevo Official Music Network air without a title match.",
       "exclusions": [
         "religious programming, preaching and worship (major musical, artistic and historical works are not excluded for their terminology)",
         "space programming",
@@ -29121,20 +29169,22 @@
         "paid or subscription content",
         "age-restricted, private, non-embeddable or UK-blocked videos",
         "user media (1001+) never feeds 000–999",
+        "home-only publishers of other channels",
         "British Pathé (805), KOFA (114) and Orbital Bacon (225) owned catalogues"
       ],
-      "programmes": 0,
-      "hours": 0,
-      "sources": {},
-      "status": "NEEDS_CONTENT",
-      "reason": "METADATA_UNAVAILABLE: Epitaph's official videos with verified release years are dated 2014-2021; none are 1990s.",
-      "nextStep": "Needs programmes with verified release-year metadata; years are never inferred.",
+      "programmes": 227,
+      "hours": 82.3,
+      "sources": {
+        "src_paste": {
+          "programmes": 227,
+          "hours": 82.3
+        }
+      },
+      "status": "PLAYABLE_STRONG",
+      "reason": "227 distinct programmes, 82.3 h.",
+      "nextStep": "None required; keep differentiated.",
       "inGuide": true,
-      "tier": "Specialist",
-      "blocker": {
-        "class": "UNRESOLVED",
-        "subtype": "METADATA_UNAVAILABLE"
-      }
+      "tier": "Specialist"
     },
     {
       "number": 587,

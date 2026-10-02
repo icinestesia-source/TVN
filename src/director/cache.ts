@@ -188,7 +188,7 @@ async function persistIfAbsent(schedule: FrozenDailySchedule): Promise<void> {
     const existing = await idbGet(schedule.scheduleId)
     const superseded =
       existing &&
-      ((compiledWithoutProgrammes(existing) && !compiledWithoutProgrammes(schedule)) || existing.dynamicVersion !== schedule.dynamicVersion)
+      ((compiledWithoutProgrammes(existing) && !compiledWithoutProgrammes(schedule)) || existing.dynamicVersion !== schedule.dynamicVersion || (existing.channelName !== undefined && existing.channelName !== schedule.channelName))
     if (existing && scheduleIsCurrent(existing) && !superseded) {
       memory.set(existing.scheduleId, existing)
       return

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { channelByNumber } from '../data/catalogue.ts'
+import { channelByNumber, shippedChannel } from '../data/catalogue.ts'
 import { DYNAMIC_VERSION } from '../dynamic/providers.ts'
 import { freshFor } from '../dynamic/runtime.ts'
 import { artistOf } from '../library/metadata-channels.ts'
@@ -35,6 +35,7 @@ const ON_AIR = ['PLAYABLE', 'PLAYABLE_STRONG']
 
 interface MapRow {
   number: number
+  name?: string
   v41Class: string
   outcome: string
   subtype: string
@@ -50,7 +51,10 @@ describe('Pass 22 final 000–999 completion', () => {
   let manifest: Map<number, ManifestRow>
   let v41: { records: { number: number; finalClass: string }[] }
   let v42: { records: MapRow[]; unresolved: { number: number; finalClass: string }[]; baselineProgrammes: Record<string, number> }
-  let v43: { records: (MapRow & { decidedIn: string })[]; unresolved: { number: number; finalClass: string }[] }
+  let v43: { records: (MapRow & { decidedIn: string })[]; unresolved: { number: number; name?: string; finalClass: string }[] }
+  /** A map row about a channel TVN has since replaced at that number, and re-decided: the slot is no longer the row's. */
+  const reassigned = (row: { number: number; name?: string }) =>
+    row.name !== undefined && shippedChannel(row.number)?.name !== row.name && manifest.get(row.number)?.status !== 'NEEDS_CONTENT'
   const pool = (n: number) => freshFor(n, getChannelMedia(items as MediaItem[], n) as LibraryMedia[], DATE) as LibraryMedia[]
   const hours = (list: { durationSeconds: number }[]) => list.reduce((sum, item) => sum + item.durationSeconds, 0) / 3600
 
@@ -81,11 +85,12 @@ describe('Pass 22 final 000–999 completion', () => {
     for (const row of v42.records) {
       expect(OUTCOMES, `${row.number}`).toContain(row.outcome)
       expect(row.v41Class, `${row.number}`).toBe(v41.records.find((old) => old.number === row.number)?.finalClass)
+      if (reassigned(row)) continue
       expect(manifest.get(row.number)?.status, `${row.number}`).toBe(latest.get(row.number)?.statusAfter)
       if (latest.get(row.number)?.decidedIn === '22') expect(latest.get(row.number)?.statusAfter, `${row.number}`).toBe(row.statusAfter)
     }
     const needs = [...manifest.values()].filter((row) => row.status === 'NEEDS_CONTENT').map((row) => row.number)
-    expect(v43.unresolved.map((row) => row.number).sort((a, b) => a - b)).toEqual(needs.sort((a, b) => a - b))
+    expect(v43.unresolved.filter((row) => !reassigned(row)).map((row) => row.number).sort((a, b) => a - b)).toEqual(needs.sort((a, b) => a - b))
     expect(new Set(v43.unresolved.map((row) => row.number)).size).toBe(v43.unresolved.length)
     for (const row of [...v42.unresolved, ...v43.unresolved]) expect(CLASSES, `${row.number}`).toContain(row.finalClass)
   })
