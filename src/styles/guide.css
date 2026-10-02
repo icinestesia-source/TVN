@@ -1528,6 +1528,9 @@ span.editor-expand { border-color: transparent; }
 .options-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 
 /* ── Viewing Guides. Green belongs only to an active Guide; everything else keeps the yellow/manual look. ── */
+/* GUIDE is the screen the viewer is in: selected in white, never the yellow of a picked action. */
+.tab.guide-follow.is-current { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+.tab.guide-follow.is-current.is-open { background: rgba(231, 238, 246, 0.1); }
 .tab.guide-follow.is-following { color: var(--follow); border-bottom-color: var(--follow); font-weight: 600; }
 .tune-key.is-following { background: var(--follow); color: var(--follow-ink); }
 .info-kind.is-following,

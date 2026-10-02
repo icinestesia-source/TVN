@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type RefObject } from 'react'
+import { createLongPress } from '../view/channel-edit.ts'
 import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
 import { readRestoreFile, type TvnExport } from '../services/tvn-export.ts'
@@ -51,18 +52,50 @@ export function GuideActions({
   )
   return (
     <div className="guide-import guide-actions">
-      {action(
-        'Guide',
-        tool === 'guides',
-        () => onTool('guides'),
-        following ? 'TVN is following a Guide' : 'Your viewing Guides',
-        following ? ' guide-follow is-following' : ' guide-follow',
-      )}
+      <GuideTab open={tool === 'guides'} following={following} onToggle={() => onTool('guides')} />
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
       {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
       {action('Add', tool === 'add', () => onTool('add'))}
       {action('Media', tool === 'media', () => onTool('media'))}
     </div>
+  )
+}
+
+/**
+ * GUIDE names the screen the viewer is in, so it always reads as selected here, in white rather than yellow.
+ * A right-click or a hold opens (and closes) the Guide options; a plain click only closes them again.
+ */
+function GuideTab({ open, following, onToggle }: { open: boolean; following: boolean; onToggle: () => void }) {
+  // The hold only ever dispatches the same GUIDE-options toggle, so the first handler serves throughout.
+  const [press] = useState(() => createLongPress(onToggle))
+  const point = (event: PointerEvent<HTMLButtonElement>) => ({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })
+  const label = following ? 'Guide, TVN is following a Guide' : 'Guide'
+  return (
+    <button
+      type="button"
+      className={`tab guide-follow is-current${open ? ' is-open' : ''}${following ? ' is-following' : ''}`}
+      aria-current="page"
+      aria-expanded={open}
+      aria-label={`${label}. Right-click or hold for Guide options`}
+      title={following ? 'TVN is following a Guide · right-click or hold for Guide options' : 'Right-click or hold for Guide options'}
+      onKeyDown={keepKey}
+      onClick={() => {
+        if (press.swallowClick()) return
+        if (open) onToggle()
+      }}
+      onContextMenu={(event) => {
+        event.preventDefault()
+        press.opened()
+        onToggle()
+      }}
+      onPointerDown={(event) => press.down(point(event))}
+      onPointerMove={(event) => press.move(point(event))}
+      onPointerUp={press.up}
+      onPointerCancel={press.cancel}
+      onPointerLeave={press.cancel}
+    >
+      Guide
+    </button>
   )
 }
 
