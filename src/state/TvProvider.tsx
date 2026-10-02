@@ -15,6 +15,8 @@ import { tunerStep } from '../input/tuner.ts'
 import { deliver, playbackCommand, type PlaybackCommand } from '../player/command.ts'
 import { subtitlesNotice } from '../player/captions.ts'
 import { notePlayback } from '../player/trace.ts'
+import { notePhase, notePress } from '../player/tune-timing.ts'
+import { commitTune, createPictureWait } from './tune-commit.ts'
 import { liveAiring, pauseViewing } from '../player/viewing.ts'
 import { clearManual, onScreen, pickTunes, selectProgramme, stepFrom } from '../player/manual.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
@@ -200,6 +202,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [guideWindow, setGuideWindow] = useState(() => windowAround(Date.now()))
   const [guideNote, setGuideNote] = useState<GuideNote>(null)
   const [tuningNumber, setTuningNumber] = useState<number | null>(null)
+  const [pictureWaiting, setPictureWaiting] = useState(false)
   const [numeric, setNumeric] = useState('')
   const [overlay, setOverlay] = useState<OverlayMode>('none')
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('loading-api')
@@ -259,6 +262,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const pendingNumberRef = useRef<number | null>(null)
   const staticSince = useRef(0)
   const settleTimer = useRef(0)
+  const [pictureWait] = useState(() => createPictureWait(setPictureWaiting))
+  /** The channel and video the single-view player was last asked for: a player error belongs to this. */
+  const askedRef = useRef<{ channelNumber: number; videoId: string | null } | null>(null)
+  const failureTimer = useRef(0)
+  const failuresRef = useRef<{ videoId: string; reason: string }[]>([])
+  const failureScopes = useRef(new Set<'library' | 'user'>())
   const numericTimer = useRef(0)
   const overlayTimer = useRef(0)
   const noticeTimer = useRef(0)
@@ -343,7 +352,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   // A video already known to refuse embedding never reaches YouTube, whose player would sit on a dead play button.
-  const deliverLive = async (player: PlayerHandle, command: PlaybackCommand) => {
+  const deliverLive = async (player: PlayerHandle, command: PlaybackCommand, channelNumber: number) => {
+    askedRef.current = { channelNumber, videoId: command.videoId }
     if (!command.videoId || !refusedVideos().has(command.videoId)) return deliver(player, command)
     await deliver(player, { ...command, videoId: null, kind: 'holding' })
     setPlayerStatus('error')
@@ -353,7 +363,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const loadProgramme = async (target: Channel, nowMs: number) => {
     const load = ++loadToken.current
+    const scheduleStart = performance.now()
     const airing = liveAiring(target, nowMs, videoOverride(target.number))
+    notePhase(target.number, 'programmeAt', { scheduleMs: performance.now() - scheduleStart })
     loadedKey.current = airing.key
     const player = playerRef.current
     if (!player) return 'slate' as const
@@ -363,7 +375,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       provider: airing.programme.source,
       externalId: airing.programme.videoId,
     })
-    const result = await deliverLive(player, command)
+    notePhase(target.number, 'requestAt')
+    const result = await deliverLive(player, command, target.number)
+    notePhase(target.number, 'answeredAt', { result })
     // A later load owns the player now; this one must not seek or replace what it is showing.
     if (load !== loadToken.current) return result
     if (pausedRef.current) {
@@ -385,7 +399,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!sameAiring) {
       const next = playbackCommand(fresh.current.programme, fresh.current.seekSeconds, videoOverride(target.number))
       notePlayback({ channelNumber: target.number, provider: fresh.current.programme.source, externalId: fresh.current.programme.videoId })
-      await deliverLive(player, next)
+      await deliverLive(player, next, target.number)
       if (load !== loadToken.current) return result
     }
     loadedKey.current = liveKey(target.id, fresh.current.programme.id, fresh.current.startMs)
@@ -431,6 +445,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
     if (!playerRef.current || !playerReadyRef.current) {
       commitChannel(commitTuned(tuned(), target.number, origin))
+      notePhase(target.number, 'committedAt')
       loadedKey.current = ''
       tuningRef.current = false
       pendingOrigin.current = null
@@ -440,21 +455,30 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    await loadProgramme(target, Date.now())
-    if (generation !== tokenRef.current) return
-
-    const remain = MIN_STATIC_MS - (performance.now() - staticSince.current)
-    if (remain > 0) await sleep(remain)
-    if (generation !== tokenRef.current) return
-
-    commitChannel(commitTuned(tuned(), target.number, origin))
-    tuningRef.current = false
-    pendingOrigin.current = null
-    pendingNumberRef.current = null
-    staticSince.current = 0
-    setTuningNumber(null)
-    playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || soundHeld(startHoldRef.current, startCheckRef.current, viewerInteracted()))
-    showOverlay('info', INFO_MS)
+    await commitTune({
+      current: () => generation === tokenRef.current,
+      load: () => loadProgramme(target, Date.now()),
+      holdStatic: async () => {
+        const remain = MIN_STATIC_MS - (performance.now() - staticSince.current)
+        if (remain > 0) await sleep(remain)
+      },
+      // Whatever was asked for an abandoned channel must not stay on the one still being watched.
+      abandon: () => {
+        loadedKey.current = ''
+      },
+      commit: () => {
+        commitChannel(commitTuned(tuned(), target.number, origin))
+        notePhase(target.number, 'committedAt')
+        tuningRef.current = false
+        pendingOrigin.current = null
+        pendingNumberRef.current = null
+        staticSince.current = 0
+        setTuningNumber(null)
+        playerRef.current?.setAudible(true, volumeRef.current, mutedRef.current || soundHeld(startHoldRef.current, startCheckRef.current, viewerInteracted()))
+        showOverlay('info', INFO_MS)
+      },
+      awaitPicture: pictureWait.wait,
+    })
   }
 
   // Credits are a presentation layer over the picture: the programme, the player and the tuner carry on
@@ -575,6 +599,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
     if (!keepPick) clearManual()
+    notePress(target.number)
+    pictureWait.stop()
     closeScreenEdit(true)
     startup.noteUserTune()
     const generation = ++tokenRef.current
@@ -590,6 +616,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       tilesRef.current = nextTiles
       setTiles(nextTiles)
       commitChannel(commitTuned(tuned(), target.number))
+      notePhase(target.number, 'committedAt')
       showOverlay('info', INFO_MS)
       return
     }
@@ -733,7 +760,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       externalId: snap.current.programme.videoId,
     })
     loadToken.current += 1
-    void deliverLive(player, command)
+    void deliverLive(player, command, current.number)
   }, [])
 
   const onPlayerReady = useCallback(() => {
@@ -747,35 +774,73 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (current) void loadProgramme(current, Date.now())
   }, [])
 
+  /**
+   * What a playback failure changes (the failure on the library record, a refused video leaving the
+   * schedule) is whole-network work that takes seconds on the main thread. It waits until the tune in
+   * progress has committed, and several failures share one refresh.
+   */
+  const refreshAfterFailure = useCallback(() => {
+    window.clearTimeout(failureTimer.current)
+    const run = () => {
+      if (tuningRef.current) {
+        failureTimer.current = window.setTimeout(run, 200)
+        return
+      }
+      failureTimer.current = 0
+      const failures = failuresRef.current.splice(0)
+      const user = failureScopes.current.has('user')
+      const library = failureScopes.current.has('library')
+      failureScopes.current.clear()
+      void (async () => {
+        let published = false
+        for (const failure of failures) {
+          if (await recordPlaybackFailure(failure.videoId, failure.reason).catch(() => null)) published = true
+        }
+        if (user) {
+          const sources = await loadStoredSources()
+          const built = channelsFromSources(migrateLegacyUserNumbers(sources).sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
+          installUserCatalogue(built.channels, built.programmes)
+          loadedKey.current = ''
+          syncLive(Date.now())
+        }
+        if (!library) return
+        if (published) {
+          loadedKey.current = ''
+          syncLive(Date.now())
+          return
+        }
+        republishLibrary()
+        loadedKey.current = ''
+        syncLive(Date.now())
+      })()
+    }
+    failureTimer.current = window.setTimeout(run, 0)
+  }, [syncLive])
+
   const onPlayerStatus = useCallback((status: PlayerStatus, detail?: string) => {
     setPlayerStatus(status)
     setPlayerDetail(detail ?? '')
+    const asked = askedRef.current
+    if (status === 'playing' && asked) notePhase(asked.channelNumber, 'playingAt')
     if (status !== 'error') return
-    const channel = channelByNumber(channelRef.current)
-    if (!channel) return
+    // The failure belongs to what the player was asked for, not to whichever channel is on screen now.
+    const channel = asked ? channelByNumber(asked.channelNumber) : undefined
+    if (!asked || !channel) return
     const now = Date.now()
-    const videoId = onScreen(channel, now).current.programme.videoId
+    const videoId = asked.videoId
     if (videoId && markLiveUnavailable(videoId, now, channel.number)) {
       loadedKey.current = ''
       syncLive(Date.now())
       return
     }
-    if (videoId) void recordPlaybackFailure(videoId, detail || 'playback failed')
+    if (videoId) {
+      failuresRef.current.push({ videoId, reason: detail || 'playback failed' })
+      refreshAfterFailure()
+    }
     // A publisher refusal is permanent: schedule without that video and retune in place.
     if (!videoId || !isRefusalCode(detail) || !learnRefusal(videoId)) return
-    if (channel.origin === 'user-import') {
-      void loadStoredSources().then((sources) => {
-        const built = channelsFromSources(migrateLegacyUserNumbers(sources).sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
-        installUserCatalogue(built.channels, built.programmes)
-        loadedKey.current = ''
-        syncLive(Date.now())
-      })
-      return
-    }
-    republishLibrary()
-    loadedKey.current = ''
-    syncLive(Date.now())
-  }, [syncLive])
+    failureScopes.current.add(channel.origin === 'user-import' ? 'user' : 'library')
+  }, [syncLive, refreshAfterFailure])
 
   const focusGuide = useCallback((nextChannel: number, timeMs: number) => {
     const next = { channelNumber: nextChannel, timeMs }
@@ -857,6 +922,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     pendingNumberRef.current = null
     staticSince.current = 0
     playerReadyRef.current = false
+    pictureWait.stop()
     loadedKey.current = ''
     closeGuide()
     setRemoteOpen(false)
@@ -1893,6 +1959,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideWindow,
       guideNote,
       tuningNumber,
+      pictureWaiting,
       numeric,
       overlay,
       playerStatus,
@@ -2016,6 +2083,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       subtitles,
       syncLive,
       tuningNumber,
+      pictureWaiting,
       visibleChannels,
       volume,
       multiviewMode,

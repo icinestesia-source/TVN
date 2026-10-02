@@ -58,6 +58,8 @@ export interface TvContextValue {
   guideWindow: { startMs: number; endMs: number }
   guideNote: GuideNote
   tuningNumber: number | null
+  /** The tuned channel's player has not answered yet; the picture shows noise until it does. */
+  pictureWaiting: boolean
   numeric: string
   overlay: OverlayMode
   playerStatus: PlayerStatus

@@ -17,7 +17,7 @@ import { NowNextOverlay } from '../components/NowNextOverlay.tsx'
 import { editorScope } from '../view/channel-edit.ts'
 import { NumericEntry } from '../components/NumericEntry.tsx'
 import { RadioFace } from '../components/RadioFace.tsx'
-import { StaticOverlay } from '../components/StaticOverlay.tsx'
+import { Noise, StaticOverlay } from '../components/StaticOverlay.tsx'
 import { TestCard } from '../components/TestCard.tsx'
 import { TouchRemote } from '../components/TouchRemote.tsx'
 import { VolumeOsd } from '../components/VolumeOsd.tsx'
@@ -92,6 +92,11 @@ export function TvScreen() {
         {single ? (
           <div className={face === 'picture' ? 'stage' : 'stage is-card'}>
             <PlayerStage playerRef={tv.playerRef} onReady={tv.onPlayerReady} onStatus={tv.onPlayerStatus} captions={tv.subtitles} />
+            {tv.pictureWaiting && face === 'picture' ? (
+              <div className="stage-waiting" aria-hidden="true">
+                <Noise />
+              </div>
+            ) : null}
             {audio ? <RadioFace channel={tv.channel} /> : null}
             {showCard ? <TestCard /> : null}
             {face === 'session-empty' ? <SessionCard /> : null}

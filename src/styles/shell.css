@@ -39,6 +39,14 @@
   opacity: 0;
 }
 
+.stage-waiting {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #0a0a0a;
+  pointer-events: none;
+}
+
 .local-host {
   position: absolute;
   inset: 0;

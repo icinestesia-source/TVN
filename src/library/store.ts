@@ -301,6 +301,10 @@ export async function recordPlaybackFailure(externalId: string, reason: string, 
   }
   const previous = media
   media = media.map((entry) => (entry.id === item.id ? next : entry))
+  // Availability is bookkeeping the director never schedules from: keeping its copy lets the republish
+  // below reuse every network-wide cache instead of rebuilding them for identical programming.
+  const copy = directorCopies.get(item)
+  if (copy) directorCopies.set(next, copy)
   try {
     await (await activeWriter()).write({
       media,
