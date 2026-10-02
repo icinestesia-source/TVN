@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { channelByNumber, channels, listChannels, randomChannel, shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
+import { channelByNumber, channels, listChannels, programmesFor, randomChannel, shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { channelMatchesFilter, inFavouriteOrder, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { installCuratedEdits, installUserCatalogue, subscribeCatalogue } from '../data/user-overlay.ts'
 import {
@@ -92,6 +92,21 @@ import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, sleep } from '../utils/time.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
+import {
+  addToGuide as addProgrammeToGuide,
+  applyGuideAction,
+  DEFAULT_GUIDE_NAME,
+  libraryFrom,
+  loadGuideLibrary,
+  newGuide,
+  nextPlayable,
+  resolveItem,
+  saveGuideLibrary,
+  type GuideAction,
+  type GuideLibrary,
+  type GuideRun,
+  type ItemLookup,
+} from '../services/viewing-guides.ts'
 import { buildTvnExport, serialiseTvnExport, tvnExportFilename, validateTvnExport, type TvnExport } from '../services/tvn-export.ts'
 import {
   asTransitionSettings,
@@ -256,6 +271,19 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** The next tune is the recovery falling forward, not the viewer: it keeps the recovery going. */
   const autoTuneRef = useRef(false)
   const recoverRef = useRef<(channelNumber: number, cause: 'refused' | 'unplayable') => void>(() => {})
+  const [guideLibrary, setGuideLibraryState] = useState<GuideLibrary>(() => loadGuideLibrary())
+  const guideLibraryRef = useRef(guideLibrary)
+  const [guideRun, setGuideRunState] = useState<GuideRun | null>(null)
+  const guideRunRef = useRef<GuideRun | null>(null)
+  /** The tune or pick in progress is the Guide's own, not the viewer's: it does not suspend the Guide. */
+  const guideDrivingRef = useRef(false)
+  /** The Guide's playback steps, rebuilt every render so the once-made callbacks reach the current ones. */
+  const guideEngine = useRef({
+    advance: (_finished: boolean) => {},
+    skipFailed: (_channelNumber: number): boolean => false,
+    suspend: () => {},
+    step: (_direction: -1 | 1) => {},
+  })
   const [numeric, setNumeric] = useState('')
   const [overlay, setOverlay] = useState<OverlayMode>('none')
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus>('loading-api')
@@ -507,6 +535,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   recoverRef.current = (channelNumber, cause) => {
     if (multiviewRef.current !== '1' || channelNumber !== watchingNumber()) return
+    if (!tuningRef.current && guideEngine.current.skipFailed(channelNumber)) return
     if (tuningRef.current) {
       recoveryDue.current = { channelNumber, cause }
       return
@@ -711,6 +740,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** The + (new user) or OPTIONS panel standing in the Guide, if either is. */
   panelOpenRef.current = () => {
     const held = guideToolRef.current
+    if (held?.kind === 'guides') return held.kind
     return held && (held.kind === 'users' || held.kind === 'options') && held.cursor === cursorRef.current ? held.kind : null
   }
 
@@ -724,6 +754,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
     if (!keepPick) clearManual()
+    if (!guideDrivingRef.current) guideEngine.current.suspend()
     if (!autoTuneRef.current) recoveryRef.current = null
     autoTuneRef.current = false
     recoveryDue.current = null
@@ -883,6 +914,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (tuningRef.current || pausedRef.current || !playerReadyRef.current || !bootedRef.current) return
     const current = channelByNumber(channelRef.current)
     if (!current) return
+    const run = guideRunRef.current
+    if (run?.state === 'active' && run.programmeId) {
+      const manual = manualAiring(current.number, nowMs)
+      if (!manual || manual.programme.id !== run.programmeId) {
+        guideEngine.current.advance(manual === null)
+        return
+      }
+    }
     passRefused(current, nowMs)
     const snap = onScreen(current, nowMs)
     const key = liveKey(current.id, snap.current.programme.id, snap.current.startMs)
@@ -1025,6 +1064,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * schedule is untouched, and on the channel already being watched Previous is left alone.
    */
   const playFromGuide = (target: Channel, programme: Programme, slot?: { startMs: number; endMs: number }) => {
+    if (!guideDrivingRef.current) guideEngine.current.suspend()
     selectProgramme(target.number, programme, Date.now(), slot && { startMs: slot.startMs, endMs: slot.endMs })
     if (multiviewRef.current !== '1') {
       multiviewRef.current = '1'
@@ -1042,6 +1082,152 @@ export function TvProvider({ children }: { children: ReactNode }) {
     setPaused(false)
     if (playerRef.current && playerReadyRef.current) void loadProgramme(target, Date.now())
     showOverlay('info', INFO_MS)
+  }
+
+  // ── GUIDES: the viewer's own viewing sequences, played through the same picks as the Guide grid ──
+
+  const setGuideLibrary = (next: GuideLibrary) => {
+    guideLibraryRef.current = next
+    setGuideLibraryState(next)
+    saveGuideLibrary(next)
+  }
+  const setGuideRun = (next: GuideRun | null) => {
+    guideRunRef.current = next
+    setGuideRunState(next)
+  }
+  const guideLookup = (): ItemLookup => ({ channelByNumber, programmesFor, refused: refusedVideos() })
+
+  /**
+   * Plays the run's item at `index`, or the nearest one in `direction` that can play; an item that cannot
+   * is passed for this run only. Going on past the last item ends the Guide and leaves the channel to NOW.
+   */
+  const playGuideFrom = (run: GuideRun, index: number, direction: 1 | -1): boolean => {
+    const skipped = new Set(run.skipped)
+    const lookup = guideLookup()
+    const at = nextPlayable(run.guide, index, direction, (item) => {
+      if (skipped.has(item.id)) return false
+      const ok = resolveItem(item, lookup).ok
+      if (!ok) skipped.add(item.id)
+      return ok
+    })
+    if (at === null) {
+      if (direction === 1) {
+        setGuideRun(null)
+        if (clearManual()) loadedKey.current = ''
+        flash(run.guide.items.length > 0 && skipped.size >= run.guide.items.length ? 'NOTHING IN THIS GUIDE CAN PLAY' : 'GUIDE FINISHED · BACK TO NOW', 2400)
+      }
+      return false
+    }
+    const resolved = resolveItem(run.guide.items[at], lookup)
+    if (!resolved.ok) return false
+    const now = Date.now()
+    setGuideRun({ ...run, index: at, state: 'active', programmeId: resolved.programme.id, endsAt: now + resolved.programme.durationSeconds * 1000, skipped: [...skipped] })
+    guideDrivingRef.current = true
+    try {
+      playFromGuide(resolved.channel, resolved.programme)
+    } finally {
+      guideDrivingRef.current = false
+    }
+    return true
+  }
+
+  guideEngine.current = {
+    /** The programme the Guide asked for has ended (or something else replaced it): on to the next item. */
+    advance: (finished) => {
+      const run = guideRunRef.current
+      if (!run || run.state !== 'active') return
+      const item = run.guide.items[run.index]
+      const next = finished || !item ? run : { ...run, skipped: [...new Set([...run.skipped, item.id])] }
+      playGuideFrom(next, run.index + 1, 1)
+    },
+    /** A Guide item that will not play is passed for this run, rather than the channel falling forward. */
+    skipFailed: (channelNumber) => {
+      const run = guideRunRef.current
+      if (!run || run.state !== 'active' || run.guide.items[run.index]?.channelNumber !== channelNumber) return false
+      guideEngine.current.advance(false)
+      return true
+    },
+    /** The viewer chose something else: the Guide stays loaded but stops choosing. */
+    suspend: () => {
+      const run = guideRunRef.current
+      if (run?.state === 'active') setGuideRun({ ...run, state: 'suspended' })
+    },
+    step: (direction) => guideStepAction(direction),
+  }
+
+  const addToGuideAction = (channelNumber: number, programme: Programme): string => {
+    const channel = channelByNumber(channelNumber)
+    if (!channel) throw new Error('That channel is not available')
+    const now = Date.now()
+    const library = guideLibraryRef.current
+    const current = addProgrammeToGuide(library.current ?? newGuide(DEFAULT_GUIDE_NAME, now), channel, programme, now)
+    setGuideLibrary({ ...library, current })
+    return `ADDED TO ${current.name.toUpperCase()} · ${current.items.length} ${current.items.length === 1 ? 'ITEM' : 'ITEMS'}`
+  }
+
+  const editGuideAction = (action: GuideAction): string => {
+    const before = guideLibraryRef.current
+    const next = applyGuideAction(before, action, Date.now())
+    setGuideLibrary(next)
+    const run = guideRunRef.current
+    if (run && action.type === 'delete' && before.current?.id === run.guide.id) setGuideRun(null)
+    else if (run && next.current && next.current.id === run.guide.id && action.type !== 'load') {
+      // The Guide being played follows its edits; the item playing keeps its place if it is still there.
+      const playing = run.guide.items[run.index]?.id
+      const index = next.current.items.findIndex((item) => item.id === playing)
+      setGuideRun({ ...run, guide: structuredClone(next.current), index: index >= 0 ? index : Math.min(run.index, Math.max(0, next.current.items.length - 1)) })
+    }
+    const name = next.current?.name.toUpperCase() ?? ''
+    switch (action.type) {
+      case 'new':
+        return 'NEW GUIDE'
+      case 'save':
+        return `${name} SAVED`
+      case 'duplicate':
+        return `${name} SAVED AS A COPY`
+      case 'delete':
+        return 'GUIDE DELETED'
+      case 'load':
+        return `${name} LOADED`
+      case 'clear':
+        return 'GUIDE CLEARED'
+      case 'rename':
+        return `RENAMED ${name}`
+      default:
+        return ''
+    }
+  }
+
+  const playGuideAction = (fromIndex = 0) => {
+    const current = guideLibraryRef.current.current
+    if (!current || current.items.length === 0) {
+      flash('THIS GUIDE IS EMPTY')
+      return
+    }
+    playGuideFrom({ guide: structuredClone(current), index: fromIndex, state: 'active', programmeId: null, endsAt: null, skipped: [] }, fromIndex, 1)
+  }
+
+  /** Follows the Guide again from the item it was on, played from its beginning. */
+  const resumeGuideAction = () => {
+    const run = guideRunRef.current
+    if (!run) return
+    playGuideFrom(run, run.index, 1)
+  }
+
+  const stopGuideAction = () => {
+    if (!guideRunRef.current) return
+    setGuideRun(null)
+    flash('GUIDE STOPPED')
+  }
+
+  const guideStepAction = (direction: -1 | 1) => {
+    const run = guideRunRef.current
+    if (!run) return
+    if (direction === 1) {
+      playGuideFrom({ ...run, state: 'active' }, run.index + 1, 1)
+      return
+    }
+    if (!playGuideFrom({ ...run, state: 'active' }, run.index - 1, -1)) playGuideFrom({ ...run, state: 'active' }, run.index, 1)
   }
 
   const activateGuide = useCallback((options?: { fromStart?: boolean }) => {
@@ -1238,7 +1424,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         else {
           closeGuide()
           showOverlay('info', INFO_MS)
+          break
         }
+        // A Guide being played opens with it in view, not behind a menu.
+        if (guideRunRef.current) openGuideTool('guides')
         break
       case 'guide-expand':
         openGuide('expanded')
@@ -1250,6 +1439,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setGuideSplit(clampGuideSplit(command.share))
         break
       case 'multiview': {
+        guideEngine.current.suspend()
         const nextMode = cycleMultiview(multiviewRef.current)
         const ordered = listChannels()
           .filter((item) => item.enabled && item.origin !== 'session' && !isLiveStreamChannel(item))
@@ -1396,6 +1586,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       }
       case 'guide-now': {
         // Back to television as it is airing: a Guide pick ends and the broadcast resumes in place.
+        guideEngine.current.suspend()
         if (clearManual()) {
           loadedKey.current = ''
           const current = channelByNumber(channelRef.current)
@@ -1892,6 +2083,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       now,
       uploaderOf: uploaderIdFor,
       curated: Object.values(loadCuratedEdits()),
+      guides: guideLibraryRef.current,
       shippedOf: (number) => {
         const shipped = shippedChannel(number)
         return shipped ? shippedProgrammes(shipped.id) : []
@@ -1900,7 +2092,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     downloadText(tvnExportFilename(now), serialiseTvnExport(document))
     const count = document.userNetwork.channels.length
     const curated = document.central?.overrides.length ?? 0
-    return `TVN EXPORTED · ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'} · ${curated} CURATED · ${document.favourites.length} FAVOURITES · SETTINGS`
+    const guides = document.guides?.saved.length ?? 0
+    return `TVN EXPORTED · ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'} · ${curated} CURATED · ${guides} ${guides === 1 ? 'GUIDE' : 'GUIDES'} · ${document.favourites.length} FAVOURITES · SETTINGS`
   }, [])
 
   /** The editor's scope for this channel number, checked again on every action rather than trusted from the view. */
@@ -1969,6 +2162,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (!checked.ok) throw new Error(`Not a complete TVN export · ${checked.errors[0]}`)
       const restored = await importUserNetwork(checked.value.userNetwork)
       const central = checked.value.central ? await restoreCentralCuration(checked.value.central) : ''
+      const guides = checked.value.guides
+      if (guides) setGuideLibrary(libraryFrom(guides))
       const { favourites: favouriteNumbers, settings } = checked.value
       setFavourites([...favouriteNumbers])
       if (settings.volume !== undefined) {
@@ -1999,7 +2194,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       saveTransitionSettings(transitionRef.current)
       setTransitionState(transitionRef.current)
       playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
-      return `${restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')}${central}`
+      return `${restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')}${central}${guides ? ` · ${guides.saved.length} ${guides.saved.length === 1 ? 'GUIDE' : 'GUIDES'}` : ''}`
     },
     [importUserNetwork],
   )
@@ -2171,6 +2366,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   /** The information bar's Prev (-1) and Next (1) over the picture: that programme, from its start. */
   const screenStep = useCallback((direction: -1 | 1) => {
+    // While a Guide is followed, Prev and Next move along the Guide; ↑ and ↓ still go back through the channels watched.
+    if (guideRunRef.current?.state === 'active') {
+      guideEngine.current.step(direction)
+      return
+    }
     const here = channelByNumber(channelRef.current)
     if (!here || here.origin === 'session' || onScreen(here, Date.now()).current.programme.liveStream) return
     const target = stepFrom(here, Date.now(), direction)
@@ -2298,6 +2498,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const guideApi = useRef({ add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction })
+  guideApi.current = { add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction }
+  const addToGuide = useCallback((channelNumber: number, programme: Programme) => guideApi.current.add(channelNumber, programme), [])
+  const editGuide = useCallback((action: GuideAction) => guideApi.current.edit(action), [])
+  const playGuide = useCallback((fromIndex?: number) => guideApi.current.play(fromIndex), [])
+  const resumeGuide = useCallback(() => guideApi.current.resume(), [])
+  const stopGuide = useCallback(() => guideApi.current.stop(), [])
+  const guideStep = useCallback((direction: -1 | 1) => guideApi.current.step(direction), [])
+
   const value = useMemo<TvContextValue>(
     () => ({
       channel,
@@ -2361,6 +2570,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
       screenAction,
       screenStep,
       holdInfo,
+      guideLibrary,
+      guideRun,
+      addToGuide,
+      editGuide,
+      playGuide,
+      resumeGuide,
+      stopGuide,
+      guideStep,
       dispatch,
       syncLive,
       onPlayerReady,
@@ -2468,6 +2685,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
       screenAction,
       screenStep,
       holdInfo,
+      guideLibrary,
+      guideRun,
+      addToGuide,
+      editGuide,
+      playGuide,
+      resumeGuide,
+      stopGuide,
+      guideStep,
       subtitles,
       syncLive,
       tuningNumber,

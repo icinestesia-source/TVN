@@ -223,7 +223,7 @@ describe('TVN 2.0 · COMPLETE TVN EXPORT (tvn-export-v1)', () => {
 
   it('leaves out secrets, caches, player state, history and startup state', () => {
     const text = serialiseTvnExport(build())
-    expect(Object.keys(JSON.parse(text)).sort()).toEqual(['central', 'exportedAt', 'favourites', 'format', 'manifests', 'settings', 'userNetwork', 'version'])
+    expect(Object.keys(JSON.parse(text)).sort()).toEqual(['central', 'exportedAt', 'favourites', 'format', 'guides', 'manifests', 'settings', 'userNetwork', 'version'])
     expect(text).not.toMatch(/lastChannel|previousChannel|history|refus|starter|startup|multiviewChannels|apiKey|"key"|token/i)
   })
 

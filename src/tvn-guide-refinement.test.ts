@@ -67,7 +67,10 @@ describe('ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => undefined, onTool: () => undefined }))
     expect(markup).toMatch(/<button[^>]*>Add<\/button>/)
     expect(markup).not.toMatch(/role="(menu|dialog)"/)
-    for (const source of [guide, readFileSync('src/components/GuideAdd.tsx', 'utf8')]) {
+    // The one menu in the Guide is ADD TO GUIDE on a programme (right-click or hold), not ADD.
+    const listings = guide.replace(/\nfunction AddToGuideMenu[\s\S]*?\n\}\n/, '\n')
+    expect(listings).not.toBe(guide)
+    for (const source of [listings, readFileSync('src/components/GuideAdd.tsx', 'utf8')]) {
       expect(source).not.toMatch(/window\.prompt|\bprompt\(|role="menu"|guide-add-menu/)
     }
   })
@@ -141,7 +144,7 @@ describe('MEDIA (channel 000 from local files)', () => {
   it('is a visible Guide action, after NOW and ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'media', picked: false, onNow: () => undefined, onTool: () => undefined }))
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Options', 'Now', 'Add', 'Media'])
+    expect(labels).toEqual(['Guide', 'Options', 'Now', 'Add', 'Media'])
     expect(markup).toMatch(/aria-pressed="true"[^>]*>Media</)
   })
 

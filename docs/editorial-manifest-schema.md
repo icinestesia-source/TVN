@@ -175,3 +175,26 @@ Code: `src/services/curated-edits.ts` and `src/services/central-curation.ts`.
 - **Remote.** Fold the remote's controls into the overlay itself, rather than a separate pad.
 - **Skins.** Make the presentation skin-aware: each skin sets its own frame, type and artwork treatment.
 - Nothing in TVN 2.0 renders any of this. The `artwork` field exists only so curation can carry it now.
+
+## 11. Viewing Guides (`tvn.guides.v1`, `tvn-guides-v1`)
+
+A Guide is the viewer's own viewing sequence: programmes from any channels, played in order, each from its
+beginning, advancing when one ends. It is not a channel and never becomes one automatically.
+
+- **Stored:** `{ current, saved[] }` in `tvn.guides.v1`. Each Guide has a stable `id`, `name`, ordered `items`,
+  optional `loop`, `createdAt` and `modifiedAt`. An item keeps `channelNumber`, `channelName` and a programme
+  snapshot (`id`, `title`, `videoId`, `durationSeconds`, `source`, plus descriptive fields such as `sourceRef`,
+  `creator`, `series` where known). References only: no media, no schedule changes.
+- **Played:** through the Guide's manual-pick machinery. Schedules and running orders are untouched. A different
+  channel uses the viewer's transition; the same channel uses the plain black cut.
+- **Indicator:** GUIDE (header and Information Overlay) is green only while a Guide is choosing what plays.
+  A manual pick stays yellow. An open Guide screen changes nothing.
+- **Suspended, not lost:** a manual tune, NOW, a Guide pick or MULTI suspends the Guide; RESUME GUIDE replays
+  the item it was on. Missing or refused items are shown as unavailable and skipped for that run only, never
+  removed or substituted.
+- **Complete Export:** `tvn-export-v1` carries `guides` (`tvn-guides-v1`: current and saved Guides). Playback
+  position is never exported. Exports without `guides` stay valid and restore none.
+
+Recorded for later, not implemented: create a permanent channel from a Guide, share or export one Guide, Guide
+artwork, gap-filling recommendations, themed templates, scheduled starts, collaborative Guides. Information
+Overlay V3 (section 10) keeps a GUIDE key with the same states: yellow normally, green while following.

@@ -8,6 +8,7 @@ import { channelActions, cornerActions } from '../view/info-shortcuts.ts'
 import { historyActions, InfoActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { useEditPress } from './use-edit-press.ts'
+import { followingInfo } from '../view/guide-following.ts'
 
 /**
  * INFO: the Guide's information bar over the picture, for what the channel is showing now and next,
@@ -25,6 +26,7 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
   const progress = stream ? 100 : Math.min(100, (current.elapsedSeconds / current.programme.durationSeconds) * 100)
   const credit = demoCredit(current.programme.videoId)
   const editable = editorScope(channel) !== null && tv.multiviewMode === '1'
+  const following = followingInfo(tv.guideRun)
   const { press, handlers } = useEditPress(editable ? () => tv.dispatch({ type: 'guide-tool', tool: 'edit' }) : undefined)
 
   return (
@@ -51,6 +53,7 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
         now={now}
         next={stream ? undefined : { title: next.programme.title, startMs: next.startMs, endMs: next.endMs }}
         picked={manualAiring(channel.number, now) !== null}
+        following={following}
       />
       <InfoActions
         key={channel.number}
@@ -58,6 +61,8 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
         programme={current.programme}
         onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}
         onNext={steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}
+        following={following !== null}
+        guideSteps={following ? { onPrev: () => tv.guideStep(-1), onNext: () => tv.guideStep(1) } : undefined}
         history={historyActions(tv)}
         corners={cornerActions(tv)}
         channels={channelActions(tv)}

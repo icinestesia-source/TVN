@@ -11,6 +11,9 @@
   --line: rgba(232, 238, 246, 0.14);
   --gold: #f0c014;
   --gold-ink: #1c1604;
+  /* Only while a viewing Guide is choosing what plays (TVN is FOLLOWING A GUIDE). */
+  --follow: #3fd07a;
+  --follow-ink: #04170b;
   --now: #ffb000;
   --osd: rgba(5, 10, 16, 0.9);
   --danger: #ff5d52;

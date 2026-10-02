@@ -34,6 +34,7 @@ import { channelActions, cornerActions, type ChannelActions, type CornerActions 
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { GuideOptions } from './GuideOptions.tsx'
+import { GuidePanel } from './GuidePanel.tsx'
 import { AddChannelForm, GuideActions, NewUserTools, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
 import { filterUserId, freeUserName, TVN_OWNER, userFilter } from '../data/user-network/users.ts'
 import { ChannelEditor } from './ChannelEditor.tsx'
@@ -169,7 +170,34 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const rowCount = tv.visibleChannels.length + (addRow ? 1 : 0)
   const addInput = useRef<HTMLInputElement>(null)
   // MEDIA, IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
-  const tool = tv.guideTool && tv.guideTool.cursor === tv.guideCursor ? tv.guideTool.kind : null
+  // GUIDE (the viewer's viewing Guides) stays open while the cursor roams the grid to add to it.
+  const tool = tv.guideTool && (tv.guideTool.kind === 'guides' || tv.guideTool.cursor === tv.guideCursor) ? tv.guideTool.kind : null
+  const following = tv.guideRun?.state === 'active'
+  const [addMenu, setAddMenu] = useState<AddMenu | null>(null)
+  const [addNote, setAddNote] = useState<string | null>(null)
+  useEffect(() => {
+    if (!addNote) return
+    const id = window.setTimeout(() => setAddNote(null), 2200)
+    return () => window.clearTimeout(id)
+  }, [addNote])
+  const guideMarks = useMemo(() => {
+    const marks = new Map<string, 'queued' | 'active'>()
+    const current = tv.guideLibrary.current
+    for (const item of current?.items ?? []) marks.set(`${item.channelNumber}:${item.programme.id}`, 'queued')
+    const run = tv.guideRun
+    const playing = run?.state === 'active' ? run.guide.items[run.index] : undefined
+    if (playing) marks.set(`${playing.channelNumber}:${playing.programme.id}`, 'active')
+    return marks
+  }, [tv.guideLibrary, tv.guideRun])
+  const addToGuide = (menu: AddMenu) => {
+    setAddMenu(null)
+    try {
+      setAddNote(tv.addToGuide(menu.channelNumber, menu.programme))
+    } catch (caught) {
+      const text = caught instanceof Error ? caught.message.trim() : ''
+      setAddNote(text && text.length <= 90 ? text.toUpperCase() : 'THAT CANNOT JOIN A GUIDE')
+    }
+  }
   const manual = manualAiring(tv.channel.number, now)
   const picked = manual !== null
   // What the watched channel is playing: a programme picked from the Guide sits at its own slot, otherwise the airing one.
@@ -474,6 +502,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         <GuideActions
           tool={tool}
           picked={picked}
+          following={following}
           onNow={() => tv.dispatch({ type: 'guide-now' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
         />
@@ -632,6 +661,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       }
                       onFocus={(timeMs) => tv.focusGuide(channel.number, timeMs)}
                       onActivate={() => tv.activateGuide()}
+                      marks={guideMarks}
+                      onMenu={(programme, x, y) => setAddMenu({ channelNumber: channel.number, channelName: channel.name, programme, x, y })}
                     />
                   ))}
                 </div>
@@ -647,7 +678,15 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         </div>
       )}
 
-      {tool === 'edit' && focusedChannel && editScope ? (
+      {addMenu ? <AddToGuideMenu menu={addMenu} guideName={tv.guideLibrary.current?.name ?? null} onAdd={addToGuide} onClose={() => setAddMenu(null)} /> : null}
+      {addNote ? (
+        <p className="guide-add-note" role="status">
+          {addNote}
+        </p>
+      ) : null}
+      {tool === 'guides' ? (
+        <GuidePanel />
+      ) : tool === 'edit' && focusedChannel && editScope ? (
         <ChannelEditor
           key={focusedChannel.number}
           channel={focusedChannel}
@@ -803,6 +842,8 @@ function ProgrammeRow({
   cursorTime,
   onFocus,
   onActivate,
+  marks,
+  onMenu,
 }: {
   channel: Channel
   slots: readonly GuideSlot<Programme>[]
@@ -816,7 +857,20 @@ function ProgrammeRow({
   cursorTime: number | null
   onFocus: (timeMs: number) => void
   onActivate: () => void
+  /** Programmes in the viewer's Guide, keyed `channel:programme`; the one being followed is 'active'. */
+  marks: ReadonlyMap<string, 'queued' | 'active'>
+  /** The secondary action on a programme (right-click or hold): offers ADD TO GUIDE. A click still plays. */
+  onMenu: (programme: Programme, x: number, y: number) => void
 }) {
+  // A hold fires long after this render: it uses the handler and programme taken when the press began.
+  const [hold] = useState(() => {
+    const state: { onMenu: typeof onMenu; held: { programme: Programme; x: number; y: number } | null } = { onMenu, held: null }
+    const press = createLongPress(() => {
+      if (state.held) state.onMenu(state.held.programme, state.held.x, state.held.y)
+    })
+    return { state, press }
+  })
+  const press = hold.press
   const leftBound = scrollLeft - 280
   const rightBound = scrollLeft + viewWidth + 280
   return (
@@ -832,10 +886,11 @@ function ProgrammeRow({
         const flags = programmeFlags(slot.startMs, slot.endMs, now, cursorTime)
         const holding = !hasPicture(slot.programme)
         const isPlaying = playing === 'airing' ? flags.airing : playing !== null && playing.startMs === slot.startMs
+        const mark = marks.get(`${channel.number}:${slot.programme.id}`)
         return (
           <div
             key={`${slot.programme.id}-${slot.startMs}`}
-            className={`prog${flags.airing ? ' is-live' : ''}${isPlaying ? ' is-playing' : ''}${flags.past ? ' is-past' : ''}${flags.selected ? ' is-focused' : ''}${holding ? ' is-holding' : ''}`}
+            className={`prog${flags.airing ? ' is-live' : ''}${isPlaying ? ' is-playing' : ''}${flags.past ? ' is-past' : ''}${flags.selected ? ' is-focused' : ''}${holding ? ' is-holding' : ''}${mark ? ` in-guide${mark === 'active' ? ' is-following' : ''}` : ''}`}
             style={{ left: frame.left, width: frame.width, paddingLeft: inset }}
             role="button"
             tabIndex={-1}
@@ -844,9 +899,24 @@ function ProgrammeRow({
             data-airing={flags.airing ? 'true' : 'false'}
             data-selected={flags.selected ? 'true' : 'false'}
             onClick={() => {
+              if (press.swallowClick()) return
               if (flags.selected) onActivate()
               else onFocus(slot.startMs + 1)
             }}
+            onContextMenu={(event: MouseEvent<HTMLDivElement>) => {
+              event.preventDefault()
+              press.opened()
+              onMenu(slot.programme, event.clientX, event.clientY)
+            }}
+            onPointerDown={(event) => {
+              hold.state.onMenu = onMenu
+              hold.state.held = { programme: slot.programme, x: event.clientX, y: event.clientY }
+              press.down({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })
+            }}
+            onPointerMove={(event) => press.move({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })}
+            onPointerUp={press.up}
+            onPointerCancel={press.cancel}
+            onPointerLeave={press.cancel}
             onDoubleClick={() => {
               onFocus(slot.startMs + 1)
               onActivate()
@@ -859,6 +929,48 @@ function ProgrammeRow({
           </div>
         )
       })}
+    </div>
+  )
+}
+
+interface AddMenu {
+  channelNumber: number
+  channelName: string
+  programme: Programme
+  x: number
+  y: number
+}
+
+/** The small menu a right-click or hold on a programme opens: ADD TO GUIDE, kept to one choice. */
+function AddToGuideMenu({ menu, guideName, onAdd, onClose }: { menu: AddMenu; guideName: string | null; onAdd: (menu: AddMenu) => void; onClose: () => void }) {
+  const first = useRef<HTMLButtonElement>(null)
+  useEffect(() => first.current?.focus(), [])
+  const width = 240
+  const left = Math.max(8, Math.min(menu.x, (typeof window === 'undefined' ? 1200 : window.innerWidth) - width - 8))
+  const top = Math.max(8, Math.min(menu.y, (typeof window === 'undefined' ? 800 : window.innerHeight) - 120))
+  return (
+    <div className="guide-menu-scrim" onPointerDown={onClose} onContextMenu={(event) => event.preventDefault()}>
+      <div
+        className="guide-menu"
+        role="menu"
+        aria-label={`${menu.programme.title} on ${padChannel(menu.channelNumber)}`}
+        style={{ left, top, width }}
+        onPointerDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          event.stopPropagation()
+          if (event.key === 'Escape') onClose()
+        }}
+      >
+        <p className="guide-menu-title">
+          {padChannel(menu.channelNumber)} · {menu.programme.title}
+        </p>
+        <button type="button" role="menuitem" ref={first} className="guide-menu-item" onClick={() => onAdd(menu)}>
+          Add to {guideName ?? 'Guide'}
+        </button>
+        <button type="button" role="menuitem" className="guide-menu-item is-quiet" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }

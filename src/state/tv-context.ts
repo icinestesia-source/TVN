@@ -109,6 +109,22 @@ export interface TvContextValue {
   screenStep: (direction: -1 | 1) => void
   /** Keeps the information bar up while the pointer is on it. */
   holdInfo: (held: boolean) => void
+  /** The Guide being edited and the saved Guides (viewing sequences). */
+  guideLibrary: import('../services/viewing-guides.ts').GuideLibrary
+  /** The Guide being played: ACTIVE while it chooses what comes next, SUSPENDED once the viewer tuned away. */
+  guideRun: import('../services/viewing-guides.ts').GuideRun | null
+  /** ADD TO GUIDE: the programme joins the end of the current Guide (a new one if there is none). */
+  addToGuide: (channelNumber: number, programme: import('../types/programme.ts').Programme) => string
+  /** One Guide editor action (NEW, SAVE, RENAME, reorder…); the answer is a short line for the viewer. */
+  editGuide: (action: import('../services/viewing-guides.ts').GuideAction) => string
+  /** Plays the current Guide from an item (the first by default). */
+  playGuide: (fromIndex?: number) => void
+  /** Follows a suspended Guide again, from the item it was on. */
+  resumeGuide: () => void
+  /** Stops following the Guide; it stays loaded. */
+  stopGuide: () => void
+  /** The previous (-1) or next (1) Guide item. */
+  guideStep: (direction: -1 | 1) => void
   dispatch: (command: TvCommand) => void
   syncLive: (nowMs: number) => void
   onPlayerReady: () => void

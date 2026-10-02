@@ -18,7 +18,7 @@ export function guideToolTarget(
   nowMs: number,
   requested?: number,
 ): { filter: GuideFilter; cursor: { channelNumber: number; timeMs: number } } {
-  if (kind === 'edit' || kind === 'users' || kind === 'options') return { filter, cursor: { channelNumber: requested ?? cursor.channelNumber, timeMs: cursor.timeMs } }
+  if (kind === 'edit' || kind === 'users' || kind === 'options' || kind === 'guides') return { filter, cursor: { channelNumber: requested ?? cursor.channelNumber, timeMs: cursor.timeMs } }
   if (kind === 'media') {
     const session = channels.find((item) => item.number === SESSION_CHANNEL_NUMBER)
     return {

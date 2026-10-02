@@ -31,6 +31,7 @@ export function ProgrammeInfo({
   alert = false,
   next,
   picked = false,
+  following = null,
 }: {
   channel: Channel
   programme: Programme
@@ -41,6 +42,8 @@ export function ProgrammeInfo({
   next?: { title: string; startMs: number; endMs: number }
   /** Playing because the viewer chose it in the Guide, not because it is on air. */
   picked?: boolean
+  /** A viewing Guide chose it: green rather than gold, and Next is the Guide's next item (null when it is the last). */
+  following?: { next: { title: string; channelNumber: number } | null } | null
 }) {
   const stream = programme.liveStream !== undefined
   const live = now >= startMs && now < endMs
@@ -50,7 +53,7 @@ export function ProgrammeInfo({
   const label = networkLabel(channel)
   const kind = playbackLabel(channel, programme)
   // Airing now, or picked from the Guide and playing, goes unsaid; a Guide slot at another time says when it is.
-  const status = picked || stream || live ? null : later ? 'Later' : 'Already broadcast'
+  const status = picked || following || stream || live ? null : later ? 'Later' : 'Already broadcast'
 
   return (
     <div className="info-main">
@@ -62,7 +65,8 @@ export function ProgrammeInfo({
       <h2 className="info-title">{programme.title}</h2>
       <p className="info-time">
         {/* Gold when the viewer picked it in the Guide: playing, but not what is on air now. */}
-        <span className={picked ? 'info-kind is-picked' : 'info-kind'}>{kind}</span>
+        <span className={following ? 'info-kind is-following' : picked ? 'info-kind is-picked' : 'info-kind'}>{kind}</span>
+        {following ? <span className="info-following">Following Guide</span> : null}
         {stream ? null : <span>{formatRange(startMs, endMs)}</span>}
         {stream ? null : <span>{formatDuration(programme.durationSeconds)}</span>}
         {live && !stream ? (
@@ -73,7 +77,13 @@ export function ProgrammeInfo({
         {status ? <span className={alert ? 'info-status is-alert' : 'info-status'}>{status}</span> : null}
       </p>
       {description ? <p className="info-desc">{description}</p> : null}
-      {next && !stream ? (
+      {following ? (
+        <p className="info-next">
+          <span className="info-net is-following">Guide next</span>
+          <span className="info-next-title">{following.next ? following.next.title : 'End of Guide · back to Now'}</span>
+          {following.next ? <span className="info-next-time">{padChannel(following.next.channelNumber)}</span> : null}
+        </p>
+      ) : next && !stream ? (
         <p className="info-next">
           <span className="info-net">Next</span>
           <span className="info-next-title">{next.title}</span>

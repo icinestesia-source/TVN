@@ -23,32 +23,43 @@ function viewerMessage(caught: unknown, fallback: string): string {
 }
 
 /**
- * OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself. OPTIONS holds
- * the users and every viewer setting.
+ * GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself. GUIDE holds
+ * the viewer's own viewing Guides; it reads green only while one is being followed. OPTIONS holds the users and every
+ * viewer setting.
  * ADD opens the Add Channel row, MEDIA builds channel 000 from local files. New users and channel-list
  * imports live behind the + tab (after TVN and the users, before FAV).
  */
 export function GuideActions({
   tool,
   picked,
+  following = false,
   onNow,
   onTool,
 }: {
   tool: GuideTool | null
   /** A programme chosen in the Guide is playing; NOW returns to air. */
   picked: boolean
+  /** A viewing Guide is choosing what plays. */
+  following?: boolean
   onNow: () => void
   onTool: (tool: GuideTool) => void
 }) {
-  const action = (label: string, on: boolean, run: () => void, title?: string) => (
-    <button type="button" className={on ? 'tab is-on' : 'tab'} aria-pressed={on} title={title} onKeyDown={keepKey} onClick={run}>
+  const action = (label: string, on: boolean, run: () => void, title?: string, extra = '') => (
+    <button type="button" className={`${on ? 'tab is-on' : 'tab'}${extra}`} aria-pressed={on} title={title} onKeyDown={keepKey} onClick={run}>
       {label}
     </button>
   )
   return (
     <div className="guide-import guide-actions">
+      {action(
+        'Guide',
+        tool === 'guides',
+        () => onTool('guides'),
+        following ? 'TVN is following a Guide' : 'Your viewing Guides',
+        following ? ' guide-follow is-following' : ' guide-follow',
+      )}
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
-      {action('Now', picked, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
+      {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
       {action('Add', tool === 'add', () => onTool('add'))}
       {action('Media', tool === 'media', () => onTool('media'))}
     </div>

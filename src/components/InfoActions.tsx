@@ -128,14 +128,20 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
  */
 export function InfoActions({
   programme,
-  onPrev,
-  onNext,
+  onPrev: programmePrev,
+  onNext: programmeNext,
   history,
   corners,
   channels,
+  following = false,
+  guideSteps,
 }: {
   channel: Channel
   programme: Programme
+  /** A viewing Guide is choosing what plays: GUIDE reads green. */
+  following?: boolean
+  /** While following, ← and → move along the Guide instead of the channel's programmes. */
+  guideSteps?: { onPrev: () => void; onNext: () => void }
   /** Goes back to the programme before this one on the channel. */
   onPrev?: () => void
   /** Goes on to the programme after this one on the channel. */
@@ -146,6 +152,8 @@ export function InfoActions({
   /** CH+ and CH−, beside ↑ and ↓. */
   channels: ChannelActions
 }) {
+  const onPrev = guideSteps?.onPrev ?? programmePrev
+  const onNext = guideSteps?.onNext ?? programmeNext
   const context: ShortcutContext = {
     captionsAvailable: captionsAvailable(programme),
     fullscreenAvailable: fullscreenAvailable(),
@@ -188,8 +196,8 @@ export function InfoActions({
         type="button"
         className="info-square info-pad-side"
         disabled={!onPrev}
-        title="Previous programme"
-        aria-label="Previous programme"
+        title={following ? 'Previous item in the Guide' : 'Previous programme'}
+        aria-label={following ? 'Previous item in the Guide' : 'Previous programme'}
         onKeyDown={keepKey}
         onClick={onPrev}
       >
@@ -197,8 +205,9 @@ export function InfoActions({
       </button>
       <button
         type="button"
-        className="tune-key info-pad-guide"
-        aria-label="Guide"
+        className={following ? 'tune-key info-pad-guide is-following' : 'tune-key info-pad-guide'}
+        aria-label={following ? 'Guide, TVN is following a Guide' : 'Guide'}
+        title={following ? 'TVN is following a Guide' : undefined}
         onKeyDown={keepKey}
         onClick={() => corners.dispatch({ type: 'guide' })}
       >
@@ -208,8 +217,8 @@ export function InfoActions({
         type="button"
         className="info-square info-pad-side"
         disabled={!onNext}
-        title="Next programme"
-        aria-label="Next programme"
+        title={following ? 'Next item in the Guide' : 'Next programme'}
+        aria-label={following ? 'Next item in the Guide' : 'Next programme'}
         onKeyDown={keepKey}
         onClick={onNext}
       >

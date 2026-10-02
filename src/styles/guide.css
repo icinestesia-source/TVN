@@ -1526,3 +1526,151 @@ span.editor-expand { border-color: transparent; }
 .options-actions .remove-ask { flex: 0 1 auto; }
 
 .options-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+
+/* ── Viewing Guides. Green belongs only to an active Guide; everything else keeps the yellow/manual look. ── */
+.tab.guide-follow.is-following { color: var(--follow); border-bottom-color: var(--follow); font-weight: 600; }
+.tune-key.is-following { background: var(--follow); color: var(--follow-ink); }
+.info-kind.is-following,
+.info-net.is-following,
+.info-following { color: var(--follow); }
+.info-following {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* A programme in the viewer's Guide: a small corner mark, green only for the item being followed. */
+.prog.in-guide::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  pointer-events: none;
+}
+.prog.in-guide.is-following::after { background: var(--follow); }
+.prog.in-guide.is-following.is-playing { color: var(--follow); box-shadow: inset 0 0 0 2px var(--follow); }
+
+.guide-menu-scrim { position: fixed; inset: 0; z-index: 60; }
+.guide-menu {
+  position: fixed;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  background: #08111c;
+  border: 1px solid #1d4c78;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+.guide-menu-title {
+  margin: 0 0 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.guide-menu-item {
+  min-height: 40px;
+  padding: 0 10px;
+  background: var(--cell);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.guide-menu-item:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.guide-menu-item.is-quiet { background: transparent; color: var(--muted); }
+.guide-add-note {
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+  z-index: 50;
+  margin: 0;
+  padding: 6px 12px;
+  transform: translateX(-50%);
+  background: #08111c;
+  border: 1px solid #1d4c78;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.guide-info.guide-plan {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.plan-head { display: flex; flex-wrap: wrap; align-items: end; gap: 4px 16px; }
+.plan-name { flex: 1 1 260px; }
+.plan-state {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.plan-state.is-following { color: var(--follow); }
+.plan-state.is-paused { color: var(--gold); }
+.plan-controls,
+.plan-library { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.plan-controls .tab,
+.plan-library .tab,
+.plan-saved .tab { min-height: 36px; height: 36px; }
+.plan-controls .tab.guide-follow { color: var(--follow); border-bottom-color: var(--follow); }
+.plan-loop { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; }
+.plan-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 980px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.plan-item {
+  display: grid;
+  grid-template-columns: 28px minmax(110px, 0.8fr) minmax(0, 1.6fr) auto auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 3px 6px;
+  background: var(--guide-cell-alt);
+}
+.plan-item.is-playing { box-shadow: inset 3px 0 0 var(--follow); }
+.plan-item.is-paused { box-shadow: inset 3px 0 0 var(--gold); }
+.plan-item.is-unavailable,
+.plan-item.is-skipped { opacity: 0.6; }
+.plan-item.is-unavailable .plan-meta { color: var(--danger); }
+.plan-order { color: var(--muted); font-family: var(--font-ui); text-align: right; }
+.plan-channel { overflow: hidden; color: var(--muted); font-family: var(--font-ui); letter-spacing: 0.06em; text-overflow: ellipsis; white-space: nowrap; }
+.plan-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-meta { color: var(--muted); font-family: var(--font-ui); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.plan-item.is-playing .plan-meta { color: var(--follow); }
+.plan-item.is-paused .plan-meta { color: var(--gold); }
+.plan-actions { display: flex; gap: 4px; }
+.plan-actions .tab { min-width: 36px; min-height: 32px; height: 32px; padding: 0 8px; }
+.plan-empty,
+.plan-note { margin: 0; color: var(--muted); font-size: 14px; }
+.plan-note { font-family: var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; }
+.plan-saved ul { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.plan-saved li { display: flex; align-items: center; gap: 8px; }
+.plan-saved li.is-current .plan-saved-name { color: var(--gold); }
+.plan-saved-name { flex: 0 1 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 700px) {
+  .plan-item { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .plan-channel { grid-column: 2 / -1; }
+  .plan-title { grid-column: 2 / 3; }
+  .plan-meta { grid-column: 3; }
+  .plan-actions { grid-column: 1 / -1; justify-content: flex-end; }
+}

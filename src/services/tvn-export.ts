@@ -6,6 +6,7 @@ import { USER_NUMBER_LIMIT } from '../data/network.ts'
 import { buildCentralCuration, checkCentralCuration, type CentralCuration } from './central-curation.ts'
 import type { StoredSource } from './channels-import.ts'
 import type { CuratedEdit } from './curated-edits.ts'
+import { buildGuidesExport, checkGuides, EMPTY_LIBRARY, type GuideLibrary, type GuidesExport } from './viewing-guides.ts'
 import { curatedChannelManifest, userChannelManifest, type EditorialManifest } from './editorial-manifest.ts'
 import {
   buildUserNetworkExport,
@@ -22,10 +23,12 @@ import type { UploaderOf } from './user-network.ts'
  * The User Network document inside it is the very tvn-user-network-v1 file the specialist export writes
  * (users, channels, owners, sources, playlists, filters, modes, running orders, editorial notes), so either
  * can be read by the other's restore. Beside it: the viewer's 001–999 overrides (central-curation.ts),
- * Favourites, the settings that travel between browsers, and each curated or user channel's editorial
- * manifest for reading (a restore ignores those and rebuilds them).
+ * the viewer's saved Guides (viewing-guides.ts), Favourites, the settings that travel between browsers,
+ * and each curated or user channel's editorial manifest for reading (a restore ignores those and rebuilds
+ * them).
  *
- * Never in it: keys or credentials, caches, the player's state, the refusal cache, Guide rows, startup
+ * Never in it: keys or credentials, caches, the player's state, the refusal cache, Guide rows, a Guide's
+ * playback position, startup
  * state, the last channel watched or any other history. A restore reads the whole file before anything
  * changes; one fault anywhere refuses all of it.
  */
@@ -58,6 +61,8 @@ export interface TvnExport {
    * restore then leaves this browser's overrides as they are.
    */
   central?: CentralCuration
+  /** The viewer's Guides (viewing sequences), never a playback position. Absent in older files: a restore leaves Guides alone. */
+  guides?: GuidesExport
   /** For reading only. */
   manifests: EditorialManifest[]
 }
@@ -72,9 +77,10 @@ export interface TvnExportInput {
   curated?: readonly CuratedEdit[]
   /** A curated channel's shipped programmes, for its manifest. */
   shippedOf?: (number: number) => readonly { id: string; durationSeconds: number; year?: number }[]
+  guides?: GuideLibrary
 }
 
-export function buildTvnExport({ stored, users, favourites, settings, now, uploaderOf, curated = [], shippedOf = () => [] }: TvnExportInput): TvnExport {
+export function buildTvnExport({ stored, users, favourites, settings, now, uploaderOf, curated = [], shippedOf = () => [], guides = EMPTY_LIBRARY }: TvnExportInput): TvnExport {
   const userNetwork = buildUserNetworkExport(stored, now, uploaderOf, users)
   const central = buildCentralCuration(curated, uploaderOf)
   const numbers = new Set(userNetwork.channels.map((channel) => channel.number))
@@ -98,6 +104,7 @@ export function buildTvnExport({ stored, users, favourites, settings, now, uploa
       transitionStyle: { ...settings.transitionStyle, card: { ...settings.transitionStyle.card } },
     },
     central,
+    guides: buildGuidesExport(guides),
     manifests,
   }
 }
@@ -177,12 +184,13 @@ export function validateTvnExport(data: unknown): { ok: true; value: TvnExport }
   }
   checkSettings(data.settings, errors)
   if (data.central !== undefined) checkCentralCuration(data.central, 'central', errors)
+  if (data.guides !== undefined) checkGuides(data.guides, 'guides', errors)
   if (data.manifests !== undefined && !Array.isArray(data.manifests)) errors.push('manifests is not a list')
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: data as unknown as TvnExport }
 }
 
 export type TvnExportRead =
-  | { ok: true; value: TvnExport; channels: number; users: number; favourites: number; settings: number; overrides: number }
+  | { ok: true; value: TvnExport; channels: number; users: number; favourites: number; settings: number; overrides: number; guides: number }
   | { ok: false; errors: string[] }
 
 /** Parse and validate the text of a chosen file. Reads only. */
@@ -220,5 +228,6 @@ function readTvnExportData(data: unknown): TvnExportRead {
     favourites: favourites.length,
     settings: Object.keys(settings).length,
     overrides: checked.value.central?.overrides.length ?? 0,
+    guides: checked.value.guides?.saved.length ?? 0,
   }
 }
