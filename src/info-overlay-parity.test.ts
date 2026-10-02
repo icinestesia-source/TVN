@@ -31,7 +31,7 @@ describe('one information bar, in the Guide and over the picture', () => {
     }
     const panel = guide.slice(guide.indexOf('function ProgrammePanel('), guide.indexOf('/** The bundled starter network'))
     expect(panel).toContain('history: HistoryActions')
-    expect(panel).toMatch(/<InfoActions\s+key=\{channel\.number\}[\s\S]*onPrev=\{onPrev\}\s+onNext=\{onNext\}\s+history=\{history\}\s+corners=\{corners\}\s+channels=\{channels\}\s+\/>/)
+    expect(panel).toMatch(/<InfoActions\s+key=\{channel\.number\}[\s\S]*onPrev=\{onPrev\}\s+onNext=\{onNext\}(?:\s+following=\{following\})?\s+history=\{history\}\s+corners=\{corners\}\s+channels=\{channels\}\s+\/>/)
   })
 
   it('renders the one 3×3 pad as one unwrapped group', () => {

@@ -740,6 +740,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           history={historyActions(tv)}
           corners={cornerActions(tv)}
           channels={channelActions(tv)}
+          following={tv.guideRun?.state === 'active'}
           onEdit={
             focusedChannel && editScope
               ? () => tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: focusedChannel.number })
@@ -987,6 +988,7 @@ function ProgrammePanel({
   corners,
   channels,
   onEdit,
+  following = false,
 }: {
   channel: Channel | null
   slot: GuideSlot<Programme> | null
@@ -1003,6 +1005,8 @@ function ProgrammePanel({
   channels: ChannelActions
   /** Present when the channel can be edited: a right-click or a hold on the bar, apart from its buttons, opens its editor. */
   onEdit?: () => void
+  /** An active Guide controls what plays next: the GUIDE key shows it here too. */
+  following?: boolean
 }) {
   const { handlers } = useEditPress(onEdit)
   if (!channel || !slot) {
@@ -1034,6 +1038,7 @@ function ProgrammePanel({
         programme={slot.programme}
         onPrev={onPrev}
         onNext={onNext}
+        following={following}
         history={history}
         corners={corners}
         channels={channels}

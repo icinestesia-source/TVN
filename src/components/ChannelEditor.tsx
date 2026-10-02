@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { watchUrl } from '../credits/provenance.ts'
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { loadRegister } from '../credits/load.ts'
+import { watchUrl, type SourceRegister } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
 import type { ChannelEdit } from '../services/channel-editor.ts'
@@ -24,6 +25,9 @@ import { useClock } from '../utils/use-clock.ts'
 import type { EditorScope } from '../view/channel-edit.ts'
 import { EditorialPanel, SourceFilterPanel, StatusPicker } from './ChannelCuration.tsx'
 import { SourceDetails } from './SourceDetails.tsx'
+import { OriginalSources } from './OriginalSources.tsx'
+import { withOriginalOverride } from '../services/original-sources.ts'
+import { addedSourceLabels, channelOriginals, originalLineup } from '../view/channel-provenance.ts'
 
 /** Enter and Space press these controls; they must not also reach the Guide. */
 function keepKey(event: KeyboardEvent<HTMLElement>) {
@@ -61,6 +65,8 @@ interface ListedVideo {
   durationSec: number
   /** The provider's own page for it, when its id is a YouTube video id. */
   href?: string
+  /** The source that supplied it, briefly. */
+  from?: string
 }
 
 /** What a source holds, from its last scan: nothing is fetched to show it. */
@@ -83,7 +89,7 @@ function tvnProgrammes(number: number): ListedVideo[] {
   return shipped
     ? shippedProgrammes(shipped.id)
         .filter((programme) => programme.videoId !== null)
-        .map((programme) => ({ id: programme.id, title: programme.title, durationSec: programme.durationSeconds, href: watchUrl(programme.videoId) }))
+        .map((programme) => ({ id: programme.id, title: programme.title, durationSec: programme.durationSeconds, href: watchUrl(programme.videoId), from: 'TVN catalogue' }))
     : []
 }
 
@@ -154,6 +160,18 @@ export function ChannelEditor({
   const now = useClock(30_000)
   const rootRef = useRef<HTMLElement>(null)
   const linkRef = useRef<HTMLInputElement>(null)
+  const [register, setRegister] = useState<SourceRegister | null>(null)
+
+  useEffect(() => {
+    if (scope !== 'curated') return
+    let live = true
+    void loadRegister().then((loaded) => live && setRegister(loaded))
+    return () => {
+      live = false
+    }
+  }, [scope])
+  // TVN's original sources for this channel, named from the source register once it has loaded.
+  const originals = useMemo(() => (scope === 'curated' ? channelOriginals(number, register ?? undefined) : []), [scope, number, register])
 
   useEffect(() => {
     let live = true
@@ -197,9 +215,20 @@ export function ChannelEditor({
   // A TVN channel carried by its own programming arranges, and leaves out, TVN's programmes.
   const tvnLineup =
     scope === 'curated' && edit !== null && edit.sources.some((source) => source.kind === 'tvn' && source.enabled) && inventoryOf(edit.sources).length === 0 && !liveStreamOf(edit.sources)
-  const lineup = edit ? inOrder(tvnLineup ? tvnProgrammes(number) : inventoryOf(edit.sources), edit.order) : []
+  const fromOriginals = tvnLineup && originals.length > 0
+  const ownLabels = edit && !tvnLineup ? addedSourceLabels(edit.sources, sourceTitle) : null
+  const lineup: ListedVideo[] = edit
+    ? inOrder(
+        fromOriginals ? originalLineup(originals, edit.originals).map((video): ListedVideo => video) : tvnLineup ? tvnProgrammes(number) : inventoryOf(edit.sources).map((video): ListedVideo => ({ ...video, from: ownLabels?.get(video.id) })),
+        edit.order,
+      )
+    : []
+  const decided = (edit?.originals?.length ?? 0) > 0
+  const tvnSource = edit?.sources.find((source) => source.kind === 'tvn')
+  const originalsIdle = !tvnSource?.enabled ? "TVN's programming is switched off, so none of these play." : !tvnLineup ? 'Your added sources carry this channel, so none of these play while they do.' : null
   const left = new Set(edit?.excluded ?? [])
-  const ownOrder = (edit?.order?.length ?? 0) > 0 || left.size > 0
+  const arranged = (edit?.order?.length ?? 0) > 0 || left.size > 0
+  const ownOrder = arranged || decided
   const toggleLeft = (id: string) => {
     if (!edit) return
     const next = left.has(id) ? [...left].filter((item) => item !== id) : [...left, id]
@@ -329,18 +358,56 @@ export function ChannelEditor({
               </label>
             ) : null}
             <p className="editor-heading">Sources</p>
-            {(
+            {originals.length > 0 ? (
+              <p className="guide-tool-note">
+                TVN original: the sources behind TVN's own programming here. Disable or filter one in this browser only. Added: your sources; with programmes, they carry the channel in place of TVN's.
+              </p>
+            ) : (
               <p className="guide-tool-note">
                 A channel can draw on several sources, each with its own mode and filter. Open a source to set them, check the preview, then rescan.
               </p>
             )}
             <ul className="editor-sources">
               {edit.sources.length === 0 ? <li className="editor-empty">No sources yet</li> : null}
-              {edit.sources.map((source) => {
+              {edit.sources.map((source, index) => {
                 const open = opened.has(source.id)
                 const held = isStreamSource(source) ? [] : sourceProgrammes(source, number)
+                const shipped = source.kind === 'tvn' && originals.length > 0
+                const firstAdded = originals.length > 0 && source.kind !== 'tvn' && edit.sources.findIndex((item) => item.kind !== 'tvn') === index
+                if (shipped) {
+                  return (
+                    <li key={source.id} className={source.enabled ? 'editor-source is-shipped' : 'editor-source is-shipped is-off'}>
+                      <span className="editor-expand" aria-hidden="true" />
+                      <label className="editor-check" title="All of TVN's own programming for this channel">
+                        <input
+                          type="checkbox"
+                          checked={source.enabled}
+                          disabled={busy !== null}
+                          onKeyDown={keepKey}
+                          onChange={() => setSource(source.id, { enabled: !source.enabled })}
+                        />
+                        <span className="editor-source-name editor-group-name">TVN original</span>
+                      </label>
+                      <span className="editor-source-status">{sourceStatusText(source, edit.sources)}</span>
+                      <span className="editor-source-remove" aria-hidden="true" />
+                      <OriginalSources
+                        originals={originals}
+                        overrides={edit.originals}
+                        idle={originalsIdle}
+                        disabled={busy !== null}
+                        onDecide={(ref, next) => change({ ...edit, originals: withOriginalOverride(edit.originals, ref, next) })}
+                      />
+                    </li>
+                  )
+                }
                 return (
-                <li key={source.id} className={source.enabled ? 'editor-source' : 'editor-source is-off'}>
+                <Fragment key={source.id}>
+                {firstAdded ? (
+                  <li className="editor-group" aria-hidden="true">
+                    Added
+                  </li>
+                ) : null}
+                <li className={source.enabled ? 'editor-source' : 'editor-source is-off'}>
                   <button
                     type="button"
                     className="tab editor-expand"
@@ -410,6 +477,7 @@ export function ChannelEditor({
                     )
                   ) : null}
                 </li>
+                </Fragment>
                 )
               })}
             </ul>
@@ -480,9 +548,9 @@ export function ChannelEditor({
             )}
             <div className="editor-lineup-head">
               <p className="editor-heading">Running order · {ownOrder ? 'yours' : 'automatic'}</p>
-              {ownOrder ? (
+              {arranged ? (
                 <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => change({ ...edit, order: undefined, excluded: undefined })}>
-                  {tvnLineup ? 'Reset to TVN' : 'Reset to automatic'}
+                  {tvnLineup ? 'Reset order to TVN' : 'Reset to automatic'}
                 </button>
               ) : null}
             </div>
@@ -500,7 +568,9 @@ export function ChannelEditor({
                   {tvnLineup
                     ? ownOrder
                       ? 'The channel plays the programmes you keep, in this order, then starts again. Save to keep it.'
-                      : "TVN's own programmes for this channel, scheduled by TVN. Move one or leave one out to arrange it yourself."
+                      : fromOriginals
+                        ? "TVN's own programmes for this channel, from its original sources, scheduled by TVN. Disable or filter a source, move a programme or leave one out to arrange it yourself."
+                        : "TVN's own programmes for this channel, scheduled by TVN. Move one or leave one out to arrange it yourself."
                     : ownOrder
                     ? 'The channel plays these in this order, then starts again. Save to keep it.'
                     : reachesArchive(edit.sources)
@@ -523,6 +593,11 @@ export function ChannelEditor({
                       ) : null}
                       <span className="editor-lineup-pos">{index + 1}</span>
                       <span className="editor-video-title">{video.title}</span>
+                      {video.from ? (
+                        <span className="editor-video-from" title={`From ${video.from}`}>
+                          {video.from}
+                        </span>
+                      ) : null}
                       {video.id === onAir ? <span className="editor-lineup-now">On air</span> : null}
                       <span className="editor-video-length">{formatDuration(video.durationSec)}</span>
                       <OriginalLink video={{ ...video, href: (video as ListedVideo).href ?? watchUrl(video.id) }} />

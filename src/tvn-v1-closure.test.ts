@@ -377,6 +377,6 @@ describe('viewing history: Back and Forward', () => {
     const provider = read('src/state/TvProvider.tsx')
     expect(provider).toMatch(/case 'last-channel': \{\s+const previous = previousRef\.current/)
     expect(read('src/components/NowNextOverlay.tsx')).toContain('onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}')
-    expect(read('src/components/Guide.tsx')).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}\s+history=\{history\}/)
+    expect(read('src/components/Guide.tsx')).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}(?:\s+following=\{following\})?\s+history=\{history\}/)
   })
 })

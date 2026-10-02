@@ -28,7 +28,12 @@ import { beginScheduleBootstrap, endScheduleBootstrap, hydrateDirector } from '.
 import { primeDirector } from '../director/director.ts'
 import { markLiveUnavailable } from '../dynamic/runtime.ts'
 import { loadUserLibraryMode, setUserLibraryMode, userLibraryMode } from '../library/mode.ts'
-import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary, saveDeferredLibrary } from '../library/store.ts'
+import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary, saveDeferredLibrary, subscribeLibrary } from '../library/store.ts'
+import { loadRegister } from '../credits/load.ts'
+import type { SourceRegister } from '../credits/provenance.ts'
+import { reconcileOriginals, type OriginalSource } from '../services/original-sources.ts'
+import { channelOriginals } from '../view/channel-provenance.ts'
+import { guideEndAdvances } from '../view/guide-following.ts'
 import { guideSlots } from '../services/broadcast.ts'
 import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
 import { claimStarterInstall, setStarterState, starterIds, starterState, withoutStarter } from '../data/user-network/starter.ts'
@@ -167,6 +172,12 @@ const STARTUP_STEPS = [10, 30, 75, 90] as const
 
 const shippedIds = (shipped: Channel) => shippedProgrammes(shipped.id).map((programme) => programme.id)
 
+/** A TVN channel's original sources, from the library as published now (names are added where shown). */
+const originalsOf = (number: number, register?: SourceRegister): OriginalSource[] => channelOriginals(number, register)
+const poolIdsOf = (number: number) => originalsOf(number).flatMap((source) => source.videos.map((video) => video.id))
+/** Only an override that decides about original sources, or arranges TVN's programmes, reads them. */
+const readsOriginals = (edit: CuratedEdit) => Boolean(edit.originals?.length || edit.order?.length || edit.excluded?.length)
+
 /** Lay the viewer's saved changes to curated channels over the shipped ones, in this browser only. */
 function installCurated() {
   const built: Channel[] = []
@@ -174,7 +185,7 @@ function installCurated() {
   for (const edit of Object.values(loadCuratedEdits())) {
     const shipped = shippedChannel(edit.channelNumber)
     if (!shipped) continue
-    const made = buildCuratedEdit(shipped, edit, refusedVideos(), shippedProgrammes(shipped.id))
+    const made = buildCuratedEdit(shipped, edit, refusedVideos(), shippedProgrammes(shipped.id), readsOriginals(edit) ? originalsOf(shipped.number) : [])
     built.push(made.channel)
     if (made.programmes) programmes.set(shipped.id, made.programmes)
   }
@@ -1013,6 +1024,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (status === 'ended') {
       pictureLiveRef.current = false
       setPictureLive(false)
+      const watching = watchingNumber()
+      const manual = multiviewRef.current === '1' && !tuningRef.current ? manualAiring(watching, Date.now()) : null
+      const playing = manual ? { channelNumber: watching, programmeId: manual.programme.id, videoId: manual.programme.videoId } : null
+      if (guideEndAdvances(guideRunRef.current, asked, playing)) guideEngine.current.advance(true)
     }
     if (status !== 'error') return
     // The failure belongs to what the player was asked for, not to whichever channel is on screen now.
@@ -1678,6 +1693,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // A curation built from TVN's original sources follows the library: it may load after the start, and a refusal changes it.
+  useEffect(
+    () =>
+      subscribeLibrary(() => {
+        if (Object.values(loadCuratedEdits()).some(readsOriginals)) installCurated()
+      }),
+    [],
+  )
+
   useEffect(() => {
     const held = new Set<number>()
     let frame = 0
@@ -2065,6 +2089,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const exportTvn = useCallback(async () => {
     const now = new Date()
+    const register = await loadRegister()
     const document = buildTvnExport({
       stored: await loadStoredSources(),
       users: usersRef.current,
@@ -2084,6 +2109,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       uploaderOf: uploaderIdFor,
       curated: Object.values(loadCuratedEdits()),
       guides: guideLibraryRef.current,
+      originalsOf: (number) => originalsOf(number, register),
       shippedOf: (number) => {
         const shipped = shippedChannel(number)
         return shipped ? shippedProgrammes(shipped.id) : []
@@ -2138,12 +2164,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const now = Date.now()
     const read = overridesFromExport(central)
     const resolved = await resolveRestored(read.map(overrideRecord), restoreDeps, now)
+    const register = await loadRegister()
     const kept: CuratedEdit[] = []
     const conflicts: string[] = []
     read.forEach((edit, index) => {
       const shipped = shippedChannel(edit.channelNumber)
       const sources = resolved.records[index]?.channelSources ?? edit.sources
-      const result = reconcileOverride({ ...edit, sources }, shipped, shipped ? shippedProgrammes(shipped.id).map((programme) => programme.id) : [])
+      const result = reconcileOverride({ ...edit, sources }, shipped, shipped ? shippedProgrammes(shipped.id).map((programme) => programme.id) : [], shipped ? originalsOf(shipped.number, register) : [])
       if (result.edit) kept.push(result.edit)
       conflicts.push(...result.conflicts)
     })
@@ -2205,7 +2232,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const saved = loadCuratedEdit(number)
       const edit = curatedEditOf(shipped, saved)
       const changed = saved && baselineChanged(saved, shippedBaseline(shipped, shippedIds(shipped))) ? ['TVN has changed this channel since you curated it'] : []
-      const review = [...(saved?.conflicts ?? []), ...changed]
+      const sources = reconcileOriginals(saved?.originals, originalsOf(number, await loadRegister()), String(number).padStart(3, '0')).conflicts
+      const review = [...(saved?.conflicts ?? []), ...changed, ...sources.filter((line) => !saved?.conflicts?.includes(line))]
       return review.length ? { ...edit, review } : edit
     }
     const record = (await loadStoredSources()).find((item) => item.channelNumber === number)
@@ -2217,7 +2245,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     async (number: number, edit: ChannelEdit) => {
       const { scope, shipped } = scopeOf(number)
       if (scope === 'curated') {
-        const saved = saveCuratedEdit(shipped, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, Date.now(), undefined, shippedIds(shipped))
+        const saved = saveCuratedEdit(shipped, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, Date.now(), undefined, shippedIds(shipped), poolIdsOf(number))
         installCurated()
         return saved ? 'SAVED · IN THIS BROWSER ONLY' : 'SAVED · AS TVN SHIPS IT'
       }
@@ -2244,7 +2272,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (scope === 'curated') {
         const sources = await rescanSources(edit.sources, deps, now)
         const next = { ...edit, sources }
-        saveCuratedEdit(shipped, next, now, undefined, shippedIds(shipped))
+        saveCuratedEdit(shipped, next, now, undefined, shippedIds(shipped), poolIdsOf(number))
         installCurated()
         return { edit: next, message: rescanSummary(sources) }
       }
@@ -2262,8 +2290,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const { scope, shipped } = scopeOf(number)
       if (scope === 'curated') {
         if (as === 'json') throw new Error('Only your own channels can be exported as a channel file')
-        const shown = canonicalEdit(shipped, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, shippedIds(shipped))
-        const manifest = curatedChannelManifest(number, shown, shippedProgrammes(shipped.id))
+        const shown = canonicalEdit(shipped, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, shippedIds(shipped), poolIdsOf(number))
+        const manifest = curatedChannelManifest(number, shown, shippedProgrammes(shipped.id), originalsOf(number, await loadRegister()))
         const record = overrideRecord({ channelNumber: number, ...shown, savedAt: Date.now() })
         if (as === 'md') {
           downloadText(channelFilename(record, 'md'), manifestText(manifest, record), 'text/markdown')

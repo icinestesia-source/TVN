@@ -410,7 +410,7 @@ describe('information overlay: 3×3 control pad', () => {
       expect(source).toContain('corners={cornerActions(tv)}')
       expect(source).toContain('channels={channelActions(tv)}')
     }
-    expect(guide).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}\s+history=\{history\}\s+corners=\{corners\}\s+channels=\{channels\}\s+\/>/)
+    expect(guide).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}(?:\s+following=\{following\})?\s+history=\{history\}\s+corners=\{corners\}\s+channels=\{channels\}\s+\/>/)
     expect(guide).toContain('const pxPerMinute = usePxPerMinute() * tv.guideZoom')
     expect(provider).toContain('const [guideZoom, setGuideZoomState] = useState(1)')
   })

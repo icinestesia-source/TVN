@@ -196,8 +196,8 @@ export function InfoActions({
         type="button"
         className="info-square info-pad-side"
         disabled={!onPrev}
-        title={following ? 'Previous item in the Guide' : 'Previous programme'}
-        aria-label={following ? 'Previous item in the Guide' : 'Previous programme'}
+        title={guideSteps ? 'Previous item in the Guide' : 'Previous programme'}
+        aria-label={guideSteps ? 'Previous item in the Guide' : 'Previous programme'}
         onKeyDown={keepKey}
         onClick={onPrev}
       >
@@ -217,8 +217,8 @@ export function InfoActions({
         type="button"
         className="info-square info-pad-side"
         disabled={!onNext}
-        title={following ? 'Next item in the Guide' : 'Next programme'}
-        aria-label={following ? 'Next item in the Guide' : 'Next programme'}
+        title={guideSteps ? 'Next item in the Guide' : 'Next programme'}
+        aria-label={guideSteps ? 'Next item in the Guide' : 'Next programme'}
         onKeyDown={keepKey}
         onClick={onNext}
       >

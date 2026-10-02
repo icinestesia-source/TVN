@@ -4,6 +4,7 @@ import { cleanEditorial } from './channel-curation.ts'
 import { cleanName, curatedSource, keptOrder, type ChannelEdit } from './channel-editor.ts'
 import { inOrder, inventoryOf, liveStreamOf, type ChannelSource } from './channel-sources.ts'
 import { channelsFromSources } from './channels-import.ts'
+import { activeOriginals, cleanOriginals, originalChannelSources, type OriginalSource } from './original-sources.ts'
 
 /**
  * A viewer's own curation of 001–999 channels: a local override, one record per channel number, laid over
@@ -98,6 +99,7 @@ export function curatedEditOf(channel: Pick<Channel, 'number' | 'name'>, saved: 
     ...(saved.excluded?.length ? { excluded: [...saved.excluded] } : {}),
     ...(saved.description ? { description: saved.description } : {}),
     ...(saved.editorial ? { editorial: structuredClone(saved.editorial) } : {}),
+    ...(saved.originals?.length ? { originals: structuredClone(saved.originals) } : {}),
   }
 }
 
@@ -115,24 +117,33 @@ function pristine(shipped: Pick<Channel, 'name'>, edit: ChannelEdit): boolean {
     !edit.order &&
     !edit.excluded &&
     !edit.description &&
-    !edit.editorial
+    !edit.editorial &&
+    !edit.originals
   )
 }
 
 /**
  * An override in its canonical shape: the TVN programming source first if missing, each source's filter
  * and mode cleaned, the running order and left-out programmes kept to what exists. When the viewer's own
- * sources carry programmes the order is over those; otherwise it is over TVN's own programmes.
+ * sources carry programmes the order is over those; otherwise it is over TVN's own programmes: the
+ * library programmes of its original sources (`poolIds`, video ids) where it has them, else its listings.
  */
-export function canonicalEdit(shipped: Pick<Channel, 'name'> & { description?: string }, edit: ChannelEdit, programmeIds: readonly string[]): ChannelEdit {
+export function canonicalEdit(
+  shipped: Pick<Channel, 'name'> & { description?: string },
+  edit: ChannelEdit,
+  programmeIds: readonly string[],
+  poolIds: readonly string[] = [],
+): ChannelEdit {
   const sources = (edit.sources.some((source) => source.kind === 'tvn') ? edit.sources : [tvnSource(), ...edit.sources]).map(curatedSource)
   const ownProgrammes = inventoryOf(sources).length > 0
-  const known = new Set(programmeIds)
-  const tvnOrder = !ownProgrammes && edit.order?.length && programmeIds.length ? inOrder(programmeIds.map((id) => ({ id })), edit.order).map((item) => item.id) : undefined
-  const order = ownProgrammes ? keptOrder(sources, edit.order) : tvnOrder?.some((id, index) => id !== programmeIds[index]) ? tvnOrder : undefined
+  const known = new Set([...programmeIds, ...poolIds])
+  const tvnIds = poolIds.length ? poolIds : programmeIds
+  const tvnOrder = !ownProgrammes && edit.order?.length && tvnIds.length ? inOrder(tvnIds.map((id) => ({ id })), edit.order).map((item) => item.id) : undefined
+  const order = ownProgrammes ? keptOrder(sources, edit.order) : tvnOrder?.some((id, index) => id !== tvnIds[index]) ? tvnOrder : undefined
   const excluded = [...new Set(edit.excluded ?? [])].filter((id) => known.has(id))
   const description = cleanDescription(edit.description, shipped.description)
   const editorial = cleanEditorial(edit.editorial)
+  const originals = cleanOriginals(edit.originals)
   return {
     name: cleanName(edit.name, shipped.name),
     sources,
@@ -140,6 +151,7 @@ export function canonicalEdit(shipped: Pick<Channel, 'name'> & { description?: s
     ...(excluded.length ? { excluded } : {}),
     ...(description ? { description } : {}),
     ...(editorial ? { editorial } : {}),
+    ...(originals ? { originals } : {}),
   }
 }
 
@@ -153,10 +165,11 @@ export function saveCuratedEdit(
   now: number,
   store: Store | null = browserStore(),
   programmeIds: readonly string[] = [],
+  poolIds: readonly string[] = [],
 ): CuratedEdit | null {
   const number = shipped.number
   if (number < 1 || number > 999) throw new Error('Only TVN channels 001–999 are kept here')
-  const next = canonicalEdit(shipped, edit, programmeIds)
+  const next = canonicalEdit(shipped, edit, programmeIds, poolIds)
   const all = loadCuratedEdits(store)
   if (pristine(shipped, next)) {
     delete all[String(number)]
@@ -177,21 +190,30 @@ export function clearCuratedEdit(channelNumber: number, store: Store | null = br
 
 /**
  * The shipped channel with the viewer's change laid over it. While TVN programming is the only enabled
- * source the channel keeps its own schedule, unless the viewer has reordered or left out its programmes,
- * when it plays what remains in their order. Once the viewer's own sources carry programmes (or a live
- * stream), or TVN programming is switched off, those sources take over.
+ * source the channel keeps its own schedule, unless the viewer has switched off or filtered one of its
+ * original sources (`originals`: the channel's library sources as TVN ships them now), or reordered or
+ * left out its programmes, when it plays what remains, in their order. Once the viewer's own sources carry
+ * programmes (or a live stream), or TVN programming is switched off, those sources take over.
  */
 export function buildCuratedEdit(
   shipped: Channel,
   edit: CuratedEdit,
   refused: ReadonlySet<string> = new Set(),
   shippedList: readonly Programme[] = [],
+  originals: readonly OriginalSource[] = [],
 ): { channel: Channel; programmes: Programme[] | null } {
   const name = cleanName(edit.name, shipped.name)
   const description = edit.description?.trim() ? edit.description.trim() : shipped.description
   const own = edit.sources.filter((source) => source.kind !== 'tvn')
   const tvnOn = edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
   if (tvnOn && !liveStreamOf(own) && inventoryOf(own).length === 0) {
+    const poolIds = new Set(originals.flatMap((source) => source.videos.map((video) => video.id)))
+    const arranged = (edit.order ?? []).some((id) => poolIds.has(id)) || (edit.excluded ?? []).some((id) => poolIds.has(id))
+    if (activeOriginals(edit.originals, originals).length > 0 || arranged) {
+      const left = new Set(edit.excluded ?? [])
+      const sources = originalChannelSources(originals, edit.originals).map((source) => ({ ...source, videos: (source.videos ?? []).filter((video) => !left.has(video.id)) }))
+      return fromSources(shipped, edit, name, description, sources, refused, true)
+    }
     const left = new Set(edit.excluded ?? [])
     if ((edit.order?.length || left.size) && shippedList.length) {
       const kept = inOrder(shippedList, edit.order).filter((programme) => !left.has(programme.id))
@@ -199,8 +221,22 @@ export function buildCuratedEdit(
     }
     return { channel: { ...shipped, name, description }, programmes: null }
   }
+  return fromSources(shipped, edit, name, description, own, refused)
+}
+
+/** The channel as its sources make it, under its TVN number and category. */
+function fromSources(
+  shipped: Channel,
+  edit: CuratedEdit,
+  name: string,
+  description: string,
+  own: readonly ChannelSource[],
+  refused: ReadonlySet<string>,
+  /** TVN's own sources still carry the channel, so it keeps its own description. */
+  original = false,
+): { channel: Channel; programmes: Programme[] } {
   const built = channelsFromSources(
-    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: own, runningOrder: edit.order }],
+    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: [...own], runningOrder: edit.order }],
     { refused },
   )
   const made = built.channels[0]
@@ -209,7 +245,7 @@ export function buildCuratedEdit(
     channel: {
       ...shipped,
       name,
-      description: edit.description?.trim() ? description : made.description,
+      description: original || edit.description?.trim() ? description : made.description,
       mediaKind: made.mediaKind,
       playbackType: made.playbackType,
       liveSinceMs: made.liveSinceMs,

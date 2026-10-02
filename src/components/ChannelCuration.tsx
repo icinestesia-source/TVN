@@ -99,6 +99,7 @@ export function SourceFilterPanel({
   onApply,
   onRescan,
   onDraft,
+  shipped = false,
 }: {
   source: ChannelSource
   archive?: readonly ImportedVideo[]
@@ -108,6 +109,8 @@ export function SourceFilterPanel({
   onRescan?: (filter: SourceFilter | undefined, mode: SourceMode) => void
   /** The draft while it differs from what the source has, or null once it matches again. */
   onDraft?: (draft: SourceDraft | null) => void
+  /** One of TVN's original sources: a local filter over what TVN ships from it. No mode, nothing fetched. */
+  shipped?: boolean
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftOf(source))
   const set = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }))
@@ -144,30 +147,34 @@ export function SourceFilterPanel({
   return (
     <div className="curation" role="group" aria-labelledby={`${id}-head`}>
       <p className="editor-heading" id={`${id}-head`}>
-        Mode · filter · preview · rescan
+        {shipped ? 'Local filter · preview' : 'Mode · filter · preview · rescan'}
         <span className="curation-state">
-          {SOURCE_MODE_LABELS[sourceModeOf(source)]}
+          {shipped ? 'TVN original' : SOURCE_MODE_LABELS[sourceModeOf(source)]}
           {source.filter ? ' · filter on' : ''}
           {changed ? ' · not applied yet' : ''}
         </span>
       </p>
-      <p className="curation-step">1 · Mode</p>
-      <label className="curation-field is-wide">
-        <span>Source mode</span>
-        <select value={draft.mode} disabled={disabled} onKeyDown={keepKey} onChange={(event) => set({ mode: event.target.value as SourceMode })}>
-          {SOURCE_MODES.map((mode) => (
-            <option key={mode} value={mode}>
-              {SOURCE_MODE_LABELS[mode]}
-            </option>
-          ))}
-        </select>
-        <small>{MODE_NOTES[draft.mode]}</small>
-      </label>
-      <p className="curation-step">2 · Filter</p>
+      {shipped ? null : (
+        <>
+          <p className="curation-step">1 · Mode</p>
+          <label className="curation-field is-wide">
+            <span>Source mode</span>
+            <select value={draft.mode} disabled={disabled} onKeyDown={keepKey} onChange={(event) => set({ mode: event.target.value as SourceMode })}>
+              {SOURCE_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {SOURCE_MODE_LABELS[mode]}
+                </option>
+              ))}
+            </select>
+            <small>{MODE_NOTES[draft.mode]}</small>
+          </label>
+        </>
+      )}
+      <p className="curation-step">{shipped ? '1 · Filter · over TVN’s programmes from this source, in this browser only' : '2 · Filter'}</p>
       <p className="curation-sub">Include</p>
       <div className="curation-grid">
         {field('Title contains any of', 'terms', { placeholder: 'comma separated', wide: true })}
-        {field('From playlists', 'playlists', { placeholder: 'playlist links or ids', wide: true })}
+        {shipped ? null : field('From playlists', 'playlists', { placeholder: 'playlist links or ids', wide: true })}
         {field('Min minutes', 'minMinutes', { inputMode: 'decimal' })}
         {field('Max minutes', 'maxMinutes', { inputMode: 'decimal' })}
         {field('Era from', 'yearFrom', { inputMode: 'numeric', placeholder: 'year' })}
@@ -183,7 +190,7 @@ export function SourceFilterPanel({
         <input type="checkbox" checked={draft.shorts} disabled={disabled} onKeyDown={keepKey} onChange={() => set({ shorts: !draft.shorts })} />
         <span>Shorts</span>
       </label>
-      <p className="curation-step">3 · Preview · from what this source already holds</p>
+      <p className="curation-step">{shipped ? '2 · Preview · from what TVN ships from this source' : '3 · Preview · from what this source already holds'}</p>
       <p className="curation-count" role="status" aria-label="Filter preview">
         <span>Matches {preview.matches}</span>
         <span>Excluded {preview.excluded}</span>
@@ -211,7 +218,7 @@ export function SourceFilterPanel({
           ))}
         </ol>
       ) : null}
-      <p className="curation-step">4 · Rescan · fetches the source again with this mode and filter</p>
+      {shipped ? null : <p className="curation-step">4 · Rescan · fetches the source again with this mode and filter</p>}
       <div className="curation-actions">
         <button type="button" className="tab" disabled={disabled || !changed} onKeyDown={keepKey} onClick={() => onApply(filter, draft.mode)}>
           Apply filter

@@ -642,11 +642,39 @@ span.editor-expand { border-color: transparent; }
 
 .editor-danger .remove-ask { flex: 0 1 auto; text-align: left; }
 
+/* TVN ORIGINAL: the sources behind TVN's own programming, nested under its row; ADDED heads the viewer's own. */
+.editor-originals { grid-column: 1 / -1; padding: 0 0 4px 40px; }
+.editor-originals .editor-sources { gap: 1px; }
+.editor-source.is-original { background: #0e2238; }
+.editor-group-name,
+.editor-group {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.editor-group { margin-top: 6px; padding: 2px 4px; color: var(--muted); }
+.editor-original-name { cursor: default; gap: 10px; }
+.editor-source-provider,
+.editor-video-from {
+  flex: none;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.editor-video-from { max-width: 28%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor-original-details { grid-column: 1 / -1; padding-left: 40px; }
+.editor-original-details .guide-tool-note a { color: var(--ink); overflow-wrap: anywhere; }
+
 @media (max-width: 640px) {
   .guide-info.guide-editor { grid-template-columns: minmax(0, 1fr); }
   .editor-source { grid-template-columns: auto minmax(0, 1fr) auto; }
   .editor-source-status { grid-column: 2; grid-row: 2; padding-left: 26px; white-space: normal; }
   .editor-videos, .editor-videos-empty { padding-left: 8px; }
+  .editor-originals, .editor-original-details { padding-left: 8px; }
+  .editor-video-from { max-width: 34%; }
   .curation { padding-left: 4px; padding-right: 4px; }
   .curation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guide-editor .editor-actions { justify-self: end; max-width: none; margin-top: 6px; flex-wrap: wrap; }

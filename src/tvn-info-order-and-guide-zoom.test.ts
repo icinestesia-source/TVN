@@ -277,7 +277,7 @@ describe('Guide timeline zoom', () => {
     expect(guide).toContain('onFocus={(timeMs) => tv.focusGuide(channel.number, timeMs)}')
     expect(guide).toContain('onActivate={() => tv.activateGuide()}')
     expect(guide).toContain("onTune={() => tv.dispatch({ type: 'tune', channelNumber: channel.number })}")
-    expect(guide).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}\s+history=\{history\}\s+corners=\{corners\}\s+channels=\{channels\}\s+\/>/)
+    expect(guide).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}(?:\s+following=\{following\})?\s+history=\{history\}\s+corners=\{corners\}\s+channels=\{channels\}\s+\/>/)
   })
 })
 

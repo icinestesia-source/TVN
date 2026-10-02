@@ -260,7 +260,8 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
               if (event.data === 0 && loopRef.current && !holdRef.current) {
                 event.target.seekTo(0, true)
                 event.target.playVideo()
-              } else if (event.data === 0) {
+              } else if (event.data === 0 && (actualId(event.target) ?? requestedRef.current) === requestedRef.current) {
+                // An ENDED from a video the player has since been asked to leave is stale.
                 onStatusRef.current('ended')
               }
             },

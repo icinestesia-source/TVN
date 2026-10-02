@@ -12,6 +12,7 @@ import {
 import { sourcesOf, type ChannelEdit } from './channel-editor.ts'
 import { isStreamSource, liveStreamOf, SOURCE_TYPES, youTubeSourceType, type ChannelSource } from './channel-sources.ts'
 import { programmeTypeFor, type StoredSource } from './channels-import.ts'
+import { contributionOf, originalChannelSource, type OriginalOverride, type OriginalSource } from './original-sources.ts'
 
 /**
  * tvn-editorial-manifest-v1: one channel described in two strictly separate halves.
@@ -75,6 +76,36 @@ export interface EditorialManifest {
   editorial: ManifestEditorial
   /** Each scheduled source's rules: configuration, kept apart from both facts and intent. */
   filters: { source: string; label: string; mode: SourceMode; filter: SourceFilter | null }[]
+  /** A 001–999 channel only: where its programming comes from, and what the viewer has changed about that. */
+  provenance?: ManifestProvenance
+}
+
+/** One of the sources TVN ships the channel's programming from, as recorded, with what it gives the channel now. */
+export interface ManifestShippedSource {
+  ref: string
+  name: string
+  provider: string | null
+  url: string | null
+  /** Named in TVN's source register. */
+  registered: boolean
+  /** TVN's programmes from it on this channel. */
+  shipped: number
+  enabled: boolean
+  filtered: boolean
+  /** What it gives the channel as curated: after the viewer's decision, before programmes left out one by one. */
+  programmes: number
+  seconds: number
+  /** Its part of the original sources' running time, 0–1. */
+  share: number
+}
+
+export interface ManifestProvenance {
+  shippedSources: ManifestShippedSource[]
+  /** The viewer's decisions about shipped sources, exactly as kept. */
+  localSourceOverrides: OriginalOverride[]
+  addedSources: { id: string; label: string; sourceType: string; enabled: boolean; programmes: number; seconds: number }[]
+  /** Added sources with programmes carry the channel in place of TVN's own. */
+  tvnReplaced: boolean
 }
 
 const round = (value: number, places = 2) => Math.round(value * 10 ** places) / 10 ** places
@@ -181,19 +212,72 @@ export function userChannelManifest(record: StoredSource): EditorialManifest {
  */
 export function curatedChannelManifest(
   number: number,
-  edit: Pick<ChannelEdit, 'name' | 'sources' | 'order' | 'excluded' | 'editorial'>,
+  edit: Pick<ChannelEdit, 'name' | 'sources' | 'order' | 'excluded' | 'editorial' | 'originals'>,
   shippedList: readonly { id: string; durationSeconds: number; year?: number }[],
+  originals: readonly OriginalSource[] = [],
 ): EditorialManifest {
   const own = edit.sources.filter((source) => source.kind !== 'tvn')
   const record: StoredSource = { id: `tvn-${number}`, name: edit.name, videos: [], channelNumber: number, inLibrary: false, automatic: true, updatedAt: 0, channelSources: edit.sources, runningOrder: edit.order, editorial: edit.editorial }
-  const manifest = { ...userChannelManifest(record), scope: 'central' as const }
+  const base = { ...userChannelManifest(record), scope: 'central' as const }
   const tvnOn = edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
-  if (!tvnOn || liveStreamOf(own) || own.some((source) => source.enabled && eligibleOf(source).length > 0)) return manifest
+  const replaced = Boolean(liveStreamOf(own)) || own.some((source) => source.enabled && eligibleOf(source).length > 0)
+  const manifest = { ...base, provenance: provenanceOf(edit, originals, base.current.sources, replaced) }
+  if (!tvnOn || replaced) return manifest
   const left = new Set(edit.excluded ?? [])
+  if (originals.length > 0) {
+    const seen = new Set<string>()
+    const programmes = originals.flatMap((source) => {
+      const made = originalChannelSource(source, edit.originals?.find((item) => item.ref === source.ref))
+      if (!made.enabled) return []
+      return eligibleOf(made).flatMap((video) => {
+        if (left.has(video.id) || seen.has(video.id)) return []
+        seen.add(video.id)
+        return [{ sourceId: made.id, durationSec: video.durationSec, programmeType: programmeTypeFor(video.durationSec), year: videoYear(video) }]
+      })
+    })
+    const facts = [
+      ...manifest.current.sources,
+      ...originals.map((source) => ({ id: originalChannelSource(source).id, label: source.name, sourceType: 'tvn-original', enabled: edit.originals?.find((item) => item.ref === source.ref)?.enabled ?? true, held: source.videos.length })),
+    ]
+    return { ...manifest, current: currentFacts(programmes, facts) }
+  }
   const programmes = shippedList
     .filter((programme) => !left.has(programme.id))
     .map((programme) => ({ sourceId: 'tvn', durationSec: programme.durationSeconds, programmeType: programmeTypeFor(programme.durationSeconds), year: programme.year ?? null }))
   return { ...manifest, current: currentFacts(programmes, manifest.current.sources) }
+}
+
+function provenanceOf(
+  edit: Pick<ChannelEdit, 'originals'>,
+  originals: readonly OriginalSource[],
+  facts: readonly ManifestSourceFact[],
+  replaced: boolean,
+): ManifestProvenance {
+  const rows = originals.map((source) => {
+    const override = edit.originals?.find((item) => item.ref === source.ref)
+    return { source, override, ...contributionOf(source, override) }
+  })
+  const total = rows.reduce((sum, row) => sum + row.seconds, 0)
+  return {
+    shippedSources: rows.map(({ source, override, programmes, seconds }) => ({
+      ref: source.ref,
+      name: source.name,
+      provider: source.provider,
+      url: source.url ?? null,
+      registered: source.registered,
+      shipped: source.videos.length,
+      enabled: override?.enabled ?? true,
+      filtered: Boolean(override?.filter),
+      programmes,
+      seconds,
+      share: total > 0 ? round(seconds / total, 3) : 0,
+    })),
+    localSourceOverrides: (edit.originals ?? []).map((override) => structuredClone(override)),
+    addedSources: facts
+      .filter((fact) => fact.sourceType !== 'tvn')
+      .map(({ id, label, sourceType, enabled, programmes, seconds }) => ({ id, label, sourceType, enabled, programmes, seconds })),
+    tvnReplaced: replaced,
+  }
 }
 
 function filterLines(filter: SourceFilter | null): string[] {
@@ -214,6 +298,30 @@ function filterLines(filter: SourceFilter | null): string[] {
 
 const or = (text: string | null) => text ?? '(not written)'
 
+function provenanceLines(provenance: ManifestProvenance): string[] {
+  const hm = (seconds: number) => {
+    const minutes = Math.round(seconds / 60)
+    return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m` : `${minutes}m`
+  }
+  const out = ['', '## SHIPPED SOURCES']
+  if (provenance.shippedSources.length === 0) out.push('(none recorded)')
+  for (const source of provenance.shippedSources) {
+    const who = [source.provider, source.url].filter(Boolean).join(' · ')
+    const now = source.enabled ? `${source.programmes} programmes · ${hm(source.seconds)} · ${Math.round(source.share * 100)}%${source.filtered ? ' · filtered' : ''}` : 'disabled'
+    out.push(`- ${source.name}${who ? ` (${who})` : ''} · ${source.shipped} shipped · now ${now}`)
+  }
+  if (provenance.tvnReplaced) out.push('Added sources carry this channel in place of these.')
+  out.push('', '## LOCAL SOURCE OVERRIDES')
+  if (provenance.localSourceOverrides.length === 0) out.push('(none)')
+  for (const override of provenance.localSourceOverrides) {
+    out.push(`- ${override.name || override.ref}: ${override.enabled ? 'enabled' : 'disabled'}${override.filter ? ` · filter: ${filterLines(override.filter).join('; ')}` : ''}`)
+  }
+  out.push('', '## ADDED SOURCES')
+  if (provenance.addedSources.length === 0) out.push('(none)')
+  for (const source of provenance.addedSources) out.push(`- ${source.label} (${source.sourceType}${source.enabled ? '' : ', disabled'}) · ${source.programmes} programmes · ${hm(source.seconds)}`)
+  return out
+}
+
 /**
  * The human-readable channel manifest (Markdown, also readable as plain text). The JSON channel file is
  * authoritative; this is for reading and sharing.
@@ -232,6 +340,7 @@ export function manifestText(manifest: EditorialManifest, record?: StoredSource)
     const held = source.held !== undefined ? ` · ${source.programmes} eligible of ${source.held} held` : ''
     out.push(`- ${source.label} (${source.sourceType}${source.enabled ? '' : ', disabled'})${mode}${held}`)
   }
+  if (manifest.provenance) out.push(...provenanceLines(manifest.provenance))
   out.push('', '## FILTERS')
   if (manifest.filters.length === 0) out.push('(no scheduled sources)')
   for (const entry of manifest.filters) out.push(`- ${entry.label || entry.source} · ${SOURCE_MODE_LABELS[entry.mode]}: ${filterLines(entry.filter).join('; ')}`)

@@ -5,6 +5,7 @@ import { canonicalEdit, shippedBaseline, TVN_SOURCE_ID, type CuratedBaseline, ty
 import { checkEditorial, checkSources, exportSource, type ExportSource } from './user-network-export.ts'
 import { channelSource } from './user-network-restore.ts'
 import type { UploaderOf } from './user-network.ts'
+import { checkOriginals, cleanOriginals, reconcileOriginals, type OriginalOverride, type OriginalSource } from './original-sources.ts'
 
 /**
  * The viewer's 001–999 overrides inside a complete export: only what they changed, never the shipped
@@ -22,6 +23,8 @@ export interface CentralOverride {
   runningOrder?: string[]
   excluded?: string[]
   editorial?: ChannelEditorial
+  /** Decisions about TVN's original sources, by source id: never the sources' programmes themselves. */
+  originals?: OriginalOverride[]
   baseline?: CuratedBaseline
   savedAt: string
 }
@@ -37,6 +40,7 @@ export function buildCentralCuration(edits: readonly CuratedEdit[], uploaderOf: 
     .sort((a, b) => a.channelNumber - b.channelNumber)
     .map((edit): CentralOverride => {
       const editorial = cleanEditorial(edit.editorial)
+      const originals = cleanOriginals(edit.originals)
       return {
         number: edit.channelNumber,
         name: edit.name,
@@ -45,6 +49,7 @@ export function buildCentralCuration(edits: readonly CuratedEdit[], uploaderOf: 
         ...(edit.order?.length ? { runningOrder: [...edit.order] } : {}),
         ...(edit.excluded?.length ? { excluded: [...edit.excluded] } : {}),
         ...(editorial ? { editorial } : {}),
+        ...(originals ? { originals } : {}),
         ...(edit.baseline ? { baseline: { ...edit.baseline } } : {}),
         savedAt: new Date(Number.isFinite(edit.savedAt) ? edit.savedAt : 0).toISOString(),
       }
@@ -54,7 +59,7 @@ export function buildCentralCuration(edits: readonly CuratedEdit[], uploaderOf: 
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const isTextList = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === 'string')
-const OVERRIDE_FIELDS = new Set(['number', 'name', 'description', 'sources', 'runningOrder', 'excluded', 'editorial', 'baseline', 'savedAt'])
+const OVERRIDE_FIELDS = new Set(['number', 'name', 'description', 'sources', 'runningOrder', 'excluded', 'editorial', 'originals', 'baseline', 'savedAt'])
 
 /** The whole section must be valid before any of it is restored. */
 export function checkCentralCuration(value: unknown, at: string, errors: string[]): void {
@@ -85,6 +90,7 @@ export function checkCentralCuration(value: unknown, at: string, errors: string[
     if (item.excluded !== undefined && !isTextList(item.excluded)) errors.push(`${where}.excluded is not a list of programme ids`)
     if (typeof item.savedAt !== 'string' || Number.isNaN(Date.parse(item.savedAt))) errors.push(`${where}.savedAt is not a date`)
     checkEditorial(item.editorial, `${where}.editorial`, errors)
+    checkOriginals(item.originals, `${where}.originals`, errors)
     if (item.baseline !== undefined) {
       const base = item.baseline
       const ok =
@@ -119,6 +125,7 @@ export function overridesFromExport(doc: CentralCuration): CuratedEdit[] {
     ...(override.excluded?.length ? { excluded: [...override.excluded] } : {}),
     ...(override.description ? { description: override.description } : {}),
     ...(override.editorial ? { editorial: structuredClone(override.editorial) } : {}),
+    ...(override.originals?.length ? { originals: structuredClone(override.originals) } : {}),
     ...(override.baseline ? { baseline: { ...override.baseline } } : {}),
     savedAt: Date.parse(override.savedAt),
   }))
@@ -131,12 +138,14 @@ export function overrideRecord(edit: CuratedEdit): StoredSource {
 
 /**
  * One restored override against the TVN it lands in. Whatever still fits is kept; a channel TVN no longer
- * ships, a renamed shipped channel, or programmes that have gone from it are reported, never merged.
+ * ships, a renamed shipped channel, programmes that have gone from it, or an original source it no longer
+ * ships (`originals`: its sources now) are reported, never merged.
  */
 export function reconcileOverride(
   edit: CuratedEdit,
   shipped: Pick<Channel, 'number' | 'name'> & { description?: string } | undefined,
   programmeIds: readonly string[],
+  originals: readonly OriginalSource[] = [],
 ): { edit: CuratedEdit | null; conflicts: string[] } {
   const label = String(edit.channelNumber).padStart(3, '0')
   if (!shipped) return { edit: null, conflicts: [`${label} is no longer in TVN · its curation was not restored`] }
@@ -144,13 +153,16 @@ export function reconcileOverride(
   const was = edit.baseline
   const conflicts: string[] = []
   if (was && was.name !== current.name) conflicts.push(`TVN renamed ${label} from ${was.name} to ${current.name}`)
-  const known = new Set(programmeIds)
+  const poolIds = originals.flatMap((source) => source.videos.map((video) => video.id))
+  const known = new Set([...programmeIds, ...poolIds])
   const ownProgrammes = edit.sources.some((source) => source.kind !== 'tvn' && (source.videos?.length ?? 0) > 0)
   const goneOrder = ownProgrammes ? 0 : (edit.order ?? []).filter((id) => !known.has(id)).length
   const goneExcluded = (edit.excluded ?? []).filter((id) => !known.has(id)).length
   if (goneOrder + goneExcluded > 0) conflicts.push(`${goneOrder + goneExcluded} of ${label}'s arranged programmes are no longer in TVN's channel`)
   else if (was && was.fingerprint !== current.fingerprint) conflicts.push(`TVN has changed ${label}'s programmes since it was curated`)
-  const next = canonicalEdit(shipped, edit, programmeIds)
+  const sources = reconcileOriginals(cleanOriginals(edit.originals), originals, label)
+  conflicts.push(...sources.conflicts)
+  const next = canonicalEdit(shipped, { ...edit, originals: sources.kept }, programmeIds, poolIds)
   return {
     edit: { channelNumber: edit.channelNumber, ...next, savedAt: edit.savedAt, baseline: current, ...(conflicts.length ? { conflicts } : {}) },
     conflicts,

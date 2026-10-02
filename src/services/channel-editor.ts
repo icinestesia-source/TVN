@@ -19,6 +19,7 @@ import {
   type ChannelSource,
 } from './channel-sources.ts'
 import { ADDED_PREFIX } from './user-network.ts'
+import type { OriginalOverride } from './original-sources.ts'
 
 /**
  * The Channel Editor works on one channel at a time. Every function here takes the whole stored User
@@ -38,6 +39,8 @@ export interface ChannelEdit {
   excluded?: string[]
   /** A TVN channel only: what TVN has changed underneath the viewer's curation. Shown, never saved. */
   review?: string[]
+  /** A TVN channel only: the viewer's decisions about TVN's original sources (src/services/original-sources.ts). */
+  originals?: OriginalOverride[]
 }
 
 /** The running order to keep: every enabled programme, the viewer's arrangement first. None while TVN arranges it. */

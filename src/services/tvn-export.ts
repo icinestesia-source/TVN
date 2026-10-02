@@ -8,6 +8,7 @@ import type { StoredSource } from './channels-import.ts'
 import type { CuratedEdit } from './curated-edits.ts'
 import { buildGuidesExport, checkGuides, EMPTY_LIBRARY, type GuideLibrary, type GuidesExport } from './viewing-guides.ts'
 import { curatedChannelManifest, userChannelManifest, type EditorialManifest } from './editorial-manifest.ts'
+import type { OriginalSource } from './original-sources.ts'
 import {
   buildUserNetworkExport,
   secretsIn,
@@ -78,14 +79,16 @@ export interface TvnExportInput {
   /** A curated channel's shipped programmes, for its manifest. */
   shippedOf?: (number: number) => readonly { id: string; durationSeconds: number; year?: number }[]
   guides?: GuideLibrary
+  /** A curated channel's original sources as TVN ships them now, for its manifest's provenance. */
+  originalsOf?: (number: number) => readonly OriginalSource[]
 }
 
-export function buildTvnExport({ stored, users, favourites, settings, now, uploaderOf, curated = [], shippedOf = () => [], guides = EMPTY_LIBRARY }: TvnExportInput): TvnExport {
+export function buildTvnExport({ stored, users, favourites, settings, now, uploaderOf, curated = [], shippedOf = () => [], guides = EMPTY_LIBRARY, originalsOf = () => [] }: TvnExportInput): TvnExport {
   const userNetwork = buildUserNetworkExport(stored, now, uploaderOf, users)
   const central = buildCentralCuration(curated, uploaderOf)
   const numbers = new Set(userNetwork.channels.map((channel) => channel.number))
   const manifests = [
-    ...[...curated].sort((a, b) => a.channelNumber - b.channelNumber).map((edit) => curatedChannelManifest(edit.channelNumber, edit, shippedOf(edit.channelNumber))),
+    ...[...curated].sort((a, b) => a.channelNumber - b.channelNumber).map((edit) => curatedChannelManifest(edit.channelNumber, edit, shippedOf(edit.channelNumber), originalsOf(edit.channelNumber))),
     ...stored
       .filter((record) => record.channelNumber !== null && numbers.has(record.channelNumber) && !record.emptySlot)
       .sort((a, b) => (a.channelNumber ?? 0) - (b.channelNumber ?? 0))

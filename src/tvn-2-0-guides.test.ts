@@ -173,7 +173,7 @@ describe('TVN 2.0 · playing a Guide', () => {
     expect(followingInfo(run(guide, { index: 2 }))).toEqual({ next: null })
     expect(followingInfo(run({ ...guide, loop: true }, { index: 2 }))?.next?.title).toBe(a1.title)
 
-    const pad = (following: boolean) => renderToStaticMarkup(createElement(InfoActions, { channel: first, programme: a1, onPrev: () => {}, onNext: () => {}, ...padProps(), following }))
+    const pad = (following: boolean) => renderToStaticMarkup(createElement(InfoActions, { channel: first, programme: a1, onPrev: () => {}, onNext: () => {}, ...padProps(), following, ...(following ? { guideSteps: { onPrev: () => {}, onNext: () => {} } } : {}) }))
     expect(pad(false)).not.toContain('is-following')
     expect(pad(true)).toMatch(/class="tune-key info-pad-guide is-following"[^>]*aria-label="Guide, TVN is following a Guide"/)
     expect(pad(true)).toContain('aria-label="Next item in the Guide"')
