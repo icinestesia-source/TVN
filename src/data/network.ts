@@ -4,10 +4,10 @@ import { channelIsDefined } from './independent/network.ts'
 import type { MediaKind, ProgrammeType } from '../types/programme.ts'
 import { canonicalByNumber, filterIdForCategory } from './canonical.ts'
 
-/** 000 is reserved as a system position. It is not a broadcast channel. */
+/** 000 is reserved for TVN's own channel (src/tvn/tvn-channel.ts), never a curated or user channel. */
 export const CHANNEL_ZERO_RESERVED = true
 
-/** 1000 is the boundary between the default network and user television. It is not allocated. */
+/** 1000 is reserved for Local Media (the session channel), between the network and user television; never allocated. */
 export const CHANNEL_THOUSAND_RESERVED = true
 
 export interface NetworkArea {
@@ -90,7 +90,7 @@ export function channelMatchesFilter(
   favourites: readonly number[],
 ): boolean {
   if (!channel.enabled) return false
-  if (channel.origin === 'session') return filter === 'all' || (filter === 'favourites' && favourites.includes(channel.number))
+  if (channel.origin === 'session' || channel.origin === 'tvn') return filter === 'all' || (filter === 'favourites' && favourites.includes(channel.number))
   const curated = channel.number < USER_NUMBER_START && channel.origin !== 'user-import' && channel.origin !== 'user-created'
   if (filter === 'dormant') return curated && !isOnAir(channel)
   if (curated && !inNetworkDirectory(channel.number)) return false

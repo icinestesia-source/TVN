@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type RefObject } from 'react'
 import { createLongPress } from '../view/channel-edit.ts'
 import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
+import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
 import { readRestoreFile, type TvnExport } from '../services/tvn-export.ts'
 import type { GuideTool } from '../types/input.ts'
@@ -27,7 +28,7 @@ function viewerMessage(caught: unknown, fallback: string): string {
  * GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself. GUIDE holds
  * the viewer's own viewing Guides; it reads green only while one is being followed. OPTIONS holds the users and every
  * viewer setting.
- * ADD opens the Add Channel row, MEDIA builds channel 000 from local files. New users and channel-list
+ * ADD opens the Add Channel row, MEDIA builds 1000 Local Media from local files. New users and channel-list
  * imports live behind the + tab (after TVN and the users, before FAV).
  */
 export function GuideActions({
@@ -197,7 +198,7 @@ export function AddChannelForm({
   )
 }
 
-/** The Guide footer while MEDIA is open: channel 000 from a folder or files on this device. */
+/** The Guide footer while MEDIA is open: 1000 Local Media from a folder or files on this device. */
 export function SessionImportTools({ onImport }: { onImport: (files: readonly File[]) => Promise<string> }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -240,9 +241,8 @@ export function SessionImportTools({ onImport }: { onImport: (files: readonly Fi
     <footer className="guide-info guide-tool" aria-label="Media">
       <div className="info-main">
         <p className="info-kicker">
-          <span className="info-net">Session</span>
-          <span>{padChannel(0)}</span>
-          <span>Media</span>
+          <span>{padChannel(SESSION_CHANNEL_NUMBER)}</span>
+          <span>Local Media</span>
         </p>
         <p className="guide-tool-note">A temporary channel from video or audio on this device, for this session only. Nothing is uploaded.</p>
         {note ? (

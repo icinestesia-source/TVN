@@ -16,7 +16,7 @@ import { checkUserName, ownerOf, TVN_OWNER, USER_ID } from '../data/user-network
 /**
  * A portable copy of the viewer's User Network (1001+): which channels exist, on which numbers, made
  * from which sources, with the viewer's names, switches and running orders. It is a description to
- * rebuild from, not a backup of the browser: Channel 000 files, playback state, viewing history and
+ * rebuild from, not a backup of the browser: 1000 Local Media files, playback state, viewing history and
  * anything secret are never part of it, and nothing is changed by making one.
  */
 export const USER_NETWORK_FORMAT = 'tvn-user-network-v1'

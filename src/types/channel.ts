@@ -38,8 +38,8 @@ export interface Channel {
   phaseOffsetSeconds: number
   /** Defaults to video. Radio channels are audio. */
   mediaKind?: MediaKind
-  /** default catalogue, imported collection, a future hand-built channel, or the temporary session channel 000. */
-  origin?: 'default' | 'user-import' | 'user-created' | 'session'
+  /** default catalogue, imported collection, a future hand-built channel, the temporary Local Media channel 1000, or 000 TVN. */
+  origin?: 'default' | 'user-import' | 'user-created' | 'session' | 'tvn'
   /** The named user whose User Network tab lists this user channel; none means TVN's. */
   owner?: string
   /** Stable filter id. Display name stays in `category`. */

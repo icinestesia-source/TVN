@@ -54,13 +54,15 @@ describe('a new viewer', () => {
     expect(body).not.toMatch(/readCatalogueTexts|applyBuiltInCatalogues|saveStoredSources/)
   })
 
-  it('keeps the canonical domains with no user channels: 000 session, 001–999 curated, no 1000', () => {
+  it('keeps the canonical domains with no user channels: 000 TVN, 001–999 curated, 1000 session', () => {
     installUserCatalogue([], new Map())
-    expect(channelByNumber(1000)).toBeUndefined()
+    expect(channelByNumber(1000)?.origin).toBe('session')
     expect(channelByNumber(1001)).toBeUndefined()
     expect(channelByNumber(SESSION_CHANNEL_NUMBER)?.origin).toBe('session')
-    expect(adjacentChannel(SESSION_CHANNEL_NUMBER, 1).number).toBe(1)
-    expect(adjacentChannel(1, -1).number).toBe(SESSION_CHANNEL_NUMBER)
+    expect(adjacentChannel(SESSION_CHANNEL_NUMBER, 1).number).toBe(0)
+    expect(adjacentChannel(0, 1).number).toBe(1)
+    expect(adjacentChannel(1, -1).number).toBe(0)
+    expect(adjacentChannel(0, -1).number).toBe(SESSION_CHANNEL_NUMBER)
   })
 })
 

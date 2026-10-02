@@ -3,6 +3,7 @@ import { SURF_LIMIT_MAX, SURF_LIMIT_MIN, type SurfRange } from '../state/surf.ts
 import { TRANSITION_IDS, transitionSettingsErrors, type TransitionId, type TransitionSettings } from '../state/transitions.ts'
 import { CORNERS, SHORTCUT_IDS, type ShortcutAssignment } from '../view/info-shortcuts.ts'
 import { USER_NUMBER_LIMIT } from '../data/network.ts'
+import { tvnChannelSettingsErrors, type TvnChannelSettings } from '../tvn/tvn-channel.ts'
 import { buildCentralCuration, checkCentralCuration, type CentralCuration } from './central-curation.ts'
 import type { StoredSource } from './channels-import.ts'
 import type { CuratedEdit } from './curated-edits.ts'
@@ -29,7 +30,7 @@ import type { UploaderOf } from './user-network.ts'
  * them).
  *
  * Never in it: keys or credentials, caches, the player's state, the refusal cache, Guide rows, a Guide's
- * playback position, startup
+ * playback position, 000 TVN's choices and history, 1000 Local Media and its files, startup
  * state, the last channel watched or any other history. A restore reads the whole file before anything
  * changes; one fault anywhere refuses all of it.
  */
@@ -47,6 +48,8 @@ export interface PortableSettings {
   transition: TransitionId
   /** The transition's look (speed, colour, grain, title card). Files from before it restore the defaults. */
   transitionStyle: TransitionSettings
+  /** 000 TVN's two settings; never its choices or history. Files from before them leave this browser's as they are. */
+  tvnChannel?: TvnChannelSettings
 }
 
 export interface TvnExport {
@@ -105,6 +108,7 @@ export function buildTvnExport({ stored, users, favourites, settings, now, uploa
       infoShortcuts: { ...settings.infoShortcuts },
       surfRange: { ...settings.surfRange },
       transitionStyle: { ...settings.transitionStyle, card: { ...settings.transitionStyle.card } },
+      ...(settings.tvnChannel ? { tvnChannel: { autoNext: settings.tvnChannel.autoNext, includeUser: settings.tvnChannel.includeUser } } : {}),
     },
     central,
     guides: buildGuidesExport(guides),
@@ -167,6 +171,7 @@ function checkSettings(value: unknown, errors: string[]): void {
     errors.push(`${at('transition')} is not ${TRANSITION_IDS.join(' or ')}`)
   }
   if (value.transitionStyle !== undefined) errors.push(...transitionSettingsErrors(value.transitionStyle, at('transitionStyle')))
+  if (value.tvnChannel !== undefined) errors.push(...tvnChannelSettingsErrors(value.tvnChannel, at('tvnChannel')))
 }
 
 export function validateTvnExport(data: unknown): { ok: true; value: TvnExport } | { ok: false; errors: string[] } {

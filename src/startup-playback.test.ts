@@ -160,7 +160,7 @@ describe('programme Prev and Next over the picture', () => {
     const next = stepFrom(channel, at, 1)
     expect(hasPicture(next.programme)).toBe(true)
     expect(next.startMs).toBeGreaterThanOrEqual(card.endMs)
-    expect(read('src/components/NowNextOverlay.tsx')).toContain('onNext={steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}')
+    expect(read('src/components/NowNextOverlay.tsx')).toContain('steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}')
 
     // Next from there, then Prev back over the card, lands on the programme before it.
     selectProgramme(225, next.programme, at, next)

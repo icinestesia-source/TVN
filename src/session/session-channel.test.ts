@@ -28,7 +28,7 @@ import { broadcast, guideSlots } from '../services/broadcast.ts'
 import { channelsFromSources, mergeParsedExports, parseChannelsExport, planImport } from '../services/channels-import.ts'
 import { createStartupRestore } from '../state/startup-channel.ts'
 import { resolveStartupTuning } from '../state/startup.ts'
-import { commitTuned, stepTarget, type Tuned } from '../state/tuning.ts'
+import { commitTuned, type Tuned } from '../state/tuning.ts'
 import {
   buildSessionItems,
   commitImport,
@@ -124,13 +124,13 @@ afterAll(() => {
   installUserCatalogue([], new Map())
 })
 
-describe('channel 000 before import', () => {
-  it('A: 000 exists as the session channel, outside the curated catalogue', () => {
-    expect(channelByNumber(0)).toBe(SESSION_CHANNEL)
-    expect(SESSION_CHANNEL.origin).toBe('session')
-    expect(listChannels()[0]).toBe(SESSION_CHANNEL)
-    expect(channels.some((channel) => channel.number === 0)).toBe(false)
-    expect(channelByNumber(1000)).toBeUndefined()
+describe('1000 Local Media before import', () => {
+  it('A: 1000 exists as the session channel, outside the curated catalogue; 000 is TVN', () => {
+    expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
+    expect(SESSION_CHANNEL).toMatchObject({ number: 1000, id: 'ch-1000', name: 'Local Media', origin: 'session' })
+    expect(listChannels().find((channel) => channel.number > 999)).toBe(SESSION_CHANNEL)
+    expect(channels.some((channel) => channel.number === 0 || channel.number === 1000)).toBe(false)
+    expect(channelByNumber(0)?.origin).toBe('tvn')
     expect(sessionActive()).toBe(false)
   })
 
@@ -139,15 +139,16 @@ describe('channel 000 before import', () => {
     expect(screenFace(SESSION_CHANNEL, programme, 'slate')).toBe('session-empty')
     expect(screenFace(SESSION_CHANNEL, programme, 'playing')).toBe('session-empty')
     const card = renderToStaticMarkup(createElement(SessionCard))
-    expect(card).toContain('000')
+    expect(card).toContain('1000')
+    expect(card).toContain('Local Media')
     expect(card).toContain(SESSION_CARD_COPY.title)
-    expect(card).toContain('SELECT MEDIA IN THE GUIDE, THEN FOLDER OR FILES, TO CREATE A TEMPORARY CHANNEL')
+    expect(card).toContain('SELECT MEDIA IN THE GUIDE, THEN FOLDER OR FILES, TO PLAY MEDIA FROM THIS DEVICE')
     const slots = guideSlots(SESSION_CHANNEL, T0 - 60 * MIN, T0 + 120 * MIN)
     expect(slots.length).toBeGreaterThan(0)
     expect(slots.every((slot) => slot.programme.title === 'Import media')).toBe(true)
   })
 
-  it('C: MEDIA replaces the obsolete guide key text and reaches channel 000 inside the Guide', () => {
+  it('C: MEDIA replaces the obsolete guide key text and reaches 1000 Local Media inside the Guide', () => {
     const guide = readFileSync('src/components/Guide.tsx', 'utf8')
     expect(guide).not.toMatch(/Arrows · Enter · Home · Esc/i)
     expect(guide).not.toContain('guide-help')
@@ -164,15 +165,15 @@ describe('channel 000 before import', () => {
   })
 })
 
-describe('building channel 000', () => {
+describe('building 1000 Local Media', () => {
   it('E: valid media becomes the session channel, on air with a local picture', async () => {
     const files = [file('Alpha.mp4', 'video/mp4'), file('Beta.webm', 'video/webm'), file('Gamma.mkv')]
     const result = await buildSessionItems(files, deps({ 'Alpha.mp4': 1800, 'Beta.webm': 2400, 'Gamma.mkv': 5400 }))
-    expect(commitImport(result, T0)).toBe('CHANNEL 000 · 3 PROGRAMMES')
+    expect(commitImport(result, T0)).toBe('1000 · LOCAL MEDIA · 3 PROGRAMMES')
     expect(sessionActive()).toBe(true)
     expect(new Set(titles())).toEqual(new Set(['Alpha', 'Beta', 'Gamma']))
     const programme = current(T0 + MIN).programme
-    expect(programme.channelId).toBe('ch-000')
+    expect(programme.channelId).toBe('ch-1000')
     expect(screenFace(SESSION_CHANNEL, programme, 'playing')).toBe('picture')
     const command = playbackCommand(programme, 60, null)
     expect(command.localUrl).toMatch(/^blob:test\//)
@@ -202,16 +203,16 @@ describe('building channel 000', () => {
     expect(calls).toBe(7)
   })
 
-  it('G: a new import replaces channel 000 rather than adding to it', async () => {
+  it('G: a new import replaces 1000 Local Media rather than adding to it', async () => {
     commitImport(await buildSessionItems([file('Old One.mp4', 'video/mp4'), file('Old Two.mp4', 'video/mp4')], deps({ 'Old One.mp4': 600, 'Old Two.mp4': 600 })), T0)
     commitImport(await buildSessionItems([file('New.mp4', 'video/mp4')], deps({ 'New.mp4': 900 })), T0 + 5 * MIN)
     expect(titles()).toEqual(['New'])
-    expect(programmesFor('ch-000').map((programme) => programme.title)).toEqual(['New'])
+    expect(programmesFor('ch-1000').map((programme) => programme.title)).toEqual(['New'])
     expect(current(T0 + 5 * MIN).programme.title).toBe('New')
     expect(current(T0 + 5 * MIN).elapsedSeconds).toBe(0)
   })
 
-  it('H: a single file makes a valid channel 000', async () => {
+  it('H: a single file makes a valid 1000 Local Media', async () => {
     commitImport(await buildSessionItems([file('Only Film.mov', 'video/quicktime')], deps({ 'Only Film.mov': 5400 })), T0)
     const snap = sessionBroadcast(T0 + 10 * MIN)
     expect(snap.current.programme.title).toBe('Only Film')
@@ -238,7 +239,7 @@ describe('building channel 000', () => {
     expect(result.items.find((entry) => entry.title === 'Good Two')?.kind).toBe('audio')
     expect(d.made.sort()).toEqual(['blob:test/Broken.mp4', 'blob:test/Good One.mp4', 'blob:test/Good Two.m4a', 'blob:test/Throws.mp4'])
     expect(d.dropped.sort()).toEqual(['blob:test/Broken.mp4', 'blob:test/Throws.mp4'])
-    expect(importSummary(result)).toBe('CHANNEL 000 · 2 PROGRAMMES · 7 SKIPPED')
+    expect(importSummary(result)).toBe('1000 · LOCAL MEDIA · 2 PROGRAMMES · 7 SKIPPED')
   })
 
   it('J: NaN, Infinity, zero, negative and sub-second durations never reach the schedule', async () => {
@@ -262,7 +263,7 @@ describe('building channel 000', () => {
   })
 })
 
-describe('channel 000 as television', () => {
+describe('1000 Local Media as television', () => {
   it('K: has Now/Next and guide entries in running order', () => {
     replaceSession(shuffleOnce([item('Film A', 30), item('Film B', 45), item('Film C', 20)], identity), T0)
     const snap = sessionBroadcast(T0 + 40 * MIN)
@@ -315,19 +316,20 @@ describe('channel 000 as television', () => {
     expect(slots.some((slot) => slot.startMs < rebasedAt)).toBe(false)
   })
 
-  it('P: guide search finds imported titles on 000, and only while a session exists', () => {
+  it('P: guide search finds imported titles on 1000, and only while a session exists', () => {
     const match = (channel: { origin?: string }, needle: string) => channel.origin === 'session' && searchSession(needle).length > 0
-    expect(searchGuideChannels(listChannels(), 'robocop', match).some((channel) => channel.number === 0)).toBe(false)
+    expect(searchGuideChannels(listChannels(), 'robocop', match).some((channel) => channel.number === 1000)).toBe(false)
     replaceSession([item('Brazil', 140), item('RoboCop (1987)', 102), item('Alien', 117)], T0)
     const found = searchGuideChannels(listChannels(), 'ROBOCOP', match)
-    expect(found.some((channel) => channel.number === 0)).toBe(true)
+    expect(found.some((channel) => channel.number === 1000)).toBe(true)
+    expect(found.some((channel) => channel.number === 0)).toBe(false)
     expect(searchSession('robocop').map((programme) => programme.title)).toEqual(['RoboCop (1987)'])
     const network = searchGuideChannels(listChannels(), 'closedown', match)
     expect(network.map((channel) => channel.number)).toContain(999)
-    expect(network.some((channel) => channel.number === 0)).toBe(false)
+    expect(network.some((channel) => channel.number === 1000)).toBe(false)
   })
 
-  it('Q: choosing a 000 search result is Play Now on that title', () => {
+  it('Q: choosing a 1000 search result is Play Now on that title', () => {
     replaceSession([item('Brazil', 140), item('RoboCop (1987)', 102), item('Alien', 117)], T0)
     const underCursor = current(T0 + 5 * MIN).programme
     const chosen = sessionChoice('robocop', underCursor)!
@@ -341,62 +343,72 @@ describe('channel 000 as television', () => {
   })
 })
 
-describe('tuning around 000', () => {
+describe('tuning around 1000', () => {
   const numbers = () => listChannels().map((channel) => channel.number)
 
-  it('R: typing 000 tunes the session channel', () => {
+  it('R: typing 1000 tunes the session channel; 000 is TVN', () => {
+    expect(tunerStep('1000', numbers())).toBe('commit')
+    expect(tunerStep('100', numbers())).toBe('wait')
+    expect(channelByNumber(Number('1000'))).toBe(SESSION_CHANNEL)
     expect(tunerStep('000', numbers())).toBe('commit')
-    expect(tunerStep('0', numbers())).toBe('wait')
-    expect(channelByNumber(Number('000'))).toBe(SESSION_CHANNEL)
+    expect(channelByNumber(0)?.name).toBe('TVN')
   })
 
-  it('S: 000 then CH+ goes to 001', () => {
+  it('S: 1000 then CH+ goes to the User Network, or round to 000 without one', () => {
     expect(isOnAir(channelByNumber(1)!)).toBe(true)
-    const tuned: Tuned = { channelNumber: 0, previousNumber: null }
-    expect(stepTarget(tuned, null, 1)).toBe(1)
-  })
-
-  it('T: 001 then CH- goes to 000', () => {
-    expect(stepTarget({ channelNumber: 1, previousNumber: null }, null, -1)).toBe(0)
-    expect(adjacentChannel(1, -1)).toBe(SESSION_CHANNEL)
-  })
-
-  it('U: the 999/1001 boundary is unchanged and there is still no 1000', () => {
+    expect(adjacentChannel(1000, 1).number).toBe(0)
     installUserChannels()
     try {
-      expect(channelByNumber(1000)).toBeUndefined()
-      expect(adjacentChannel(999, 1).number).toBe(1001)
-      expect(adjacentChannel(1001, -1).number).toBe(999)
+      expect(adjacentChannel(1000, 1).number).toBe(1001)
     } finally {
       installUserCatalogue([], new Map())
     }
   })
 
-  it('V: Previous works between 000 and ordinary channels', () => {
-    const onSession = commitTuned({ channelNumber: 225, previousNumber: null }, 0)
-    expect(onSession).toEqual({ channelNumber: 0, previousNumber: 225 })
+  it('T: 999 then CH+ goes to 1000; 001 then CH- goes to 000 TVN', () => {
+    expect(adjacentChannel(999, 1)).toBe(SESSION_CHANNEL)
+    expect(adjacentChannel(1, -1).origin).toBe('tvn')
+  })
+
+  it('U: 1001+ keeps its numbers, with 1000 Local Media between 999 and 1001', () => {
+    installUserChannels()
+    try {
+      expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
+      expect(adjacentChannel(999, 1).number).toBe(1000)
+      expect(adjacentChannel(1000, 1).number).toBe(1001)
+      expect(adjacentChannel(1001, -1).number).toBe(1000)
+    } finally {
+      installUserCatalogue([], new Map())
+    }
+  })
+
+  it('V: Previous works between 1000 and ordinary channels', () => {
+    const onSession = commitTuned({ channelNumber: 225, previousNumber: null }, 1000)
+    expect(onSession).toEqual({ channelNumber: 1000, previousNumber: 225 })
     const back = commitTuned(onSession, onSession.previousNumber!)
-    expect(back).toEqual({ channelNumber: 225, previousNumber: 0 })
-    expect(commitTuned(back, back.previousNumber!)).toEqual({ channelNumber: 0, previousNumber: 225 })
+    expect(back).toEqual({ channelNumber: 225, previousNumber: 1000 })
+    expect(commitTuned(back, back.previousNumber!)).toEqual({ channelNumber: 1000, previousNumber: 225 })
   })
 
-  it('W: Play Now inside 000 reloads in place and makes no Previous entry', () => {
+  it('W: Play Now inside 1000 reloads in place and makes no Previous entry', () => {
     fourFilms()
-    const watching: Tuned = { channelNumber: 0, previousNumber: 225 }
-    expect(sessionRefresh(0, false, true)).toBe('in-place')
+    const watching: Tuned = { channelNumber: 1000, previousNumber: 225 }
+    expect(sessionRefresh(1000, false, true)).toBe('in-place')
+    expect(sessionRefresh(0, false, true)).toBe('tune')
     rebaseSession(sessionProgrammes()[2].id, T0 + 10 * MIN)
-    expect(commitTuned(watching, 0)).toBe(watching)
+    expect(commitTuned(watching, 1000)).toBe(watching)
     expect(sessionRefresh(225, false, true)).toBe('tune')
-    expect(sessionRefresh(0, true, true)).toBe('tune')
+    expect(sessionRefresh(1000, true, true)).toBe('tune')
   })
 
-  it('X: Random never lands on 000, with or without imported media', () => {
+  it('X: Random never lands on 1000 or 000, with or without imported media', () => {
     replaceSession([item('Private Film', 90)], T0)
     for (let step = 0; step < 1000; step += 1) {
       const picked = randomChannel(225, () => step / 1000)
+      expect(picked?.number).not.toBe(1000)
       expect(picked?.number).not.toBe(0)
     }
-    expect(randomChannel(0, () => 0)?.number).not.toBe(0)
+    expect(randomChannel(1000, () => 0)?.number).not.toBe(1000)
   })
 })
 
@@ -412,7 +424,7 @@ describe('isolation and privacy', () => {
         expect(position.programme.title, `${channel.number}`).not.toContain('Secret Home Movie')
         expect(position.programme.sourceRef ?? '', `${channel.number}`).not.toContain('local:session')
       }
-      expect(programmesFor(channel.id).some((programme) => programme.channelId === 'ch-000')).toBe(false)
+      expect(programmesFor(channel.id).some((programme) => programme.channelId === 'ch-1000')).toBe(false)
     }
   })
 
@@ -478,14 +490,15 @@ describe('isolation and privacy', () => {
     expect(stage).not.toMatch(/onStatusRef\.current\('error', (error|String\(|event)/)
   })
 
-  it('AD: startup never waits for, or resumes onto, channel 000', () => {
+  it('AD: startup never waits for, or resumes onto, 1000 Local Media', () => {
     expect(sessionActive()).toBe(false)
     expect(readFileSync('src/state/startup.ts', 'utf8')).not.toMatch(/session\/import|replaceSession|sessionActive/)
     const restore = () => createStartupRestore()
-    expect(resolveStartupTuning(restore(), { lastChannelNumber: 0, previousChannelNumber: 225 })).toEqual({ channelNumber: 225, previousNumber: null })
-    expect(resolveStartupTuning(restore(), { lastChannelNumber: 0, previousChannelNumber: null })?.channelNumber).toBe(firstOnAir(listChannels())!.number)
+    expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: 225 })).toEqual({ channelNumber: 225, previousNumber: null })
+    expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: null })?.channelNumber).toBe(firstOnAir(listChannels())!.number)
     expect(firstOnAir(listChannels())!.number).not.toBe(0)
-    expect(resolveStartupTuning(restore(), { lastChannelNumber: 225, previousChannelNumber: 0 })).toEqual({ channelNumber: 225, previousNumber: null })
+    expect(firstOnAir(listChannels())!.number).not.toBe(1000)
+    expect(resolveStartupTuning(restore(), { lastChannelNumber: 225, previousChannelNumber: 1000 })).toEqual({ channelNumber: 225, previousNumber: null })
   })
 
   it('AE: local -> network -> local switches players cleanly, one picture and one sound at a time', async () => {

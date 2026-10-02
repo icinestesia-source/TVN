@@ -42,7 +42,7 @@ describe('Next on the information bar', () => {
     expect(guide).toContain("onNext={followingSlot ? () => tv.dispatch({ type: 'nav', direction: 'right' }) : undefined}")
     const overlay = readFileSync('src/components/NowNextOverlay.tsx', 'utf8')
     expect(overlay).toContain('onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}')
-    expect(overlay).toContain('onNext={steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}')
+    expect(overlay).toContain('steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}')
   })
 
   it('steps along the running order from a picked programme, not from when it was picked', () => {

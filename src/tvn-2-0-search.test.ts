@@ -44,9 +44,10 @@ describe('channel 555: Daft Punk, from @daftpunk', () => {
   it('is defined centrally from the @daftpunk handle, reviewing, with its gaps recorded', () => {
     const definition = central.channels['555']
     expect(definition.name).toBe('Daft Punk')
-    expect(definition.sources.map((source) => [source.input, source.mode])).toEqual([['@daftpunk', 'all']])
+    expect(definition.sources.at(-1)).toMatchObject({ id: 'src_daftpunk', input: '@daftpunk', mode: 'all' })
+    expect(definition.sources.every((source) => source.mode === 'all')).toBe(true)
     expect(definition.editorial.status).toBe('reviewing')
-    expect(String(definition.editorial.gaps)).toMatch(/Da Funk|Around the World/)
+    expect(String(definition.editorial.gaps)).toMatch(/Tron/)
     expect(channelByNumber(555)!.name).toBe('Daft Punk')
   })
 
@@ -55,7 +56,7 @@ describe('channel 555: Daft Punk, from @daftpunk', () => {
     const hours = pool.reduce((sum, item) => sum + (item.durationSeconds ?? 0), 0) / 3600
     console.info(`555: ${pool.length} programmes, ${hours.toFixed(2)} h`)
     expect(pool.length).toBeGreaterThanOrEqual(30)
-    expect(new Set(pool.map((item) => (item as { sourceId?: string }).sourceId))).toEqual(new Set(['src_daftpunk']))
+    expect([...new Set(pool.map((item) => (item as { sourceId?: string }).sourceId))].every((id) => id?.startsWith('src_daftpunk'))).toBe(true)
     expect(pool.every((item) => (item.durationSeconds ?? 0) >= 120)).toBe(true)
     expect(pool.some((item) => /watch now|#shorts/i.test(item.title ?? ''))).toBe(false)
     expect(pool.some((item) => /Television Rules the Nation|Contact|Human After All/i.test(item.title ?? ''))).toBe(true)

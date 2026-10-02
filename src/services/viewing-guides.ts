@@ -70,9 +70,10 @@ export function guideProgramme(programme: Programme | GuideProgramme): GuideProg
 
 /** Why a programme cannot join a Guide, or null when it can. */
 export function cannotAdd(channel: Pick<Channel, 'number' | 'origin'>, programme: Pick<Programme, 'videoId' | 'liveStream' | 'source' | 'durationSeconds' | 'mediaUrl'>): string | null {
-  // Local files (channel 000) last only for the session. YouTube programmes on imported user channels are also
+  // Local files (1000 Local Media) last only for the session. YouTube programmes on imported user channels are also
   // `source: 'imported'`, and those can join.
-  if (channel.origin === 'session' || channel.number === 0) return 'Local files cannot join a Guide'
+  if (channel.origin === 'session') return 'Local files cannot join a Guide'
+  if (channel.origin === 'tvn') return 'TVN chooses as it goes; add the programme from its own channel'
   if (programme.liveStream) return 'A live stream has no end, so it cannot join a Guide'
   if ((!programme.videoId && !programme.mediaUrl) || !(programme.durationSeconds > 0)) return 'Nothing to play there'
   return null

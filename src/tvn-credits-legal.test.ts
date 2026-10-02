@@ -264,14 +264,14 @@ describe('the viewer’s own sources', () => {
   })
 })
 
-describe('Channel 000', () => {
+describe('Channel 1000 Local Media', () => {
   it('states local session media accurately everywhere it appears', () => {
     expect(LOCAL_SESSION_NOTE).toBe('Media selected locally by the viewer. Not uploaded to TVN.')
     const roll = buildRoll({ channels: listChannels(), poolOf, register, stored: [], curated: {} })
-    const at = roll.lines.findIndex((line) => line.kind === 'title' && line.text === 'Channel 000')
-    expect(roll.lines[at + 1]).toEqual({ kind: 'channel', number: 'Local Session Media', name: '' })
+    const at = roll.lines.findIndex((line) => line.kind === 'title' && line.text === 'Channel 1000')
+    expect(roll.lines[at + 1]).toEqual({ kind: 'channel', number: 'Local Media', name: '' })
     expect(roll.lines[at + 2]).toEqual({ kind: 'note', text: LOCAL_SESSION_NOTE })
-    expect(JSON.stringify(LEGAL_SECTIONS.find((section) => section.id === 'channel-000'))).toContain(LOCAL_SESSION_NOTE)
+    expect(JSON.stringify(LEGAL_SECTIONS.find((section) => section.id === 'channel-1000'))).toContain(LOCAL_SESSION_NOTE)
     expect(read('src/session/session-channel.ts')).toContain('object URL')
   })
 })
@@ -351,7 +351,7 @@ describe('first-run notice and legal', () => {
     expect(notice).toContain('hosted and delivered by their providers')
     expect(notice).toContain('claims no ownership')
     expect(notice).toContain('direct video, live streams or radio')
-    expect(notice).toContain('Channel 000')
+    expect(notice).toContain('Channel 1000')
     expect(notice).toContain('CREDITS')
     expect(about).toContain('not all TVN programming comes from YouTube')
     expect(about).toContain('YouTube does not operate, sponsor or endorse TVN')
@@ -364,6 +364,7 @@ describe('first-run notice and legal', () => {
       'youtube',
       'providers',
       'channel-000',
+      'channel-1000',
       'user-network',
       'credits',
       'privacy',

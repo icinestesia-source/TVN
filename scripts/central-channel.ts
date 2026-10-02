@@ -12,6 +12,8 @@ interface CentralSource {
   input: string
   mode?: SourceMode
   filter?: SourceFilter
+  /** A playlist source: the id of a channel source in the same definition that must own it, confirmed from the playlist's own header. */
+  owner?: string
 }
 
 const number = Number(process.argv[2])
@@ -46,15 +48,37 @@ const network = readJson(NETWORK)
 
 type Item = [string, string, number, string, number[], string]
 const items = playable.items as Item[]
+const ownIds = new Set(definition.sources.map((source) => source.id))
 for (const item of items) item[4] = item[4].filter((channel) => channel !== number)
+// The channel's own earlier reads go; anything another channel still carries stays.
+for (let index = items.length - 1; index >= 0; index -= 1) if (items[index][4].length === 0 && ownIds.has(items[index][3])) items.splice(index, 1)
 for (const source of manifest.sources) source.targets = source.targets.filter((target: number) => target !== number)
 
 const byId = new Map(items.map((item) => [item[0], item]))
 const report: string[] = []
+const resolved = new Map<string, Awaited<ReturnType<typeof resolveChannel>>>()
+const read = (source: CentralSource) => resolveChannel(source.input, fetch, { wide: source.mode !== undefined && source.mode !== 'recent' })
+// Owners first, so every playlist can be checked against the channel it claims.
+for (const source of definition.sources) if (!source.owner) resolved.set(source.id, await read(source))
+const seen = new Set<string>()
+let total = 0
 for (const source of definition.sources) {
-  const found = await resolveChannel(source.input, fetch, { wide: source.mode !== undefined && source.mode !== 'recent' })
+  const found = resolved.get(source.id) ?? (await read(source))
+  let ownerChannel = found.channelId
+  if (source.owner) {
+    const owner = resolved.get(source.owner)
+    if (!owner || owner.sourceType !== 'youtube-channel') throw new Error(`${source.id} names ${source.owner}, which is not a channel source here`)
+    if (found.ownerId !== owner.channelId) throw new Error(`${source.id} (${found.title}) is not owned by ${owner.title}; it is not added`)
+    ownerChannel = owner.channelId
+  }
   const kept = eligibleOf({ videos: found.videos, filter: source.filter, mode: source.mode })
+  let fresh = 0
+  let freshSeconds = 0
   for (const video of kept) {
+    if (seen.has(video.id)) continue
+    seen.add(video.id)
+    fresh += 1
+    freshSeconds += video.durationSec
     const existing = byId.get(video.id)
     if (existing) {
       if (!existing[4].includes(number)) existing[4].push(number)
@@ -64,16 +88,18 @@ for (const source of definition.sources) {
     items.push(item)
     byId.set(video.id, item)
   }
-  const channelUrl = `https://www.youtube.com/channel/${found.channelId}`
+  total += freshSeconds
+  const channelUrl = `https://www.youtube.com/channel/${ownerChannel}`
   playable.sources[source.id] = found.title
   register.sources[source.id] = { name: found.title, provider: 'YouTube', channelUrl }
-  const entry = { id: source.id, name: found.title, class: 'CONFIRMED_FREE_YOUTUBE', url: channelUrl, targets: [number], tags: ['music'], excludeTags: [], notes: `Central source for channel ${number}, read from ${source.input} (mode ${source.mode ?? 'recent'}).` }
+  const url = found.sourceType === 'youtube-playlist' ? `https://www.youtube.com/playlist?list=${found.channelId}` : channelUrl
+  const entry = { id: source.id, name: found.title, class: 'CONFIRMED_FREE_YOUTUBE', url, targets: [number], tags: ['music'], excludeTags: [], notes: `Central source for channel ${number}, read from ${source.input} (mode ${source.mode ?? 'recent'}).` }
   const at = manifest.sources.findIndex((item: { id: string }) => item.id === source.id)
   if (at >= 0) manifest.sources[at] = entry
   else manifest.sources.push(entry)
-  const seconds = kept.reduce((sum, video) => sum + video.durationSec, 0)
-  report.push(`${source.input} → ${found.title} (${found.channelId}): ${found.scanned} scanned, ${found.videos.length} playable, ${kept.length} kept, ${(seconds / 3600).toFixed(2)} h`)
+  report.push(`${found.title} (${found.channelId}${source.owner ? `, owned by ${ownerChannel}` : ''}): ${found.pages ?? 1} pages, ${found.scanned} listed, ${found.videos.length} playable, ${kept.length} kept, ${fresh} new, ${(freshSeconds / 3600).toFixed(2)} h`)
 }
+report.push(`Channel ${number}: ${seen.size} programmes, ${(total / 3600).toFixed(2)} h`)
 const route = manifest.routes.find((item: { number: number }) => item.number === number)
 const sourceIds = definition.sources.map((source) => source.id)
 if (route) route.sourceIds = sourceIds

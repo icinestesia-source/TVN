@@ -1,4 +1,4 @@
-import { channelByNumber, programmesFor } from '../data/catalogue.ts'
+import { channelByNumber, listChannels, programmesFor } from '../data/catalogue.ts'
 import { directorBroadcast, directorGuideSlots } from '../director/director.ts'
 import { policyFor } from '../director/policies.ts'
 import { dynamicBroadcast, dynamicGuideSlots } from '../dynamic/broadcast.ts'
@@ -12,6 +12,9 @@ import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import type { GuideSlot, ScheduleSnapshot } from '../types/schedule.ts'
 import { SESSION_CHANNEL_NUMBER, sessionBroadcast, sessionGuideSlots } from '../session/session-channel.ts'
+import { refusedVideos } from './embed-refusals.ts'
+import { isOnAir } from '../network/airing.ts'
+import { setTvnLookup, TVN_CHANNEL_NUMBER, tvnBroadcast, tvnGuideSlots } from '../tvn/tvn-channel.ts'
 
 export function scheduleRequest(channel: Channel, nowMs: number): ScheduleRequest<Programme> {
   return {
@@ -35,12 +38,15 @@ setListingLookup((number, nowMs) => {
   return { name: listed.name, title: snap.current.programme.title, endMs: snap.current.endMs, nextTitle: snap.next.programme.title, nextStartMs: snap.next.startMs }
 })
 
+setTvnLookup({ channels: listChannels, broadcastOf: (channel, nowMs) => broadcast(channel, nowMs), onAir: isOnAir, refused: refusedVideos })
+
 function liveListing(channel: Channel): Programme | null {
   if (!isLiveStreamChannel(channel)) return null
   return programmesFor(channel.id).find((programme) => programme.liveStream) ?? null
 }
 
 export function broadcast(channel: Channel, nowMs = Date.now()): ScheduleSnapshot<Programme> {
+  if (channel.origin === 'tvn' && channel.number === TVN_CHANNEL_NUMBER) return tvnBroadcast(nowMs)
   if (channel.number === SESSION_CHANNEL_NUMBER) return sessionBroadcast(nowMs)
   const live = liveListing(channel)
   if (live) return liveStreamBroadcast(channel, live, nowMs)
@@ -56,6 +62,7 @@ export function broadcast(channel: Channel, nowMs = Date.now()): ScheduleSnapsho
 }
 
 export function guideSlots(channel: Channel, startMs: number, endMs: number): GuideSlot<Programme>[] {
+  if (channel.origin === 'tvn' && channel.number === TVN_CHANNEL_NUMBER) return tvnGuideSlots(startMs, endMs)
   if (channel.number === SESSION_CHANNEL_NUMBER) return sessionGuideSlots(startMs, endMs)
   const live = liveListing(channel)
   if (live) return liveStreamGuideSlots(live, startMs, endMs)

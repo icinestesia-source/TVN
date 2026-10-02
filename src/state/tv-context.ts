@@ -118,6 +118,8 @@ export interface TvContextValue {
   screenAction: () => void
   /** The information bar's Prev (-1) and Next (1) over the picture: that programme, from its start. */
   screenStep: (direction: -1 | 1) => void
+  /** 000 TVN: choose another programme now. */
+  chooseAnotherTvn: () => void
   /** Keeps the information bar up while the pointer is on it. */
   holdInfo: (held: boolean) => void
   /** The Guide being edited and the saved Guides (viewing sequences). */
@@ -148,7 +150,7 @@ export interface TvContextValue {
   focusGuide: (channelNumber: number, timeMs: number) => void
   /**
    * The Guide's select. On air: tune in (or, fromStart, play it from its beginning). Any other playable
-   * programme plays from its beginning without touching the schedule. Channel 000 keeps Play Now.
+   * programme plays from its beginning without touching the schedule. 1000 Local Media keeps Play Now.
    */
   activateGuide: (options?: { fromStart?: boolean }) => void
   extendGuide: (edge: 'start' | 'end') => void
@@ -215,7 +217,7 @@ export interface TvContextValue {
   setSourceOverride: (channelNumber: number, videoId: string | null) => void
   /** Play Now on the session channel: this imported programme starts from the beginning. */
   playSession: (programmeId: string) => void
-  /** Makes channel 000 from these files, replacing it. Resolves with the viewer-facing outcome ('' if superseded). */
+  /** Makes 1000 Local Media from these files, replacing it. Resolves with the viewer-facing outcome ('' if superseded). */
   importSession: (files: readonly File[]) => Promise<string>
 }
 

@@ -1,15 +1,17 @@
 import { USER_NUMBER_START } from '../data/network.ts'
 import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
+import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 
 /**
  * Which Channel Editor a Guide channel opens. The viewer's own 1001+ channels are theirs outright;
  * curated 001–999 channels are edited as a change kept in this browser, over the shipped channel.
- * 000 (the session channel, filled by IMPORT) and 1000 never open it.
+ * 000 TVN opens its own settings ('tvn'); 1000 (Local Media, filled by MEDIA) opens nothing.
  */
-export type EditorScope = 'user' | 'curated'
+export type EditorScope = 'user' | 'curated' | 'tvn'
 
 export function editorScope(channel: { number: number; origin?: string }): EditorScope | null {
   if (channel.number === SESSION_CHANNEL_NUMBER || channel.origin === 'session') return null
+  if (channel.number === TVN_CHANNEL_NUMBER) return channel.origin === 'tvn' ? 'tvn' : null
   if (channel.number >= USER_NUMBER_START) return channel.origin === 'user-import' ? 'user' : null
   if (channel.number >= 1 && channel.number <= 999) return 'curated'
   return null

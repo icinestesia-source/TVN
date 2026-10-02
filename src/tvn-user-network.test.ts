@@ -289,15 +289,15 @@ describe('1053 and 1054 playback', () => {
 })
 
 describe('network domains after the fix', () => {
-  it('keeps 000 session, 001-999 curated, no 1000 and 1001+ user', () => {
+  it('keeps 000 TVN, 001-999 curated, 1000 Local Media and 1001+ user', () => {
     installUserCatalogue(built.channels, built.programmes)
     try {
-      expect(channelByNumber(1000)).toBeUndefined()
+      expect(channelByNumber(1000)?.origin).toBe('session')
       expect(channelByNumber(SESSION_CHANNEL_NUMBER)?.origin).toBe('session')
       expect(built.channels.map((entry) => entry.number)).toEqual(Array.from({ length: built.channels.length }, (_, index) => 1001 + index))
       const curated = listChannels().filter((entry) => entry.number >= 1 && entry.number <= 999)
       expect(curated.every((entry) => entry.origin !== 'user-import' && entry.origin !== 'session')).toBe(true)
-      expect(adjacentChannel(1001, -1).number).toBeLessThanOrEqual(999)
+      expect(adjacentChannel(1001, -1).number).toBe(1000)
       expect(adjacentChannel(1001, -1).number).toBeGreaterThanOrEqual(1)
     } finally {
       installUserCatalogue([], new Map())

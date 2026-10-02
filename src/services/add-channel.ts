@@ -42,3 +42,32 @@ export async function lookUpChannel(link: string, read: typeof fetch = fetch, op
         : 'youtube-playlist'
   return { channelId: body.channelId, sourceType, title: typeof body.title === 'string' && body.title ? body.title : body.channelId, videos }
 }
+
+export const playlistUrl = (id: string) => `https://www.youtube.com/playlist?list=${id}`
+
+/** A playlist a YouTube channel lists; `official` when that channel's own header owns it. */
+export interface PlaylistFound {
+  id: string
+  title: string
+  official: boolean
+  videos: number | null
+}
+
+/** The playlists a channel lists, for a curator to choose from. Nothing is added. */
+export async function lookUpPlaylists(link: string, read: typeof fetch = fetch): Promise<{ title: string; playlists: PlaylistFound[] }> {
+  let response: Response
+  try {
+    response = await read(`${CHANNEL_API}?url=${encodeURIComponent(link.trim())}&mode=playlists`)
+  } catch {
+    throw new Error('TVN could not reach its channel lookup')
+  }
+  const body = (await response.json().catch(() => null)) as { error?: unknown; title?: unknown; playlists?: unknown } | null
+  if (!response.ok || !body || !Array.isArray(body.playlists)) throw new Error(typeof body?.error === 'string' ? body.error : 'No playlists were found')
+  const playlists = body.playlists.flatMap((row) => {
+    const { id, title, official, videos } = (row ?? {}) as Record<string, unknown>
+    return typeof id === 'string' && typeof title === 'string'
+      ? [{ id, title, official: official === true, videos: typeof videos === 'number' ? videos : null }]
+      : []
+  })
+  return { title: typeof body.title === 'string' ? body.title : '', playlists }
+}

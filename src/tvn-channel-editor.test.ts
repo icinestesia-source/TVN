@@ -463,12 +463,14 @@ describe('editing curated 001–999 channels', () => {
     installCuratedEdits(built, programmes)
   }
 
-  it('every curated channel opens the editor; 000 and 1000 never do', () => {
+  it('every curated channel opens the editor; 1000 never does and 000 opens the TVN settings', () => {
     install(network())
     expect(editorScope(channelByNumber(1)!)).toBe('curated')
     expect(editorScope(channelByNumber(42)!)).toBe('curated')
     expect(editorScope(channelByNumber(SESSION_CHANNEL_NUMBER)!)).toBeNull()
     expect(editorScope({ number: 1000, origin: 'user-import' })).toBeNull()
+    expect(editorScope(channelByNumber(0)!)).toBe('tvn')
+    expect(editorScope({ number: 0, origin: 'default' })).toBeNull()
     expect(() => applyChannelEdit(network(), 1, { name: 'Taken over', sources: [] }, 1)).toThrow()
   })
 
@@ -550,7 +552,7 @@ describe('editing curated 001–999 channels', () => {
     const result = await rescanChannel(network(), 1001, editOf(network()[0]), lookups({}).deps, 10)
     install(withEdit(result.all, 1002, (edit) => ({ ...edit, name: 'Renamed' })))
     expect(channelByNumber(SESSION_CHANNEL_NUMBER)).toBe(session)
-    expect(channelByNumber(1000)).toBeUndefined()
+    expect(channelByNumber(1000)?.origin).toBe('session')
     expect(channelByNumber(1)!.origin).not.toBe('user-import')
   })
 })

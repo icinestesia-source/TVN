@@ -122,11 +122,11 @@ describe('Guide terminology: NOW · ADD · MEDIA', () => {
     expect(addSource).toContain("action('Media', tool === 'media', () => onTool('media')")
   })
 
-  it('MEDIA is the old local-media IMPORT, unchanged: channel 000 from Folder or Files', () => {
+  it('MEDIA is the old local-media IMPORT, now 1000 Local Media from Folder or Files', () => {
     expect(guide).toMatch(/tool === 'media' \? \(\s*<SessionImportTools onImport=\{tv\.importSession\} \/>/)
     const footer = renderToStaticMarkup(createElement(SessionImportTools, { onImport: async () => '' }))
     expect(footer).toMatch(/aria-label="Media"/)
-    expect(footer).toMatch(/<span>000<\/span><span>Media<\/span>/)
+    expect(footer).toMatch(/<span>1000<\/span><span>Local Media<\/span>/)
     expect(provider).toMatch(/case 'media':\s+openGuideTool\('media'\)/)
   })
 

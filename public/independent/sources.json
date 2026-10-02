@@ -3458,6 +3458,56 @@
    "name": "Daft Punk",
    "provider": "YouTube",
    "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_videos": {
+   "name": "Daft Punk - Official Videos",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_homework": {
+   "name": "Daft Punk - Homework (Full Album)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_discovery": {
+   "name": "Daft Punk - Discovery (Full Album)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_haa": {
+   "name": "Daft Punk - Human After All (Official Album Playlist)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_haa_remixes": {
+   "name": "Daft Punk - Human After All (Remixes) (Official Audio)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_alive1997": {
+   "name": "Daft Punk - Alive 1997 (Full Album)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_alive2007": {
+   "name": "Daft Punk - Alive 2007 (Full Album)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_daftclub": {
+   "name": "Daft Punk - Daft Club (Official Album Playlist)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_ram": {
+   "name": "Daft Punk - Random Access Memories (10th Anniversary Edition)",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
+  },
+  "src_daftpunk_essentials": {
+   "name": "Daft Punk Essentials",
+   "provider": "YouTube",
+   "channelUrl": "https://www.youtube.com/channel/UC_kRDKYrUlrbtrSiyu5Tflg"
   }
  }
 }

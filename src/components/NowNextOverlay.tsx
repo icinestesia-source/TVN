@@ -22,7 +22,7 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
   const current = snapshot.current
   const next = snapshot.next
   const stream = current.programme.liveStream !== undefined
-  const steps = !stream && channel.origin !== 'session'
+  const steps = !stream && channel.origin !== 'session' && channel.origin !== 'tvn'
   const progress = stream ? 100 : Math.min(100, (current.elapsedSeconds / current.programme.durationSeconds) * 100)
   const credit = demoCredit(current.programme.videoId)
   const editable = editorScope(channel) !== null && tv.multiviewMode === '1'
@@ -60,7 +60,7 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
         channel={channel}
         programme={current.programme}
         onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}
-        onNext={steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}
+        onNext={channel.origin === 'tvn' ? tv.chooseAnotherTvn : steps && hasPicture(stepFrom(channel, now, 1).programme) ? () => tv.screenStep(1) : undefined}
         following={following !== null}
         guideSteps={following ? { onPrev: () => tv.guideStep(-1), onNext: () => tv.guideStep(1) } : undefined}
         history={historyActions(tv)}

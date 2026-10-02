@@ -20,6 +20,20 @@ export interface ResolvedChannel {
   videos: ResolvedVideo[]
   scanned: number
   refused: number
+  /** The channel that owns a playlist, from the playlist's own header; how a curator confirms it is official. */
+  ownerId?: string
+  /** Listing pages read: one for RECENT, more for ARCHIVE and ALL while the list continues. */
+  pages?: number
+}
+
+/** A playlist a channel lists, and whether that channel itself owns it. */
+export interface DiscoveredPlaylist {
+  id: string
+  title: string
+  ownerId: string | null
+  /** Owned by the channel it was discovered on. */
+  official: boolean
+  videos: number | null
 }
 
 export type ChannelInput =
@@ -43,8 +57,12 @@ const VIDEO_ID = /^[0-9A-Za-z_-]{11}$/
 const PLAYLIST_ID = /^(?:PL|OL|UU|FL)[0-9A-Za-z_-]{10,64}$/
 const MIN_SECONDS = 61
 const KEEP = 60
-/** ARCHIVE and ALL keep every embeddable video the page lists (one page; no continuation is followed). */
-const WIDE_KEEP = 200
+/** ARCHIVE and ALL follow the list's own continuation, a bounded number of pages, and keep up to this many embeddable videos. */
+const WIDE_KEEP = 400
+/** Listing pages read (about 100 videos each): RECENT reads the first only. */
+export const PAGE_LIMIT = { recent: 1, wide: 5 } as const
+/** Playlists looked at, and confirmed one by one, when discovering a channel's playlists. */
+const DISCOVER_LIMIT = 30
 const CONCURRENCY = 8
 const HEADERS = {
   'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36',
@@ -178,6 +196,129 @@ export function channelTitleFrom(data: unknown): string | null {
   return title
 }
 
+/** The continuation token a listing ends with, if the list goes on. */
+export function continuationOf(data: unknown): string | null {
+  let token: string | null = null
+  walk(data, (node) => {
+    const command = node.continuationCommand as { token?: unknown } | undefined
+    if (typeof command?.token === 'string') token = command.token
+  })
+  return token
+}
+
+/** The channel named in a playlist's header as its owner. */
+export function playlistOwnerFrom(data: unknown): string | null {
+  let owner: string | null = null
+  walk(data, (node) => {
+    if (owner) return
+    const header = (node.pageHeaderViewModel ?? node.playlistHeaderRenderer) as Record<string, unknown> | undefined
+    if (!header) return
+    walk(header.metadata ?? header.ownerText ?? header, (inner) => {
+      const id = (inner.browseEndpoint as { browseId?: unknown } | undefined)?.browseId
+      if (!owner && typeof id === 'string' && CHANNEL_ID.test(id)) owner = id
+    })
+  })
+  return owner
+}
+
+/** Playlists listed on a channel's Playlists tab, in page order. */
+export function playlistsFromChannelPage(data: unknown): { id: string; title: string; videos: number | null }[] {
+  const found: { id: string; title: string; videos: number | null }[] = []
+  const seen = new Set<string>()
+  walk(data, (node) => {
+    const lockup = node.lockupViewModel as Record<string, unknown> | undefined
+    const grid = node.gridPlaylistRenderer as { playlistId?: unknown; title?: unknown; videoCountText?: unknown } | undefined
+    let id: unknown = null
+    let title = ''
+    let count: number | null = null
+    if (lockup?.contentType === 'LOCKUP_CONTENT_TYPE_PLAYLIST') {
+      id = lockup.contentId
+      title = textOf((lockup.metadata as { lockupMetadataViewModel?: { title?: unknown } } | undefined)?.lockupMetadataViewModel?.title)
+      walk(lockup.contentImage, (inner) => {
+        const badge = inner.thumbnailBadgeViewModel as { text?: unknown } | undefined
+        const match = typeof badge?.text === 'string' ? badge.text.match(/(\d[\d,]*)\s+video/) : null
+        if (match && count === null) count = Number(match[1].replace(/,/g, ''))
+      })
+    } else if (grid) {
+      id = grid.playlistId
+      title = textOf(grid.title)
+      const match = textOf(grid.videoCountText).match(/(\d[\d,]*)/)
+      count = match ? Number(match[1].replace(/,/g, '')) : null
+    }
+    if (typeof id !== 'string' || !PLAYLIST_ID.test(id) || id.startsWith('FL') || seen.has(id) || !title) return
+    seen.add(id)
+    found.push({ id, title, videos: count })
+  })
+  return found
+}
+
+/** The next part of a listing through YouTube's own continuation endpoint, keyless, as the page itself would. */
+async function continued(token: string, clientVersion: string, read: typeof fetch): Promise<unknown> {
+  try {
+    const response = await read('https://www.youtube.com/youtubei/v1/browse?prettyPrint=false', {
+      method: 'POST',
+      headers: { ...HEADERS, 'content-type': 'application/json' },
+      body: JSON.stringify({ context: { client: { clientName: 'WEB', clientVersion, hl: 'en', gl: 'GB' } }, continuation: token }),
+    })
+    return response.ok ? await response.json() : null
+  } catch {
+    return null
+  }
+}
+
+/** A playlist's videos over up to `pages` listing pages, with its title and owner from the first. */
+async function readPlaylist(id: string, read: typeof fetch, pages: number): Promise<{ data: unknown; videos: ResolvedVideo[]; pages: number }> {
+  const html = await page(`https://www.youtube.com/playlist?list=${id}`, read)
+  const data = initialData(html)
+  if (!data) throw new ChannelError(404, 'YouTube has no playlist at that link')
+  const videos = videosFromPlaylistPage(data)
+  const seen = new Set(videos.map((video) => video.id))
+  const version = html.match(/"INNERTUBE_CLIENT_VERSION":"([^"]+)"/)?.[1] ?? '2.20260101.00.00'
+  let token = continuationOf(data)
+  let read_ = 1
+  while (token && read_ < pages) {
+    const next = await continued(token, version, read)
+    if (!next) break
+    read_ += 1
+    for (const video of videosFromPlaylistPage(next)) {
+      if (seen.has(video.id)) continue
+      seen.add(video.id)
+      videos.push(video)
+    }
+    token = continuationOf(next)
+  }
+  return { data, videos, pages: read_ }
+}
+
+/**
+ * The playlists a channel lists, each confirmed against its own header: `official` only where the
+ * channel itself owns it. Nothing is added; the curator chooses.
+ */
+export async function discoverPlaylists(raw: string, read: typeof fetch = fetch): Promise<{ channelId: string; title: string; playlists: DiscoveredPlaylist[] }> {
+  const input = parseChannelInput(raw)
+  if (!input || input.kind === 'playlist') throw new ChannelError(400, 'Discovery starts from a YouTube channel or @handle')
+  const channelId = await channelIdOf(input, read)
+  const html = await page(`https://www.youtube.com/channel/${channelId}/playlists`, read)
+  const data = initialData(html)
+  const title = channelTitleFrom(data) ?? channelId
+  const listed = playlistsFromChannelPage(data).slice(0, DISCOVER_LIMIT)
+  const playlists: DiscoveredPlaylist[] = []
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(4, listed.length) }, async () => {
+      while (next < listed.length) {
+        const item = listed[next++]
+        const ownerId = await page(`https://www.youtube.com/playlist?list=${item.id}`, read)
+          .then((text) => playlistOwnerFrom(initialData(text)))
+          .catch(() => null)
+        playlists.push({ ...item, ownerId, official: ownerId === channelId })
+      }
+    }),
+  )
+  playlists.sort((a, b) => listed.findIndex((item) => item.id === a.id) - listed.findIndex((item) => item.id === b.id))
+  return { channelId, title, playlists }
+}
+
 async function page(url: string, read: typeof fetch): Promise<string> {
   let response: Response
   try {
@@ -204,15 +345,39 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   const keep = options.wide ? WIDE_KEEP : KEEP
   const input = parseChannelInput(raw)
   if (!input) throw new ChannelError(400, 'That is not a YouTube channel or video link')
+  const pages = options.wide ? PAGE_LIMIT.wide : PAGE_LIMIT.recent
   if (input.kind === 'playlist') {
-    const data = initialData(await page(`https://www.youtube.com/playlist?list=${input.id}`, read))
-    if (!data) throw new ChannelError(404, 'YouTube has no playlist at that link')
-    const listed = videosFromPlaylistPage(data).filter((video) => video.durationSec >= MIN_SECONDS)
+    const list = await readPlaylist(input.id, read, pages)
+    const listed = list.videos.filter((video) => video.durationSec >= MIN_SECONDS)
     if (listed.length === 0) throw new ChannelError(404, 'That playlist has no videos TVN can schedule')
     const kept = await embeddableVideos(listed, read, keep)
     if (kept.videos.length === 0) throw new ChannelError(422, 'That playlist does not allow its videos to play outside YouTube')
-    return { channelId: input.id, sourceType: 'youtube-playlist', title: playlistTitleFrom(data) ?? input.id, videos: kept.videos, scanned: listed.length, refused: kept.refused }
+    const ownerId = playlistOwnerFrom(list.data)
+    return {
+      channelId: input.id,
+      sourceType: 'youtube-playlist',
+      title: playlistTitleFrom(list.data) ?? input.id,
+      videos: kept.videos,
+      scanned: listed.length,
+      refused: kept.refused,
+      ...(ownerId ? { ownerId } : {}),
+      pages: list.pages,
+    }
   }
+  const named = await channelNamed(input, read)
+  const channelId = named.channelId
+  // A channel's uploads are its own uploads playlist: RECENT reads its first page, ARCHIVE and ALL read on.
+  const list = await readPlaylist(`UU${channelId.slice(2)}`, read, pages)
+  const title = named.title ?? channelTitleFrom(list.data)
+  const listed = list.videos.filter((video) => video.durationSec >= MIN_SECONDS)
+  if (listed.length === 0) throw new ChannelError(404, 'That channel has no videos TVN can schedule')
+
+  const { videos, refused } = await embeddableVideos(listed, read, keep)
+  if (videos.length === 0) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
+  return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos, scanned: listed.length, refused, pages: list.pages }
+}
+
+async function channelNamed(input: Exclude<ChannelInput, { kind: 'playlist' }>, read: typeof fetch): Promise<{ channelId: string; title: string | null }> {
   let channelId: string | null = input.kind === 'channel' ? input.id : null
   let title: string | null = null
   if (input.kind === 'video') {
@@ -223,15 +388,11 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
     title = channelTitleFrom(initialData(html))
   }
   if (!channelId) throw new ChannelError(404, 'No YouTube channel was found at that link')
+  return { channelId, title }
+}
 
-  const data = initialData(await page(`https://www.youtube.com/playlist?list=UU${channelId.slice(2)}`, read))
-  title = title ?? channelTitleFrom(data)
-  const listed = videosFromPlaylistPage(data).filter((video) => video.durationSec >= MIN_SECONDS)
-  if (listed.length === 0) throw new ChannelError(404, 'That channel has no videos TVN can schedule')
-
-  const { videos, refused } = await embeddableVideos(listed, read, keep)
-  if (videos.length === 0) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
-  return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos, scanned: listed.length, refused }
+async function channelIdOf(input: Exclude<ChannelInput, { kind: 'playlist' }>, read: typeof fetch): Promise<string> {
+  return (await channelNamed(input, read)).channelId
 }
 
 /** The first `keep` listed videos whose publishers allow embedded playback. */
@@ -255,6 +416,7 @@ export async function handleChannelRequest(url: URL, read: typeof fetch = fetch)
   if (!link.trim() || link.length > 500) return { status: 400, body: { error: 'Paste a YouTube channel or video link' } }
   try {
     const mode = url.searchParams.get('mode')
+    if (mode === 'playlists') return { status: 200, body: await discoverPlaylists(link, read) }
     return { status: 200, body: await resolveChannel(link, read, { wide: mode === 'archive' || mode === 'all' }) }
   } catch (error) {
     if (error instanceof ChannelError) return { status: error.status, body: { error: error.message } }

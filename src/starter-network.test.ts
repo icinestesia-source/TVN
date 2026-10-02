@@ -82,7 +82,7 @@ describe('the bundled starter network', () => {
     expect(template).toEqual(pristine)
   })
 
-  it('3–5. leaves 001–999 untouched, 000 session-only and 1000 unused', () => {
+  it('3–5. leaves 001–999 untouched and 1000 session-only', () => {
     const curated = () => listChannels().filter((channel) => channel.number >= 1 && channel.number <= 999).map((channel) => [channel.number, channel.id, channel.name])
     const before = curated()
     const built = channelsFromSources(install().sources)
@@ -90,7 +90,7 @@ describe('the bundled starter network', () => {
     expect(curated()).toEqual(before)
     expect(channelByNumber(SESSION_CHANNEL_NUMBER)?.origin).toBe('session')
     expect(built.channels.some((channel) => channel.number < 1001)).toBe(false)
-    expect(channelByNumber(1000)).toBeUndefined()
+    expect(channelByNumber(1000)?.origin).toBe('session')
     expect(channelByNumber(1001)?.origin).toBe('user-import')
     expect(channelByNumber(1081)?.origin).toBe('user-import')
     expect(channelByNumber(1082)).toBeUndefined()
@@ -288,18 +288,20 @@ describe('1001+ is part of every installation unless the viewer removed it', () 
     expect(startup(store, back.sources).added).toEqual([])
   })
 
-  it('R9–R12. ALL lists 001–999 and 1001+, 1001 tunes, CH+/CH− cross 999→1001, 1000 stays unused', () => {
+  it('R9–R12. ALL lists 001–999 and 1001+, 1001 tunes, CH+/CH− cross 999→1000→1001, 1000 is Local Media', () => {
     showUser(startup(memoryStore({ [STARTER_KEY]: 'skipped' }), []).sources)
     const all = listChannels().filter((channel) => channelMatchesFilter(channel, 'all', []))
     const numbers = all.map((channel) => channel.number)
     expect(numbers.filter((number) => number >= 1001)).toEqual(STARTER)
     expect(numbers.filter((number) => number >= 1 && number <= 999).length).toBeGreaterThan(700)
-    expect(numbers).not.toContain(1000)
+    expect(numbers).toContain(1000)
     expect(channelByNumber(1001)?.origin).toBe('user-import')
-    expect(channelByNumber(1000)).toBeUndefined()
+    expect(channelByNumber(1000)?.origin).toBe('session')
     const lastCurated = listChannels().filter((channel) => channel.enabled && channel.number <= 999).at(-1)!
-    expect(adjacentChannel(lastCurated.number, 1).number).toBe(1001)
-    expect(adjacentChannel(1001, -1).number).toBe(lastCurated.number)
+    expect(adjacentChannel(lastCurated.number, 1).number).toBe(1000)
+    expect(adjacentChannel(1000, 1).number).toBe(1001)
+    expect(adjacentChannel(1001, -1).number).toBe(1000)
+    expect(adjacentChannel(1000, -1).number).toBe(lastCurated.number)
   })
 
   it('R13. repeated reloads and migrations never duplicate a starter channel', () => {

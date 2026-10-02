@@ -96,7 +96,7 @@ function viewerSourceLines(source: ChannelSource): RollLine[] {
 
 /**
  * The whole credit roll, generated from TVN's own records each time it opens: the shipped network by
- * channel, its demonstration pictures, then the viewer's own User Network and Channel 000, kept apart.
+ * channel, its demonstration pictures, then the viewer's own User Network and 1000 Local Media, kept apart.
  * Sources are grouped per channel with their programme counts rather than repeated per programme.
  */
 export function buildRoll(input: RollInput): Roll {
@@ -192,8 +192,8 @@ export function buildRoll(input: RollInput): Roll {
 
   lines.push(
     { kind: 'space' },
-    { kind: 'title', text: 'Channel 000' },
-    { kind: 'channel', number: 'Local Session Media', name: '' },
+    { kind: 'title', text: 'Channel 1000' },
+    { kind: 'channel', number: 'Local Media', name: '' },
     { kind: 'note', text: LOCAL_SESSION_NOTE },
     { kind: 'space' },
     { kind: 'title', text: 'TVN' },

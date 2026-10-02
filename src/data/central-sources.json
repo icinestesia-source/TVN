@@ -5,12 +5,222 @@
       "name": "Daft Punk",
       "sources": [
         {
+          "id": "src_daftpunk_videos",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5WnnfbGVqQTCXjRnZd8hYLY0Cd",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_homework",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5Wnne3Q2AxosemsThywhraJ0su",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_discovery",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5WnndSQEXRz704yQkKwx76GvPV",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_haa",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5Wnne47ib65gVG206M7qp43us-",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_haa_remixes",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5Wnnff2xUcL_8wogQQeWxZeXR9",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_alive1997",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5WnnfONnmRuhGZo5G-p9VKFmAo",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_alive2007",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5WnndV_AXWGXpzUsIw6fN1RQVN",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_daftclub",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5Wnnfe9kE1nHlrkBUe9BDa-BPX",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_ram",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5Wnnfdn9y_rCk9etUGazS1zIqx",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
+          "id": "src_daftpunk_essentials",
+          "input": "https://www.youtube.com/playlist?list=PLSdoVPM5WnneERBKycA1lhN_vPM6IGiAg",
+          "mode": "all",
+          "owner": "src_daftpunk",
+          "filter": {
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
+          }
+        },
+        {
           "id": "src_daftpunk",
           "input": "@daftpunk",
           "mode": "all",
           "filter": {
-            "include": { "minSeconds": 120 },
-            "exclude": { "shorts": true, "terms": ["watch now", "#shorts", "teaser", "trailer"] }
+            "include": {
+              "minSeconds": 120
+            },
+            "exclude": {
+              "shorts": true,
+              "terms": [
+                "watch now",
+                "#shorts",
+                "teaser",
+                "trailer"
+              ]
+            }
           }
         }
       ],
@@ -19,10 +229,15 @@
         "desired": "Their recorded and audiovisual career: official videos, performances, remixes and archive material, not only current uploads.",
         "include": "Official videos, official audio and remixes, visualizers, performances, making-of and archive material.",
         "exclude": "Shorts, short promo fragments, trivial duplicate variants and unrelated material.",
-        "sourceNotes": "@daftpunk (official channel, read through TVN's keyless resolver, mode All).",
-        "gaps": "One read of the official channel reaches 37 uploads, mostly the Human After All and Daft Club era and the Random Access Memories anniversary material. The classic Homework and Discovery videos (Da Funk, Around the World, One More Time) are not in that read; they need a further confirmed source such as an official playlist.",
+        "sourceNotes": "@daftpunk uploads (official channel, mode All, read deeper through the list's own continuation) and ten playlists on the official channel's Playlists tab, each confirmed owned by that channel before adding: Daft Punk - Official Videos, Homework, Discovery, Human After All, Human After All (Remixes), Alive 1997, Alive 2007, Daft Club, Random Access Memories (10th Anniversary Edition) and Daft Punk Essentials. Earlier sources take credit for a video they share.",
+        "gaps": "Not added: the Fortnite tie-in, the Drumless and Memory Tapes variants, The Collaborators and The Making of Infinity Repeating playlists (official, but adjuncts; their videos already arrive through the uploads). Pre-Homework material, the Tron: Legacy score and Interstella 5555 as a whole are not on the official channel in embeddable form. Shorts, teasers and trailers stay filtered out.",
         "eras": "1997–2025",
-        "tags": ["music", "electronic", "french house", "daft punk"],
+        "tags": [
+          "music",
+          "electronic",
+          "french house",
+          "daft punk"
+        ],
         "status": "reviewing"
       }
     }

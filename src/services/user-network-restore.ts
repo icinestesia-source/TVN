@@ -12,7 +12,7 @@ import { storedKindOf, validateUserNetworkExport, type ExportChannel, type Expor
  * User Network (1001+), its named users and which of them owns each channel. Not IMPORT CHANNEL LIST under +,
  * which merges a channel list into one new user and leaves everything else alone.
  * It is a restore, not a merge: the file's channels replace every 1001+ channel in this browser, on the
- * file's own numbers. TVN channels 001–999, Channel 000 and anything kept outside the User Network are
+ * file's own numbers. TVN channels 001–999, 000 TVN, 1000 Local Media and anything kept outside the User Network are
  * left exactly as they are. Nothing is changed until the file has passed validation and the viewer has
  * confirmed; a file that fails is refused whole.
  */
@@ -87,7 +87,7 @@ function recordId(channel: ExportChannel, sources: readonly ChannelSource[], tak
 /**
  * The stored records the file describes, before any YouTube source has been read again: YouTube
  * channels and playlists come back as addresses to resolve, imported lists with their own programmes.
- * Never carries watched marks, playback state, Channel 000 or object URLs, since the file holds none.
+ * Never carries watched marks, playback state, 1000 Local Media or object URLs, since the file holds none.
  */
 export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSource[] {
   const taken = new Set<string>()
@@ -251,7 +251,7 @@ export function restoreUserNetwork(existing: readonly StoredSource[], restored: 
 }
 
 /**
- * Favourites after a restore. Curated and Channel 000 favourites stay. A 1001+ favourite stays on its
+ * Favourites after a restore. Curated, 000 and 1000 favourites stay. A 1001+ favourite stays on its
  * number when the restored network has that number (the viewer is restoring stable numbers); one whose
  * number the restored network does not have is dropped, so a channel added there later never inherits it.
  * Nothing is reseeded.

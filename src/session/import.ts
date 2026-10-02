@@ -150,7 +150,7 @@ export async function buildSessionItems<F extends LocalFile>(files: readonly F[]
 
 /**
  * A finished import becomes the session channel only if it found something to play; an empty or
- * superseded import leaves the current channel 000 exactly as it was. Returns the viewer-facing outcome.
+ * superseded import leaves 1000 Local Media exactly as it was. Returns the viewer-facing outcome.
  */
 export function commitImport(result: ImportResult, nowMs: number): string {
   if (result.cancelled) return ''
@@ -162,7 +162,7 @@ export function commitImport(result: ImportResult, nowMs: number): string {
 export function importSummary(result: Pick<ImportResult, 'items' | 'skipped'>): string {
   if (result.items.length === 0) return 'NO PLAYABLE MEDIA FOUND'
   const count = `${result.items.length} ${result.items.length === 1 ? 'PROGRAMME' : 'PROGRAMMES'}`
-  return result.skipped > 0 ? `CHANNEL 000 · ${count} · ${result.skipped} SKIPPED` : `CHANNEL 000 · ${count}`
+  return result.skipped > 0 ? `1000 · LOCAL MEDIA · ${count} · ${result.skipped} SKIPPED` : `1000 · LOCAL MEDIA · ${count}`
 }
 
 /** Loads only the file's metadata, locally, and always tears the element down. */

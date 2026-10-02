@@ -1,4 +1,5 @@
 import { canonicalByNumber } from '../data/canonical.ts'
+import central from '../data/central-sources.json'
 import { DYNAMIC_CHANNELS, dynamicChannel } from '../dynamic/providers.ts'
 import { excludedChannelName, excludedProgramme } from '../library/exclusions.ts'
 import { FILM_GENRE_SOURCES } from '../library/metadata-channels.ts'
@@ -447,7 +448,6 @@ export const DEDICATED: Readonly<Record<string, readonly number[]>> = {
   src_imagine_dragons: [592],
   src_arctic_monkeys: [592],
   src_mahogany: [558],
-  src_daftpunk: [555],
   src_this_morning: [267],
   src_loose_women: [267],
   src_slowdive: [510],
@@ -761,6 +761,10 @@ export const DEDICATED: Readonly<Record<string, readonly number[]>> = {
   src_trt_world: [],
   src_wion: [],
   src_yahoo_finance: [],
+  // Every source of a centrally defined channel (src/data/central-sources.json) is that channel's own.
+  ...Object.fromEntries(
+    Object.entries(central.channels as Record<string, { sources: { id: string }[] }>).flatMap(([number, channel]) => channel.sources.map((source) => [source.id, [Number(number)]])),
+  ),
 }
 
 const EARTH_REUSE = [

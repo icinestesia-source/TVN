@@ -90,16 +90,16 @@ export function airingReport(): readonly ChannelAiring[] {
 
 export function isOnAir(channel: { number: number; enabled: boolean; origin?: string; customLineup?: boolean }): boolean {
   if (!channel.enabled) return false
-  if (channel.origin === 'session' || channel.customLineup) return true
+  if (channel.origin === 'session' || channel.origin === 'tvn' || channel.customLineup) return true
   if (channel.number >= 1001 || channel.origin === 'user-import' || channel.origin === 'user-created') return true
   if (liveCams(channel.number).length > 0) return channelIsDefined(channel.number)
   if (!ready) return true
   return onAir.has(channel.number)
 }
 
-/** The network's first channel. The session channel is never a starting point. */
+/** The network's first channel. Neither 1000 Local Media nor 000 TVN is a starting point. */
 export function firstOnAir(channels: readonly Channel[]): Channel | undefined {
-  const network = channels.filter((channel) => channel.origin !== 'session')
+  const network = channels.filter((channel) => channel.origin !== 'session' && channel.origin !== 'tvn')
   return network.find((channel) => channel.number < 1001 && isOnAir(channel)) ?? network.find((channel) => isOnAir(channel))
 }
 

@@ -5,7 +5,7 @@ import type { GuideTool } from '../types/input.ts'
 import type { GuideFilter } from '../types/preferences.ts'
 
 /**
- * Where the Guide goes for MEDIA, IMPORT or ADD. MEDIA: channel 000 at the current time, under a filter
+ * Where the Guide goes for MEDIA, IMPORT or ADD. MEDIA: 1000 Local Media at the current time, under a filter
  * that lists it. IMPORT and ADD: the foot of the User Network, keeping the cursor if its channel is still
  * listed. EDIT: the channel asked for (or the cursor's), where the Guide already is.
  */

@@ -6,6 +6,7 @@ import { isOnAir } from '../network/airing.ts'
 import { curatedEditList, curatedProgrammesFor, userChannelList, userProgrammesFor } from './user-overlay.ts'
 import { DEMO_FILMS } from './media.ts'
 import { SESSION_CHANNEL, sessionProgrammes } from '../session/session-channel.ts'
+import { TVN_CHANNEL } from '../tvn/tvn-channel.ts'
 
 interface Seed {
   number: number
@@ -375,13 +376,15 @@ function merged(): NonNullable<typeof listed> {
   const curated = curatedEditList()
   if (listed?.users === users && listed.curated === curated) return listed
   const byNumber = new Map<number, Channel>()
-  byNumber.set(SESSION_CHANNEL.number, SESSION_CHANNEL)
   for (const channel of users) byNumber.set(channel.number, channel)
   for (const channel of channels) byNumber.set(channel.number, channel)
   for (const channel of curated) {
     const shipped = byNumber.get(channel.number)
     if (shipped && shipped.origin === 'default' && shipped.id === channel.id) byNumber.set(channel.number, channel)
   }
+  // The two reserved positions are TVN's own: 000 TVN and 1000 Local Media.
+  byNumber.set(TVN_CHANNEL.number, TVN_CHANNEL)
+  byNumber.set(SESSION_CHANNEL.number, SESSION_CHANNEL)
   listed = { users, curated, list: [...byNumber.values()].sort((left, right) => left.number - right.number), byNumber }
   return listed
 }
@@ -416,14 +419,14 @@ export function channelById(id: string): Channel | undefined {
 
 /**
  * Any other on-air channel, curated or user; the current one only when it is the sole choice.
- * The session channel is private media, so surfing never lands on it.
+ * Local Media is private and 000 TVN already samples the network, so surfing lands on neither.
  */
 export function randomChannel(
   current: number,
   random: () => number = Math.random,
   among: readonly Channel[] = listChannels(),
 ): Channel | undefined {
-  const onAir = among.filter((channel) => channel.enabled && channel.origin !== 'session' && !channel.emptySlot && isOnAir(channel))
+  const onAir = among.filter((channel) => channel.enabled && channel.origin !== 'session' && channel.origin !== 'tvn' && !channel.emptySlot && isOnAir(channel))
   const choices = onAir.length > 1 ? onAir.filter((channel) => channel.number !== current) : onAir
   return choices[Math.floor(random() * choices.length)]
 }

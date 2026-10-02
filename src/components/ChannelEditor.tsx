@@ -26,6 +26,8 @@ import type { EditorScope } from '../view/channel-edit.ts'
 import { EditorialPanel, SourceFilterPanel, StatusPicker } from './ChannelCuration.tsx'
 import { SourceDetails } from './SourceDetails.tsx'
 import { OriginalSources } from './OriginalSources.tsx'
+import { PlaylistDiscovery } from './PlaylistDiscovery.tsx'
+import { playlistUrl } from '../services/add-channel.ts'
 import { withOriginalOverride } from '../services/original-sources.ts'
 import { addedContributions, addedSourceLabels, channelOriginals, contributionsOf, contributionText, originalLineup } from '../view/channel-provenance.ts'
 
@@ -483,6 +485,25 @@ export function ChannelEditor({
                       }}
                       onDraft={(draft) => noteDraft(source.id, draft)}
                       onRescan={(filter, mode) => rescan(edit, new Map([[source.id, { filter, mode }]]))}
+                    />
+                  ) : null}
+                  {open && source.kind === 'youtube' && !source.url.includes('list=') ? (
+                    <PlaylistDiscovery
+                      channelUrl={source.url}
+                      present={new Set(edit.sources.map((item) => item.url))}
+                      disabled={busy !== null}
+                      onAdd={(chosen) => {
+                        let sources = edit.sources
+                        for (const playlist of chosen) {
+                          try {
+                            sources = [...sources, { ...newSource(sources, playlistUrl(playlist.id), 'youtube'), label: playlist.title }]
+                          } catch {
+                            // Already on the channel.
+                          }
+                        }
+                        change({ ...edit, sources })
+                        setNote(`${sources.length - edit.sources.length} PLAYLISTS ADDED · RESCAN TO FETCH THEIR PROGRAMMES`)
+                      }}
                     />
                   ) : null}
                   {open && !isStreamSource(source) ? (

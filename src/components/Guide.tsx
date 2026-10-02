@@ -30,6 +30,7 @@ import type { GuideSlot } from '../types/schedule.ts'
 import type { Programme } from '../types/programme.ts'
 import { useClock } from '../utils/use-clock.ts'
 import { hasPicture, searchSession, SESSION_CHANNEL } from '../session/session-channel.ts'
+import { TvnChannelPanel } from './TvnChannelPanel.tsx'
 import { channelActions, cornerActions, type ChannelActions, type CornerActions } from '../view/info-shortcuts.ts'
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
@@ -687,6 +688,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       ) : null}
       {tool === 'guides' ? (
         <GuidePanel />
+      ) : tool === 'edit' && focusedChannel && editScope === 'tvn' ? (
+        <TvnChannelPanel onChooseAnother={tv.chooseAnotherTvn} onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })} />
       ) : tool === 'edit' && focusedChannel && editScope ? (
         <ChannelEditor
           key={focusedChannel.number}
@@ -1080,7 +1083,6 @@ function SessionMatches({ matches, onPlay }: { matches: readonly Programme[]; on
     <footer className="guide-info guide-matches">
       <div className="info-main">
         <p className="info-kicker">
-          <span className="info-net">Session</span>
           <span>{padChannel(SESSION_CHANNEL.number)}</span>
           <span>{SESSION_CHANNEL.name}</span>
           <span>

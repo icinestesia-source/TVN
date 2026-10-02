@@ -33,8 +33,8 @@ describe('canonical manifest', () => {
     expect(defaults).toHaveLength(999)
     expect(new Set(defaults.map((channel) => channel.number)).size).toBe(999)
     expect(defaults.every((channel) => channel.number >= 1 && channel.number <= 999)).toBe(true)
-    expect(channelByNumber(0)?.origin).toBe('session')
-    expect(channelByNumber(1000)).toBeUndefined()
+    expect(channelByNumber(0)?.origin).toBe('tvn')
+    expect(channelByNumber(1000)?.origin).toBe('session')
     expect(listChannels().filter((channel) => channel.name === 'CNN')).toHaveLength(1)
   })
 })
@@ -200,7 +200,7 @@ describe('guide filters and tuning', () => {
     expect(starred.map((channel) => channel.number).sort((a, b) => a - b)).toEqual([301, 1001])
   })
 
-  it('resolves canonical numbers, keeps 000 for the session channel and refuses 1000', () => {
+  it('resolves canonical numbers, keeps 000 for TVN and 1000 for Local Media', () => {
     expect(channelByNumber(1)?.name).toBe('One')
     expect(channelByNumber(9)?.number).toBe(9)
     expect(channelByNumber(315)?.name).toBe('ESPN')
@@ -209,8 +209,8 @@ describe('guide filters and tuning', () => {
     expect(channelByNumber(920)?.name).toBe('CNN')
     expect(channelByNumber(950)?.name).toBe('Radio One')
     expect(channelByNumber(999)?.name).toBe('Closedown')
-    expect(channelByNumber(0)?.origin).toBe('session')
-    expect(channelByNumber(1000)).toBeUndefined()
+    expect(channelByNumber(0)?.origin).toBe('tvn')
+    expect(channelByNumber(1000)?.origin).toBe('session')
     const numbers = listChannels().map((channel) => channel.number)
     expect(tunerStep('009', numbers)).toBe('commit')
     expect(tunerStep('315', numbers)).toBe('commit')

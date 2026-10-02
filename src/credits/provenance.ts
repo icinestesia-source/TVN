@@ -154,7 +154,7 @@ export function channelSourceUrl(source: ChannelSource): string | undefined {
 }
 
 export function channelLabel(channel: Pick<Channel, 'number' | 'name'>): string {
-  return `${channel.number === 0 ? '000' : String(channel.number).padStart(3, '0')} ${channel.name}`
+  return `${String(channel.number).padStart(3, '0')} ${channel.name}`
 }
 
 /** What is on screen now, attributed from records only. */

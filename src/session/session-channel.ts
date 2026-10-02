@@ -4,18 +4,18 @@ import type { Channel } from '../types/channel.ts'
 import type { MediaKind, Programme } from '../types/programme.ts'
 import type { GuideSlot, ScheduleSnapshot } from '../types/schedule.ts'
 
-export const SESSION_CHANNEL_NUMBER = 0
-const CHANNEL_ID = 'ch-000'
+export const SESSION_CHANNEL_NUMBER = 1000
+const CHANNEL_ID = 'ch-1000'
 const SOURCE_PREFIX = 'local:session-'
 
-/** The reserved session channel. It exists in every session; only its programmes come and go. */
+/** 1000 · Local Media, the reserved session channel. It exists in every session; only its programmes come and go. */
 export const SESSION_CHANNEL: Channel = {
   id: CHANNEL_ID,
   number: SESSION_CHANNEL_NUMBER,
-  name: 'Imported',
-  shortName: 'IMPORTED',
-  description: 'A temporary channel made from media imported in this session.',
-  logo: 'IM',
+  name: 'Local Media',
+  shortName: 'LOCAL MEDIA',
+  description: 'A temporary channel made from media on this device, for this session only.',
+  logo: 'LM',
   color: '#3a3a3a',
   category: 'Imported',
   categoryId: 'imported',
@@ -47,7 +47,7 @@ interface Session {
 const EMPTY: Programme = {
   id: 'session-empty',
   title: 'Import media',
-  description: 'Select Import in the Guide to create a temporary channel.',
+  description: 'Select MEDIA in the Guide, then Folder or Files, to play media from this device.',
   videoId: null,
   durationSeconds: 3600,
   channelId: CHANNEL_ID,
@@ -58,7 +58,7 @@ const EMPTY: Programme = {
   programmeType: 'generated',
   playback: 'generated',
   sourceRef: 'generated:session-empty',
-  caption: 'SELECT IMPORT IN THE GUIDE, THEN FOLDER OR FILES, TO CREATE A TEMPORARY CHANNEL',
+  caption: '1000 · LOCAL MEDIA · SELECT MEDIA IN THE GUIDE, THEN FOLDER OR FILES',
 }
 
 let session: Session | null = null
@@ -212,8 +212,8 @@ export function rebaseSession(programmeId: string, nowMs: number): boolean {
 }
 
 /**
- * After an import or Play Now: already watching 000 in single view, the new running order reloads in
- * place (not a channel change, so Previous stays); from anywhere else it is an ordinary tune to 000.
+ * After an import or Play Now: already watching 1000 in single view, the new running order reloads in
+ * place (not a channel change, so Previous stays); from anywhere else it is an ordinary tune to 1000.
  */
 export function sessionRefresh(current: number, tuning: boolean, single: boolean): 'in-place' | 'tune' {
   return current === SESSION_CHANNEL_NUMBER && !tuning && single ? 'in-place' : 'tune'

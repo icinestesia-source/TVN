@@ -50,7 +50,7 @@ function rejection(record: Partial<DiscoveryRecord> | null | undefined): string 
   if (typeof record.sourceId !== 'string' || record.sourceId.trim().length === 0) return 'missing source'
   if (!Array.isArray(record.eligibleChannels)) return 'eligible channels missing'
   for (const channel of record.eligibleChannels) {
-    if (!Number.isInteger(channel) || channel < 0 || channel > 999) return 'eligible channel outside 000-999'
+    if (!Number.isInteger(channel) || channel < 1 || channel > 999) return 'eligible channel outside 001-999'
   }
   return null
 }

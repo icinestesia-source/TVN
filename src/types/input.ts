@@ -3,7 +3,7 @@ import type { GuideFilter } from './preferences.ts'
 export type NavDirection = 'up' | 'down' | 'left' | 'right'
 
 /**
- * Guide actions that happen inside the Guide: MEDIA at channel 000, IMPORT (a User Network file) and ADD
+ * Guide actions that happen inside the Guide: MEDIA at 1000 Local Media, IMPORT (a User Network file) and ADD
  * at the foot of the User Network, and EDIT, the Channel Editor for one channel (right-click, long-press, or E).
  */
 export type GuideTool = 'media' | 'network' | 'add' | 'edit' | 'users' | 'options' | 'guides'
@@ -37,7 +37,7 @@ export type TvCommand =
   | { type: 'focus-tile'; index: number }
   | { type: 'tune'; channelNumber: number }
   | { type: 'user-channels' }
-  /** U: MEDIA, channel 000 from files on this device. */
+  /** U: MEDIA, 1000 Local Media from files on this device. */
   | { type: 'media' }
   | { type: 'guide-tool'; tool: GuideTool; channelNumber?: number }
   | { type: 'remote' }

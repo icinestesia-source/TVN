@@ -135,6 +135,7 @@ import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
 import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
+import { chooseAnotherTvn, enterTvn, setTvnChannelSettings, tvnChannelSettings, tvnChoice } from '../tvn/tvn-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, type StartupPhase } from './startup.ts'
 
 /** RESTORE and channel-file IMPORT read YouTube sources at their own modes and add TVN's shipped back catalogue to ARCHIVE and ALL. */
@@ -546,6 +547,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const watchingNumber = () => (tuningRef.current ? (pendingNumberRef.current ?? channelRef.current) : channelRef.current)
 
   const passRefused = (target: Channel, nowMs: number): boolean => {
+    // 000 refers to other channels' programmes: a refused one is simply replaced by another choice.
+    if (target.origin === 'tvn') {
+      const shown = onScreen(target, nowMs).current.programme.videoId
+      return !shown || !refusedVideos().has(shown) || chooseAnotherTvn(nowMs)
+    }
     const snap = onScreen(target, nowMs)
     const videoId = snap.current.programme.videoId
     const refused = refusedVideos()
@@ -607,8 +613,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
       setTuningNumber(null)
       return
     }
+    // Coming to 000 chooses, unless its choice is still running; even with auto-next off.
+    const choosing = target.origin === 'tvn' && Date.now() >= (tvnChoice()?.endMs ?? 0)
+    if (target.origin === 'tvn') enterTvn(Date.now())
 
     if (target.number === origin) {
+      if (choosing && playerRef.current && playerReadyRef.current) {
+        loadedKey.current = ''
+        void loadProgramme(target, Date.now())
+      }
       tuningRef.current = false
       pendingOrigin.current = null
       pendingNumberRef.current = null
@@ -718,7 +731,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * MEDIA, IMPORT and ADD open the Guide where they happen: channel 000 for MEDIA, the foot of the User
+   * MEDIA, IMPORT and ADD open the Guide where they happen: 1000 Local Media for MEDIA, the foot of the User
    * Network for IMPORT and ADD. The tool holds until the viewer moves the Guide cursor on.
    */
   const openGuideTool = (kind: GuideTool, channelNumber?: number) => {
@@ -2182,6 +2195,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         surfRange: surfRangeRef.current,
         transition: transitionRef.current.id,
         transitionStyle: transitionRef.current,
+        tvnChannel: tvnChannelSettings(),
       },
       now,
       uploaderOf: uploaderIdFor,
@@ -2298,6 +2312,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       transitionRef.current = asTransitionSettings({ ...settings.transitionStyle, id: settings.transition ?? settings.transitionStyle?.id })
       saveTransitionSettings(transitionRef.current)
       setTransitionState(transitionRef.current)
+      if (settings.tvnChannel !== undefined) setTvnChannelSettings(settings.tvnChannel)
       playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
       return `${restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')}${central}${guides ? ` · ${guides.saved.length} ${guides.saved.length === 1 ? 'GUIDE' : 'GUIDES'}` : ''}`
     },
@@ -2479,9 +2494,26 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
     const here = channelByNumber(channelRef.current)
+    // On 000, Next is another choice; it has no earlier programme of its own to go back to.
+    if (here?.origin === 'tvn') {
+      if (direction === 1) chooseAnotherOnTvn()
+      return
+    }
     if (!here || here.origin === 'session' || onScreen(here, Date.now()).current.programme.liveStream) return
     const target = stepFrom(here, Date.now(), direction)
     if (hasPicture(target.programme)) playFromGuide(here, target.programme, target)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** CHOOSE ANOTHER on 000: a new choice now, played at once when 000 is on screen. */
+  const chooseAnotherOnTvn = useCallback(() => {
+    const now = Date.now()
+    chooseAnotherTvn(now)
+    const here = channelByNumber(channelRef.current)
+    if (here?.origin !== 'tvn' || tuningRef.current || multiviewRef.current !== '1' || !playerRef.current || !playerReadyRef.current) return
+    loadedKey.current = ''
+    void loadProgramme(here, now)
+    showOverlay('info', INFO_MS)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -2677,6 +2709,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       screenEdit,
       screenAction,
       screenStep,
+      chooseAnotherTvn: chooseAnotherOnTvn,
       holdInfo,
       guideLibrary,
       guideRun,
@@ -2794,6 +2827,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       screenEdit,
       screenAction,
       screenStep,
+      chooseAnotherOnTvn,
       holdInfo,
       guideLibrary,
       guideRun,

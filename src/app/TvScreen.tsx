@@ -3,6 +3,7 @@ import { createWheelStepper, swipeStep } from '../input/gestures.ts'
 import { PlayerStage } from '../player/PlayerStage.tsx'
 import { pictureOwner } from '../player/picture.ts'
 import { SessionCard } from '../components/SessionCard.tsx'
+import { TvnChannelPanel } from '../components/TvnChannelPanel.tsx'
 import { screenFace } from './screen-face.ts'
 import { useTv } from '../state/tv-context.ts'
 import { onScreen } from '../player/manual.ts'
@@ -198,6 +199,13 @@ function ScreenEditor() {
   const tv = useTv()
   const scope = editorScope(tv.channel)
   if (!scope || tv.screenEdit !== tv.channel.number) return null
+  if (scope === 'tvn') {
+    return (
+      <div className="info-bar screen-editor">
+        <TvnChannelPanel onChooseAnother={tv.chooseAnotherTvn} onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })} />
+      </div>
+    )
+  }
   return (
     <div className="info-bar screen-editor">
       <ChannelEditor

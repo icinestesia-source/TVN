@@ -13,9 +13,9 @@ export function shownDescription(programme: Programme): string | null {
   return text
 }
 
-/** 1001+ channels carry the TVN brand ahead of their own name; 001–999 need no label, a session is named. */
+/** 1001+ channels carry the TVN brand ahead of their own name; 001–999, 000 TVN and 1000 Local Media need no label. */
 export function networkLabel(channel: Channel): string | null {
-  return channel.origin === 'session' ? 'Session' : channel.number >= 1001 ? 'TVN' : null
+  return channel.origin === 'session' || channel.origin === 'tvn' ? null : channel.number >= 1001 ? 'TVN' : null
 }
 
 /**
@@ -63,6 +63,12 @@ export function ProgrammeInfo({
         <span>{channel.name}</span>
       </p>
       <h2 className="info-title">{programme.title}</h2>
+      {programme.relay ? (
+        <p className="info-relay">
+          On {padChannel(programme.relay.channelNumber)}
+          {programme.relay.channelName ? ` · ${programme.relay.channelName}` : ''} · chosen by TVN
+        </p>
+      ) : null}
       <p className="info-time">
         {/* Gold when the viewer picked it in the Guide: playing, but not what is on air now. */}
         <span className={following ? 'info-kind is-following' : picked ? 'info-kind is-picked' : 'info-kind'}>{kind}</span>

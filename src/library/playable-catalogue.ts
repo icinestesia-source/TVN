@@ -39,7 +39,7 @@ function mediaFromRow(
   publishedAt?: string,
 ): LibraryMedia | null {
   const [videoId, title, durationSeconds, sourceId, rawChannels, origin] = row
-  const channels = [...new Set([...rawChannels, ...routed, ...eras, ...genres])].filter((number) => number >= 0 && number <= 999)
+  const channels = [...new Set([...rawChannels, ...routed, ...eras, ...genres])].filter((number) => number >= 1 && number <= 999)
   if (!videoId || !title || !(durationSeconds > 0) || channels.length === 0) return null
   const sourceName = sources[sourceId] ?? sourceId
   return {

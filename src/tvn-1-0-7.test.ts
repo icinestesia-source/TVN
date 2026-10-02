@@ -223,7 +223,7 @@ describe('information overlay label', () => {
   it('leaves 001–999 channels and sessions exactly as they were', () => {
     expect(networkLabel(channel(225, 'Saturday Cartoons'))).toBeNull()
     expect(kicker(channel(225, 'Saturday Cartoons')).kicker).toBe('<p class="info-kicker"><span>225</span><span>Saturday Cartoons</span>')
-    expect(networkLabel(channel(1001, 'A session', 'session'))).toBe('Session')
+    expect(networkLabel(channel(1000, 'Local Media', 'session'))).toBeNull()
   })
 
   it('keeps the phone layout: same spans and styles, a label no longer than before', () => {

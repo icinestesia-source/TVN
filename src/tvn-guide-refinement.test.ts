@@ -140,7 +140,7 @@ describe('ADD', () => {
   })
 })
 
-describe('MEDIA (channel 000 from local files)', () => {
+describe('MEDIA (1000 Local Media from local files)', () => {
   it('is a visible Guide action, after NOW and ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'media', picked: false, onNow: () => undefined, onTool: () => undefined }))
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
@@ -148,16 +148,16 @@ describe('MEDIA (channel 000 from local files)', () => {
     expect(markup).toMatch(/aria-pressed="true"[^>]*>Media</)
   })
 
-  it('takes the Guide to channel 000 at the current time under a filter that lists it', () => {
+  it('takes the Guide to 1000 Local Media at the current time under a filter that lists it', () => {
     for (const filter of ['retrotv', 'user', 'favourites'] as const) {
       const target = guideToolTarget('media', filter, [], { channelNumber: 12, timeMs: T0 - HOUR }, listChannels(), T0)
       expect(target.filter).toBe('all')
       expect(target.cursor).toEqual({ channelNumber: SESSION_CHANNEL_NUMBER, timeMs: T0 })
     }
-    expect(guideToolTarget('media', 'favourites', [0], { channelNumber: 12, timeMs: T0 }, listChannels(), T0).filter).toBe('favourites')
+    expect(guideToolTarget('media', 'favourites', [1000], { channelNumber: 12, timeMs: T0 }, listChannels(), T0).filter).toBe('favourites')
   })
 
-  it('shows the existing FOLDER / FILES importer inline in the Guide footer, wired to channel 000', () => {
+  it('shows the existing FOLDER / FILES importer inline in the Guide footer, wired to 1000 Local Media', () => {
     const markup = renderToStaticMarkup(createElement(SessionImportTools, { onImport: async () => '' }))
     expect(markup).toMatch(/^<footer class="guide-info guide-tool"/)
     expect(markup).toMatch(/>Files</)
@@ -271,9 +271,9 @@ describe('tuning', () => {
     expect(provider.slice(provider.indexOf("case 'multiview': {"), provider.indexOf("case 'focus-move'"))).toContain('clearManual()')
   })
 
-  it('keeps 000 / 001–999 / 1001+ apart with no channel 1000', () => {
+  it('keeps 000 / 001–999 / 1000 / 1001+ apart', () => {
     const [user] = installUsers(userSource('yt:UCdddddddddddddddddddddd', 'Delta', 1001))
-    expect(channelByNumber(1000)).toBeUndefined()
+    expect(channelByNumber(1000)?.origin).toBe('session')
     expect(channelByNumber(SESSION_CHANNEL_NUMBER)?.origin).toBe('session')
     expect(user.number).toBe(1001)
     const { channel, programme } = curatedWithLaterPicture(T0)

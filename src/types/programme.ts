@@ -96,6 +96,8 @@ export interface Programme {
    * and is played by the browser's own media element rather than YouTube.
    */
   liveStream?: LiveStreamRef
+  /** Shown on 000 TVN: the channel it airs on, which TVN refers to and does not claim. */
+  relay?: { channelNumber: number; channelName: string }
 }
 
 export interface LiveStreamRef {

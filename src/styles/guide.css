@@ -394,6 +394,10 @@ span.editor-expand { border-color: transparent; }
 
 .editor-videos-empty { grid-column: 1 / -1; margin: 2px 0 4px; padding-left: 40px; }
 
+.editor-discover { grid-column: 1 / -1; display: grid; gap: 4px; justify-items: start; margin: 4px 0; padding-left: 40px; }
+.editor-discovered { justify-self: stretch; }
+.editor-discovered .editor-check { min-width: 0; }
+
 .editor-lineup { max-width: 760px; background: #0b1c30; }
 .editor-lineup-pos { min-width: 2.2em; text-align: right; }
 .editor-lineup li.is-on-air .editor-lineup-now { color: var(--gold); }
@@ -672,7 +676,7 @@ span.editor-expand { border-color: transparent; }
   .guide-info.guide-editor { grid-template-columns: minmax(0, 1fr); }
   .editor-source { grid-template-columns: auto minmax(0, 1fr) auto; }
   .editor-source-status { grid-column: 2; grid-row: 2; padding-left: 26px; white-space: normal; }
-  .editor-videos, .editor-videos-empty { padding-left: 8px; }
+  .editor-videos, .editor-videos-empty, .editor-discover { padding-left: 8px; }
   .editor-originals, .editor-original-details { padding-left: 8px; }
   .editor-video-from { max-width: 34%; }
   .curation { padding-left: 4px; padding-right: 4px; }
@@ -1209,6 +1213,18 @@ span.editor-expand { border-color: transparent; }
 }
 
 .info-kind.is-picked { color: var(--gold); }
+
+.info-relay {
+  margin: 2px 0 0;
+  font-family: var(--font-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tvn-channel-panel .tvn-setting { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.tvn-channel-panel .editor-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
 .info-desc {
   align-self: center;

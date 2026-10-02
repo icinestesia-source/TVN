@@ -56,7 +56,7 @@ export const LEGAL_SECTIONS: readonly LegalSection[] = [
     title: 'About TVN',
     paragraphs: [
       ['TVN is an independent television and media interface. It arranges programmes from supported sources into channels with a schedule, a Guide and a remote.'],
-      ['Where a channel is set up for them, TVN presents YouTube programmes through YouTube’s embedded player, direct video, live video streams, radio and other audio streams, media from your own device on Channel 000, and sources you add to your own User Network. YouTube is one of these providers; not all TVN programming comes from YouTube.'],
+      ['Where a channel is set up for them, TVN presents YouTube programmes through YouTube’s embedded player, direct video, live video streams, radio and other audio streams, media from your own device on Channel 1000, and sources you add to your own User Network. YouTube is one of these providers; not all TVN programming comes from YouTube.'],
     ],
   },
   {
@@ -84,8 +84,13 @@ export const LEGAL_SECTIONS: readonly LegalSection[] = [
   },
   {
     id: 'channel-000',
-    title: 'Local media · Channel 000',
-    paragraphs: [[`Local Session Media. ${LOCAL_SESSION_NOTE} It plays from your device for this session only.`]],
+    title: 'TVN · Channel 000',
+    paragraphs: [['Channel 000 is TVN’s own channel. It plays a programme airing elsewhere on TVN, from the channel that carries it, and then chooses another. It copies nothing and learns nothing about you; what it chose is forgotten when you close TVN.']],
+  },
+  {
+    id: 'channel-1000',
+    title: 'Local media · Channel 1000',
+    paragraphs: [[`Local Media. ${LOCAL_SESSION_NOTE} It plays from your device for this session only.`]],
   },
   {
     id: 'user-network',

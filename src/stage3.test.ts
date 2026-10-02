@@ -44,9 +44,10 @@ afterEach(() => {
 })
 
 describe('numbering', () => {
-  it('keeps default channels below 1000 and reserves 000', () => {
+  it('keeps default channels below 1000 and reserves 000 for TVN', () => {
     expect(CHANNEL_ZERO_RESERVED).toBe(true)
-    expect(channelByNumber(0)?.origin).toBe('session')
+    expect(channelByNumber(0)?.origin).toBe('tvn')
+    expect(channelByNumber(1000)?.origin).toBe('session')
     expect(formatChannelNumber(0)).toBe('000')
     expect(channelByNumber(1)?.number).toBeLessThan(1000)
     expect(formatChannelNumber(9)).toBe('009')
