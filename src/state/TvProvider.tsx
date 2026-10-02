@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { channelByNumber, channels, listChannels, randomChannel, shippedChannel } from '../data/catalogue.ts'
-import { channelMatchesFilter, inFavouriteOrder } from '../data/network.ts'
+import { channelByNumber, channels, listChannels, randomChannel, shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
+import { channelMatchesFilter, inFavouriteOrder, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { installCuratedEdits, installUserCatalogue, subscribeCatalogue } from '../data/user-overlay.ts'
 import {
   GUIDE_EXTEND_MS,
@@ -38,6 +38,7 @@ import { PLAYER_LOAD_TIMEOUT_MS } from '../player/picture.ts'
 import {
   channelsFromSources,
   emptySlotRecord,
+  firstEmptySlot,
   migrateLegacyUserNumbers,
   planImport,
   type ParsedExport,
@@ -47,10 +48,23 @@ import { lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, clearUserChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
 import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
-import { manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
+import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
+import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
 import type { ChannelSource } from '../services/channel-sources.ts'
-import { buildCuratedEdit, clearCuratedEdit, curatedEditOf, loadCuratedEdit, loadCuratedEdits, saveCuratedEdit } from '../services/curated-edits.ts'
+import {
+  baselineChanged,
+  buildCuratedEdit,
+  canonicalEdit,
+  clearCuratedEdit,
+  curatedEditOf,
+  loadCuratedEdit,
+  loadCuratedEdits,
+  replaceCuratedEdits,
+  saveCuratedEdit,
+  shippedBaseline,
+  type CuratedEdit,
+} from '../services/curated-edits.ts'
 import { probeStream } from '../player/stream.ts'
 import { isLiveStreamChannel } from '../dynamic/stream.ts'
 import { editorScope } from '../view/channel-edit.ts'
@@ -136,6 +150,8 @@ const STARTUP_RETRY_MS = 4000
 /** Loading shown after director cache, library, shipped network and user network; 100 once tuned. */
 const STARTUP_STEPS = [10, 30, 75, 90] as const
 
+const shippedIds = (shipped: Channel) => shippedProgrammes(shipped.id).map((programme) => programme.id)
+
 /** Lay the viewer's saved changes to curated channels over the shipped ones, in this browser only. */
 function installCurated() {
   const built: Channel[] = []
@@ -143,7 +159,7 @@ function installCurated() {
   for (const edit of Object.values(loadCuratedEdits())) {
     const shipped = shippedChannel(edit.channelNumber)
     if (!shipped) continue
-    const made = buildCuratedEdit(shipped, edit, refusedVideos())
+    const made = buildCuratedEdit(shipped, edit, refusedVideos(), shippedProgrammes(shipped.id))
     built.push(made.channel)
     if (made.programmes) programmes.set(shipped.id, made.programmes)
   }
@@ -1796,6 +1812,24 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
+  /** A new, empty 1001+ channel for Edit Channel to fill: the lowest empty slot, or the next number. */
+  const createEmptyChannel = useCallback(
+    async () => {
+      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      const slot = firstEmptySlot(existing)
+      if (slot?.channelNumber) return slot.channelNumber
+      const taken = existing.flatMap((source) => (source.channelNumber !== null && source.channelNumber >= USER_NUMBER_START ? [source.channelNumber] : []))
+      const number = taken.length ? Math.max(...taken) + 1 : USER_NUMBER_START
+      if (number >= USER_NUMBER_LIMIT) throw new Error('The User Network is full')
+      const owner = usersRef.current.find((user) => userFilter(user.id) === guideFilter)?.id
+      const next = [...existing, { ...emptySlotRecord(number, Date.now()), ...(owner ? { owner } : {}) }]
+      await saveStoredSources(next)
+      installSources(next)
+      return number
+    },
+    [guideFilter, installSources],
+  )
+
   const renameNetworkUser = useCallback(
     (id: string, name: string) => {
       const checked = checkUserName(name, usersRef.current.filter((user) => user.id !== id))
@@ -1857,10 +1891,16 @@ export function TvProvider({ children }: { children: ReactNode }) {
       },
       now,
       uploaderOf: uploaderIdFor,
+      curated: Object.values(loadCuratedEdits()),
+      shippedOf: (number) => {
+        const shipped = shippedChannel(number)
+        return shipped ? shippedProgrammes(shipped.id) : []
+      },
     })
     downloadText(tvnExportFilename(now), serialiseTvnExport(document))
     const count = document.userNetwork.channels.length
-    return `TVN EXPORTED · ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'} · ${document.favourites.length} FAVOURITES · SETTINGS`
+    const curated = document.central?.overrides.length ?? 0
+    return `TVN EXPORTED · ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'} · ${curated} CURATED · ${document.favourites.length} FAVOURITES · SETTINGS`
   }, [])
 
   /** The editor's scope for this channel number, checked again on every action rather than trusted from the view. */
@@ -1898,6 +1938,28 @@ export function TvProvider({ children }: { children: ReactNode }) {
   )
 
   /**
+   * Replace this browser's 001–999 overrides with an export's, already validated. Only the override layer
+   * changes; each override is checked against the channel TVN ships now, and what no longer fits is reported.
+   */
+  const restoreCentralCuration = async (central: CentralCuration): Promise<string> => {
+    const now = Date.now()
+    const read = overridesFromExport(central)
+    const resolved = await resolveRestored(read.map(overrideRecord), restoreDeps, now)
+    const kept: CuratedEdit[] = []
+    const conflicts: string[] = []
+    read.forEach((edit, index) => {
+      const shipped = shippedChannel(edit.channelNumber)
+      const sources = resolved.records[index]?.channelSources ?? edit.sources
+      const result = reconcileOverride({ ...edit, sources }, shipped, shipped ? shippedProgrammes(shipped.id).map((programme) => programme.id) : [])
+      if (result.edit) kept.push(result.edit)
+      conflicts.push(...result.conflicts)
+    })
+    replaceCuratedEdits(kept)
+    installCurated()
+    return ` · ${kept.length} CURATED${conflicts.length ? ` · ${conflicts.length} TO REVIEW` : ''}`
+  }
+
+  /**
    * Restore a complete TVN export the viewer has confirmed. The whole file is checked again first; the User
    * Network is restored next, and only once that has succeeded do Favourites and settings follow.
    */
@@ -1906,6 +1968,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const checked = validateTvnExport(document)
       if (!checked.ok) throw new Error(`Not a complete TVN export · ${checked.errors[0]}`)
       const restored = await importUserNetwork(checked.value.userNetwork)
+      const central = checked.value.central ? await restoreCentralCuration(checked.value.central) : ''
       const { favourites: favouriteNumbers, settings } = checked.value
       setFavourites([...favouriteNumbers])
       if (settings.volume !== undefined) {
@@ -1936,14 +1999,20 @@ export function TvProvider({ children }: { children: ReactNode }) {
       saveTransitionSettings(transitionRef.current)
       setTransitionState(transitionRef.current)
       playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
-      return restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')
+      return `${restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')}${central}`
     },
     [importUserNetwork],
   )
 
   const openChannelEdit = useCallback(async (number: number): Promise<ChannelEdit | null> => {
     const { scope, shipped } = scopeOf(number)
-    if (scope === 'curated') return curatedEditOf(shipped, loadCuratedEdit(number))
+    if (scope === 'curated') {
+      const saved = loadCuratedEdit(number)
+      const edit = curatedEditOf(shipped, saved)
+      const changed = saved && baselineChanged(saved, shippedBaseline(shipped, shippedIds(shipped))) ? ['TVN has changed this channel since you curated it'] : []
+      const review = [...(saved?.conflicts ?? []), ...changed]
+      return review.length ? { ...edit, review } : edit
+    }
     const record = (await loadStoredSources()).find((item) => item.channelNumber === number)
     return record ? editOf(record) : null
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1953,7 +2022,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     async (number: number, edit: ChannelEdit) => {
       const { scope, shipped } = scopeOf(number)
       if (scope === 'curated') {
-        const saved = saveCuratedEdit(shipped, edit, Date.now())
+        const saved = saveCuratedEdit(shipped, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, Date.now(), undefined, shippedIds(shipped))
         installCurated()
         return saved ? 'SAVED · IN THIS BROWSER ONLY' : 'SAVED · AS TVN SHIPS IT'
       }
@@ -1980,7 +2049,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (scope === 'curated') {
         const sources = await rescanSources(edit.sources, deps, now)
         const next = { ...edit, sources }
-        saveCuratedEdit(shipped, next, now)
+        saveCuratedEdit(shipped, next, now, undefined, shippedIds(shipped))
         installCurated()
         return { edit: next, message: rescanSummary(sources) }
       }
@@ -1995,7 +2064,19 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const exportChannelFile = useCallback(
     async (number: number, edit: ChannelEdit, as: ChannelExportKind) => {
-      if (scopeOf(number).scope !== 'user') throw new Error('Only your own channels can be exported')
+      const { scope, shipped } = scopeOf(number)
+      if (scope === 'curated') {
+        if (as === 'json') throw new Error('Only your own channels can be exported as a channel file')
+        const shown = canonicalEdit(shipped, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, shippedIds(shipped))
+        const manifest = curatedChannelManifest(number, shown, shippedProgrammes(shipped.id))
+        const record = overrideRecord({ channelNumber: number, ...shown, savedAt: Date.now() })
+        if (as === 'md') {
+          downloadText(channelFilename(record, 'md'), manifestText(manifest, record), 'text/markdown')
+          return 'READABLE MANIFEST EXPORTED'
+        }
+        downloadText(channelFilename(record, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+        return 'CHANNEL MANIFEST EXPORTED'
+      }
       // What the editor shows, unsaved changes included, on a copy: exporting never saves.
       const shown = applyChannelEdit(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, { ...edit, sources: widenSources(edit.sources, sourceArchive) }, Date.now())
       const record = shown.find((item) => item.channelNumber === number)
@@ -2297,6 +2378,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,
+      createEmptyChannel,
       exportUserNetwork,
       importUserNetwork,
       exportTvn,
@@ -2331,6 +2413,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,
+      createEmptyChannel,
       exportUserNetwork,
       importUserNetwork,
       exportTvn,

@@ -3,8 +3,10 @@ import { SURF_LIMIT_MAX, SURF_LIMIT_MIN, type SurfRange } from '../state/surf.ts
 import { TRANSITION_IDS, transitionSettingsErrors, type TransitionId, type TransitionSettings } from '../state/transitions.ts'
 import { CORNERS, SHORTCUT_IDS, type ShortcutAssignment } from '../view/info-shortcuts.ts'
 import { USER_NUMBER_LIMIT } from '../data/network.ts'
+import { buildCentralCuration, checkCentralCuration, type CentralCuration } from './central-curation.ts'
 import type { StoredSource } from './channels-import.ts'
-import { userChannelManifest, type EditorialManifest } from './editorial-manifest.ts'
+import type { CuratedEdit } from './curated-edits.ts'
+import { curatedChannelManifest, userChannelManifest, type EditorialManifest } from './editorial-manifest.ts'
 import {
   buildUserNetworkExport,
   secretsIn,
@@ -19,8 +21,9 @@ import type { UploaderOf } from './user-network.ts'
  * COMPLETE TVN EXPORT (OPTIONS → Your TVN): everything portable about one viewer's TVN in a single file.
  * The User Network document inside it is the very tvn-user-network-v1 file the specialist export writes
  * (users, channels, owners, sources, playlists, filters, modes, running orders, editorial notes), so either
- * can be read by the other's restore. Beside it: Favourites, the settings that travel between browsers, and
- * each user channel's editorial manifest for reading (a restore ignores those and rebuilds them).
+ * can be read by the other's restore. Beside it: the viewer's 001–999 overrides (central-curation.ts),
+ * Favourites, the settings that travel between browsers, and each curated or user channel's editorial
+ * manifest for reading (a restore ignores those and rebuilds them).
  *
  * Never in it: keys or credentials, caches, the player's state, the refusal cache, Guide rows, startup
  * state, the last channel watched or any other history. A restore reads the whole file before anything
@@ -50,6 +53,11 @@ export interface TvnExport {
   favourites: number[]
   /** Any setting left out is left as it is on restore. */
   settings: Partial<PortableSettings>
+  /**
+   * The viewer's 001–999 overrides, never the shipped catalogue. Absent in files from before them: a
+   * restore then leaves this browser's overrides as they are.
+   */
+  central?: CentralCuration
   /** For reading only. */
   manifests: EditorialManifest[]
 }
@@ -61,15 +69,22 @@ export interface TvnExportInput {
   settings: PortableSettings
   now: Date
   uploaderOf?: UploaderOf
+  curated?: readonly CuratedEdit[]
+  /** A curated channel's shipped programmes, for its manifest. */
+  shippedOf?: (number: number) => readonly { id: string; durationSeconds: number; year?: number }[]
 }
 
-export function buildTvnExport({ stored, users, favourites, settings, now, uploaderOf }: TvnExportInput): TvnExport {
+export function buildTvnExport({ stored, users, favourites, settings, now, uploaderOf, curated = [], shippedOf = () => [] }: TvnExportInput): TvnExport {
   const userNetwork = buildUserNetworkExport(stored, now, uploaderOf, users)
+  const central = buildCentralCuration(curated, uploaderOf)
   const numbers = new Set(userNetwork.channels.map((channel) => channel.number))
-  const manifests = stored
-    .filter((record) => record.channelNumber !== null && numbers.has(record.channelNumber) && !record.emptySlot)
-    .sort((a, b) => (a.channelNumber ?? 0) - (b.channelNumber ?? 0))
-    .map(userChannelManifest)
+  const manifests = [
+    ...[...curated].sort((a, b) => a.channelNumber - b.channelNumber).map((edit) => curatedChannelManifest(edit.channelNumber, edit, shippedOf(edit.channelNumber))),
+    ...stored
+      .filter((record) => record.channelNumber !== null && numbers.has(record.channelNumber) && !record.emptySlot)
+      .sort((a, b) => (a.channelNumber ?? 0) - (b.channelNumber ?? 0))
+      .map(userChannelManifest),
+  ]
   return {
     format: TVN_EXPORT_FORMAT,
     version: TVN_EXPORT_VERSION,
@@ -82,6 +97,7 @@ export function buildTvnExport({ stored, users, favourites, settings, now, uploa
       surfRange: { ...settings.surfRange },
       transitionStyle: { ...settings.transitionStyle, card: { ...settings.transitionStyle.card } },
     },
+    central,
     manifests,
   }
 }
@@ -160,12 +176,13 @@ export function validateTvnExport(data: unknown): { ok: true; value: TvnExport }
     if (new Set(data.favourites).size !== data.favourites.length) errors.push('favourites repeats a channel')
   }
   checkSettings(data.settings, errors)
+  if (data.central !== undefined) checkCentralCuration(data.central, 'central', errors)
   if (data.manifests !== undefined && !Array.isArray(data.manifests)) errors.push('manifests is not a list')
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: data as unknown as TvnExport }
 }
 
 export type TvnExportRead =
-  | { ok: true; value: TvnExport; channels: number; users: number; favourites: number; settings: number }
+  | { ok: true; value: TvnExport; channels: number; users: number; favourites: number; settings: number; overrides: number }
   | { ok: false; errors: string[] }
 
 /** Parse and validate the text of a chosen file. Reads only. */
@@ -202,5 +219,6 @@ function readTvnExportData(data: unknown): TvnExportRead {
     users: userNetwork.users?.length ?? 0,
     favourites: favourites.length,
     settings: Object.keys(settings).length,
+    overrides: checked.value.central?.overrides.length ?? 0,
   }
 }

@@ -335,7 +335,8 @@ export function GuideOptions() {
 
         <Card title="Save & restore">
           <p className="options-note">
-            Everything here is kept in this browser. The complete export saves your users, User Network channels, Favourites and settings;
+            Everything here is kept in this browser. The complete export saves your users, User Network channels, your curation of TVN
+            channels 001–999, Favourites and settings;
             Restore takes it or a User Network file, and asks before replacing anything. Single channels and their manifests are in Edit
             Channel.
           </p>

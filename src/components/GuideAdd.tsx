@@ -367,7 +367,7 @@ export function UserNetworkImportTools({
   const [note, setNote] = useState<string | null>(null)
   const [pending, setPending] = useState<
     | { kind: 'network'; document: UserNetworkExport; channels: number; empty: number; users: number; filename: string }
-    | { kind: 'complete'; document: TvnExport; channels: number; empty: number; users: number; favourites: number; filename: string }
+    | { kind: 'complete'; document: TvnExport; channels: number; empty: number; users: number; favourites: number; overrides: number; filename: string }
     | null
   >(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -393,7 +393,7 @@ export function UserNetworkImportTools({
       setNote(null)
       if (read.kind === 'complete') {
         const empty = read.value.userNetwork.channels.filter((channel) => channel.state === 'empty').length
-        setPending({ kind: 'complete', document: read.value, channels: read.channels, empty, users: read.users, favourites: read.favourites, filename: file.name })
+        setPending({ kind: 'complete', document: read.value, channels: read.channels, empty, users: read.users, favourites: read.favourites, overrides: read.overrides, filename: file.name })
       } else setPending({ kind: 'network', document: read.value, channels: read.channels, empty: read.empty, users: read.users, filename: file.name })
     } catch {
       setNote('THAT FILE COULD NOT BE READ')
@@ -449,6 +449,9 @@ export function UserNetworkImportTools({
               {pending.users > 0
                 ? ` Its ${pending.users} ${pending.users === 1 ? 'user replaces' : 'users replace'} yours.`
                 : ' It has no named users: every channel goes to TVN.'}
+              {pending.kind === 'complete' && pending.document.central
+                ? ` Your curation of TVN channels 001–999 is replaced with its ${pending.overrides}; TVN's own channels are not changed.`
+                : ''}
             </span>
             {key('Yes, replace it', () => void apply(), 'tab remove-key')}
             {key('Keep mine', () => setPending(null))}
@@ -487,8 +490,11 @@ export function UserNetworkTools({
   onLoadTest,
   onRemoveStarter,
   onRemoveAll,
+  onNewChannel,
 }: {
   userChannels: number
+  /** A new, empty channel, opened in Edit Channel to name and fill with sources. */
+  onNewChannel?: () => Promise<void>
   /** Opens IMPORT: a User Network file saved with EXPORT, replacing the User Network. */
   onImportNetwork?: () => void
   /** A channel list file (a TVN export or a list of YouTube links) joins 1001+. */
@@ -532,7 +538,7 @@ export function UserNetworkTools({
             {userChannels} {userChannels === 1 ? 'channel' : 'channels'}
           </span>
         </p>
-        <p className="guide-tool-note">Kept in this browser. Paste a YouTube channel or video link in the last row.</p>
+        <p className="guide-tool-note">Kept in this browser. Paste a YouTube channel or video link in the last row, or start a new channel and add its sources in Edit Channel.</p>
         {note ? (
           <p className="guide-tool-status" role="status">
             {note}
@@ -554,6 +560,7 @@ export function UserNetworkTools({
           </>
         ) : (
           <>
+            {onNewChannel ? key('New channel…', () => void run(async () => (await onNewChannel(), '')), 'tune-key') : null}
             {onImportNetwork ? key('Restore', onImportNetwork) : null}
             {key('Channel list', () => listInput.current?.click())}
             {key('Add starter network', () => void run(onLoadTest))}

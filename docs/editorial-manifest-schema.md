@@ -33,8 +33,12 @@ Code: `src/services/editorial-manifest.ts`.
     "desiredCoverage": null,
     "gaps": null,
     "eras": null,
+    "curatorNotes": null,
     "tags": [],
-    "targets": { "hours": null, "programmes": null }
+    "targets": { "hours": null, "programmes": null },
+    "status": "unreviewed",
+    "related": [],
+    "artwork": null
   },
   "filters": [{ "source": "s1", "label": "…", "mode": "recent", "filter": null }]
 }
@@ -44,9 +48,9 @@ Code: `src/services/editorial-manifest.ts`.
 - **EDITORIAL INTENT** (`editorial`) is only what a person wrote. TVN never generates it, and a field nobody has written is `null`.
 - **Configuration** (`filters`) is a third thing. It is neither fact nor intent.
 - **Scope.**
-  - `central` describes a curated 001–999 channel. Only the network's own tooling writes it; see `scripts/network-editorial.gen.ts`, where every central purpose is `null` because TVN holds no human-written purpose for them.
+  - `central` describes a curated 001–999 channel. The network's own tooling writes the baseline (`scripts/network-editorial.gen.ts`, where every central purpose is `null`); Edit Channel writes one for a channel the viewer has curated, from their local override (section 9).
   - `user` describes a viewer's 1001+ channel and is written from Edit Channel.
-  - Viewer Edit Channel can never write a central manifest or central programming. `applyChannelEdit` refuses every number below 1001, and a TVN channel's browser-only overlay (`saveCuratedEdit`) drops any filter, mode or editorial notes.
+  - Edit Channel never changes the shipped catalogue. `applyChannelEdit` refuses every number below 1001; a 001–999 channel's curation lives only in its local override.
 
 ## 2. Source filter (`ChannelSource.filter`)
 
@@ -87,7 +91,7 @@ Code: `src/services/channel-curation.ts`. This is a small structured object, not
 - Older history comes from the playlists the filter names and from the shipped back catalogue (`public/user-network/uploaders.json`).
 - A curated timeless channel is never held to a recent window.
 
-## 4. Editorial notes (`StoredSource.editorial`, user channels only)
+## 4. Editorial notes (`editorial` on user channels and 001–999 overrides)
 
 ```json
 {
@@ -98,13 +102,18 @@ Code: `src/services/channel-curation.ts`. This is a small structured object, not
   "desired": "…",
   "gaps": "…",
   "eras": "…",
+  "notes": "…",
   "tags": ["…"],
   "targetHours": 8,
-  "targetProgrammes": 60
+  "targetProgrammes": 60,
+  "status": "reviewing",
+  "related": [112, 1004],
+  "artwork": "https://…"
 }
 ```
 
 - Every field is optional. Text fields hold at most 2,000 characters. There are at most 20 tags of 40 characters each.
+- `notes` is the curator's freeform research. `status` is `unreviewed` (absent), `reviewing`, `curated` or `revisit`; it is shown only in Edit Channel and in manifests. `related` lists at most 50 TVN channel numbers, with no hierarchy and no merging. `artwork` is an optional https address that nothing displays yet (see section 10).
 - The notes are metadata only. They are kept, exported and shown in the manifest, and never consulted by the scheduler.
 
 ## 5. `tvn-channel-v1`: one portable user channel
@@ -135,7 +144,7 @@ Code: `src/services/channel-file.ts`. It is written by Edit Channel's **EXPORT C
 
 ## 7. Human-readable manifest
 
-**EXPORT MANIFEST** writes `TVN_Channel_<number>_<name>.md` with these sections: CHANNEL, PURPOSE, CURRENT SOURCES, FILTERS, PROGRAMMES, HOURS, PROGRAMME TYPES, EDITORIAL NOTES, KNOWN GAPS, TARGETS, and RUNNING ORDER when the viewer set one. There is no PDF.
+**EXPORT MANIFEST** writes `TVN_Channel_<number>_<name>.md` with these sections: CHANNEL, PURPOSE, CURRENT SOURCES, FILTERS, PROGRAMMES, HOURS, PROGRAMME TYPES, EDITORIAL NOTES, KNOWN GAPS, TARGETS, RELATED CHANNELS, CURATOR NOTES, and RUNNING ORDER when the viewer set one. A status line follows the title. There is no PDF.
 
 ## 8. Network baseline
 
@@ -149,3 +158,20 @@ Regenerate with:
 ```
 npx vitest run --config scripts/manifest.config.ts scripts/network-editorial.gen.ts
 ```
+
+## 9. Local curation of 001–999 (`tvn.channel-edits.v1`, `tvn-central-overrides-v1`)
+
+Code: `src/services/curated-edits.ts` and `src/services/central-curation.ts`.
+
+- **Model.** SHIPPED CHANNEL + LOCAL OVERRIDE = THE VIEWER'S CHANNEL. An override holds only what the viewer changed: name, description, sources (TVN's own programming as a `tvn` source that can be switched off, plus added sources with filter and mode), a running order, TVN programmes left out (`excluded`), and editorial notes. An unchanged channel has no record, and Restore TVN original drops it.
+- **Baseline.** Each override records the shipped channel it was made against: `{ name, programmes, fingerprint }`, where the fingerprint is FNV-1a over the shipped programme ids. Edit Channel says when TVN has changed the channel since.
+- **Playback.** While TVN programming carries the channel, it keeps TVN's own scheduling unless the viewer reorders or leaves out programmes. In that case it plays the remaining programmes in the viewer's order. Once added sources carry programmes, they take over, as before.
+- **Complete export.** `tvn-export-v1` gains an optional `central` section, `{ "format": "tvn-central-overrides-v1", "overrides": [...] }`. It contains overrides only, never the catalogue. Files without it are still valid, and restoring one leaves this browser's overrides alone.
+- **Restore.** The whole file is validated first. Overrides then replace the override layer only. Each one is checked against the channel TVN ships now. A channel no longer shipped is skipped, a shipped rename is kept as a note, and programmes that have gone are dropped from the order. Each of these is reported and shown in Edit Channel; nothing is merged.
+
+## 10. Information Overlay V3 (design note, not implemented)
+
+- **Channel artwork.** Show a channel PNG or logo in the overlay, taken from `editorial.artwork` when set and otherwise from the shipped logo.
+- **Remote.** Fold the remote's controls into the overlay itself, rather than a separate pad.
+- **Skins.** Make the presentation skin-aware: each skin sets its own frame, type and artwork treatment.
+- Nothing in TVN 2.0 renders any of this. The `artwork` field exists only so curation can carry it now.

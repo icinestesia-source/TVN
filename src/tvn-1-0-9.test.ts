@@ -267,7 +267,7 @@ describe('IMPORT: restoring a User Network export', () => {
     expect(tool).toContain("key('Yes, replace it', () => void apply(), 'tab remove-key')")
     expect(tool).toContain("key('Keep mine', () => setPending(null))")
     expect(tool.match(/onApply\(/g)).toHaveLength(1)
-    const body = provider.slice(provider.indexOf('const importUserNetwork = useCallback'), provider.indexOf('const openChannelEdit = useCallback'))
+    const body = provider.slice(provider.indexOf('const importUserNetwork = useCallback'), provider.indexOf('const restoreCentralCuration = '))
     expect(body.indexOf('saveStoredSources(next)')).toBeGreaterThan(body.indexOf('await resolveRestored('))
     expect(body).toContain('restoreUserNetwork(await loadStoredSources(), resolved.records)')
     for (const untouched of ['saveCuratedEdit', 'installCurated', 'sessionRef', 'importSession', 'placeStarterFavourites', 'requestTune']) expect(body).not.toContain(untouched)

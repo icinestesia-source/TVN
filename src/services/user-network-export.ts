@@ -1,6 +1,13 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import type { StoredSource } from './channels-import.ts'
-import { cleanEditorial, cleanFilter, EDITORIAL_TEXT_FIELDS, SOURCE_MODES, sourceModeOf, type ChannelEditorial, type SourceFilter, type SourceMode } from './channel-curation.ts'
+import {
+  cleanArtwork,
+  cleanEditorial,
+  cleanFilter,
+  CURATION_STATUSES,
+  EDITORIAL_TEXT_FIELDS,
+  RELATED_NUMBER_MAX,
+  SOURCE_MODES, sourceModeOf, type ChannelEditorial, type SourceFilter, type SourceMode } from './channel-curation.ts'
 import { sourcesOf } from './channel-editor.ts'
 import { canonicalYouTubeUrl, youTubeSourceType, type ChannelSource, type SourceInfo, type SourceKind } from './channel-sources.ts'
 import type { UploaderOf } from './user-network.ts'
@@ -263,7 +270,7 @@ export function carriesSecret(raw: string): boolean {
 const isText = (value: unknown) => typeof value === 'string'
 
 /** A channel's editorial notes: every field optional, each of its own plain type. */
-function checkEditorial(value: unknown, at: string, errors: string[]): void {
+export function checkEditorial(value: unknown, at: string, errors: string[]): void {
   if (value === undefined) return
   if (!isRecord(value)) {
     errors.push(`${at} is not a set of notes`)
@@ -276,6 +283,13 @@ function checkEditorial(value: unknown, at: string, errors: string[]): void {
       if (!Array.isArray(item) || !item.every(isText)) errors.push(`${at}.tags is not a list of words`)
     } else if (name === 'targetHours' || name === 'targetProgrammes') {
       if (typeof item !== 'number' || !Number.isFinite(item) || item < 0) errors.push(`${at}.${name} is not a number`)
+    } else if (name === 'status') {
+      if (!(CURATION_STATUSES as readonly unknown[]).includes(item)) errors.push(`${at}.status must be ${CURATION_STATUSES.join(', ')}`)
+    } else if (name === 'related') {
+      const ok = Array.isArray(item) && item.every((number) => typeof number === 'number' && Number.isInteger(number) && number >= 1 && number <= RELATED_NUMBER_MAX)
+      if (!ok) errors.push(`${at}.related is not a list of channel numbers`)
+    } else if (name === 'artwork') {
+      if (cleanArtwork(item) === undefined) errors.push(`${at}.artwork is not an https address`)
     } else errors.push(`${at}.${name} is not an editorial field`)
   }
 }
@@ -331,7 +345,12 @@ export function checkChannel(channel: unknown, at: string, errors: string[]): vo
     return
   }
   if (channel.state === 'empty' && channel.sources.length > 0) errors.push(`${at} is empty but has sources`)
-  channel.sources.forEach((source, sourceIndex) => {
+  checkSources(channel.sources, at, errors)
+}
+
+/** Each exported source: a known type, a shareable address, plain rules. */
+export function checkSources(sources: readonly unknown[], at: string, errors: string[]): void {
+  sources.forEach((source, sourceIndex) => {
     const where = `${at}.sources[${sourceIndex}]`
     if (!isRecord(source)) {
       errors.push(`${where} is not a source`)

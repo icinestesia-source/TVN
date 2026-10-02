@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import {
   cleanFilter,
+  CURATION_STATUSES,
   EDITORIAL_LIMITS,
+  EDITORIAL_TEXT_FIELDS,
   formatTerms,
+  parseRelated,
   parseTags,
   parseTerms,
   previewFilter,
@@ -11,6 +14,7 @@ import {
   sourceModeOf,
   widenSource,
   type ChannelEditorial,
+  type CurationStatus,
   type SourceDraft,
   type SourceFilter,
   type SourceMode,
@@ -234,15 +238,39 @@ export function SourceFilterPanel({
   )
 }
 
-const TEXT_NOTES: readonly { key: 'purpose' | 'include' | 'exclude' | 'sourceNotes' | 'desired' | 'gaps' | 'eras'; label: string }[] = [
+const TEXT_NOTES: readonly { key: (typeof EDITORIAL_TEXT_FIELDS)[number]; label: string }[] = [
   { key: 'purpose', label: 'Purpose' },
-  { key: 'include', label: 'What belongs' },
-  { key: 'exclude', label: 'What does not' },
-  { key: 'sourceNotes', label: 'Source notes' },
-  { key: 'desired', label: 'Desired content' },
+  { key: 'include', label: 'Include' },
+  { key: 'exclude', label: 'Exclude' },
+  { key: 'eras', label: 'Eras / coverage' },
+  { key: 'desired', label: 'Desired coverage' },
   { key: 'gaps', label: 'Known gaps' },
-  { key: 'eras', label: 'Eras' },
+  { key: 'sourceNotes', label: 'Source notes' },
+  { key: 'notes', label: 'Curator notes' },
 ]
+
+const STATUS_LABELS: Record<CurationStatus, string> = { unreviewed: 'Unreviewed', reviewing: 'Reviewing', curated: 'Curated', revisit: 'Revisit' }
+
+/** Where the curator has got to with the channel. Shown only here and in manifests; never changes what plays. */
+export function StatusPicker({ editorial, disabled, onChange }: { editorial: ChannelEditorial | undefined; disabled: boolean; onChange: (next: ChannelEditorial) => void }) {
+  return (
+    <label className="curation-status">
+      <span>Status</span>
+      <select
+        value={editorial?.status ?? 'unreviewed'}
+        disabled={disabled}
+        onKeyDown={keepKey}
+        onChange={(event) => onChange({ ...editorial, status: event.target.value as CurationStatus })}
+      >
+        {CURATION_STATUSES.map((status) => (
+          <option key={status} value={status}>
+            {STATUS_LABELS[status]}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
 
 /** The viewer's own notes on the channel. Metadata only: none of it changes what plays. */
 export function EditorialPanel({
@@ -258,18 +286,19 @@ export function EditorialPanel({
   const [tags, setTags] = useState(() => (notes.tags ?? []).join(', '))
   const [hours, setHours] = useState(() => (notes.targetHours ? String(notes.targetHours) : ''))
   const [count, setCount] = useState(() => (notes.targetProgrammes ? String(notes.targetProgrammes) : ''))
+  const [related, setRelated] = useState(() => (notes.related ?? []).join(', '))
   const target = (text: string) => {
     const value = Number(text)
     return text.trim() && Number.isFinite(value) && value > 0 ? value : undefined
   }
   return (
     <div className="curation editorial" role="group" aria-label="Editorial notes">
-      <p className="guide-tool-note">Your notes about this channel. They are kept and exported with it, and never change what plays.</p>
+      <p className="guide-tool-note">Your research and notes on this channel, in your own words. They are kept and exported with it, and never change what plays.</p>
       {TEXT_NOTES.map(({ key, label }) => (
         <label key={key} className="curation-field is-wide">
           <span>{label}</span>
           <textarea
-            rows={key === 'purpose' ? 2 : 1}
+            rows={key === 'purpose' || key === 'notes' ? 3 : 1}
             value={notes[key] ?? ''}
             maxLength={EDITORIAL_LIMITS.text}
             disabled={disabled}
@@ -291,6 +320,22 @@ export function EditorialPanel({
             onChange={(event) => {
               setTags(event.target.value)
               onChange({ ...notes, tags: parseTags(event.target.value) })
+            }}
+          />
+        </label>
+        <label className="curation-field is-wide">
+          <span>Related channels</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={related}
+            placeholder="TVN channel numbers, e.g. 112, 1004"
+            autoComplete="off"
+            disabled={disabled}
+            onKeyDown={keepKey}
+            onChange={(event) => {
+              setRelated(event.target.value)
+              onChange({ ...notes, related: parseRelated(event.target.value) })
             }}
           />
         </label>

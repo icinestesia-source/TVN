@@ -30,8 +30,14 @@ export interface ChannelEdit {
   sources: ChannelSource[]
   /** The viewer's running order (video ids); absent while TVN arranges the channel itself. */
   order?: string[]
-  /** A user channel's editorial notes. Never kept for a TVN channel and never consulted by the scheduler. */
+  /** The channel's editorial notes, status and related channels. Never consulted by the scheduler. */
   editorial?: ChannelEditorial
+  /** A TVN channel only: the viewer's own description over the shipped one. */
+  description?: string
+  /** A TVN channel only: shipped programmes (by id) the viewer has left out of its running order. */
+  excluded?: string[]
+  /** A TVN channel only: what TVN has changed underneath the viewer's curation. Shown, never saved. */
+  review?: string[]
 }
 
 /** The running order to keep: every enabled programme, the viewer's arrangement first. None while TVN arranges it. */
@@ -107,7 +113,7 @@ const copySource = (source: ChannelSource): ChannelSource => ({
 })
 
 /** A source as a user channel keeps it: filter in its canonical shape, mode only when it is not the default. */
-function curatedSource(source: ChannelSource): ChannelSource {
+export function curatedSource(source: ChannelSource): ChannelSource {
   const { filter: _filter, mode: _mode, ...rest } = copySource(source)
   if (isStreamSource(source) || source.kind === 'tvn') return rest
   const filter = cleanFilter(source.filter)

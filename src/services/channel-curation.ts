@@ -277,12 +277,51 @@ export interface ChannelEditorial {
   gaps?: string
   tags?: string[]
   eras?: string
+  /** The curator's freeform research notes. */
+  notes?: string
   targetHours?: number
   targetProgrammes?: number
+  /** Where the curator has got to with this channel. Absent means unreviewed. Never affects playback. */
+  status?: CurationStatus
+  /** Other TVN channel numbers this one relates to. Metadata only: no hierarchy, nothing merged. */
+  related?: number[]
+  /** A web address for the channel's artwork, kept for a later Information Overlay. Nothing shows it yet. */
+  artwork?: string
 }
 
-export const EDITORIAL_TEXT_FIELDS = ['purpose', 'include', 'exclude', 'sourceNotes', 'desired', 'gaps', 'eras'] as const
-export const EDITORIAL_LIMITS = { text: 2000, tags: 20, tag: 40, hours: 10_000, programmes: 100_000 } as const
+export const CURATION_STATUSES = ['unreviewed', 'reviewing', 'curated', 'revisit'] as const
+export type CurationStatus = (typeof CURATION_STATUSES)[number]
+
+export const EDITORIAL_TEXT_FIELDS = ['purpose', 'include', 'exclude', 'sourceNotes', 'desired', 'gaps', 'eras', 'notes'] as const
+export const EDITORIAL_LIMITS = { text: 2000, tags: 20, tag: 40, hours: 10_000, programmes: 100_000, related: 50, artwork: 500 } as const
+/** Every TVN channel number a related channel may name: 001–999 and the User Network. */
+export const RELATED_NUMBER_MAX = 99_999
+
+export function parseRelated(text: string): number[] {
+  return cleanRelated(text.split(/[\s,;]+/).map((item) => Number(item)))
+}
+
+function cleanRelated(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return []
+  const out: number[] = []
+  for (const item of raw) {
+    if (typeof item !== 'number' || !Number.isInteger(item) || item < 1 || item > RELATED_NUMBER_MAX || out.includes(item)) continue
+    out.push(item)
+    if (out.length >= EDITORIAL_LIMITS.related) break
+  }
+  return out
+}
+
+/** An https address without credentials, or nothing. */
+export function cleanArtwork(raw: unknown): string | undefined {
+  if (typeof raw !== 'string' || raw.length > EDITORIAL_LIMITS.artwork) return undefined
+  try {
+    const url = new URL(raw.trim())
+    return url.protocol === 'https:' && !url.username && !url.password ? url.toString() : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export function parseTags(text: string): string[] {
   return cleanTags(text.split(/[,;\n]+/))
@@ -320,6 +359,11 @@ export function cleanEditorial(raw: unknown): ChannelEditorial | undefined {
   if (typeof hours === 'number' && Number.isFinite(hours) && hours > 0) out.targetHours = Math.min(Math.round(hours * 10) / 10, EDITORIAL_LIMITS.hours)
   const programmes = record.targetProgrammes
   if (typeof programmes === 'number' && Number.isFinite(programmes) && programmes > 0) out.targetProgrammes = Math.min(Math.round(programmes), EDITORIAL_LIMITS.programmes)
+  if ((CURATION_STATUSES as readonly unknown[]).includes(record.status) && record.status !== 'unreviewed') out.status = record.status as CurationStatus
+  const related = cleanRelated(record.related)
+  if (related.length) out.related = related
+  const artwork = cleanArtwork(record.artwork)
+  if (artwork) out.artwork = artwork
   return Object.keys(out).length ? out : undefined
 }
 

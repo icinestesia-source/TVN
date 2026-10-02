@@ -194,7 +194,7 @@ describe('the editor', () => {
     const curated = render('curated')
     expect(curated).not.toContain('Delete channel')
     expect(curated).toContain('Restore TVN original…')
-    expect(curated).toContain('kept in this browser only')
+    expect(curated).toContain('kept in this browser and in your complete export')
     expect(curated.slice(curated.indexOf('editor-actions'), curated.indexOf('editor-danger'))).not.toContain('Restore')
   })
 

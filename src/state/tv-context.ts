@@ -150,6 +150,8 @@ export interface TvContextValue {
   removeStarterNetwork: () => Promise<string>
   /** Deliberately remove the given user channels, or all of them. */
   removeUserChannels: (numbers: 'all' | readonly number[]) => Promise<string>
+  /** A new, empty 1001+ channel for Edit Channel to fill; its number. */
+  createEmptyChannel: () => Promise<number>
   /** Download the User Network (1001+) as tvn-user-network-v1 JSON. Reads only: nothing is changed. */
   exportUserNetwork: () => Promise<string>
   /** Replace the User Network (1001+) with a validated, confirmed tvn-user-network-v1 document. */

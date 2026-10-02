@@ -22,7 +22,7 @@ import type { Channel } from '../types/channel.ts'
 import { formatDuration, padChannel } from '../utils/time.ts'
 import { useClock } from '../utils/use-clock.ts'
 import type { EditorScope } from '../view/channel-edit.ts'
-import { EditorialPanel, SourceFilterPanel } from './ChannelCuration.tsx'
+import { EditorialPanel, SourceFilterPanel, StatusPicker } from './ChannelCuration.tsx'
 import { SourceDetails } from './SourceDetails.tsx'
 
 /** Enter and Space press these controls; they must not also reach the Guide. */
@@ -74,6 +74,16 @@ function sourceProgrammes(source: ChannelSource, number: number): ListedVideo[] 
         durationSec: programme.durationSeconds,
         href: watchUrl(programme.videoId),
       }))
+    : []
+}
+
+/** TVN's own programmes for a curated channel that carry media: the ones a viewer can arrange or leave out. */
+function tvnProgrammes(number: number): ListedVideo[] {
+  const shipped = shippedChannel(number)
+  return shipped
+    ? shippedProgrammes(shipped.id)
+        .filter((programme) => programme.videoId !== null)
+        .map((programme) => ({ id: programme.id, title: programme.title, durationSec: programme.durationSeconds, href: watchUrl(programme.videoId) }))
     : []
 }
 
@@ -141,7 +151,6 @@ export function ChannelEditor({
   const [notesOpen, setNotesOpen] = useState(false)
   // Filters set on a source but not applied yet: the editor's RESCAN uses them too.
   const [drafts, setDrafts] = useState<ReadonlyMap<string, SourceDraft>>(new Map())
-  const curates = scope === 'user'
   const now = useClock(30_000)
   const rootRef = useRef<HTMLElement>(null)
   const linkRef = useRef<HTMLInputElement>(null)
@@ -185,8 +194,17 @@ export function ChannelEditor({
       return next
     })
 
-  const lineup = edit ? inOrder(inventoryOf(edit.sources), edit.order) : []
-  const ownOrder = (edit?.order?.length ?? 0) > 0
+  // A TVN channel carried by its own programming arranges, and leaves out, TVN's programmes.
+  const tvnLineup =
+    scope === 'curated' && edit !== null && edit.sources.some((source) => source.kind === 'tvn' && source.enabled) && inventoryOf(edit.sources).length === 0 && !liveStreamOf(edit.sources)
+  const lineup = edit ? inOrder(tvnLineup ? tvnProgrammes(number) : inventoryOf(edit.sources), edit.order) : []
+  const left = new Set(edit?.excluded ?? [])
+  const ownOrder = (edit?.order?.length ?? 0) > 0 || left.size > 0
+  const toggleLeft = (id: string) => {
+    if (!edit) return
+    const next = left.has(id) ? [...left].filter((item) => item !== id) : [...left, id]
+    change({ ...edit, excluded: next.length ? next : undefined })
+  }
   const onAir = onAirVideo(channel, now)
   const move = (index: number, delta: -1 | 1) => {
     const to = index + delta
@@ -267,7 +285,17 @@ export function ChannelEditor({
       <div className="info-main">
         {kicker}
         {scope === 'curated' ? (
-          <p className="guide-tool-note">Your changes to this TVN channel are kept in this browser only. Nobody else's TVN changes.</p>
+          <p className="guide-tool-note">
+            Your curation of this TVN channel is kept in this browser and in your complete export. TVN's own channel is never changed, and Restore TVN original drops your
+            curation.
+          </p>
+        ) : null}
+        {edit?.review?.length ? (
+          <ul className="guide-tool-note editor-review" aria-label="To review">
+            {edit.review.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
         ) : null}
         {missing ? (
           <p className="guide-tool-note">This channel could not be read.</p>
@@ -287,12 +315,25 @@ export function ChannelEditor({
                 onChange={(event) => change({ ...edit, name: event.target.value })}
               />
             </label>
+            {scope === 'curated' ? (
+              <label className="editor-field">
+                <span className="editor-heading">Description</span>
+                <textarea
+                  rows={2}
+                  value={edit.description ?? channel.description ?? ''}
+                  maxLength={500}
+                  disabled={busy !== null}
+                  onKeyDown={keepKey}
+                  onChange={(event) => change({ ...edit, description: event.target.value })}
+                />
+              </label>
+            ) : null}
             <p className="editor-heading">Sources</p>
-            {curates ? (
+            {(
               <p className="guide-tool-note">
                 A channel can draw on several sources, each with its own mode and filter. Open a source to set them, check the preview, then rescan.
               </p>
-            ) : null}
+            )}
             <ul className="editor-sources">
               {edit.sources.length === 0 ? <li className="editor-empty">No sources yet</li> : null}
               {edit.sources.map((source) => {
@@ -338,7 +379,7 @@ export function ChannelEditor({
                   {open ? (
                     <SourceDetails source={source} number={number} disabled={busy !== null} onInfo={(info) => setSource(source.id, { info })} />
                   ) : null}
-                  {open && curates && (source.kind === 'youtube' || source.kind === 'collection') ? (
+                  {open && (source.kind === 'youtube' || source.kind === 'collection') ? (
                     <SourceFilterPanel
                       source={source}
                       archive={archiveOf?.(source)}
@@ -407,7 +448,7 @@ export function ChannelEditor({
                 + Add source
               </button>
             )}
-            {curates ? (
+            {(
               <>
                 <div className="editor-lineup-head">
                   <button
@@ -420,7 +461,8 @@ export function ChannelEditor({
                   >
                     {notesOpen ? '−' : '+'}
                   </button>
-                  <p className="editor-heading">Editorial · curation{edit.editorial?.purpose?.trim() ? ` · ${edit.editorial.purpose.trim().slice(0, 60)}` : ''}</p>
+                  <p className="editor-heading">Research · editorial{edit.editorial?.purpose?.trim() ? ` · ${edit.editorial.purpose.trim().slice(0, 60)}` : ''}</p>
+                  <StatusPicker editorial={edit.editorial} disabled={busy !== null} onChange={(editorial) => change({ ...edit, editorial })} />
                 </div>
                 {notesOpen ? <EditorialPanel editorial={edit.editorial} disabled={busy !== null} onChange={(editorial) => change({ ...edit, editorial })} /> : null}
                 {onExport ? (
@@ -435,12 +477,12 @@ export function ChannelEditor({
                   </div>
                 ) : null}
               </>
-            ) : null}
+            )}
             <div className="editor-lineup-head">
               <p className="editor-heading">Running order · {ownOrder ? 'yours' : 'automatic'}</p>
               {ownOrder ? (
-                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => change({ ...edit, order: undefined })}>
-                  Reset to automatic
+                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => change({ ...edit, order: undefined, excluded: undefined })}>
+                  {tvnLineup ? 'Reset to TVN' : 'Reset to automatic'}
                 </button>
               ) : null}
             </div>
@@ -455,7 +497,11 @@ export function ChannelEditor({
             ) : (
               <>
                 <p className="guide-tool-note">
-                  {ownOrder
+                  {tvnLineup
+                    ? ownOrder
+                      ? 'The channel plays the programmes you keep, in this order, then starts again. Save to keep it.'
+                      : "TVN's own programmes for this channel, scheduled by TVN. Move one or leave one out to arrange it yourself."
+                    : ownOrder
                     ? 'The channel plays these in this order, then starts again. Save to keep it.'
                     : reachesArchive(edit.sources)
                       ? 'TVN plays these in turn, from across the archive. Move one to set your own order.'
@@ -463,12 +509,23 @@ export function ChannelEditor({
                 </p>
                 <ol className="editor-lineup" aria-label="Running order">
                   {lineup.map((video, index) => (
-                    <li key={video.id} className={video.id === onAir ? 'is-on-air' : undefined}>
+                    <li key={video.id} className={[video.id === onAir ? 'is-on-air' : '', left.has(video.id) ? 'is-off' : ''].filter(Boolean).join(' ') || undefined}>
+                      {tvnLineup ? (
+                        <input
+                          type="checkbox"
+                          className="editor-keep"
+                          checked={!left.has(video.id)}
+                          disabled={busy !== null}
+                          aria-label={`Keep ${video.title}`}
+                          onKeyDown={keepKey}
+                          onChange={() => toggleLeft(video.id)}
+                        />
+                      ) : null}
                       <span className="editor-lineup-pos">{index + 1}</span>
                       <span className="editor-video-title">{video.title}</span>
                       {video.id === onAir ? <span className="editor-lineup-now">On air</span> : null}
                       <span className="editor-video-length">{formatDuration(video.durationSec)}</span>
-                      <OriginalLink video={{ ...video, href: watchUrl(video.id) }} />
+                      <OriginalLink video={{ ...video, href: (video as ListedVideo).href ?? watchUrl(video.id) }} />
                       <button
                         type="button"
                         className="tab editor-move"
@@ -518,7 +575,7 @@ export function ChannelEditor({
             <button type="button" className="tune-key" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('save', () => onSave(number, edit))}>
               {busy === 'save' ? 'Saving…' : 'Save'}
             </button>
-            {curates && onExport ? (
+            {scope === 'user' && onExport ? (
               <>
                 <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'json'))}>
                   Export channel

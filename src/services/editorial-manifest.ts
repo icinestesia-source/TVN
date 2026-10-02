@@ -1,5 +1,15 @@
-import { cleanEditorial, eligibleOf, SOURCE_MODE_LABELS, sourceModeOf, videoYear, type ChannelEditorial, type SourceFilter, type SourceMode } from './channel-curation.ts'
-import { sourcesOf } from './channel-editor.ts'
+import {
+  cleanEditorial,
+  eligibleOf,
+  SOURCE_MODE_LABELS,
+  sourceModeOf,
+  videoYear,
+  type ChannelEditorial,
+  type CurationStatus,
+  type SourceFilter,
+  type SourceMode,
+} from './channel-curation.ts'
+import { sourcesOf, type ChannelEdit } from './channel-editor.ts'
 import { isStreamSource, liveStreamOf, SOURCE_TYPES, youTubeSourceType, type ChannelSource } from './channel-sources.ts'
 import { programmeTypeFor, type StoredSource } from './channels-import.ts'
 
@@ -49,8 +59,12 @@ export interface ManifestEditorial {
   desiredCoverage: string | null
   gaps: string | null
   eras: string | null
+  curatorNotes: string | null
   tags: string[]
   targets: { hours: number | null; programmes: number | null }
+  status: CurationStatus
+  related: number[]
+  artwork: string | null
 }
 
 export interface EditorialManifest {
@@ -113,8 +127,12 @@ export function editorialIntent(notes: ChannelEditorial | undefined): ManifestEd
     desiredCoverage: clean.desired ?? null,
     gaps: clean.gaps ?? null,
     eras: clean.eras ?? null,
+    curatorNotes: clean.notes ?? null,
     tags: clean.tags ?? [],
     targets: { hours: clean.targetHours ?? null, programmes: clean.targetProgrammes ?? null },
+    status: clean.status ?? 'unreviewed',
+    related: clean.related ?? [],
+    artwork: clean.artwork ?? null,
   }
 }
 
@@ -157,6 +175,27 @@ export function userChannelManifest(record: StoredSource): EditorialManifest {
   }
 }
 
+/**
+ * The manifest of a 001–999 channel as the viewer has curated it. While TVN's own programming carries the
+ * channel, the facts are its shipped programmes less any the viewer has left out.
+ */
+export function curatedChannelManifest(
+  number: number,
+  edit: Pick<ChannelEdit, 'name' | 'sources' | 'order' | 'excluded' | 'editorial'>,
+  shippedList: readonly { id: string; durationSeconds: number; year?: number }[],
+): EditorialManifest {
+  const own = edit.sources.filter((source) => source.kind !== 'tvn')
+  const record: StoredSource = { id: `tvn-${number}`, name: edit.name, videos: [], channelNumber: number, inLibrary: false, automatic: true, updatedAt: 0, channelSources: edit.sources, runningOrder: edit.order, editorial: edit.editorial }
+  const manifest = { ...userChannelManifest(record), scope: 'central' as const }
+  const tvnOn = edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
+  if (!tvnOn || liveStreamOf(own) || own.some((source) => source.enabled && eligibleOf(source).length > 0)) return manifest
+  const left = new Set(edit.excluded ?? [])
+  const programmes = shippedList
+    .filter((programme) => !left.has(programme.id))
+    .map((programme) => ({ sourceId: 'tvn', durationSec: programme.durationSeconds, programmeType: programmeTypeFor(programme.durationSeconds), year: programme.year ?? null }))
+  return { ...manifest, current: currentFacts(programmes, manifest.current.sources) }
+}
+
 function filterLines(filter: SourceFilter | null): string[] {
   if (!filter) return ['everything the source holds']
   const lines: string[] = []
@@ -184,6 +223,7 @@ export function manifestText(manifest: EditorialManifest, record?: StoredSource)
   const share = (value: number) => `${Math.round(value * 100)}%`
   const out: string[] = []
   out.push(`# CHANNEL ${channel.number} · ${channel.name}`, '')
+  out.push(`Status: ${editorial.status.toUpperCase()}`, '')
   out.push('## PURPOSE', or(editorial.purpose), '')
   out.push('## CURRENT SOURCES')
   if (current.sources.length === 0) out.push('(none)')
@@ -212,6 +252,8 @@ export function manifestText(manifest: EditorialManifest, record?: StoredSource)
   out.push(`Include: ${or(editorial.include)}`, `Exclude: ${or(editorial.exclude)}`, `Sources: ${or(editorial.sourceNotes)}`, `Eras: ${or(editorial.eras)}`)
   out.push(`Desired coverage: ${or(editorial.desiredCoverage)}`, `Tags: ${editorial.tags.length ? editorial.tags.join(', ') : '(none)'}`)
   out.push('', '## KNOWN GAPS', or(editorial.gaps), '')
+  out.push('## RELATED CHANNELS', editorial.related.length ? editorial.related.join(', ') : '(none)', '')
+  out.push('## CURATOR NOTES', or(editorial.curatorNotes), '')
   out.push('## TARGETS')
   out.push(`Hours: ${editorial.targets.hours ?? '(not set)'}${editorial.targets.hours ? ` · now ${current.hours.toFixed(1)}` : ''}`)
   out.push(`Programmes: ${editorial.targets.programmes ?? '(not set)'}${editorial.targets.programmes ? ` · now ${current.programmeCount}` : ''}`)

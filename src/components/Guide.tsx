@@ -682,6 +682,10 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onLoadTest={tv.loadTestChannels}
           onRemoveStarter={tv.removeStarterNetwork}
           onRemoveAll={() => tv.removeUserChannels('all')}
+          onNewChannel={async () => {
+            const number = await tv.createEmptyChannel()
+            tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: number })
+          }}
         />
       ) : sessionMatches.length > 0 ? (
         <SessionMatches matches={sessionMatches} onPlay={tv.playSession} />

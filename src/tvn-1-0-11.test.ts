@@ -458,7 +458,7 @@ describe('central channels 001–999 cannot be curated or rewritten from User Ed
     expect(() => applyChannelEdit([claimed], 999, { name: 'x', sources: [] }, NOW)).toThrow()
   })
 
-  it('a TVN channel’s browser overlay never keeps filters, modes or notes', () => {
+  it('a TVN channel’s local override keeps filters, modes and notes (TVN 2.0)', () => {
     const memory = new Map<string, string>()
     const store = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => void memory.set(key, value) }
     const saved = saveCuratedEdit(
@@ -467,12 +467,13 @@ describe('central channels 001–999 cannot be curated or rewritten from User Ed
       NOW,
       store,
     )
-    expect(saved?.sources.every((source) => !('filter' in source) && !('mode' in source))).toBe(true)
-    expect(saved && 'editorial' in saved).toBe(false)
-    expect(memory.get('tvn.channel-edits.v1')).not.toMatch(/filter|editorial|Rewrite/)
+    const own = saved?.sources.find((source) => source.kind === 'youtube')
+    expect(own?.filter).toEqual(careerFilter)
+    expect(own?.mode).toBe('all')
+    expect(saved?.editorial).toEqual({ purpose: 'Rewrite Two' })
   })
 
-  it('the editor offers curation and EXPORT CHANNEL for user channels only', () => {
+  it('the editor offers curation for both scopes and EXPORT CHANNEL for user channels only', () => {
     const [record] = applyChannelEdit([userChannel(1001, [youtubeSource(recent)])], 1001, { name: 'Daft Punk', sources: [youtubeSource(recent)] }, NOW)
     const channel = channelsFromSources([record]).channels[0] as Channel
     const edit = editOf(record)
@@ -491,11 +492,12 @@ describe('central channels 001–999 cannot be curated or rewritten from User Ed
         }),
       )
     const user = render('user', 1001)
-    expect(user).toContain('Editorial · curation')
+    expect(user).toContain('Research · editorial')
     expect(user).toContain('Export channel')
     expect(user).toContain('Export manifest')
     const curated = render('curated', 42)
-    expect(curated).not.toContain('Editorial')
+    expect(curated).toContain('Research · editorial')
+    expect(curated).toContain('Export manifest')
     expect(curated).not.toContain('Export channel')
   })
 })

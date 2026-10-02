@@ -431,6 +431,49 @@ span.editor-expand { border-color: transparent; }
 .editor-lineup-head .editor-heading { margin: 4px 0; }
 
 .editor-source.is-off { opacity: 0.6; }
+.editor-lineup li.is-off .editor-video-title { color: var(--muted); text-decoration: line-through; }
+.editor-keep { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--gold); }
+
+.editor-field textarea {
+  padding: 5px 10px;
+  border: 1px solid #1d4c78;
+  border-radius: 0;
+  background: rgba(8, 20, 34, 0.92);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.editor-field textarea:focus { outline: 2px solid var(--gold); outline-offset: 0; }
+
+.editor-review { max-width: 760px; margin: 2px 0 4px; padding-left: 18px; color: var(--gold); }
+
+.curation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.curation-status select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid #1d4c78;
+  border-radius: 0;
+  background: rgba(8, 20, 34, 0.92);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.curation-status select:focus { outline: 2px solid var(--gold); outline-offset: 0; }
 
 .editor-check {
   display: flex;
