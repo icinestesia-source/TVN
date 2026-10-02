@@ -37,9 +37,9 @@ describe('scrolling over the picture', () => {
 
 describe('swiping the picture', () => {
   const at = (x: number, y: number, t: number) => ({ x, y, at: t })
-  it('a swipe up goes one channel back, a swipe down one on', () => {
-    expect(swipeStep(at(100, 400, 0), at(110, 250, 200))).toEqual({ type: 'channel-down' })
-    expect(swipeStep(at(100, 200, 0), at(90, 360, 200))).toEqual({ type: 'channel-up' })
+  it('a swipe up goes one channel on, a swipe down one back, the reverse of a trackpad', () => {
+    expect(swipeStep(at(100, 400, 0), at(110, 250, 200))).toEqual({ type: 'channel-up' })
+    expect(swipeStep(at(100, 200, 0), at(90, 360, 200))).toEqual({ type: 'channel-down' })
   })
 
   it('ignores taps, sideways drags and slow drags', () => {

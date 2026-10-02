@@ -43,7 +43,7 @@ const STATE_LABEL: Record<Exclude<ItemState, null>, string> = {
  * GUIDE: the viewer's own viewing Guide, an ordered list of programmes from any channels played one after
  * another. It holds references only; schedules and running orders are never touched.
  */
-export function GuidePanel() {
+export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
   const tv = useTv()
   const library = tv.guideLibrary
   const guide = library.current
@@ -57,9 +57,11 @@ export function GuidePanel() {
   const wordsRef = useRef<HTMLInputElement>(null)
   const search = tv.guideSearch && guide && tv.guideSearch.guideId === guide.id ? tv.guideSearch : null
   useEffect(() => {
-    // Opened with a mouse (a right-click on GUIDE), the words box is ready to type in; a touch keeps the keyboard down.
-    if (typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches) wordsRef.current?.focus()
-  }, [])
+    // Asked for with a mouse (a right-click on GUIDE), the words box is ready to type in; a touch keeps the keyboard down.
+    if (!searchAsk || typeof window === 'undefined') return
+    if (window.matchMedia?.('(pointer: fine)').matches) wordsRef.current?.focus()
+    else wordsRef.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [searchAsk])
   const shown = `${guide?.id ?? ''}:${guide?.name ?? ''}`
   const [seen, setSeen] = useState(shown)
   if (seen !== shown) {

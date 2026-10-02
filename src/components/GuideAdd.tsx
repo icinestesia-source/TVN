@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type RefObject } from 'react'
-import { createLongPress } from '../view/channel-edit.ts'
+import { createGuidePress } from '../view/guide-press.ts'
 import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
 import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
@@ -38,6 +38,7 @@ export function GuideActions({
   query = null,
   onNow,
   onTool,
+  onGuideSearch,
 }: {
   tool: GuideTool | null
   /** The words the Guide on show was created from, shown beside GUIDE while it is. */
@@ -48,7 +49,13 @@ export function GuideActions({
   following?: boolean
   onNow: () => void
   onTool: (tool: GuideTool) => void
+  /** CREATE GUIDE FROM…: a right-click or a hold on GUIDE. */
+  onGuideSearch?: () => void
 }) {
+  const open = tool === 'guides'
+  const openGuide = () => {
+    if (!open) onTool('guides')
+  }
   const action = (label: string, on: boolean, run: () => void, title?: string, extra = '') => (
     <button type="button" className={`${on ? 'tab is-on' : 'tab'}${extra}`} aria-pressed={on} title={title} onKeyDown={keepKey} onClick={run}>
       {label}
@@ -56,7 +63,7 @@ export function GuideActions({
   )
   return (
     <div className="guide-import guide-actions">
-      <GuideTab open={tool === 'guides'} following={following} onToggle={() => onTool('guides')} />
+      <GuideTab open={open} following={following} onOpen={openGuide} onSearch={onGuideSearch ?? openGuide} />
       {query ? (
         <span className="guide-query" title={`This Guide was created from “${query}”`}>
           {query}
@@ -72,11 +79,12 @@ export function GuideActions({
 
 /**
  * GUIDE names the screen the viewer is in, so it always reads as selected here, in white rather than yellow.
- * A right-click or a hold opens (and closes) the Guide options; a plain click only closes them again.
+ * A click or a tap opens the viewer's Guide at once; a right-click or a hold opens CREATE GUIDE FROM….
  */
-function GuideTab({ open, following, onToggle }: { open: boolean; following: boolean; onToggle: () => void }) {
-  // The hold only ever dispatches the same GUIDE-options toggle, so the first handler serves throughout.
-  const [press] = useState(() => createLongPress(onToggle))
+function GuideTab({ open, following, onOpen, onSearch }: { open: boolean; following: boolean; onOpen: () => void; onSearch: () => void }) {
+  const [press] = useState(() => createGuidePress())
+  const actions = { open: onOpen, search: onSearch }
+  useEffect(() => press.cancel, [press])
   const point = (event: PointerEvent<HTMLButtonElement>) => ({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })
   const label = following ? 'Guide, TVN is following a Guide' : 'Guide'
   return (
@@ -85,19 +93,15 @@ function GuideTab({ open, following, onToggle }: { open: boolean; following: boo
       className={`tab guide-follow is-current${open ? ' is-open' : ''}${following ? ' is-following' : ''}`}
       aria-current="page"
       aria-expanded={open}
-      aria-label={`${label}. Right-click or hold for Guide options`}
-      title={following ? 'TVN is following a Guide · right-click or hold for Guide options' : 'Right-click or hold for Guide options'}
+      aria-label={`${label}. Right-click or hold to create a Guide from words`}
+      title={following ? 'TVN is following a Guide · right-click or hold: Create Guide from…' : 'Right-click or hold: Create Guide from…'}
       onKeyDown={keepKey}
-      onClick={() => {
-        if (press.swallowClick()) return
-        if (open) onToggle()
-      }}
+      onClick={() => press.click(actions)}
       onContextMenu={(event) => {
         event.preventDefault()
-        press.opened()
-        onToggle()
+        press.contextMenu(actions)
       }}
-      onPointerDown={(event) => press.down(point(event))}
+      onPointerDown={(event) => press.down(point(event), actions)}
       onPointerMove={(event) => press.move(point(event))}
       onPointerUp={press.up}
       onPointerCancel={press.cancel}

@@ -12,11 +12,10 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from pass22_decisions import DECISIONS as P22  # noqa: E402
 from pass23_decisions import DECISIONS as P23, FORMATS as P23_FORMATS  # noqa: E402
-
-DECISIONS = {**P22, **P23}
+from decision_identities import DECIDED_FOR  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "src/data/originals/originals.json")
+OUT = os.environ.get("ORIGINALS_OUT") or os.path.join(ROOT, "src/data/originals/originals.json")
 VERSION = "originals-v2"
 
 CHANNELS = {
@@ -40,7 +39,6 @@ CHANNELS = {
         "card": ["Night Network", "NIGHT NETWORK · TONIGHT FROM MIDNIGHT"],
         "summary": "RetroTV Night Network: 00:00-04:00 nightly block of verified 1987-1992 recordings.",
     },
-    **P23_FORMATS,
 }
 
 CAPTION = {
@@ -57,6 +55,11 @@ CAPTION = {
 }
 
 NAMES = {c["number"]: c["name"] for c in json.load(open(os.path.join(ROOT, "src/data/canonical-network.json")))["channels"]}
+
+# A decision made for a channel whose slot now carries another channel is set aside, never applied to the newcomer.
+SET_ASIDE = {n for n in {**P22, **P23} if NAMES.get(n) != DECIDED_FOR[n]}
+DECISIONS = {n: d for n, d in {**P22, **P23}.items() if n not in SET_ASIDE}
+FORMATS = {k: v for k, v in P23_FORMATS.items() if int(k) not in SET_ASIDE}
 
 
 # Presentation only: what a channel shows while it has nothing to air. These never change a channel's
@@ -113,12 +116,14 @@ def main():
                 "reason": decision["reason"],
             }
     presentation(cards)
-    out = {"format": "retrotv-originals-v1", "version": VERSION, "channels": CHANNELS, "cards": cards}
+    out = {"format": "retrotv-originals-v1", "version": VERSION, "channels": {**CHANNELS, **FORMATS}, "cards": cards}
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as handle:
         json.dump(out, handle, indent=1, ensure_ascii=False)
         handle.write("\n")
-    print(f"originals: {len(CHANNELS)} channels, {len(cards)} cards -> {os.path.relpath(OUT, ROOT)}")
+    for number in sorted(SET_ASIDE):
+        print(f"set aside: {number:03d} was decided for {DECIDED_FOR[number]}, now {NAMES.get(number, 'unassigned')}")
+    print(f"originals: {len(out['channels'])} channels, {len(cards)} cards -> {os.path.relpath(OUT, ROOT)}")
 
 
 if __name__ == "__main__":

@@ -174,6 +174,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   // GUIDE (the viewer's viewing Guides) stays open while the cursor roams the grid to add to it.
   const tool = tv.guideTool && (tv.guideTool.kind === 'guides' || tv.guideTool.cursor === tv.guideCursor) ? tv.guideTool.kind : null
   const following = tv.guideRun?.state === 'active'
+  // Each right-click or hold on GUIDE asks the Guide panel to make CREATE GUIDE FROM… ready.
+  const [searchAsk, setSearchAsk] = useState(0)
   const [addMenu, setAddMenu] = useState<AddMenu | null>(null)
   const [addNote, setAddNote] = useState<string | null>(null)
   useEffect(() => {
@@ -507,6 +509,10 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           query={tv.guideSearch && tv.guideLibrary.current?.id === tv.guideSearch.guideId ? tv.guideSearch.query : null}
           onNow={() => tv.dispatch({ type: 'guide-now' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
+          onGuideSearch={() => {
+            setSearchAsk((asked) => asked + 1)
+            if (tool !== 'guides') tv.dispatch({ type: 'guide-tool', tool: 'guides' })
+          }}
         />
         <button type="button" className="tab guide-close" onClick={() => tv.dispatch({ type: 'cancel' })}>
           Close
@@ -687,7 +693,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         </p>
       ) : null}
       {tool === 'guides' ? (
-        <GuidePanel />
+        <GuidePanel searchAsk={searchAsk} />
       ) : tool === 'edit' && focusedChannel && editScope === 'tvn' ? (
         <TvnChannelPanel onChooseAnother={tv.chooseAnotherTvn} onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })} />
       ) : tool === 'edit' && focusedChannel && editScope ? (

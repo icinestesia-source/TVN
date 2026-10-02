@@ -35,10 +35,10 @@ export function createWheelStepper() {
   }
 }
 
-/** A quick, clearly vertical swipe on a touch screen: up goes one channel back, down one channel on. */
+/** A quick, clearly vertical swipe on a touch screen: up goes one channel on, down one channel back (the reverse of a trackpad). */
 export function swipeStep(start: { x: number; y: number; at: number }, end: { x: number; y: number; at: number }): ChannelStep | null {
   const dx = end.x - start.x
   const dy = end.y - start.y
   if (end.at - start.at > SWIPE_MAX_MS || Math.abs(dy) < SWIPE_MIN_PX || Math.abs(dy) < Math.abs(dx) * 1.5) return null
-  return dy < 0 ? { type: 'channel-down' } : { type: 'channel-up' }
+  return dy < 0 ? { type: 'channel-up' } : { type: 'channel-down' }
 }
