@@ -62,6 +62,8 @@ export interface TvContextValue {
   guideNote: GuideNote
   tuningNumber: number | null
   /** The airing the player was last asked for has reached PLAYING; until then TVN's noise owns the picture. */
+  /** The channel whose picture last played; the cover over it while the next clip loads is a plain cut. */
+  pictureChannel: number | null
   pictureLive: boolean
   /** The first channel is on screen (playing, a card, or the player gave up); the startup logo holds until then. */
   startupSettled: boolean
@@ -88,8 +90,12 @@ export interface TvContextValue {
   /** A TVN setting; `moved` is the end the viewer changed, which wins if the two cross. */
   setSurfRange: (range: import('./surf.ts').SurfRange, moved?: 'min' | 'max') => void
   /** How a channel change is presented (src/state/transitions.ts), a saved setting. Never waits for the player. */
-  transition: import('./transitions.ts').TransitionId
-  setTransition: (id: import('./transitions.ts').TransitionId) => void
+  transition: import('./transitions.ts').TransitionSettings
+  setTransition: (settings: import('./transitions.ts').TransitionSettings) => void
+  /** The channel change being presented, if one is: its effect and title card, for the newest channel asked for. */
+  presentation: import('./transitions.ts').Presentation | null
+  /** Ends this presentation once the picture is on screen; a newer one is left alone. */
+  endTransition: (session: number) => void
   /** The actions in the corners of the information overlay's control pad, a saved setting. */
   infoShortcuts: ShortcutAssignment
   /** Puts an action in a corner, swapping it with the corner's current action. */

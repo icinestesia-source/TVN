@@ -34,7 +34,7 @@ export function TouchRemote() {
           }}
         >
           <p className="tvn-settings-head">Random settings</p>
-          <p className="tvn-settings-note">Random Cycle. Hold R to start or stop it; each hop comes after a random wait in this range.</p>
+          <p className="tvn-settings-note">Random Cycle. Hold TVN on the control pad to start or stop it; each hop comes after a random wait in this range.</p>
           <label className="tvn-range">
             <span>Minimum</span>
             <input

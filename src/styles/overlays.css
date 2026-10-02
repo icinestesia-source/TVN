@@ -1,8 +1,200 @@
-.static {
+/* Channel-change transitions (src/state/transitions.ts). One layer from the press until the picture plays. */
+.fx {
   position: fixed;
   inset: 0;
   z-index: 30;
+  overflow: hidden;
   background: #0a0a0a;
+  pointer-events: none;
+}
+
+.fx.is-contained { position: absolute; z-index: 1; }
+
+.fx.is-revealing { animation: fx-reveal var(--reveal-ms) ease-out forwards; }
+
+@keyframes fx-reveal { to { opacity: 0; } }
+
+.fx-tint {
+  position: absolute;
+  inset: 0;
+  background: var(--fx-tint);
+  mix-blend-mode: multiply;
+}
+
+/* Analogue static: scan lines and a rolling hold bar over heavy snow. */
+.fx-scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.42) 0 1px, transparent 1px 3px);
+}
+
+.fx-roll {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22%;
+  top: -22%;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.7) 60%, transparent);
+  animation: fx-roll calc(var(--fx-ms) * 0.9) linear infinite;
+}
+
+@keyframes fx-roll { to { transform: translateY(560%); } }
+
+/* CRT collapse: a bright raster folds to a line, then a dot, then dark. */
+.fx-crt { background: #000; }
+
+.fx-beam {
+  position: absolute;
+  inset: 0;
+  background: #f2f6ff;
+  box-shadow: 0 0 40px 12px rgba(220, 235, 255, 0.85);
+  animation: fx-collapse var(--fx-ms) cubic-bezier(0.6, 0, 0.4, 1) forwards;
+}
+
+@keyframes fx-collapse {
+  0% { transform: scale(1, 1); opacity: 0.55; }
+  38% { transform: scale(1, 0.006); opacity: 1; }
+  52% { transform: scale(0.004, 0.006); opacity: 1; }
+  62%, 100% { transform: scale(0, 0); opacity: 0; }
+}
+
+/* Signal glitch: torn, shifting lines over a weak signal, then a dropout. */
+.fx-glitch { background: #050505; }
+.fx-glitch .static-noise { opacity: 0.45; }
+
+.fx-tears { position: absolute; inset: 0; animation: fx-drop var(--fx-ms) steps(1) forwards; }
+
+.fx-tears i {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  height: 7%;
+  background: linear-gradient(90deg, #c8c8c8 0 14%, #c8c800 14% 28%, #00c8c8 28% 42%, #00c800 42% 57%, #c800c8 57% 71%, #c80000 71% 85%, #0000c8 85%);
+  opacity: 0.75;
+  animation: fx-tear 160ms steps(2) infinite;
+}
+
+.fx-tears i:nth-child(1) { top: 12%; }
+.fx-tears i:nth-child(2) { top: 31%; height: 3%; animation-duration: 120ms; animation-direction: reverse; }
+.fx-tears i:nth-child(3) { top: 47%; height: 11%; animation-duration: 200ms; }
+.fx-tears i:nth-child(4) { top: 68%; height: 4%; animation-direction: reverse; }
+.fx-tears i:nth-child(5) { top: 84%; height: 6%; animation-duration: 140ms; }
+
+@keyframes fx-tear {
+  0% { transform: translateX(-4%); }
+  50% { transform: translateX(5%); }
+  100% { transform: translateX(-1%); }
+}
+
+@keyframes fx-drop {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0.18; }
+}
+
+/* Fade: down to black, and up into the picture on the reveal. */
+.fx-fade { background: #000; animation: fx-fade-in calc(var(--fx-ms) * 0.35) ease-in both; }
+
+@keyframes fx-fade-in { from { opacity: 0; } }
+
+/* Cut & flash: a quick white flash over the cut; the picture follows. */
+.fx-flash { background: transparent; }
+
+.fx-flash-light {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  animation: fx-flash var(--fx-ms) ease-out forwards;
+}
+
+@keyframes fx-flash {
+  0% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+/* The title card: hidden until the IDENTIFY phase, then held until the picture plays. */
+.fx-card {
+  position: absolute;
+  opacity: var(--card-opacity, 1);
+  animation: fx-card-in 1ms steps(1) var(--card-delay) both;
+}
+
+@keyframes fx-card-in {
+  from { visibility: hidden; }
+  to { visibility: visible; }
+}
+
+.fx-card-face.static-ident {
+  position: static;
+  transform: none;
+  zoom: var(--card-zoom, 1);
+}
+
+.fx-card.at-centre { left: 50%; top: 46%; transform: translate(-50%, -50%); }
+.fx-card.at-top-left { left: 6%; top: 8%; }
+.fx-card.at-top-right { right: 6%; top: 8%; }
+.fx-card.at-bottom-left { left: 6%; bottom: 10%; }
+.fx-card.at-bottom-right { right: 6%; bottom: 10%; }
+.fx-card:is(.at-top-left, .at-bottom-left) .fx-card-face { text-align: left; }
+.fx-card:is(.at-top-right, .at-bottom-right) .fx-card-face { text-align: right; }
+
+.fx-card .static-title { color: var(--card-accent, var(--gold)); }
+
+.fx-card.panel-band { left: 0; right: 0; transform: none; }
+.fx-card.panel-band.at-centre { top: 50%; transform: translateY(-50%); }
+.fx-card.panel-band .fx-card-face {
+  min-width: 0;
+  border: 0;
+  border-top: 2px solid var(--card-accent, var(--gold));
+  border-bottom: 2px solid var(--card-accent, var(--gold));
+  background: rgba(0, 0, 0, 0.66);
+}
+
+.fx-card.panel-none .fx-card-face {
+  border: 0;
+  background: none;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 2px #000;
+}
+
+.fx-card.type-mono :is(.static-number, .static-name, .static-title) { font-family: 'Courier New', ui-monospace, monospace; }
+
+/* OPTIONS → Channel change: the preview screen. */
+.fx-preview-wrap { display: flex; align-items: flex-end; gap: 10px; margin: 8px 0 10px; }
+
+.fx-preview {
+  position: relative;
+  width: min(100%, 320px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #000;
+}
+
+.fx-preview-picture {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end start;
+  padding: 8px 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, #12304f, #1d4c78 60%, #0b1b2c);
+}
+
+.fx-preview-picture.is-next {
+  background: linear-gradient(90deg, #bfbfbf 0 14%, #bfbf00 14% 28%, #00bfbf 28% 42%, #00bf00 42% 57%, #bf00bf 57% 71%, #bf0000 71% 85%, #0000bf 85%);
+  color: #000;
+  text-shadow: 0 0 4px #fff;
+}
+
+.channel-change .options-control { flex-wrap: wrap; justify-content: flex-end; }
+
+@media (max-width: 520px) {
+  .fx-preview-wrap { flex-direction: column; align-items: stretch; }
+  .fx-preview { width: 100%; }
+  .channel-change .options-row { flex-wrap: wrap; }
 }
 
 .static-noise {

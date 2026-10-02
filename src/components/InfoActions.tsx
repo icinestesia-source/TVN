@@ -115,12 +115,12 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
 /**
  * The information bar's controls, one 3×3 pad wherever the bar appears, in the Guide and over the picture.
  * The gold Guide key in the centre keeps the size of the Watch key it replaced, and its corners hold the
- * viewer's shortcuts. R tunes at random on a click, starts or stops the Random Cycle on a hold, and opens the
+ * viewer's shortcuts. TVN (R on a keyboard) tunes at random on a click, starts or stops the Random Cycle on a hold, and opens the
  * Random settings on a right-click; ⚙ opens Settings:
  *
  *   REMOTE  ↑ CH+  ⛶
  *   ←      GUIDE   →
- *   ⚙       ↓ CH−  R
+ *   ⚙       ↓ CH−  TVN
  *
  * ↑ and ↓ move back and forward through the channels watched; until ↑ has been used there is nowhere
  * forward to go, so ↓'s place holds MULTI. CH+ and CH− share their cells and step along the channel numbers. ← and → step back and forth along the channel's programmes (in the Guide they move

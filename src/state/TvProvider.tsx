@@ -79,7 +79,16 @@ import { clamp, sleep } from '../utils/time.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
 import { buildTvnExport, serialiseTvnExport, tvnExportFilename, validateTvnExport, type TvnExport } from '../services/tvn-export.ts'
-import { asTransition, loadTransition, saveTransition, TRANSITIONS, type TransitionId } from './transitions.ts'
+import {
+  asTransitionSettings,
+  DEFAULT_TRANSITION_SETTINGS,
+  loadTransitionSettings,
+  saveTransitionSettings,
+  transitionTiming,
+  type Presentation,
+  type TransitionSettings,
+  type TransitionTiming,
+} from './transitions.ts'
 import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
@@ -166,6 +175,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   // The first channel is on screen: playing, paused, a slate, or a failure its replacement did not follow in time.
   // The startup logo holds until then.
   const [startupSettled, setStartupSettled] = useState(false)
+  const startupSettledRef = useRef(false)
+  startupSettledRef.current = startupSettled
   const [startupFailed, setStartupFailed] = useState(false)
   const [favouritesSeeded] = useState(() => defaultFavouritesDue())
   const stored = useRef(loadPreferences()).current
@@ -219,6 +230,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const [guideNote, setGuideNote] = useState<GuideNote>(null)
   const [tuningNumber, setTuningNumber] = useState<number | null>(null)
   const [pictureLive, setPictureLive] = useState(false)
+  /** The channel whose picture last played: a cover over that same channel is a change of clip, not of channel. */
+  const [pictureChannel, setPictureChannel] = useState<number | null>(null)
   const pictureLiveRef = useRef(false)
   /** The automatic recovery from refused programmes since the viewer's last tune or the last picture that played. */
   const recoveryRef = useRef<Recovery | null>(null)
@@ -249,8 +262,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const surfingRef = useRef(surfing)
   const [surfHops, setSurfHops] = useState(0)
   const [surfRange, setSurfRangeState] = useState<SurfRange>(() => loadSurfRange())
-  const [transition, setTransitionState] = useState<TransitionId>(() => loadTransition())
+  const [transition, setTransitionState] = useState<TransitionSettings>(() => loadTransitionSettings())
   const transitionRef = useRef(transition)
+  /** The transition presenting the current tune, if one is; tunes during it take it over. */
+  const [presentation, setPresentation] = useState<Presentation | null>(null)
+  const presentationRef = useRef<Presentation | null>(null)
+  const presentationSession = useRef(0)
+  /** The timing of the tune in progress, fixed at its first press. */
+  const tuneTiming = useRef<TransitionTiming>(transitionTiming(DEFAULT_TRANSITION_SETTINGS))
   const [infoShortcuts, setInfoShortcuts] = useState<ShortcutAssignment>(stored.infoShortcuts)
   const noticeSeen = useNoticeAcknowledged()
 
@@ -551,7 +570,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       current: () => generation === tokenRef.current,
       load: () => loadProgramme(target, Date.now()),
       holdStatic: async () => {
-        const remain = TRANSITIONS[transitionRef.current].minMs - (performance.now() - staticSince.current)
+        const remain = tuneTiming.current.durationMs - (performance.now() - staticSince.current)
         if (remain > 0) await sleep(remain)
       },
       // Whatever was asked for an abandoned channel must not stay on the one still being watched.
@@ -715,14 +734,23 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (pendingOrigin.current === null) pendingOrigin.current = channelRef.current
     const origin = pendingOrigin.current
     pendingNumberRef.current = number
-    if (!tuningRef.current) staticSince.current = performance.now()
+    // The viewer's transition presents a channel change; the start-up sequence keeps its own presentation.
+    const settings = transitionRef.current
+    const presents = startupSettledRef.current && settings.id !== 'instant'
+    if (!tuningRef.current) {
+      staticSince.current = performance.now()
+      tuneTiming.current = transitionTiming(presents || settings.id === 'instant' ? settings : DEFAULT_TRANSITION_SETTINGS)
+    }
+    const held = presentationRef.current
+    presentationRef.current = presents ? (held ? { ...held, number } : { session: ++presentationSession.current, number, settings }) : null
+    setPresentation(presentationRef.current)
     tuningRef.current = true
     setTuningNumber(number)
     playerRef.current?.setAudible(false, 0, true)
     window.clearTimeout(settleTimer.current)
     settleTimer.current = window.setTimeout(() => {
       void commitTuneRef.current(generation, number, origin)
-    }, TRANSITIONS[transitionRef.current].settleMs)
+    }, tuneTiming.current.settleMs)
   }
 
   commitNumericRef.current = () => {
@@ -922,6 +950,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       pictureLiveRef.current = true
       setPictureLive(true)
       setStartupSettled(true)
+      if (asked) setPictureChannel(asked.channelNumber)
       if (asked?.channelNumber === watchingNumber()) recoveryRef.current = null
     }
     // A paused picture is the picture: a start the browser would not autoplay shows it, not the logo.
@@ -1823,7 +1852,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
         guideSplit: guideSplitRef.current,
         infoShortcuts: infoShortcutsRef.current,
         surfRange: surfRangeRef.current,
-        transition: transitionRef.current,
+        transition: transitionRef.current.id,
+        transitionStyle: transitionRef.current,
       },
       now,
       uploaderOf: uploaderIdFor,
@@ -1901,11 +1931,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         saveSurfRange(range)
         setSurfRangeState(range)
       }
-      if (settings.transition !== undefined) {
-        transitionRef.current = asTransition(settings.transition)
-        saveTransition(transitionRef.current)
-        setTransitionState(transitionRef.current)
-      }
+      // A file from before the transition's look was saved restores its defaults.
+      transitionRef.current = asTransitionSettings({ ...settings.transitionStyle, id: settings.transition ?? settings.transitionStyle?.id })
+      saveTransitionSettings(transitionRef.current)
+      setTransitionState(transitionRef.current)
       playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
       return restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')
     },
@@ -2090,11 +2119,18 @@ export function TvProvider({ children }: { children: ReactNode }) {
     setSurfRangeState(next)
   }, [])
 
-  const setTransition = useCallback((id: TransitionId) => {
-    const next = asTransition(id)
+  const setTransition = useCallback((settings: TransitionSettings) => {
+    const next = asTransitionSettings(settings)
     transitionRef.current = next
-    saveTransition(next)
+    saveTransitionSettings(next)
     setTransitionState(next)
+  }, [])
+
+  /** The picture (or a face) has the screen; a later presentation is left alone. */
+  const endTransition = useCallback((session: number) => {
+    if (presentationRef.current?.session !== session) return
+    presentationRef.current = null
+    setPresentation(null)
   }, [])
 
   const setInfoShortcut = useCallback((corner: Corner, id: ShortcutId) => {
@@ -2215,6 +2251,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideNote,
       tuningNumber,
       pictureLive,
+      pictureChannel,
       startupSettled,
       numeric,
       overlay,
@@ -2234,6 +2271,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       setSurfRange,
       transition,
       setTransition,
+      presentation,
+      endTransition,
       infoShortcuts,
       setInfoShortcut,
       resetInfoShortcuts,
@@ -2337,6 +2376,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       setSurfRange,
       transition,
       setTransition,
+      presentation,
+      endTransition,
       infoShortcuts,
       setInfoShortcut,
       resetInfoShortcuts,
@@ -2348,6 +2389,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       syncLive,
       tuningNumber,
       pictureLive,
+      pictureChannel,
       startupSettled,
       visibleChannels,
       guideVisiting,

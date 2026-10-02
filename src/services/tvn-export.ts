@@ -1,6 +1,6 @@
 import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN, type SurfRange } from '../state/surf.ts'
-import { TRANSITION_IDS, type TransitionId } from '../state/transitions.ts'
+import { TRANSITION_IDS, transitionSettingsErrors, type TransitionId, type TransitionSettings } from '../state/transitions.ts'
 import { CORNERS, SHORTCUT_IDS, type ShortcutAssignment } from '../view/info-shortcuts.ts'
 import { USER_NUMBER_LIMIT } from '../data/network.ts'
 import type { StoredSource } from './channels-import.ts'
@@ -38,6 +38,8 @@ export interface PortableSettings {
   infoShortcuts: ShortcutAssignment
   surfRange: SurfRange
   transition: TransitionId
+  /** The transition's look (speed, colour, grain, title card). Files from before it restore the defaults. */
+  transitionStyle: TransitionSettings
 }
 
 export interface TvnExport {
@@ -74,7 +76,12 @@ export function buildTvnExport({ stored, users, favourites, settings, now, uploa
     exportedAt: now.toISOString(),
     userNetwork,
     favourites: [...favourites],
-    settings: { ...settings, infoShortcuts: { ...settings.infoShortcuts }, surfRange: { ...settings.surfRange } },
+    settings: {
+      ...settings,
+      infoShortcuts: { ...settings.infoShortcuts },
+      surfRange: { ...settings.surfRange },
+      transitionStyle: { ...settings.transitionStyle, card: { ...settings.transitionStyle.card } },
+    },
     manifests,
   }
 }
@@ -133,6 +140,7 @@ function checkSettings(value: unknown, errors: string[]): void {
   if (value.transition !== undefined && !(TRANSITION_IDS as readonly unknown[]).includes(value.transition)) {
     errors.push(`${at('transition')} is not ${TRANSITION_IDS.join(' or ')}`)
   }
+  if (value.transitionStyle !== undefined) errors.push(...transitionSettingsErrors(value.transitionStyle, at('transitionStyle')))
 }
 
 export function validateTvnExport(data: unknown): { ok: true; value: TvnExport } | { ok: false; errors: string[] } {

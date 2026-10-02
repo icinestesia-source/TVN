@@ -134,7 +134,7 @@ const context = (overrides: Partial<ShortcutContext> = {}): ShortcutContext => (
 describe('information overlay: 3×3 control pad', () => {
   it('1. the default layout is REMOTE ↑|CH+ ⛶ / ← GUIDE → / ⚙ ↓|CH− R, nine cells', () => {
     const { tree, list } = pad()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'R'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'TVN'])
     expect(cells(tree)).toHaveLength(9)
     expect((tree as ReactElement<{ className: string }>).props.className).toBe('info-actions info-pad has-history')
     expect((tree as ReactElement<{ role: string }>).props.role).toBe('group')
@@ -252,7 +252,7 @@ describe('information overlay: 3×3 control pad', () => {
   it('13. R: a click tunes one random channel, a hold starts or stops the Random Cycle, a right-click opens Random settings', () => {
     const { sent, settings, press, find } = pad()
     const r = find('Random channel')
-    expect(r.label).toBe('R')
+    expect(r.label).toBe('TVN')
     expect(r.props.title).toBe('Random channel · hold to start or stop Random Cycle · right-click for Random settings')
     expect(r.props['aria-haspopup']).toBe('dialog')
     press('Random channel')

@@ -342,7 +342,7 @@ describe('viewing history: Back and Forward', () => {
       }),
     )
     const labels = [...html.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'R'])
+    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'TVN'])
     expect(html).toContain('class="info-actions info-pad has-history"')
     const css = read('src/styles/guide.css')
     expect(css).toMatch(/\.info-actions\.has-history \{\s*flex-wrap: nowrap;/)

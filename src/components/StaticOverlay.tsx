@@ -1,27 +1,15 @@
 import { useEffect, useRef } from 'react'
-import { channelByNumber } from '../data/catalogue.ts'
-import { onScreen } from '../player/manual.ts'
-import { useClock } from '../utils/use-clock.ts'
-import { padChannel } from '../utils/time.ts'
+import type { TransitionGrain } from '../state/transitions.ts'
 
-export function StaticOverlay({ channelNumber }: { channelNumber: number }) {
-  const now = useClock(500)
-  const channel = channelByNumber(channelNumber)
-  const title = channel ? onScreen(channel, now).current.programme.title : 'No channel'
-
-  return (
-    <div className="static" role="status" aria-live="polite">
-      <Noise />
-      <div className="static-ident">
-        <p className="static-number">{channel ? padChannel(channel.number) : '———'}</p>
-        <p className="static-name">{channel?.name ?? 'NO CHANNEL'}</p>
-        <p className="static-title">{title}</p>
-      </div>
-    </div>
-  )
+/** The noise field's own resolution; the canvas is scaled up, so fewer pixels read as coarser grain. */
+const GRAIN_SIZE: Record<TransitionGrain, [number, number]> = {
+  coarse: [96, 54],
+  normal: [180, 102],
+  fine: [320, 180],
 }
 
-export function Noise() {
+/** Television snow. `heavy` is brighter, with more tearing: the analogue static transition. */
+export function Noise({ grain = 'normal', heavy = false }: { grain?: TransitionGrain; heavy?: boolean } = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -30,18 +18,18 @@ export function Noise() {
     const context = canvas.getContext('2d', { alpha: false })
     if (!context) return
 
-    const width = 180
-    const height = 102
+    const [width, height] = GRAIN_SIZE[grain]
     canvas.width = width
     canvas.height = height
     const image = context.createImageData(width, height)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const tearEvery = heavy ? 5 : 12
     let frame = 0
     let raf = 0
 
     const draw = () => {
       const data = image.data
-      const level = 150 + Math.random() * 40
+      const level = heavy ? 205 + Math.random() * 50 : 150 + Math.random() * 40
       for (let index = 0; index < data.length; index += 4) {
         const value = Math.random() * level
         data[index] = value
@@ -60,10 +48,11 @@ export function Noise() {
         }
       }
       context.putImageData(image, 0, 0)
-      if (!reduce && frame % 12 === 0) {
+      if (!reduce && frame % tearEvery === 0) {
         const y = Math.floor(Math.random() * (height - 4))
-        const band = context.getImageData(0, y, width, 2)
-        context.putImageData(band, Math.random() > 0.5 ? 5 : -5, y)
+        const band = context.getImageData(0, y, width, heavy ? 4 : 2)
+        const shift = Math.round((heavy ? 12 : 5) * (width / 180))
+        context.putImageData(band, Math.random() > 0.5 ? shift : -shift, y)
       }
       frame += 1
       if (!reduce) raf = window.requestAnimationFrame(draw)
@@ -71,7 +60,7 @@ export function Noise() {
 
     draw()
     return () => window.cancelAnimationFrame(raf)
-  }, [])
+  }, [grain, heavy])
 
   return <canvas ref={canvasRef} className="static-noise" />
 }

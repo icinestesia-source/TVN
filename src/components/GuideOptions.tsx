@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { openAbout } from '../legal/about-store.ts'
+import { ChannelChangeOptions } from './ChannelChangeOptions.tsx'
 import { listChannels } from '../data/catalogue.ts'
 import { USER_NUMBER_START } from '../data/network.ts'
 import { USER_NAME_MAX, type NetworkUser } from '../data/user-network/users.ts'
 import { GUIDE_ZOOM_MAX, GUIDE_ZOOM_MIN, GUIDE_ZOOM_STEP } from '../epg/zoom.ts'
 import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
-import { TRANSITION_IDS, TRANSITIONS } from '../state/transitions.ts'
 import { useTv } from '../state/tv-context.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
 
@@ -233,23 +233,8 @@ export function GuideOptions() {
           <Row label="Subtitles">{toggle(tv.subtitles, ['On', 'Off'], () => tv.dispatch({ type: 'subtitles' }))}</Row>
         </Card>
 
-        <Card title="Channel change">
-          <div className="options-choices" role="radiogroup" aria-label="Channel change">
-            {TRANSITION_IDS.map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="radio"
-                aria-checked={tv.transition === id}
-                className={tv.transition === id ? 'tab is-on' : 'tab'}
-                onKeyDown={keepKey}
-                onClick={() => tv.setTransition(id)}
-              >
-                {TRANSITIONS[id].label}
-              </button>
-            ))}
-          </div>
-          <p className="options-note">{TRANSITIONS[tv.transition].note}</p>
+        <Card title="Channel change" wide>
+          <ChannelChangeOptions settings={tv.transition} onChange={tv.setTransition} />
         </Card>
 
         <Card title="Sleep">
@@ -294,7 +279,7 @@ export function GuideOptions() {
         </Card>
 
         <Card title="Random Cycle">
-          <p className="options-note">Hold R to start or stop it (T on a keyboard); each hop comes after a random wait in this range.</p>
+          <p className="options-note">Hold TVN on the control pad to start or stop it (T on a keyboard); each hop comes after a random wait in this range.</p>
           <label className="options-row">
             <span className="options-label">Minimum</span>
             <span className="options-control">

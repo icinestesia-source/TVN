@@ -103,7 +103,7 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
   },
   random: {
     id: 'random',
-    label: 'R',
+    label: 'TVN',
     name: 'Random channel',
     title: 'Random channel · hold to start or stop Random Cycle · right-click for Random settings',
     unavailable: 'Random channel is not available',

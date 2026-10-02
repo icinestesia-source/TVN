@@ -18,7 +18,8 @@ import { NowNextOverlay } from '../components/NowNextOverlay.tsx'
 import { editorScope } from '../view/channel-edit.ts'
 import { NumericEntry } from '../components/NumericEntry.tsx'
 import { RadioFace } from '../components/RadioFace.tsx'
-import { Noise, StaticOverlay } from '../components/StaticOverlay.tsx'
+import { Noise } from '../components/StaticOverlay.tsx'
+import { ChannelTransition } from '../components/TransitionOverlay.tsx'
 import { TestCard } from '../components/TestCard.tsx'
 import { TouchRemote } from '../components/TouchRemote.tsx'
 import { VolumeOsd } from '../components/VolumeOsd.tsx'
@@ -27,7 +28,7 @@ import { useAboutOpen, useNoticeAcknowledged } from '../legal/about-store.ts'
 import { START_HOLD_COPY } from '../player/autoplay.ts'
 import { AboutPanel } from '../legal/AboutPanel.tsx'
 import { FirstRunNotice } from '../legal/FirstRunNotice.tsx'
-import { TRANSITIONS } from '../state/transitions.ts'
+import { presentedChannel, transitionTiming } from '../state/transitions.ts'
 
 function useViewportWidth(): number {
   const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1280 : window.innerWidth))
@@ -61,7 +62,6 @@ function usePresence(open: boolean, closeMs: number): 'open' | 'closing' | null 
 export function TvScreen() {
   const tv = useTv()
   const guide = usePresence(tv.guideMode !== 'closed', GUIDE_CLOSE_MS)
-  const info = usePresence(tv.overlay === 'info' && tv.tuningNumber === null, INFO_FADE_MS)
   const now = useClock(1000)
   const width = useViewportWidth()
   const aboutOpen = useAboutOpen()
@@ -73,6 +73,26 @@ export function TvScreen() {
   const owner = pictureOwner({ face, live: tv.pictureLive, paused: tv.paused })
   const audio = face === 'radio'
   const showCard = face === 'card'
+  const nextClip = owner === 'cover' && tv.tuningNumber === null && tv.presentation === null && tv.pictureChannel === tv.channel.number
+  const presented = presentedChannel({
+    presentation: tv.presentation,
+    tuningNumber: tv.tuningNumber,
+    channelNumber: tv.channel.number,
+    covered: owner === 'cover',
+    single,
+  })
+  // The picture (or a face) has the screen: the effect cuts, or fades for its reveal, and the presentation ends.
+  const ending = tv.presentation !== null && presented === null && tv.tuningNumber === null ? tv.presentation : null
+  const revealMs = ending ? transitionTiming(ending.settings).revealMs : 0
+  // INFO waits for the picture, not just the commit: the card names the channel until then.
+  const info = usePresence(tv.overlay === 'info' && tv.tuningNumber === null && presented === null, INFO_FADE_MS)
+  const { endTransition } = tv
+  useEffect(() => {
+    if (!ending) return
+    const id = window.setTimeout(() => endTransition(ending.session), revealMs)
+    return () => window.clearTimeout(id)
+  }, [ending, revealMs, endTransition])
+  const layer = presented !== null && tv.presentation ? { presentation: tv.presentation, number: presented, revealing: false } : ending && revealMs > 0 && single ? { presentation: ending, number: ending.number, revealing: true } : null
   const shell = [
     'tv',
     tv.guideMode === 'integrated' ? 'is-integrated' : '',
@@ -95,9 +115,10 @@ export function TvScreen() {
         {single ? (
           <div className={face === 'picture' ? 'stage' : 'stage is-card'}>
             <PlayerStage playerRef={tv.playerRef} onReady={tv.onPlayerReady} onStatus={tv.onPlayerStatus} captions={tv.subtitles} />
+            {/* Static belongs to changing channel; the next clip on the same channel comes in on a plain cut. */}
             {owner === 'cover' ? (
               <div className="stage-waiting" aria-hidden="true">
-                <Noise />
+                {nextClip ? null : <Noise />}
               </div>
             ) : null}
             {audio ? <RadioFace channel={tv.channel} /> : null}
@@ -108,7 +129,9 @@ export function TvScreen() {
         ) : (
           <MultiviewGrid width={width} />
         )}
-        {tv.tuningNumber !== null && single && TRANSITIONS[tv.transition].showsStatic ? <StaticOverlay channelNumber={tv.tuningNumber} /> : null}
+        {layer ? (
+          <ChannelTransition key={layer.presentation.session} settings={layer.presentation.settings} channelNumber={layer.number} revealing={layer.revealing} />
+        ) : null}
         {tv.credits ? <CreditsRoll /> : null}
         {tv.screenEdit !== null ? <ScreenEditor /> : info ? <NowNextOverlay leaving={info === 'closing'} /> : null}
         {tv.overlay === 'volume' ? <VolumeOsd volume={tv.volume} muted={tv.muted} /> : null}

@@ -39,7 +39,7 @@ describe('one information bar, in the Guide and over the picture', () => {
     const markup = render(historyActions(tv))
     expect(markup).toMatch(/^<div class="info-actions info-pad has-history" role="group" aria-label="Programme controls">/)
     const labels = [...markup.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'R'])
+    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'TVN'])
   })
 
   it('has no Guide-only rule for the actions: the one-line rule and the narrow-width rule apply to both', () => {

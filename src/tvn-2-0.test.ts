@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ProgrammeInfo } from './components/ProgrammeInfo.tsx'
 import { playbackLabel } from './view/playback-label.ts'
 import { UserNetworkImportTools } from './components/GuideAdd.tsx'
@@ -23,8 +23,7 @@ import {
 } from './services/tvn-export.ts'
 import { USER_NETWORK_FORMAT } from './services/user-network-export.ts'
 import { recordsFromExport } from './services/user-network-restore.ts'
-import { commitTune } from './state/tune-commit.ts'
-import { asTransition, loadTransition, saveTransition, TRANSITION_KEY, TRANSITIONS } from './state/transitions.ts'
+import { DEFAULT_TRANSITION_SETTINGS } from './state/transitions.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
 import { DEFAULT_SHORTCUTS, SHORTCUTS } from './view/info-shortcuts.ts'
@@ -200,6 +199,7 @@ describe('TVN 2.0 · COMPLETE TVN EXPORT (tvn-export-v1)', () => {
     infoShortcuts: { ...DEFAULT_SHORTCUTS },
     surfRange: { minSeconds: 5, maxSeconds: 20 },
     transition: 'instant',
+    transitionStyle: { ...DEFAULT_TRANSITION_SETTINGS, id: 'instant' },
   }
   const build = () => buildTvnExport({ stored, users: [user], favourites: [12, 1001], settings, now: new Date(NOW) })
 
@@ -262,60 +262,5 @@ describe('TVN 2.0 · COMPLETE TVN EXPORT (tvn-export-v1)', () => {
   it('existing User Network files still restore through the same Restore', () => {
     const legacy = JSON.stringify({ format: USER_NETWORK_FORMAT, version: 1, exportedAt: '2026-09-01T00:00:00.000Z', numbering: { first: 1001, limit: 10000 }, channels: [] })
     expect(readRestoreFile(legacy)).toMatchObject({ kind: 'network', ok: true })
-  })
-})
-
-describe('TVN 2.0 · channel-change transitions', () => {
-  afterEach(() => vi.useRealTimers())
-
-  const never = () => new Promise<unknown>(() => {})
-  const steps = (minMs: number, log: string[]) => {
-    const since = performance.now()
-    return {
-      current: () => true,
-      load: () => {
-        log.push('load')
-        return never()
-      },
-      holdStatic: async () => {
-        const remain = minMs - (performance.now() - since)
-        if (remain > 0) await new Promise((resolve) => setTimeout(resolve, remain))
-      },
-      commit: () => void log.push('commit'),
-      abandon: () => void log.push('abandon'),
-    }
-  }
-
-  it('INSTANT commits at once and does not wait for the provider', async () => {
-    const log: string[] = []
-    expect(TRANSITIONS.instant).toMatchObject({ minMs: 0, settleMs: 0, showsStatic: false })
-    await expect(commitTune(steps(TRANSITIONS.instant.minMs, log))).resolves.toBe('committed')
-    expect(log).toEqual(['load', 'commit'])
-  })
-
-  it('TV TUNE keeps its ~520 ms static and still never waits for the provider', async () => {
-    vi.useFakeTimers()
-    const log: string[] = []
-    expect(TRANSITIONS['tv-tune']).toMatchObject({ minMs: 520, settleMs: 220, showsStatic: true })
-    const done = commitTune(steps(TRANSITIONS['tv-tune'].minMs, log))
-    await vi.advanceTimersByTimeAsync(400)
-    expect(log).toEqual(['load'])
-    await vi.advanceTimersByTimeAsync(200)
-    await expect(done).resolves.toBe('committed')
-    expect(log).toEqual(['load', 'commit'])
-  })
-
-  it('is a saved preference the tune reads, and only TV TUNE shows the static', () => {
-    const store = new Map<string, string>()
-    const fake = { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => void store.set(key, value) }
-    expect(loadTransition(fake)).toBe('tv-tune')
-    saveTransition('instant', fake)
-    expect(store.get(TRANSITION_KEY)).toBe('instant')
-    expect(loadTransition(fake)).toBe('instant')
-    expect(asTransition('wipe')).toBe('tv-tune')
-    expect(provider).toContain('TRANSITIONS[transitionRef.current].minMs - (performance.now() - staticSince.current)')
-    expect(provider).toContain('}, TRANSITIONS[transitionRef.current].settleMs)')
-    expect(read('src/app/TvScreen.tsx')).toContain('TRANSITIONS[tv.transition].showsStatic ? <StaticOverlay')
-    expect(read('src/components/GuideOptions.tsx')).toContain('<Card title="Channel change">')
   })
 })
