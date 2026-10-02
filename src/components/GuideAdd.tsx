@@ -22,8 +22,9 @@ function viewerMessage(caught: unknown, fallback: string): string {
 }
 
 /**
- * NOW · IMPORT · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself.
- * IMPORT restores a User Network file, ADD opens the Add Channel row, MEDIA builds channel 000 from local files.
+ * NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide itself.
+ * ADD opens the Add Channel row, MEDIA builds channel 000 from local files. Importing a User Network file
+ * lives behind the + row at the foot of the User Network.
  */
 export function GuideActions({
   tool,
@@ -45,7 +46,6 @@ export function GuideActions({
   return (
     <div className="guide-import guide-actions">
       {action('Now', picked, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
-      {action('Import', tool === 'network', () => onTool('network'))}
       {action('Add', tool === 'add', () => onTool('add'))}
       {action('Media', tool === 'media', () => onTool('media'))}
     </div>
@@ -300,10 +300,6 @@ export function UserNetworkImportTools({
           <span>1001+</span>
           <span>Import</span>
         </p>
-        <p className="guide-tool-note">
-          Restore a User Network file saved with EXPORT. It replaces your User Network in this browser; TVN channels 001–999 and Channel 000 stay as
-          they are.
-        </p>
         {note ? (
           <p className="guide-tool-status" role="status">
             {note}
@@ -345,15 +341,24 @@ export function UserNetworkImportTools({
   )
 }
 
-/** The Guide footer while ADD is open: the rest of the User Network's tools. Removing always asks first. */
+/**
+ * The Guide footer while ADD (or +) is open: a new channel from a link, IMPORT of a User Network file, and the
+ * rest of the User Network's tools. Removing always asks first.
+ */
 export function UserNetworkTools({
   userChannels,
+  onNewChannel,
+  onImportNetwork,
   onImportList,
   onLoadTest,
   onRemoveStarter,
   onRemoveAll,
 }: {
   userChannels: number
+  /** Puts the cursor in the Add Channel row's link box. */
+  onNewChannel?: () => void
+  /** Opens IMPORT: a User Network file saved with EXPORT. */
+  onImportNetwork?: () => void
   /** A channel list file (a TVN export or a list of YouTube links) joins 1001+. */
   onImportList: (file: File) => Promise<string>
   /** The bundled starter network, added after the viewer's own channels. */
@@ -417,6 +422,8 @@ export function UserNetworkTools({
           </>
         ) : (
           <>
+            {onNewChannel ? key('New channel', onNewChannel, 'tune-key') : null}
+            {onImportNetwork ? key('Import', onImportNetwork) : null}
             {key('Channel list', () => listInput.current?.click())}
             {key('Add starter network', () => void run(onLoadTest))}
             {userChannels > 0 ? key('Remove starter…', () => setConfirming('starter'), 'tab remove-key') : null}

@@ -108,13 +108,32 @@ describe('ADD', () => {
     expect(markup).toMatch(/>Remove all…</)
     expect(markup).not.toMatch(/Yes, remove/)
   })
+
+  it('+ offers a new channel or an IMPORT of a User Network file, first in the footer', () => {
+    const markup = renderToStaticMarkup(
+      createElement(UserNetworkTools, {
+        userChannels: 3,
+        onNewChannel: () => undefined,
+        onImportNetwork: () => undefined,
+        onImportList: async () => '',
+        onLoadTest: async () => '',
+        onRemoveStarter: async () => '',
+        onRemoveAll: async () => '',
+      }),
+    )
+    const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
+    expect(labels.slice(0, 2)).toEqual(['New channel', 'Import'])
+    expect(guide).toContain('className="ch-tune add-plus" onClick={plusAddRow}')
+    expect(guide).toContain('onNewChannel={() => addInput.current?.focus()}')
+    expect(guide).toContain("onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}")
+  })
 })
 
 describe('MEDIA (channel 000 from local files)', () => {
-  it('is a visible Guide action, after NOW, IMPORT and ADD', () => {
+  it('is a visible Guide action, after NOW and ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'media', picked: false, onNow: () => undefined, onTool: () => undefined }))
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Now', 'Import', 'Add', 'Media'])
+    expect(labels).toEqual(['Now', 'Add', 'Media'])
     expect(markup).toMatch(/aria-pressed="true"[^>]*>Media</)
   })
 

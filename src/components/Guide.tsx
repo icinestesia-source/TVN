@@ -193,7 +193,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 
   const importList = async (file: File) => {
     const text = await file.text()
-    if (text.includes(USER_NETWORK_FORMAT)) throw new Error('A User Network file: use IMPORT at the top to restore it')
+    if (text.includes(USER_NETWORK_FORMAT)) throw new Error('A User Network file: use + then IMPORT to restore it')
     const links = channelLinksFrom(text)
     if (!links) {
       const parsed = parseChannelsExport(text)
@@ -216,7 +216,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const openAddRow = () => {
     if (tool !== 'add') tv.dispatch({ type: 'guide-tool', tool: 'add' })
   }
-  // + opens the existing Add Channel row, exactly as ADD does, and puts the cursor in its link box.
+  // + opens the User Network tools (New channel · Import · …) and the Add Channel row, exactly as ADD does.
   const plusAddRow = () => {
     if (tool !== 'add') openAddRow()
     else addInput.current?.focus()
@@ -398,7 +398,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
             [
               ['all', 'All'],
               ['user', 'TVN'],
-              ['favourites', 'Favourites'],
+              ['favourites', 'Fav'],
             ] as const
           ).map(([filter, label]) => (
             <button
@@ -606,6 +606,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       ) : tool === 'add' ? (
         <UserNetworkTools
           userChannels={userNumbers.length}
+          onNewChannel={() => addInput.current?.focus()}
+          onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}
           onImportList={importList}
           onLoadTest={tv.loadTestChannels}
           onRemoveStarter={tv.removeStarterNetwork}

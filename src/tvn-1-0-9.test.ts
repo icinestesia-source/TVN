@@ -117,11 +117,11 @@ describe('+ after the last User Network channel', () => {
   })
 })
 
-describe('Guide terminology: NOW · IMPORT · ADD · MEDIA', () => {
-  it('reads NOW, IMPORT, ADD, MEDIA in that order, each opening its own tool', () => {
+describe('Guide terminology: NOW · ADD · MEDIA', () => {
+  it('reads NOW, ADD, MEDIA in that order, each opening its own tool; IMPORT is not at the top', () => {
     const html = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect(labelsOf(html)).toEqual(['Now', 'Import', 'Add', 'Media'])
-    expect(addSource).toContain("action('Import', tool === 'network', () => onTool('network')")
+    expect(labelsOf(html)).toEqual(['Now', 'Add', 'Media'])
+    expect(addSource).not.toContain("action('Import'")
     expect(addSource).toContain("action('Add', tool === 'add', () => onTool('add')")
     expect(addSource).toContain("action('Media', tool === 'media', () => onTool('media')")
   })
@@ -134,10 +134,12 @@ describe('Guide terminology: NOW · IMPORT · ADD · MEDIA', () => {
     expect(provider).toMatch(/case 'media':\s+openGuideTool\('media'\)/)
   })
 
-  it('IMPORT at the top restores a User Network file', () => {
+  it('IMPORT behind the + row restores a User Network file', () => {
     expect(guide).toMatch(/tool === 'network' \? \(\s*<UserNetworkImportTools [^\n]*onApply=\{tv\.importUserNetwork\} \/>/)
+    expect(guide).toContain("onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}")
     const footer = renderToStaticMarkup(createElement(UserNetworkImportTools, { userChannels: 3, onApply: async () => '' }))
     expect(footer).toMatch(/aria-label="Import User Network"/)
+    expect(footer).not.toContain('Restore a User Network file')
     expect(labelsOf(footer)).toEqual(['Choose file'])
     expect(footer).toContain('accept=".json,application/json"')
   })
@@ -262,7 +264,7 @@ describe('IMPORT: restoring a User Network export', () => {
   })
 
   it('applies nothing until the file is valid and the viewer confirms the replacement', () => {
-    const tool = addSource.slice(addSource.indexOf('export function UserNetworkImportTools'), addSource.indexOf('/** The Guide footer while ADD is open'))
+    const tool = addSource.slice(addSource.indexOf('export function UserNetworkImportTools'), addSource.indexOf('export function UserNetworkTools'))
     expect(tool).toMatch(/if \(!read\.ok\) \{\s*setNote\(`NOT A TVN USER NETWORK FILE[^\n]*\n\s*return\s*\}/)
     expect(tool.indexOf('setPending({ document: read.value')).toBeGreaterThan(tool.indexOf('if (!read.ok)'))
     expect(tool).toContain('Import User Network? This will replace your current User Network')

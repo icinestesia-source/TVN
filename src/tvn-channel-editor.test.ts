@@ -554,9 +554,10 @@ describe('editing curated 001–999 channels', () => {
 })
 
 describe('existing Guide interactions', () => {
-  it('keeps NOW, IMPORT, ADD, MEDIA, SEARCH, programme selection and the ADD CHANNEL row', () => {
+  it('keeps NOW, ADD, MEDIA, SEARCH, programme selection and the ADD CHANNEL row', () => {
     const actions = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect(actions).toMatch(/>Now<[\s\S]*>Import<[\s\S]*>Add<[\s\S]*>Media</)
+    expect(actions).toMatch(/>Now<[\s\S]*>Add<[\s\S]*>Media</)
+    expect(actions).not.toMatch(/>Import</)
     expect(commandFromKey('Home', plain, true)).toEqual({ type: 'guide-now' })
     expect(commandFromKey('u', plain, false)).toEqual({ type: 'media' })
     expect(commandFromKey('r', plain, false)).toEqual({ type: 'random-channel' })

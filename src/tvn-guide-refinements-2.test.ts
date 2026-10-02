@@ -6,9 +6,9 @@ const read = (path: string) => readFileSync(path, 'utf8')
 const guide = read('src/components/Guide.tsx')
 const css = read('src/styles/guide.css')
 
-describe('Guide tabs: All · TVN · Favourites', () => {
+describe('Guide tabs: All · TVN · Fav', () => {
   it('lists the viewer’s own network as TVN, with no separate TVN-only tab', () => {
-    expect(guide).toMatch(/\['all', 'All'\],\s*\['user', 'TVN'\],\s*\['favourites', 'Favourites'\],/)
+    expect(guide).toMatch(/\['all', 'All'\],\s*\['user', 'TVN'\],\s*\['favourites', 'Fav'\],/)
     expect(guide).not.toContain("['retrotv',")
     expect(guide).not.toContain("['user', 'User']")
   })

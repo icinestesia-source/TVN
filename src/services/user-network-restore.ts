@@ -6,7 +6,7 @@ import { ADDED_PREFIX } from './user-network.ts'
 import { storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
 
 /**
- * IMPORT at the top of the Guide: a tvn-user-network-v1 file restores the viewer's User Network (1001+).
+ * IMPORT behind the Guide's + row: a tvn-user-network-v1 file restores the viewer's User Network (1001+).
  * It is a restore, not a merge: the file's channels replace every 1001+ channel in this browser, on the
  * file's own numbers. TVN channels 001–999, Channel 000 and anything kept outside the User Network are
  * left exactly as they are. Nothing is changed until the file has passed validation and the viewer has
