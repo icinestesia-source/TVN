@@ -54,6 +54,8 @@ describe('the preview shows what TVN found before anything is saved', () => {
   const feed = (overrides: Partial<FoundFeed['summary']>, episodes: FoundFeed['episodes']): FoundFeed => ({
     feedUrl: 'https://veritas.example/vs.rss',
     website: 'https://veritas.example/',
+    provider: overrides.shape === 'archive' ? 'archive' : 'rss',
+    form: 'collection',
     title: 'VERITAS',
     description: '',
     episodes,

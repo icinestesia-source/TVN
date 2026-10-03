@@ -1,3 +1,4 @@
+import { describeSource, type ProviderId, type SourceForm } from '../sources/providers.ts'
 import type { ImportedVideo } from './channels-import.ts'
 
 /** TVN's own feed reader (a Netlify Function in production, the Vite server locally). It needs no key. */
@@ -30,7 +31,14 @@ export interface FoundFeed {
   /** Episodes with public media, as programmes: a file in `media`, or a YouTube id as the id. */
   episodes: ImportedVideo[]
   summary: SourceSummary
+  /** Who publishes it, and whether it is one video, a collection or a live stream. */
+  provider: ProviderId
+  form: SourceForm
+  /** A live stream, which becomes a channel of its own with no episodes. */
+  live?: { url: string; media: 'video' | 'audio'; format: 'hls' | 'direct' }
 }
+
+const READER_PROVIDERS: readonly ProviderId[] = ['vimeo', 'odysee', 'bitchute', 'hls', 'direct']
 
 const httpsUrl = (raw: unknown): string | null => {
   if (typeof raw !== 'string') return null
@@ -143,6 +151,25 @@ export async function lookUpFeed(
     options.onProgress?.(`READING ${first.shape === 'archive' ? 'ARCHIVE' : 'FEED'} · ${rows.size} EPISODES SO FAR`)
   }
   if (!first) throw new Error('That feed could not be read')
+  const provider = READER_PROVIDERS.find((value) => value === first.provider) ?? (first.shape === 'archive' ? 'archive' : 'rss')
+  const form: SourceForm = first.form === 'video' || first.form === 'live' ? first.form : 'collection'
+  const stream = (first.live ?? {}) as Record<string, unknown>
+  if (form === 'live') {
+    const url = httpsUrl(stream.url)
+    if (!url) throw new Error('That stream could not be read')
+    const feedUrl = httpsUrl(first.feedUrl) as string
+    return {
+      feedUrl,
+      website: null,
+      title: typeof first.title === 'string' && first.title.trim() ? first.title.trim().slice(0, 80) : new URL(feedUrl).hostname,
+      description: '',
+      episodes: [],
+      summary: { shape: 'feed', via: 'address', pages: 0, listed: 0, media: { audio: 0, video: 0, youtube: 0 }, excluded: { members: 0, unsupported: 0, unmeasured: 0 }, segments: 0 },
+      provider,
+      form,
+      live: { url, media: stream.media === 'audio' ? 'audio' : 'video', format: stream.format === 'hls' ? 'hls' : 'direct' },
+    }
+  }
 
   const unmeasured = [...rows.values()].filter((row) => row.durationSec === 0 && row.media)
   let measured = 0
@@ -206,12 +233,32 @@ export async function lookUpFeed(
       excluded,
       segments: kept.filter((row) => isSegment(row.title)).length,
     },
+    provider,
+    form,
   }
 }
 
 /** What the viewer sees before a source is saved: what TVN found, how, and what it left out and why. */
 export function sourcePreviewLines(feed: FoundFeed): { label: string; value: string }[] {
   const { summary } = feed
+  if (feed.live) {
+    return [
+      { label: 'Source', value: feed.title },
+      { label: 'Type', value: describeSource(feed.provider, 'live') },
+      { label: 'Media', value: feed.live.media === 'audio' ? 'Audio, joined live' : 'Video, joined live' },
+    ]
+  }
+  if (feed.provider !== 'rss' && feed.provider !== 'archive') {
+    const count = feed.episodes.length
+    const lines = [
+      { label: 'Source', value: feed.title },
+      { label: 'Type', value: describeSource(feed.provider, feed.form, feed.episodes.every((episode) => episode.mediaKind !== 'video')) },
+      { label: 'Found', value: `${count} programme${count === 1 ? '' : 's'}${summary.listed > count ? ` of ${summary.listed} listed` : ''}` },
+    ]
+    const left = summary.excluded.members + summary.excluded.unsupported + summary.excluded.unmeasured
+    if (left > 0) lines.push({ label: 'Left out', value: `${left} with no public media or readable length` })
+    return lines
+  }
   const type =
     summary.shape === 'archive'
       ? `Public episode archive${summary.pages > 1 ? ` · ${summary.pages} pages` : ''}`

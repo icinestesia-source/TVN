@@ -70,7 +70,13 @@
   pointer-events: none;
 }
 
+.embed-host {
+  z-index: 1;
+  background: #000;
+}
+
 .local-host[hidden],
+.embed-host[hidden],
 .stage.is-card .local-host {
   display: none;
 }

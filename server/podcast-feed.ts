@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { decodeCursor, encodeCursor, readArchive, type ArchiveEpisode, type Cursor } from './media-archive.ts'
 import { measureMedia } from './media-probe.ts'
+import { INGEST_MESSAGE, INGEST_SCHEME, resolveUrlSource, type LiveSource, type SourceForm, type SourceProvider } from './url-sources.ts'
 import { attr, dayOf, FeedError, fetchText, field, fnv, parseDuration, publicFeedUrl, sameSite, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 
 export { decodeText, FeedError, parseDuration, publicFeedUrl } from './web-read.ts'
@@ -57,6 +58,11 @@ export interface ResolvedFeed {
   /** How a feed was found: the address itself, the site's announcement, or the public podcast directory. */
   via: 'address' | 'announced' | 'directory' | 'archive'
   excluded?: { members: number; unsupported: number }
+  /** Who publishes it, and whether it is one video, a collection or a live stream; absent for a podcast feed or archive. */
+  provider?: SourceProvider
+  form?: SourceForm
+  /** A live stream: a channel of its own, joined live, with no episodes. */
+  live?: LiveSource
   pages?: number
   /** The archive has more: ask again with this cursor. */
   next?: string
@@ -329,11 +335,16 @@ export async function resolveFeed(
   const clock = options.clock ?? Date.now
   const deadline = clock() + CALL_BUDGET_MS
   const keep = options.wide ? WIDE_KEEP : RECENT_KEEP
+  if (INGEST_SCHEME.test(raw.trim())) throw new FeedError(400, INGEST_MESSAGE)
   const start = publicFeedUrl(raw)
   if (!start) throw new FeedError(400, 'That is not a public web address')
   const cursor = decodeCursor(options.cursor ?? null)
   if (cursor && !sameSite(new URL(cursor.u).hostname, start.hostname)) throw new FeedError(400, 'That cursor belongs to another site')
   if (cursor?.f) return feedRest(cursor, read, keep, deadline)
+  if (!cursor) {
+    const source = await resolveUrlSource(start, read, keep, parseFeed)
+    if (source) return source
+  }
 
   const page = await readFeed(start.toString(), read, keep, deadline)
   if (isFeed(page.text)) return feedResult(page, read, keep, 'address')
@@ -361,7 +372,7 @@ export async function resolveFeed(
   const archive = await readArchive({ url: page.url, html: page.text }, read, { cursor, deadline, clock })
   if (archive.episodes.length === 0 && !archive.next && !cursor) {
     if (archive.excluded.members > 0) throw new FeedError(403, "That site's episodes need a sign-in or subscription, which TVN does not use")
-    throw new FeedError(404, 'That site has no public feed or episode archive TVN can play')
+    throw new FeedError(404, 'This URL cannot currently be used by TVN: no public feed, archive, video or stream')
   }
   return {
     feedUrl: page.url,

@@ -210,8 +210,8 @@ export function AddChannelForm({
         inputMode="url"
         autoCapitalize="off"
         value={link}
-        placeholder="@handle, YouTube link, podcast or website"
-        aria-label={nextNumber ? `YouTube link, @handle or podcast for channel ${nextNumber}` : 'YouTube link, @handle or podcast'}
+        placeholder="@handle, YouTube, Vimeo, podcast, website or stream"
+        aria-label={nextNumber ? `Video, channel, podcast or stream address for channel ${nextNumber}` : 'Video, channel, podcast or stream address'}
         autoComplete="off"
         spellCheck={false}
         disabled={busy}

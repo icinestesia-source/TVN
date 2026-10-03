@@ -51,13 +51,14 @@ import {
   type StoredSource,
 } from '../services/channels-import.ts'
 import { lookUpChannel } from '../services/add-channel.ts'
-import { addChannelSource, addPodcastChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
+import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
 import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
-import { classifySourceUrl, isWebsiteSource, type ChannelSource } from '../services/channel-sources.ts'
+import type { ChannelSource } from '../services/channel-sources.ts'
+import { addRoute } from '../sources/providers.ts'
 import {
   appliedCuratedEdits,
   baselineChanged,
@@ -2168,14 +2169,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const previewedRef = useRef<{ link: string; feed: FoundFeed } | null>(null)
 
   const previewSource = useCallback(async (link: string, onProgress?: (text: string) => void): Promise<FoundFeed | null> => {
-    const website = (() => {
-      try {
-        return isWebsiteSource(link)
-      } catch {
-        return false
-      }
-    })()
-    if (!website) return null
+    if (addRoute(link) !== 'reader') return null
     const feed = await lookUpFeed(link, fetch, { fresh: true, mode: 'all', onProgress })
     previewedRef.current = { link: link.trim(), feed }
     return feed
@@ -2183,28 +2177,25 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const addChannel = useCallback(
     async (link: string, owner?: string) => {
-      const kind = (() => {
-        try {
-          return isWebsiteSource(link) ? 'podcast' : classifySourceUrl(link).kind
-        } catch {
-          return 'youtube'
-        }
-      })()
-      if (kind === 'podcast') {
-        // A website or feed: its public feed, or its public episode archive, becomes a channel named after the publisher.
+      if (addRoute(link) === 'reader') {
+        // A website, feed, video provider, file or stream: what the source reader found becomes a channel named after it.
         const previewed = previewedRef.current?.link === link.trim() ? previewedRef.current.feed : null
         previewedRef.current = null
         const feed = previewed ?? (await lookUpFeed(link, fetch, { fresh: true, mode: 'all' }))
         const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
-        const result = addPodcastChannel(existing, feed, Date.now())
+        const live = feed.live
+        const result = live
+          ? addStreamChannel(existing, { url: live.url, title: feed.title, kind: live.format === 'hls' ? (live.media === 'audio' ? 'audio-hls' : 'video-hls') : live.media }, Date.now())
+          : addPodcastChannel(existing, feed, Date.now())
         if (result.status === 'full') throw new Error('The User Network is full')
         if (result.status === 'duplicate') return { number: result.number, message: `${feed.title} IS ALREADY ON ${result.number}` }
         if (owner) result.sources = result.sources.map((source) => (source.channelNumber === result.number ? { ...source, owner } : source))
         await saveStoredSources(result.sources)
         installSources(result.sources)
-        return { number: result.number, message: `${feed.title} ADDED ON ${result.number} · ${feed.episodes.length} EPISODES` }
+        const count = feed.episodes.length
+        const what = live ? 'LIVE' : feed.provider === 'rss' || feed.provider === 'archive' ? `${count} EPISODES` : `${count} PROGRAMME${count === 1 ? '' : 'S'}`
+        return { number: result.number, message: `${feed.title} ADDED ON ${result.number} · ${what}` }
       }
-      if (kind !== 'youtube') throw new Error('ADD takes a YouTube link, a podcast or a website')
       const found = await lookUpChannel(link)
       const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
       const result = addChannelSource(existing, found, Date.now(), uploaderIdFor)

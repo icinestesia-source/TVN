@@ -37,6 +37,7 @@ export function playbackCommand(programme: Programme, scheduleSeekSeconds: numbe
     return {
       videoId: null,
       localUrl,
+      ...(/\.m3u8(?:[?#]|$)/i.test(localUrl) ? { hls: true } : {}),
       startSeconds: mediaSeekSeconds(scheduleSeekSeconds, programme),
       loop: false,
       programmeId: programme.id,

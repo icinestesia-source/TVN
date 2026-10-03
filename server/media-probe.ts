@@ -126,6 +126,45 @@ export function mvhdSeconds(bytes: Uint8Array, at: number): number {
   return scale > 0 ? Math.round(duration / scale) : 0
 }
 
+/** An EBML variable-length number at `at`: its value and its length in bytes. */
+function vint(bytes: Uint8Array, at: number, keepMarker = false): { value: number; length: number } | null {
+  const first = bytes[at]
+  if (first === undefined || first === 0) return null
+  let length = 1
+  while (length <= 8 && !(first & (0x80 >> (length - 1)))) length += 1
+  if (length > 8 || at + length > bytes.length) return null
+  let value = keepMarker ? first : first & (0xff >> length)
+  for (let index = 1; index < length; index += 1) value = value * 256 + bytes[at + index]
+  return { value, length }
+}
+
+/** Seconds from a WebM/Matroska file's first bytes: the Segment Info's Duration in its TimecodeScale. */
+export function webmSeconds(bytes: Uint8Array): number {
+  for (let at = 0; at + 4 < bytes.length; at += 1) {
+    if (bytes[at] !== 0x15 || bytes[at + 1] !== 0x49 || bytes[at + 2] !== 0xa9 || bytes[at + 3] !== 0x66) continue
+    // The SeekHead names Info's id too; only the element that holds a Duration counts.
+    const size = vint(bytes, at + 4)
+    if (!size) continue
+    const end = Math.min(bytes.length, at + 4 + size.length + size.value)
+    let scale = 1_000_000
+    let duration = 0
+    for (let child = at + 4 + size.length; child < end; ) {
+      const id = vint(bytes, child, true)
+      const length = id ? vint(bytes, child + id.length) : null
+      if (!id || !length) break
+      const body = child + id.length + length.length
+      const view = new DataView(bytes.buffer, bytes.byteOffset + body, Math.min(length.value, bytes.length - body))
+      if (id.value === 0x2ad7b1) scale = [...bytes.subarray(body, body + length.value)].reduce((sum, byte) => sum * 256 + byte, 0)
+      if (id.value === 0x4489) duration = length.value === 4 ? view.getFloat32(0) : length.value === 8 ? view.getFloat64(0) : 0
+      child = body + length.value
+    }
+    if (duration > 0) return Math.round((duration * scale) / 1e9)
+  }
+  return 0
+}
+
+const isWebm = (url: string, type: string) => /webm|matroska/.test(type) || /\.(?:webm|mkv)(?:[?#]|$)/i.test(url)
+
 const isMp4 = (url: string, type: string) => /^video\/|audio\/(?:mp4|x-m4a|aac)/.test(type) || /\.(?:mp4|m4a|m4v|mov)(?:[?#]|$)/i.test(url)
 
 async function mp4Seconds(url: string, read: typeof fetch): Promise<number> {
@@ -183,7 +222,11 @@ export async function measureMedia(raw: string, type: string, read: typeof fetch
   const url = publicFeedUrl(raw)
   if (!url) return { seconds: 0 }
   try {
-    const seconds = isMp4(url.toString(), type) ? await mp4Seconds(url.toString(), read) : await mp3SecondsOf(url.toString(), read)
+    const seconds = isWebm(url.toString(), type)
+      ? webmSeconds((await range(url.toString(), 0, 65535, read)).bytes)
+      : isMp4(url.toString(), type)
+        ? await mp4Seconds(url.toString(), read)
+        : await mp3SecondsOf(url.toString(), read)
     return { seconds: Number.isFinite(seconds) && seconds > 0 && seconds < 48 * 3600 ? seconds : 0 }
   } catch (error) {
     if (error instanceof Locked) return { locked: true }

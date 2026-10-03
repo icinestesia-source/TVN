@@ -1,4 +1,5 @@
 import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from 'react'
+import { EmbedStage } from './EmbedStage.tsx'
 import { handoffPlayer, type HandoffPlayer, type Slot } from './handoff.ts'
 import { LocalStage } from './LocalStage.tsx'
 import { routedPlayer, routeFor, type LocalPlayerHandle, type PlayerRoute } from './routed.ts'
@@ -6,8 +7,9 @@ import type { PlayerHandle, PlayerStatus } from './types.ts'
 import { YoutubeStage } from './YoutubeStage.tsx'
 
 /**
- * The single-view player: YouTube for the network, the local media element for session files. With
- * INSTANT a second, hidden slot loads the next programme while the current one stays on screen.
+ * The single-view player: YouTube for the network, Vimeo's embed for its videos, the local media element for
+ * files and streams. With INSTANT a second, hidden slot loads the next programme while the current one stays
+ * on screen.
  */
 export function PlayerStage({
   playerRef,
@@ -26,6 +28,7 @@ export function PlayerStage({
 }) {
   const youtubeRefs = [useRef<PlayerHandle | null>(null), useRef<PlayerHandle | null>(null)] as const
   const localRefs = [useRef<LocalPlayerHandle | null>(null), useRef<LocalPlayerHandle | null>(null)] as const
+  const embedRefs = [useRef<LocalPlayerHandle | null>(null), useRef<LocalPlayerHandle | null>(null)] as const
   const routeRefs = useRef<[PlayerRoute, PlayerRoute]>(['youtube', 'youtube'])
   const [routes, setRoutes] = useState<[PlayerRoute, PlayerRoute]>(['youtube', 'youtube'])
   const [primary, setPrimary] = useState<Slot>(0)
@@ -55,12 +58,16 @@ export function PlayerStage({
             routeRefs.current[index] = next
             setRoutes((current) => (current[index] === next ? current : index === 0 ? [next, current[1]] : [current[0], next]))
           },
+          () => embedRefs[index].current,
         ),
       )
       const player = handoffPlayer({
         slot: (index) => slots[index],
         prebuffer: () => prebufferRef.current,
-        ready: (index, request) => routeFor(request) === 'local' ? localRefs[index].current !== null : ready.current[index],
+        ready: (index, request) => {
+          const route = routeFor(request)
+          return route === 'local' ? localRefs[index].current !== null : route === 'embed' ? embedRefs[index].current !== null : ready.current[index]
+        },
         onPrimary: setPrimary,
         onHold: (held) => onHoldRef.current?.(held),
         emit: (status, detail) => onStatusRef.current(status, detail),
@@ -85,6 +92,7 @@ export function PlayerStage({
     <div key={index} className={primary === index ? 'player-slot' : 'player-slot is-standby'} aria-hidden={primary === index ? undefined : true}>
       <YoutubeStage playerRef={youtubeRefs[index]} onReady={readied(index)} onStatus={from(index, 'youtube')} captions={captions} />
       <LocalStage handleRef={localRefs[index]} onStatus={from(index, 'local')} shown={routes[index] === 'local'} />
+      <EmbedStage handleRef={embedRefs[index]} onStatus={from(index, 'embed')} shown={routes[index] === 'embed'} />
     </div>
   )
 

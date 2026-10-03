@@ -119,9 +119,9 @@ export function LocalStage({
           const web = !live && /^https?:/i.test(url)
           pendingRef.current = { id, startSeconds, live, resolve, ...(web ? { giveUpAt: Date.now() + WEB_FILE_LIMIT_MS } : {}) }
           window.clearTimeout(timerRef.current)
-          if (live && request.hls && !nativeHls((mime) => video.canPlayType(mime))) {
+          if (request.hls && !nativeHls((mime) => video.canPlayType(mime))) {
             release()
-            liveRef.current = true
+            liveRef.current = live
             fail(id, 'stream format unsupported')
             return
           }

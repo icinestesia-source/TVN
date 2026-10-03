@@ -1,6 +1,6 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { emptySlotRecord, firstEmptySlot, type ImportedVideo, type ParsedExport, type StoredSource } from './channels-import.ts'
-import { refreshOrigin } from './channel-sources.ts'
+import { refreshOrigin, type SourceKind } from './channel-sources.ts'
 
 /**
  * The User Network (1001+) belongs to the viewer and lives in this browser. A new viewer starts with the
@@ -115,6 +115,32 @@ export function addPodcastChannel(
         status: { state: 'ready', playable: videos.length, checkedAt: now },
       },
     ],
+  })
+  return { sources, number, status: 'added' }
+}
+
+/** A live stream ADD found, on a channel of its own: the same stream source the Channel Editor adds by address. */
+export function addStreamChannel(
+  existing: readonly StoredSource[],
+  stream: { url: string; title: string; kind: Extract<SourceKind, 'audio' | 'audio-hls' | 'video' | 'video-hls'> },
+  now: number,
+): { sources: StoredSource[]; number: number | null; status: 'added' | 'duplicate' | 'full' } {
+  const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
+  const same = sources.find((source) => source.channelSources?.some((item) => item.url === stream.url))
+  if (same?.channelNumber) return { sources, number: same.channelNumber, status: 'duplicate' }
+  const number = claimUserNumber(sources)
+  if (number === null) return { sources, number: null, status: 'full' }
+  let hash = 0x811c9dc5
+  for (let index = 0; index < stream.url.length; index += 1) hash = Math.imul(hash ^ stream.url.charCodeAt(index), 0x01000193)
+  sources.push({
+    id: `stream:${(hash >>> 0).toString(36)}`,
+    name: stream.title,
+    videos: [],
+    channelNumber: number,
+    inLibrary: false,
+    automatic: true,
+    updatedAt: now,
+    channelSources: [{ id: 's1', kind: stream.kind, url: stream.url, label: stream.title, enabled: true, status: { state: 'unchecked', checkedAt: 0 } }],
   })
   return { sources, number, status: 'added' }
 }
