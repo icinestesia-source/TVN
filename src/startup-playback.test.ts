@@ -63,6 +63,26 @@ describe('the first programme really starts', () => {
     expect(blocked.calls).toEqual([])
   })
 
+  it('a click during the check (CONTINUE on the welcome notice) allows sound: nothing is muted or held', async () => {
+    const blocked = fakePlayer((muted) => muted)
+    expect(await confirmStart(blocked.player, () => true, blocked.wait, () => true)).toBeNull()
+    expect(blocked.calls).toEqual([])
+    let clicked = false
+    const late = fakePlayer((muted) => {
+      if (muted) clicked = true
+      return muted
+    })
+    expect(await confirmStart(late.player, () => true, late.wait, () => clicked)).toBeNull()
+    expect(late.calls).toEqual(['mute', 'play'])
+  })
+
+  it('the first click or key while the start is checked turns the sound on at once', () => {
+    const early = provider.slice(provider.indexOf('const early = () => {'), provider.indexOf('const early = () => {') + 500)
+    expect(early).toContain('if (!startCheckRef.current) return')
+    expect(early).toContain('player.setAudible(true, volumeRef.current, mutedRef.current)')
+    expect(provider).toContain("window.addEventListener('pointerdown', early, true)")
+  })
+
   it('stops if Surf tuned before the viewer interacted, keeping sound held because it was never proven allowed', async () => {
     const blocked = fakePlayer(() => false)
     expect(await confirmStart(blocked.player, () => false, blocked.wait, () => false)).toBe('sound')

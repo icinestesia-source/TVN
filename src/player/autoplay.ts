@@ -36,11 +36,13 @@ export async function confirmStart(
   const unproven = (): StartHold => (interacted() ? null : 'sound')
   const moving = await advancing(player, wait)
   if (!current()) return unproven()
-  if (moving) return null
+  // A click or key during the check (CONTINUE on the welcome notice, say) is the interaction itself.
+  if (moving || interacted()) return null
   player.setAudible(false, 0, true)
   player.play()
   const muted = await advancing(player, wait)
   if (!current()) return unproven()
+  if (interacted()) return null
   return muted ? 'sound' : 'picture'
 }
 
@@ -52,10 +54,21 @@ export function soundHeld(hold: StartHold, checking: boolean, interacted: boolea
   return hold !== null || (checking && !interacted)
 }
 
+let touched = false
+if (typeof window !== 'undefined') {
+  const mark = () => {
+    touched = true
+  }
+  window.addEventListener('pointerdown', mark, { capture: true, once: true })
+  window.addEventListener('keydown', mark, { capture: true, once: true })
+}
+
+/** The browser's own record of the viewer's interaction, or the first click or key where it keeps none. */
 export function viewerInteracted(): boolean {
   try {
-    return typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive === true
+    if (typeof navigator !== 'undefined' && navigator.userActivation) return navigator.userActivation.hasBeenActive
   } catch {
-    return false
+    /* fall through */
   }
+  return touched
 }

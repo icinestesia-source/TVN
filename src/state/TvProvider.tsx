@@ -912,12 +912,31 @@ export function TvProvider({ children }: { children: ReactNode }) {
           // Sound is allowed: a tune made while the check ran kept it off, so it comes back now.
           if (playerRef.current === player && multiviewRef.current === '1' && !pausedRef.current && !tuningRef.current) {
             player.setAudible(true, volumeRef.current, mutedRef.current)
+            player.play()
           }
         })
       })
     }
     showOverlay('info', INFO_MS)
   }
+
+  // A click or key while the first start is still being checked (CONTINUE on the welcome notice) allows
+  // sound at once, rather than leaving the viewer to tap the picture again once the check ends.
+  useEffect(() => {
+    const early = () => {
+      if (!startCheckRef.current) return
+      const player = playerRef.current
+      if (!player || multiviewRef.current !== '1' || pausedRef.current || tuningRef.current) return
+      player.setAudible(true, volumeRef.current, mutedRef.current)
+      player.play()
+    }
+    window.addEventListener('pointerdown', early, true)
+    window.addEventListener('keydown', early, true)
+    return () => {
+      window.removeEventListener('pointerdown', early, true)
+      window.removeEventListener('keydown', early, true)
+    }
+  }, [])
 
   // The viewer's first key or tap is the interaction the browser waits for: sound (or the picture) starts
   // on the programme already selected, and whatever that key or tap does happens as usual.
