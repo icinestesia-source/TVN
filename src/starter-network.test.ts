@@ -196,7 +196,7 @@ describe('the bundled starter network', () => {
     const provider = read('src/state/TvProvider.tsx')
     const load = provider.slice(provider.indexOf('const loadTestChannels = useCallback('), provider.indexOf('const starterRanRef'))
     // Only the automatic install consults the marker; the deliberate one always runs and marks it installed.
-    expect(load).toContain("if (automatic && starterState() !== 'pending') return ''")
+    expect(load).toContain("if (automatic && (starterState() !== 'pending' || currentNetworkBase() === 'new')) return ''")
     expect(load).toContain("setStarterState('installed')")
     expect(load).not.toMatch(/claimStarterInstall/)
   })
@@ -264,7 +264,7 @@ describe('1001+ is part of every installation unless the viewer removed it', () 
     expect(provider).toMatch(/const removeStarterNetwork = useCallback\(async \(\) => \{[\s\S]*?withoutStarter\(existing, ids\)[\s\S]*?setStarterState\('removed'\)/)
     expect(provider).toContain("if (numbers === 'all') setStarterState('removed')")
     // Deleting one channel is not removing the User Network.
-    const single = provider.slice(provider.indexOf('const removeUserChannels = useCallback('), provider.indexOf('/** The editor'))
+    const single = provider.slice(provider.indexOf('const removeUserChannels = useCallback('), provider.indexOf('/** Whether NEW would remove'))
     expect(single.match(/setStarterState/g)).toHaveLength(1)
   })
 

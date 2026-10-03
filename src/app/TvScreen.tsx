@@ -150,7 +150,7 @@ export function TvScreen() {
       {tv.guideMode === 'integrated' && single && !narrow ? <GuideSplitter /> : null}
       {guide ? <Guide closing={guide === 'closing'} /> : null}
       <TouchRemote />
-      {tv.startupPhase === 'ready' && !noticeSeen ? <FirstRunNotice /> : null}
+      {tv.startupPhase === 'ready' && !noticeSeen ? <FirstRunNotice startNewNetwork={tv.startNewNetwork} networkCustomised={tv.networkCustomised} /> : null}
       {aboutOpen ? <AboutPanel /> : null}
       {tv.debugOpen ? <DiagnosticPanel /> : null}
       {import.meta.env.DEV && tv.debugOpen ? <DebugPanel /> : null}

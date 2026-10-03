@@ -296,6 +296,10 @@
   text-transform: uppercase;
 }
 .first-run-actions button:first-child { color: var(--gold); border-color: var(--gold); }
+.first-run-actions button { flex: 1 1 0; min-width: 0; }
+.first-run-actions button:disabled { opacity: 0.5; }
+.first-run-example { color: var(--ink); }
+.first-run-confirm { padding-top: 8px; border-top: 1px solid var(--line); }
 
 /* Channel Editor: a source's details and its optional public information. */
 .source-details { display: grid; gap: 6px; padding: 6px 0 2px; font-size: 13px; }

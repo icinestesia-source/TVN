@@ -48,3 +48,47 @@ export function userChannelList(): readonly Channel[] {
 export function userProgrammesFor(channelId: string): readonly Programme[] | undefined {
   return userProgrammes.get(channelId)
 }
+
+/**
+ * The network this browser starts from. Absent (or 'tvn'): the example network TVN ships, 001–999 and the starter
+ * User Network. 'new': the viewer chose NEW and cleared it, so the shipped channels are no longer part of their
+ * network at all and nothing seeds them again; 000 TVN, 1000 Local Media and their own channels remain.
+ */
+export const NETWORK_BASE_KEY = 'tvn.network-base.v1'
+
+export type NetworkBase = 'tvn' | 'new'
+
+type Store = Pick<Storage, 'getItem' | 'setItem'>
+
+function browserStore(): Store | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage
+  } catch {
+    return null
+  }
+}
+
+export function readNetworkBase(store: Store | null = browserStore()): NetworkBase {
+  try {
+    return store?.getItem(NETWORK_BASE_KEY) === 'new' ? 'new' : 'tvn'
+  } catch {
+    return 'tvn'
+  }
+}
+
+let networkBase: NetworkBase = readNetworkBase()
+
+export function currentNetworkBase(): NetworkBase {
+  return networkBase
+}
+
+/** Set (and keep) the network this browser starts from. Only NEW, or a restore of a file that carries it, calls this. */
+export function setNetworkBase(base: NetworkBase, store: Store | null = browserStore()): void {
+  try {
+    store?.setItem(NETWORK_BASE_KEY, base)
+  } catch {
+    // Private browsing may refuse storage; the choice still holds for this visit.
+  }
+  networkBase = base
+  for (const listener of listeners) listener()
+}

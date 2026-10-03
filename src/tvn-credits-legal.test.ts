@@ -336,7 +336,7 @@ describe('first-run notice and legal', () => {
     const remote = read('src/components/TouchRemote.tsx')
     expect(remote).toContain('About · Sources · Legal')
     expect(remote).toContain('openAbout()')
-    expect(read('src/app/TvScreen.tsx')).toContain("tv.startupPhase === 'ready' && !noticeSeen ? <FirstRunNotice /> : null")
+    expect(read('src/app/TvScreen.tsx')).toContain("tv.startupPhase === 'ready' && !noticeSeen ? <FirstRunNotice startNewNetwork={tv.startNewNetwork} networkCustomised={tv.networkCustomised} /> : null")
   })
 
   it('says what it must, and nothing it must not', () => {

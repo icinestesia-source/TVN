@@ -181,6 +181,15 @@ function airingOn(channel: Channel, nowMs: number): Omit<Choice, 'joinedMs' | 'u
 export function chooseTvn(nowMs: number): boolean {
   if (!lookup) return false
   const pool = tvnPool(lookup.channels(), tvnChannelSettings().includeUser, lookup.onAir)
+  if (pool.length === 0) {
+    // No channel to sample (a network cleared with NEW): 000 says so and looks again quietly until one is added.
+    const shown = choice !== null || aired.length > 0 || holding
+    choice = null
+    aired = []
+    holding = false
+    if (shown) changed()
+    return false
+  }
   for (let index = pool.length - 1; index > 0; index -= 1) {
     const swap = Math.floor(random() * (index + 1))
     ;[pool[index], pool[swap]] = [pool[swap], pool[index]]

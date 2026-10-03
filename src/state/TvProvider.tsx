@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { channelByNumber, channels, listChannels, programmesFor, randomChannel, shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { channelMatchesFilter, inFavouriteOrder, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
-import { installCuratedEdits, installUserCatalogue, subscribeCatalogue } from '../data/user-overlay.ts'
+import { currentNetworkBase, installCuratedEdits, installUserCatalogue, setNetworkBase, subscribeCatalogue } from '../data/user-overlay.ts'
 import {
   GUIDE_EXTEND_MS,
   GUIDE_MAX_WINDOW_MS,
@@ -2264,7 +2264,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** Add the starter network after the viewer's own channels; anything already present is left as it is. */
   const loadTestChannels = useCallback(
     async (automatic = false) => {
-      if (automatic && starterState() !== 'pending') return ''
+      if (automatic && (starterState() !== 'pending' || currentNetworkBase() === 'new')) return ''
       const now = Date.now()
       const starter = recordsFromExport(await readStarterNetwork(), now)
       const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
@@ -2298,18 +2298,23 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }, [startupPhase, startupSettled, startupFailed])
 
   const starterRanRef = useRef(false)
+  /** The automatic starter install (and its Favourites) while it runs, so NEW can wait for it to finish. */
+  const starterRunRef = useRef<Promise<unknown> | null>(null)
   useEffect(() => {
     if (startupPhase !== 'ready' || (!starterDue && !favouritesSeeded) || starterRanRef.current) return
     // A fresh install's starter channels wait until the first picture is up (or the start has settled otherwise).
     if (starterDue && !startupSettled) return
     starterRanRef.current = true
     const installed = starterDue ? loadTestChannels(true).catch(() => undefined) : Promise.resolve()
+    starterRunRef.current = installed
     if (starterDue) void installed.then(() => afterPaint(() => void saveDeferredLibrary().catch(() => undefined).then(keepPools)))
     if (!favouritesSeeded) return
-    void installed
+    starterRunRef.current = installed
       .then(async () => {
+        if (currentNetworkBase() === 'new') return
         const expected = starterFavouriteSources(recordsFromExport(await readStarterNetwork(), 0))
         const sources = migrateLegacyUserNumbers(await loadStoredSources()).sources
+        if (currentNetworkBase() === 'new') return
         setFavourites((current) => placeStarterFavourites(current, expected, sources))
       })
       .catch(() => undefined)
@@ -2342,6 +2347,57 @@ export function TvProvider({ children }: { children: ReactNode }) {
     },
     [installSources],
   )
+
+  /** Whether NEW would remove anything the viewer made or changed, rather than only the example TVN ships. */
+  const networkCustomised = useCallback(async () => {
+    if (Object.keys(loadCuratedEdits()).length > 0) return true
+    const existing = await loadStoredSources()
+    if (existing.length === 0) return false
+    if (currentNetworkBase() === 'new') return true
+    const previous = await Promise.all(PREVIOUS_STARTER_FILES.map((path) => readStarterNetwork(path).then((doc) => recordsFromExport(doc, 0)).catch(() => [])))
+    const ids = starterIds(await readStarterTemplate(), [...recordsFromExport(await readStarterNetwork(), 0), ...previous.flat()])
+    return withoutStarter(existing, ids).length > 0
+  }, [])
+
+  /**
+   * NEW: this browser's network becomes the viewer's own, empty but for 000 TVN and 1000 Local Media. The shipped
+   * 001–999 leave their network, every stored User channel and change to a curated channel is removed, and the
+   * starter network is marked removed so nothing seeds it again. The channel on screen (000) stays.
+   */
+  const startNewNetwork = useCallback(async () => {
+    setStarterState('removed')
+    const existing = await loadStoredSources()
+    await saveStoredSources([])
+    replaceCuratedEdits([])
+    installCuratedEdits([], new Map())
+    const gone = new Set<number>([
+      ...channels.map((channel) => channel.number),
+      ...existing.flatMap((source) => (source.channelNumber === null ? [] : [source.channelNumber])),
+    ])
+    setNetworkBase('new')
+    forgetChannels(gone, [])
+    installSources([])
+    // 000 lets go of a programme from a channel that has just left the network, and shows what it has now.
+    chooseAnotherOnTvn()
+    // A starter install already under way finishes in the background: whatever it stored is swept out again,
+    // leaving any channel the viewer has added since.
+    void starterRunRef.current
+      ?.catch(() => undefined)
+      .then(async () => {
+        if (currentNetworkBase() !== 'new') return
+        setStarterState('removed')
+        const previous = await Promise.all(PREVIOUS_STARTER_FILES.map((path) => readStarterNetwork(path).then((doc) => recordsFromExport(doc, 0)).catch(() => [])))
+        const ids = starterIds(await readStarterTemplate(), [...recordsFromExport(await readStarterNetwork(), 0), ...previous.flat()])
+        const stored = await loadStoredSources()
+        const remaining = withoutStarter(stored, ids)
+        if (remaining.length === stored.length) return
+        await saveStoredSources(remaining)
+        forgetChannels(goneNumbers(stored, remaining), remaining)
+        installSources(remaining)
+      })
+    return 'NEW NETWORK · ADD CHANNELS TO BUILD IT'
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [installSources])
 
   /** A new, empty 1001+ channel for Edit Channel to fill: the lowest empty slot, or the next number. */
   const createEmptyChannel = useCallback(
@@ -3082,6 +3138,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,
+      networkCustomised,
+      startNewNetwork,
       createEmptyChannel,
       exportUserNetwork,
       importUserNetwork,
@@ -3124,6 +3182,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       loadTestChannels,
       removeStarterNetwork,
       removeUserChannels,
+      networkCustomised,
+      startNewNetwork,
       createEmptyChannel,
       exportUserNetwork,
       importUserNetwork,
