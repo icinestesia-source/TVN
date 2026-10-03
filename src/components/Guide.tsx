@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEve
 import {
   ROW_HEIGHT,
   TIME_HEADER_HEIGHT,
+  centredScrollTop,
   openScrollLeft,
   basePxPerMinute,
   TITLE_MIN_PX,
@@ -35,6 +36,7 @@ import { channelActions, cornerActions, type ChannelActions, type CornerActions 
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { GuideOptions } from './GuideOptions.tsx'
+import { NetworkEditor } from './NetworkEditor.tsx'
 import { GuidePanel } from './GuidePanel.tsx'
 import { AddChannelForm, GuideActions, NewUserTools, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
 import { filterUserId, freeUserName, TVN_OWNER, userFilter } from '../data/user-network/users.ts'
@@ -172,7 +174,25 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const addInput = useRef<HTMLInputElement>(null)
   // MEDIA, IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
   // GUIDE (the viewer's viewing Guides) stays open while the cursor roams the grid to add to it.
-  const tool = tv.guideTool && (tv.guideTool.kind === 'guides' || tv.guideTool.cursor === tv.guideCursor) ? tv.guideTool.kind : null
+  const tool =
+    tv.guideTool && (tv.guideTool.kind === 'guides' || tv.guideTool.kind === 'editor' || tv.guideTool.cursor === tv.guideCursor) ? tv.guideTool.kind : null
+  // A channel opened from the Network Editor is edited over it, and closing the Channel Editor goes back to it.
+  const [fromEditor, setFromEditor] = useState(false)
+  const lastTool = useRef(tool)
+  useEffect(() => {
+    const was = lastTool.current
+    lastTool.current = tool
+    if (!fromEditor || was === tool) return
+    if (tool === null && was === 'edit') {
+      setFromEditor(false)
+      tv.dispatch({ type: 'guide-tool', tool: 'editor' })
+    } else if (tool !== 'edit' && tool !== 'editor') setFromEditor(false)
+  }, [fromEditor, tool, tv])
+  const editFromNetwork = (channelNumber: number) => {
+    setFromEditor(true)
+    tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber })
+  }
+  const networkShown = tool === 'editor' || (fromEditor && tool === 'edit')
   const following = tv.guideRun?.state === 'active'
   // Each right-click or hold on GUIDE asks the Guide panel to make CREATE GUIDE FROM… ready.
   const [searchAsk, setSearchAsk] = useState(0)
@@ -311,7 +331,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     const index = tv.visibleChannels.findIndex(
       (channel) => channel.number === tv.guideCursor.channelNumber,
     )
-    if (index >= 0) grid.scrollTop = Math.max(0, index * ROW_HEIGHT - grid.clientHeight * 0.35)
+    if (index >= 0) grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, tv.visibleChannels.length)
     if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
     if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
     setScrollTop(grid.scrollTop)
@@ -322,8 +342,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // OPTIONS (or a filter with nothing in it) takes the listings away; they come back where they were.
-  const gridShown = tool !== 'options' && tv.visibleChannels.length > 0
+  // OPTIONS, the Network Editor (or a filter with nothing in it) take the listings away; they come back where they were.
+  const gridShown = tool !== 'options' && !networkShown && tv.visibleChannels.length > 0
   const gridHidden = useRef(false)
   useLayoutEffect(() => {
     if (!gridShown) {
@@ -544,6 +564,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 
       {tool === 'options' ? (
         <GuideOptions />
+      ) : networkShown ? (
+        <NetworkEditor onEdit={editFromNetwork} />
       ) : tv.visibleChannels.length === 0 ? (
         <div className="guide-empty">
           <p>{searching ? 'No channels found' : emptyGuideCopy(tv.guideFilter)}</p>
@@ -734,7 +756,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         />
       ) : tool === 'media' ? (
         <SessionImportTools onImport={tv.importSession} />
-      ) : tool === 'options' ? null : tool === 'users' ? (
+      ) : tool === 'options' || tool === 'editor' ? null : tool === 'users' ? (
         <NewUserTools
           name={newUserName}
           note={newUserNote}

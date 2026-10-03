@@ -29,7 +29,7 @@ const userNumber = (number: number | null): number is number => number !== null 
 /** The file for one stored user channel. Reads only. A TVN channel (001–999) has no such file. */
 export function buildChannelFile(record: StoredSource, now: Date, uploaderOf: UploaderOf = () => null): ChannelFile {
   if (!userNumber(record.channelNumber)) throw new Error('Only User Network channels can be exported')
-  const { owner: _owner, ...channel } = exportChannel(record, uploaderOf, [])
+  const { owner: _owner, id: _id, ...channel } = exportChannel(record, uploaderOf, [])
   return { format: CHANNEL_FILE_FORMAT, version: CHANNEL_FILE_VERSION, exportedAt: now.toISOString(), channel, facts: userChannelManifest(record).current }
 }
 

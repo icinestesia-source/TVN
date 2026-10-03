@@ -1207,6 +1207,15 @@ span.editor-expand { border-color: transparent; }
   font-size: clamp(22px, 2.4vw, 28px);
 }
 
+/* The date stays whole beside the title, however the title wraps. */
+.info-date {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
 .info-time {
   display: flex;
   gap: 12px;
@@ -1744,4 +1753,55 @@ span.editor-expand { border-color: transparent; }
   .plan-title { grid-column: 2 / 3; }
   .plan-meta { grid-column: 3; }
   .plan-actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
+
+/* NETWORK EDITOR: the network as one list per tab, in the Guide's own row vocabulary. */
+.network-editor { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.network-head { display: grid; gap: 8px; padding: 0 4px; }
+.network-head .options-head { margin: 0; }
+.network-head .tabs { justify-content: flex-start; }
+.network-hint { margin: 0; color: var(--muted); font-size: 13px; letter-spacing: 0.04em; }
+.network-list { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.network-row {
+  display: grid;
+  grid-template-columns: 4.2em minmax(0, 1fr) 7em 2.4em 5.4em 5.8em;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 2px 8px;
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
+}
+.network-row.is-current .network-number,
+.network-row.is-current .network-title { color: var(--gold); }
+.network-row.is-dragging { opacity: 0.45; }
+.network-row[draggable='true'] { cursor: grab; }
+.network-number { font-family: var(--font-ui); font-size: 18px; font-weight: 600; letter-spacing: 0.04em; }
+.network-name {
+  display: grid;
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.network-name:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.network-title { overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.network-kind { color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.network-status { color: var(--muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.network-status.is-on-air,
+.network-status.is-surfing { color: var(--ink); }
+.network-status.is-empty,
+.network-status.is-off { color: #c98b6b; }
+.network-star { border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.network-star.is-on { color: var(--gold); }
+.network-star:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.network-moves { display: flex; gap: 4px; }
+.network-move { min-width: 2.2em; padding: 2px 6px; }
+.network-move:disabled { opacity: 0.3; }
+.network-edit { justify-self: end; }
+@media (max-width: 720px) {
+  .network-row { grid-template-columns: 3.4em minmax(0, 1fr) 2.2em 4.8em 4.4em; }
+  .network-status { display: none; }
 }

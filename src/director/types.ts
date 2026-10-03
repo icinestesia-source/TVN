@@ -165,6 +165,8 @@ export interface ScheduleChild {
   mediaItemId?: string
   series?: string
   creator?: string
+  /** The source's upload or publication time (ISO), when the catalogue has it. */
+  publishedAt?: string
   topics?: string[]
   score?: number
   penalties?: string[]

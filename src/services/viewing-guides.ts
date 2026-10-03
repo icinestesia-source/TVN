@@ -15,7 +15,7 @@ export const DEFAULT_GUIDE_NAME = 'My Guide'
 
 /** The programme as it was when added: enough to play it again, never its media. */
 export type GuideProgramme = Pick<Programme, 'id' | 'title' | 'videoId' | 'durationSeconds' | 'source'> &
-  Partial<Pick<Programme, 'description' | 'mediaDurationSeconds' | 'thumbnail' | 'year' | 'series' | 'episode' | 'kind' | 'playbackMode' | 'playback' | 'programmeType' | 'mediaKind' | 'sourceRef' | 'creator' | 'mediaUrl'>>
+  Partial<Pick<Programme, 'description' | 'mediaDurationSeconds' | 'thumbnail' | 'year' | 'series' | 'episode' | 'kind' | 'playbackMode' | 'playback' | 'programmeType' | 'mediaKind' | 'sourceRef' | 'creator' | 'mediaUrl' | 'publishedAt'>>
 
 export interface GuideItem {
   id: string
@@ -51,7 +51,7 @@ export function guideId(prefix: 'g' | 'i', now: number): string {
 }
 
 const SOURCES: readonly ProgrammeSource[] = ['demo', 'youtube', 'imported']
-const OPTIONAL_TEXT = ['description', 'thumbnail', 'series', 'episode', 'kind', 'playbackMode', 'playback', 'programmeType', 'mediaKind', 'sourceRef', 'creator', 'mediaUrl'] as const
+const OPTIONAL_TEXT = ['description', 'thumbnail', 'series', 'episode', 'kind', 'playbackMode', 'playback', 'programmeType', 'mediaKind', 'sourceRef', 'creator', 'mediaUrl', 'publishedAt'] as const
 
 /** The fields a Guide keeps of a programme, and nothing else. */
 export function guideProgramme(programme: Programme | GuideProgramme): GuideProgramme {

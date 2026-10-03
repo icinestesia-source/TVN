@@ -212,8 +212,10 @@ export interface TvContextValue {
   importChannelFile: (text: string, owner: string) => Promise<{ message: string; number: number }>
   /** TVN's shipped back catalogue for a channel source, which ARCHIVE and ALL add to it; for the editor's preview. */
   sourceArchive: (source: import('../services/channel-sources.ts').ChannelSource) => readonly import('../services/channels-import.ts').ImportedVideo[]
-  /** Clear one user channel (after the editor's confirmation); its number stays as an empty slot. */
+  /** Delete one user channel (after the editor's confirmation): it leaves the network, its Favourite with it. */
   deleteUserChannel: (channelNumber: number) => Promise<string>
+  /** Move a user channel to where channel `to` is in the User Network; every 1001+ channel is renumbered from 1001. */
+  moveUserChannel: (channelNumber: number, to: number) => Promise<string>
   /** Drops the viewer's change to a curated channel, so it is exactly as TVN ships it again. */
   restoreCuratedChannel: (channelNumber: number) => Promise<string>
   setSourceOverride: (channelNumber: number, videoId: string | null) => void

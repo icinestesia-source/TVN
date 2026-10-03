@@ -39,6 +39,18 @@
   opacity: 0;
 }
 
+.player-slot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Loading unseen: still laid out and rendering, so the browser keeps buffering and playing it. */
+.player-slot.is-standby {
+  z-index: 0;
+  opacity: 0;
+}
+
 .stage-waiting {
   position: absolute;
   inset: 0;

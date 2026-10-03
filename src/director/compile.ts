@@ -57,6 +57,7 @@ function itemChild(item: MediaItem, scored: number, penalties: string[]): Schedu
     mediaItemId: item.id,
     series: item.series,
     creator: item.creator,
+    ...(item.publishedAt ? { publishedAt: item.publishedAt } : {}),
     topics: item.topics,
     score: scored,
     penalties,

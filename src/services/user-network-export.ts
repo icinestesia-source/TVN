@@ -66,6 +66,8 @@ export interface ExportSource {
 }
 
 export interface ExportChannel {
+  /** The channel's stable identity in this browser, kept through renumbering. Absent in older files. */
+  id?: string
   number: number
   /** TVN_OWNER, or the id of a named user in `users`. Absent in files from before named users. */
   owner?: string
@@ -102,6 +104,9 @@ export interface UserNetworkExport {
   users?: ExportUser[]
   channels: ExportChannel[]
 }
+
+/** A stored channel id: plain printable text, never a number slot. */
+export const CHANNEL_ID = /^(?!slot:)[A-Za-z0-9][\w:.@+-]{0,199}$/
 
 const SECRET_PARAM = /^(?:key|api[-_]?key|token|access[-_]?token|auth|authorization|secret|signature|sig|password|pass|session|sid)$/i
 
@@ -169,6 +174,7 @@ export function exportChannel(record: StoredSource, uploaderOf: UploaderOf, user
   const notes = editorial ? { editorial } : {}
   if (record.emptySlot) return { number, owner, name: record.name, state: 'empty', enabled: true, edited: false, ...notes, sources: [] }
   return {
+    ...(CHANNEL_ID.test(record.id) ? { id: record.id } : {}),
     number,
     owner,
     name: record.name,
@@ -334,6 +340,7 @@ export function checkChannel(channel: unknown, at: string, errors: string[]): vo
     errors.push(`${at} is not a channel`)
     return
   }
+  if (channel.id !== undefined && (typeof channel.id !== 'string' || !CHANNEL_ID.test(channel.id))) errors.push(`${at}.id is not a channel id`)
   const number = channel.number
   if (typeof number !== 'number' || !Number.isInteger(number) || number < USER_NUMBER_START || number >= USER_NUMBER_LIMIT) errors.push(`${at}.number is not a User Network number`)
   if (typeof channel.name !== 'string' || !channel.name.trim()) errors.push(`${at}.name is missing`)
@@ -415,10 +422,15 @@ export function validateUserNetworkExport(data: unknown): { ok: true; value: Use
     })
   }
   const seen = new Set<number>()
+  const ids = new Set<string>()
   data.channels.forEach((channel, index) => {
     const at = `channels[${index}]`
     checkChannel(channel, at, errors)
     if (!isRecord(channel)) return
+    if (typeof channel.id === 'string') {
+      if (ids.has(channel.id)) errors.push(`${at}.id ${channel.id} appears twice`)
+      ids.add(channel.id)
+    }
     const number = channel.number
     if (typeof number === 'number' && Number.isInteger(number) && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT) {
       if (seen.has(number)) errors.push(`${at}.number ${number} appears twice`)

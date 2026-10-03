@@ -152,12 +152,15 @@ export async function applyBuiltInCatalogues(input: {
 /** The shipped starter User Network: a TVN User Network export, numbered as it is to be installed. */
 export const STARTER_NETWORK_FILE = '/user-network/starter-network.json'
 
+/** Starter networks TVN shipped before this one: still read so Remove starter finds the channels they installed. */
+export const PREVIOUS_STARTER_FILES = ['/user-network/starter-network-2026-10-02.json'] as const
+
 /** The starter network as shipped, read fresh each time and never written to. */
-export async function readStarterNetwork(): Promise<UserNetworkExport> {
-  const response = await fetch(STARTER_NETWORK_FILE)
-  if (!response.ok) throw new Error(`Could not read ${STARTER_NETWORK_FILE}`)
+export async function readStarterNetwork(path: string = STARTER_NETWORK_FILE): Promise<UserNetworkExport> {
+  const response = await fetch(path)
+  if (!response.ok) throw new Error(`Could not read ${path}`)
   const read = readUserNetworkFile(await response.text())
-  if (!read.ok) throw new Error(`${STARTER_NETWORK_FILE} is not a TVN User Network file`)
+  if (!read.ok) throw new Error(`${path} is not a TVN User Network file`)
   return read.value
 }
 

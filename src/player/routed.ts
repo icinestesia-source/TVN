@@ -22,7 +22,7 @@ export function routedPlayer(
   youtube: () => PlayerHandle | null,
   local: () => LocalPlayerHandle | null,
   onRoute: (route: PlayerRoute) => void,
-): PlayerHandle {
+): LocalPlayerHandle {
   let route: PlayerRoute = 'youtube'
   let sound: [audible: boolean, volume: number, muted: boolean] = [true, 100, false]
   const active = (): PlayerHandle | null => (route === 'local' ? local() : youtube())
@@ -63,6 +63,10 @@ export function routedPlayer(
     },
     actualVideoId() {
       return route === 'local' ? null : (youtube()?.actualVideoId() ?? null)
+    },
+    stop() {
+      void youtube()?.load(SILENCE)
+      local()?.stop()
     },
   }
 }

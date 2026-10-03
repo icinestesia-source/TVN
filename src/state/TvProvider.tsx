@@ -36,7 +36,7 @@ import { channelOriginals } from '../view/channel-provenance.ts'
 import { lookUpFeed, type FoundFeed } from '../services/podcast-source.ts'
 import { guideEndAdvances } from '../view/guide-following.ts'
 import { guideSlots } from '../services/broadcast.ts'
-import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
+import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, PREVIOUS_STARTER_FILES, readStarterNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
 import { claimStarterInstall, setStarterState, starterIds, starterState, withoutStarter } from '../data/user-network/starter.ts'
 import { afterPaint } from './after-paint.ts'
 import { keepCalculatedPools, offerSavedPools, readSavedPools } from '../library/pool-cache.ts'
@@ -51,7 +51,7 @@ import {
   type StoredSource,
 } from '../services/channels-import.ts'
 import { lookUpChannel } from '../services/add-channel.ts'
-import { addChannelSource, addPodcastChannel, clearUserChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
+import { addChannelSource, addPodcastChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
 import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
@@ -80,6 +80,18 @@ import { editorScope } from '../view/channel-edit.ts'
 import { loadOverrides, setVideoOverride, subscribeOverrides, videoOverride } from '../services/overrides.ts'
 import { defaultFavouritesDue, loadPreferences, savePreferences } from '../services/preferences.ts'
 import { placeStarterFavourites, starterFavouriteSources } from '../services/default-favourites.ts'
+import {
+  deleteUserChannel as deleteStoredUserChannel,
+  historyWithout,
+  liveFavourites,
+  remapGuideLibrary,
+  remapHistory,
+  remapNumber,
+  remapNumbers,
+  renumberUserNetwork,
+  moveTo,
+  userOrder,
+} from '../services/network-order.ts'
 import {
   asShortcuts,
   assignShortcut,
@@ -772,7 +784,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       setGuideQuery('')
     }
     const target = guideToolTarget(kind, guideFilter, favourites, cursorRef.current, listChannels(), Date.now(), channelNumber)
-    setGuideFilter(target.filter)
+    // Editing a channel the selected tab does not list (from the Network Editor) shows it under ALL.
+    const editing = kind === 'edit' ? channelByNumber(target.cursor.channelNumber) : undefined
+    setGuideFilter(editing && !channelMatchesFilter(editing, target.filter, favourites) ? 'all' : target.filter)
     const next = target.cursor
     cursorRef.current = next
     setGuideCursor(next)
@@ -786,7 +800,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** The + (new user) or OPTIONS panel standing in the Guide, if either is. */
   panelOpenRef.current = () => {
     const held = guideToolRef.current
-    if (held?.kind === 'guides') return held.kind
+    if (held?.kind === 'guides' || held?.kind === 'editor') return held.kind
     return held && (held.kind === 'users' || held.kind === 'options') && held.cursor === cursorRef.current ? held.kind : null
   }
 
@@ -839,7 +853,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     setPresentation(presentationRef.current)
     tuningRef.current = true
     setTuningNumber(number)
-    playerRef.current?.setAudible(false, 0, true)
+    // INSTANT keeps the current sound until the destination takes over; the player hands it on exactly once.
+    if (settings.id !== 'instant' || multiviewRef.current !== '1') playerRef.current?.setAudible(false, 0, true)
     window.clearTimeout(settleTimer.current)
     settleTimer.current = window.setTimeout(() => {
       void commitTuneRef.current(generation, number, origin)
@@ -1891,6 +1906,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (network) {
           const migrated = migrateLegacyUserNumbers(network.sources)
           if (migrated.migrated > 0) await saveStoredSources(migrated.sources)
+          // A Favourite left behind by a channel deleted before deletion cleaned up after itself goes now. Not on
+          // a first visit, whose starter Favourites wait for the starter channels.
+          if (!starterDue && !favouritesSeeded) setFavourites((current) => liveFavourites(current, migrated.sources))
           const built = channelsFromSources(migrated.sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
           installUserCatalogue(built.channels, built.programmes)
         }
@@ -1933,7 +1951,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       cancel = true
       stop()
     }
-  }, [startup, stored])
+  }, [startup, stored, starterDue, favouritesSeeded])
 
   // The library save the start left for later waits until the set has painted, and behind a starter install,
   // whose own library write already covers it.
@@ -2144,13 +2162,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }, [startupPhase, starterDue, favouritesSeeded, loadTestChannels, startupSettled])
 
   const removeStarterNetwork = useCallback(async () => {
-    const ids = starterIds(await readStarterTemplate(), recordsFromExport(await readStarterNetwork(), 0))
+    const previous = await Promise.all(PREVIOUS_STARTER_FILES.map((path) => readStarterNetwork(path).then((doc) => recordsFromExport(doc, 0)).catch(() => [])))
+    const ids = starterIds(await readStarterTemplate(), [...recordsFromExport(await readStarterNetwork(), 0), ...previous.flat()])
     const existing = await loadStoredSources()
     const remaining = withoutStarter(existing, ids)
     setStarterState('removed')
     const removed = existing.length - remaining.length
     if (removed === 0) return 'NO STARTER CHANNELS TO REMOVE'
     await saveStoredSources(remaining)
+    forgetChannels(goneNumbers(existing, remaining), remaining)
     installSources(remaining)
     return `${removed} STARTER ${removed === 1 ? 'CHANNEL' : 'CHANNELS'} REMOVED`
   }, [installSources])
@@ -2160,6 +2180,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const existing = await loadStoredSources()
       const remaining = withoutUserChannels(existing, numbers)
       await saveStoredSources(remaining)
+      forgetChannels(goneNumbers(existing, remaining), remaining)
       installSources(remaining)
       if (numbers === 'all') setStarterState('removed')
       const removed = existing.length - remaining.length
@@ -2203,12 +2224,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (!user) return 'THAT USER IS ALREADY GONE'
       const existing = await loadStoredSources()
       const owned = existing.filter((source) => source.owner === id && !source.emptySlot)
-      const remaining = releaseUserChannels(existing, id, channels, (source) =>
-        source.channelNumber === null || source.emptySlot ? source : emptySlotRecord(source.channelNumber, Date.now()),
-      )
+      // Removed with the user, its channels leave the network entirely, like any deleted channel.
+      const remaining = channels === 'remove' ? existing.filter((source) => source.owner !== id) : releaseUserChannels(existing, id, 'move')
       commitUsers(usersRef.current.filter((item) => item.id !== id))
-      if (remaining.some((source, index) => source !== existing[index])) {
+      if (remaining.length !== existing.length || remaining.some((source, index) => source !== existing[index])) {
         await saveStoredSources(remaining)
+        forgetChannels(goneNumbers(existing, remaining), remaining)
         installSources(remaining)
       }
       if (guideFilter === userFilter(id)) setGuideFilter('user')
@@ -2502,21 +2523,95 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  /**
+   * Delete one user channel: it leaves the User Network entirely, and with it every Favourite, Multi View
+   * window and history entry that named it. Saved Guides keep their items; one that named the channel
+   * shows as missing, as a restored Guide's unresolvable items do. Watching it falls back safely.
+   */
   const deleteUserChannel = useCallback(
     async (number: number) => {
       if (scopeOf(number).scope !== 'user') throw new Error('Only your own channels can be deleted')
-      // The number stays as an empty slot, so the Guide cursor stays on it and nothing renumbers.
-      const result = clearUserChannel(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, Date.now())
+      const result = deleteStoredUserChannel(migrateLegacyUserNumbers(await loadStoredSources()).sources, number)
       if (result.status === 'missing') throw new Error('That channel is no longer in your User Network')
+      const name = channelByNumber(number)?.name ?? `${number}`
       closeGuideTool()
-      if (result.status === 'already-empty') return `${number} IS ALREADY EMPTY`
       await saveStoredSources(result.sources)
+      forgetChannels(new Set([number]), result.sources)
       installSources(result.sources)
-      if (channelByNumber(number)) focusGuide(number, cursorRef.current.timeMs)
-      return `${number} CLEARED · THE NUMBER IS KEPT AS AN EMPTY CHANNEL`
+      if (guideOpenRef.current) {
+        const rows = visibleRef.current.filter((channel) => channel.number !== number)
+        const near = rows.find((channel) => channel.number > number) ?? rows.findLast((channel) => channel.number < number)
+        if (near) focusGuide(near.number, cursorRef.current.timeMs)
+      }
+      return `${name.toUpperCase()} DELETED`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [focusGuide, installSources],
+  )
+
+  const goneNumbers = (before: readonly StoredSource[], after: readonly StoredSource[]) => {
+    const kept = new Set(after.map((source) => source.channelNumber))
+    return new Set(before.flatMap((source) => (source.channelNumber !== null && !kept.has(source.channelNumber) ? [source.channelNumber] : [])))
+  }
+
+  /** Favourites, Multi View, history and the channel watched lose channels that are gone, all at once. */
+  const forgetChannels = (gone: ReadonlySet<number>, sources: readonly StoredSource[]) => {
+    setFavourites((current) => liveFavourites(current.filter((item) => !gone.has(item)), sources))
+    historyRef.current = historyWithout(historyRef.current, gone)
+    setHistory(historyRef.current)
+    if (tilesRef.current.some((item) => gone.has(item))) {
+      const kept = tilesRef.current.filter((item) => !gone.has(item))
+      tilesRef.current = kept
+      setTiles(kept)
+    }
+    if (previousRef.current !== null && gone.has(previousRef.current)) commitChannel({ channelNumber: channelRef.current, previousNumber: null }, false)
+  }
+
+  /**
+   * Reorder the User Network: `ids` is every 1001+ channel's id in the new order. Each channel is renumbered
+   * from 1001 with no gaps, and everything naming one by number follows it; the channel watched carries on
+   * playing under its new number.
+   */
+  const reorderUserNetwork = useCallback(
+    async (ids: readonly string[]) => {
+      const { sources, moves } = renumberUserNetwork(migrateLegacyUserNumbers(await loadStoredSources()).sources, ids)
+      if (moves.size === 0) return 'THE ORDER IS UNCHANGED'
+      await saveStoredSources(sources)
+      const follow = (number: number) => remapNumber(number, moves)
+      setFavourites((current) => remapNumbers(current, moves))
+      historyRef.current = remapHistory(historyRef.current, moves)
+      setHistory(historyRef.current)
+      if (tilesRef.current.some((item) => moves.has(item))) {
+        const kept = remapNumbers(tilesRef.current, moves)
+        tilesRef.current = kept
+        setTiles(kept)
+      }
+      commitChannel({ channelNumber: follow(channelRef.current), previousNumber: previousRef.current === null ? null : follow(previousRef.current) }, false)
+      const guides = remapGuideLibrary(guideLibraryRef.current, moves)
+      if (guides !== guideLibraryRef.current) setGuideLibrary(guides)
+      if (moves.has(cursorRef.current.channelNumber)) {
+        const nextCursor = { ...cursorRef.current, channelNumber: follow(cursorRef.current.channelNumber) }
+        cursorRef.current = nextCursor
+        setGuideCursor(nextCursor)
+      }
+      if (presentationRef.current && moves.has(presentationRef.current.number)) presentationRef.current = { ...presentationRef.current, number: follow(presentationRef.current.number) }
+      installSources(sources)
+      return `USER NETWORK RENUMBERED · ${moves.size} ${moves.size === 1 ? 'CHANNEL' : 'CHANNELS'} MOVED`
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [installSources],
+  )
+
+  /** Move one user channel to where `to` is in the User Network, and renumber from 1001. */
+  const moveUserChannel = useCallback(
+    async (number: number, to: number) => {
+      const order = userOrder(migrateLegacyUserNumbers(await loadStoredSources()).sources)
+      const from = order.find((source) => source.channelNumber === number)
+      const at = order.findIndex((source) => source.channelNumber === to)
+      if (!from || at < 0) throw new Error('That channel is no longer in your User Network')
+      return reorderUserNetwork(moveTo(order.map((source) => source.id), from.id, at))
+    },
+    [reorderUserNetwork],
   )
 
   /**
@@ -2810,6 +2905,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importChannelFile,
       sourceArchive,
       deleteUserChannel,
+      moveUserChannel,
       restoreCuratedChannel,
       setSourceOverride,
       playSession,
@@ -2822,6 +2918,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       exportChannelFile,
       importChannelFile,
       deleteUserChannel,
+      moveUserChannel,
       restoreCuratedChannel,
       playSession,
       importSession,

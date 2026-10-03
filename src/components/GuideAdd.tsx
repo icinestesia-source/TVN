@@ -64,7 +64,8 @@ export function GuideActions({
   )
   return (
     <div className="guide-import guide-actions">
-      <GuideTab active={tool !== 'options' && tool !== 'add' && tool !== 'media'} open={open} following={following} onOpen={openGuide} onSearch={onGuideSearch ?? openGuide} />
+      {action('TVN', tool === 'editor', () => onTool('editor'), 'Network editor: arrange and edit the channels')}
+      <GuideTab active={tool !== 'options' && tool !== 'add' && tool !== 'media' && tool !== 'editor'} open={open} following={following} onOpen={openGuide} onSearch={onGuideSearch ?? openGuide} />
       {query ? (
         <span className="guide-query" title={`This Guide was created from “${query}”`}>
           {query}

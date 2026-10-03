@@ -10,21 +10,21 @@ export const DEFAULT_FAVOURITES: readonly number[] = [
   125, // 1980s Trailers
   534, // Dance
   289, // Retro Television
-  1004, // Argyle Life | Green
+  1008, // Argyle Life | Green
   710, // Street Food
   103, // Classic Film
-  1023, // Heat Check
+  1052, // Heat Check
   805, // Newsreel Archive
   535, // Drum & Bass
-  1057, // World Wanderings: 4K Walking Tours
+  1119, // World Wanderings: 4K Walking Tours
   412, // World War II
-  1012, // CinemaSins
+  1023, // CinemaSins
   485, // Wildlife
-  1044, // Secret Base
+  1095, // Secret Base
   844, // Theatre Archive
   536, // Trip-Hop
   491, // Ideas
-  1080, // Sporting Logically
+  1102, // Sporting Logically
 ]
 
 /** For each default favourite in the starter User Network, the starter channel a fresh install numbers it to. */

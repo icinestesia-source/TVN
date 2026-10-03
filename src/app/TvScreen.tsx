@@ -70,8 +70,11 @@ export function TvScreen() {
   const narrow = width < 800
   const single = tv.multiviewMode === '1'
   const programme = onScreen(tv.channel, now).current.programme
-  const face = screenFace(tv.channel, programme, tv.playerStatus)
-  const owner = pictureOwner({ face, live: tv.pictureLive, paused: tv.paused })
+  const [held, setHeld] = useState(false)
+  const holding = held && single
+  // INSTANT holds the old picture while the destination loads unseen: nothing is drawn over it until the cut.
+  const face = holding ? 'picture' : screenFace(tv.channel, programme, tv.playerStatus)
+  const owner = holding ? 'picture' : pictureOwner({ face, live: tv.pictureLive, paused: tv.paused })
   const audio = face === 'radio'
   const showCard = face === 'card'
   const nextClip = owner === 'cover' && tv.tuningNumber === null && tv.presentation === null && tv.pictureChannel === tv.channel.number
@@ -86,7 +89,7 @@ export function TvScreen() {
   const ending = tv.presentation !== null && presented === null && tv.tuningNumber === null ? tv.presentation : null
   const revealMs = ending ? transitionTiming(ending.settings).revealMs : 0
   // INFO waits for the picture, not just the commit: the card names the channel until then.
-  const info = usePresence(tv.overlay === 'info' && tv.tuningNumber === null && presented === null, INFO_FADE_MS)
+  const info = usePresence(tv.overlay === 'info' && tv.tuningNumber === null && presented === null && !holding, INFO_FADE_MS)
   const { endTransition } = tv
   useEffect(() => {
     if (!ending) return
@@ -115,7 +118,7 @@ export function TvScreen() {
       <div className={tv.credits ? 'watch is-credits' : 'watch'}>
         {single ? (
           <div className={face === 'picture' ? 'stage' : 'stage is-card'}>
-            <PlayerStage playerRef={tv.playerRef} onReady={tv.onPlayerReady} onStatus={tv.onPlayerStatus} captions={tv.subtitles} />
+            <PlayerStage playerRef={tv.playerRef} onReady={tv.onPlayerReady} onStatus={tv.onPlayerStatus} captions={tv.subtitles} prebuffer={tv.transition.id === 'instant'} onHold={setHeld} />
             {/* Static belongs to changing channel; the next clip on the same channel comes in on a plain cut. */}
             {owner === 'cover' ? (
               <div className="stage-waiting" aria-hidden="true">

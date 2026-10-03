@@ -11,7 +11,8 @@ import { channelsFromSources, mergeParsedExports, parseChannelsExport, type Stor
 import { DEFAULT_FAVOURITES, placeStarterFavourites, starterFavouriteSources } from './services/default-favourites.ts'
 import { DEFAULT_PREFERENCES, loadPreferences, PREFERENCES_KEY, preferencesSaved, savePreferences } from './services/preferences.ts'
 import { setShippedArchive, uploaderIdFor } from './services/user-archive.ts'
-import { planTestChannels } from './services/user-network.ts'
+import { planStarterNetwork, planTestChannels } from './services/user-network.ts'
+import { readUserNetworkFile, recordsFromExport } from './services/user-network-restore.ts'
 import { DEFAULT_SHORTCUTS, SHORTCUT_IDS } from './view/info-shortcuts.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
@@ -19,28 +20,31 @@ setShippedArchive(JSON.parse(read('public/user-network/uploaders.json')))
 const template = mergeParsedExports(BUILT_IN_CATALOGUE_FILES.map((file) => parseChannelsExport(read(`public${file.path}`))))
 const shipped = expandPlayableCatalogue(JSON.parse(read('public/independent/playable.json')))
 const provider = read('src/state/TvProvider.tsx')
+/** The shipped starter User Network, as a fresh install reads it. */
+const starterFile = readUserNetworkFile(read('public/user-network/starter-network.json'))
+const starter = starterFile.ok ? recordsFromExport(starterFile.value, 0) : []
 
-const REQUIRED = [125, 225, 534, 535, 536, 1004, 1023, 1044, 1080]
+const REQUIRED = [125, 225, 534, 535, 536, 1008, 1052, 1095, 1102]
 const NAMES: Record<number, string> = {
   225: 'Saturday Cartoons',
   125: '1980s Trailers',
   534: 'Dance',
   289: 'Retro Television',
-  1004: 'Argyle Life | Green',
+  1008: 'Argyle Life | Green',
   710: 'Street Food',
   103: 'Classic Film',
-  1023: 'Heat Check',
+  1052: 'Heat Check',
   805: 'Newsreel Archive',
   535: 'Drum & Bass',
-  1057: 'World Wanderings: 4K Walking Tours',
+  1119: 'World Wanderings: 4K Walking Tours',
   412: 'World War II',
-  1012: 'CinemaSins',
+  1023: 'CinemaSins',
   485: 'Wildlife',
-  1044: 'Secret Base',
+  1095: 'Secret Base',
   844: 'Theatre Archive',
   536: 'Trip-Hop',
   491: 'Ideas',
-  1080: 'Sporting Logically',
+  1102: 'Sporting Logically',
 }
 
 function withStore<T>(seed: Record<string, string>, run: (store: Map<string, string>) => T): T {
@@ -71,7 +75,7 @@ const visit = (change: (favourites: number[]) => number[] = (same) => same) => {
 }
 
 function showFreshStarter() {
-  const plan = planTestChannels([], template, 5, uploaderIdFor)
+  const plan = planStarterNetwork([], starter, 5, uploaderIdFor)
   const built = channelsFromSources(plan.sources)
   installUserCatalogue(built.channels, built.programmes)
   return plan.sources
@@ -142,11 +146,11 @@ describe('seeding once, for a new viewer only', () => {
 
   it('does not re-seed on reload, nor because a default is missing', () => {
     withStore({}, () => {
-      visit((favourites) => favourites.filter((number) => number !== 225 && number !== 1004))
+      visit((favourites) => favourites.filter((number) => number !== 225 && number !== 1008))
       for (let reload = 0; reload < 3; reload += 1) {
         const back = visit()
         expect(back).not.toContain(225)
-        expect(back).not.toContain(1004)
+        expect(back).not.toContain(1008)
         expect(back).toHaveLength(DEFAULT_FAVOURITES.length - 2)
       }
     })
@@ -180,7 +184,7 @@ describe('seeding once, for a new viewer only', () => {
 })
 
 describe('User Network favourites', () => {
-  const expected = starterFavouriteSources(planTestChannels([], template, 0, uploaderIdFor).sources)
+  const expected = starterFavouriteSources(planStarterNetwork([], starter, 0, uploaderIdFor).sources)
 
   it('resolve to the starter channels a fresh install numbers them to', () => {
     const sources = showFreshStarter()
@@ -198,7 +202,7 @@ describe('User Network favourites', () => {
       automatic: false,
       updatedAt: 1,
     }))
-    const plan = planTestChannels(own, template, 5, uploaderIdFor)
+    const plan = planStarterNetwork(own, starter, 5, uploaderIdFor)
     const built = channelsFromSources(plan.sources)
     installUserCatalogue(built.channels, built.programmes)
     const placed = placeStarterFavourites(DEFAULT_FAVOURITES, expected, plan.sources)

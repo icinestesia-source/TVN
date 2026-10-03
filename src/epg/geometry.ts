@@ -47,6 +47,12 @@ export function timeX(timeMs: number, windowStartMs: number, pxPerMinute: number
   return ((timeMs - windowStartMs) / 60_000) * pxPerMinute
 }
 
+/** The row in the middle of the listings, except near either end where the list simply starts or stops. */
+export function centredScrollTop(index: number, rowHeight: number, viewportHeight: number, rows: number): number {
+  const max = Math.max(0, rows * rowHeight - viewportHeight)
+  return Math.round(Math.min(max, Math.max(0, index * rowHeight + rowHeight / 2 - viewportHeight / 2)))
+}
+
 /** Place NOW inside the viewport, with about 45 minutes of the previous hour still visible. */
 export function openScrollLeft(
   nowMs: number,

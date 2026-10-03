@@ -718,7 +718,7 @@ export function ChannelEditor({
               <span className="remove-ask">
                 {scope === 'curated'
                   ? `Discard your changes to ${padChannel(number)} and restore it as TVN ships it?`
-                  : `Delete ${padChannel(number)}'s sources from this browser? The number stays as an empty channel you can fill again.`}
+                  : `Delete ${padChannel(number)} from this browser? It leaves your User Network and Favourites; other channels keep their numbers.`}
               </span>
               <button type="button" className="tab remove-key" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('delete', () => onDelete(number))}>
                 {scope === 'curated' ? 'Yes, restore' : 'Yes, delete'}

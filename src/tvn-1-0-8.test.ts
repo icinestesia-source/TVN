@@ -298,7 +298,7 @@ describe('EXPORT: the User Network as tvn-user-network-v1', () => {
     const labels = [...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
     expect(labels).toEqual(['Import', 'Export'])
     const actions = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect([...actions.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect([...actions.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['TVN', 'Guide', 'Options', 'Now', 'Add', 'Media'])
     const guide = read('src/components/Guide.tsx')
     expect(guide.match(/<AddChannelForm [^>]*onExport=\{tv\.exportUserNetwork\}/g)).toHaveLength(2)
     expect(guide).not.toMatch(/<GuideActions[^>]*onExport/)
@@ -540,9 +540,11 @@ describe('a cleared 1001+ channel keeps its number as an empty slot', () => {
     expect(channelByNumber(1002)!.name).toBe('Delta')
   })
 
-  it('the editor clears rather than deletes; bulk removal still removes', () => {
+  it('the editor deletes the channel outright, cleaning favourites and history; bulk removal still removes', () => {
     const body = provider.slice(provider.indexOf('const deleteUserChannel = useCallback'), provider.indexOf('const screenAction'))
-    expect(body).toContain('clearUserChannel(')
+    expect(body).toContain('deleteStoredUserChannel(')
+    expect(body).toContain('forgetChannels(')
+    expect(body).not.toContain('clearUserChannel(')
     expect(body).not.toContain('removeUserChannels(')
     expect(removeUserChannels(network(), [1002]).map((source) => source.channelNumber)).toEqual([1001, 1003])
   })

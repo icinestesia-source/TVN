@@ -1,6 +1,7 @@
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import { playbackLabel } from '../view/playback-label.ts'
+import { programmeDate } from '../view/programme-date.ts'
 import { formatDuration, formatElapsed, formatRange, padChannel } from '../utils/time.ts'
 
 export function shownDescription(programme: Programme): string | null {
@@ -75,6 +76,7 @@ export function ProgrammeInfo({
         {following ? <span className="info-following">Following Guide</span> : null}
         {stream ? null : <span>{formatRange(startMs, endMs)}</span>}
         {stream ? null : <span>{formatDuration(programme.durationSeconds)}</span>}
+        {stream ? null : <span className="info-date">{programmeDate(programme)}</span>}
         {live && !stream ? (
           <span>
             {formatElapsed(elapsed)} / {formatElapsed(programme.durationSeconds)}

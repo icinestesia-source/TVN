@@ -5,7 +5,7 @@ import { canonicalYouTubeUrl, inventoryOf, type ChannelSource } from './channel-
 import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, type ImportedVideo, type StoredSource } from './channels-import.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 import { TVN_OWNER, type NetworkUser } from '../data/user-network/users.ts'
-import { storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
+import { CHANNEL_ID, storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
 
 /**
  * RESTORE (OPTIONS → User Network file, or ADD's footer): a tvn-user-network-v1 file restores the viewer's
@@ -76,7 +76,8 @@ export function channelSource(source: ExportSource, index: number): ChannelSourc
 function recordId(channel: ExportChannel, sources: readonly ChannelSource[], taken: Set<string>, seen: Map<string, number>): string {
   const first = sources[0]
   let id: string
-  if (first?.kind === 'youtube' && first.ref) id = `${ADDED_PREFIX}${first.ref}`
+  if (channel.id && CHANNEL_ID.test(channel.id) && !taken.has(channel.id)) id = channel.id
+  else if (first?.kind === 'youtube' && first.ref) id = `${ADDED_PREFIX}${first.ref}`
   else if (first?.kind === 'collection') id = sourceIdFor(channel.listName ?? first.ref ?? channel.name, seen)
   else id = `user:${channel.number}`
   if (taken.has(id)) id = `${id}-${channel.number}`

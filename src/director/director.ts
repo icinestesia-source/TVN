@@ -239,6 +239,7 @@ function childProgramme(channel: Channel, block: ScheduleBlock, child: ScheduleC
     blockTitle: block.title,
     series: child.series,
     creator: child.creator,
+    ...(child.publishedAt ? { publishedAt: child.publishedAt } : {}),
     tags: child.topics,
   }
 }

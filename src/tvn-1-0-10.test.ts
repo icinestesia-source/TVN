@@ -250,14 +250,13 @@ describe('users organise the Guide; they never change a channel', () => {
     expect(userNumbers('user')).toEqual([1001, 1002, 1003, 1004, 1005])
   })
 
-  it('DELETE · DELETE THEM TOO leaves empty slots on the same numbers; nothing else moves', () => {
+  it('DELETE · DELETE THEM TOO removes the user’s channels; nothing else moves', () => {
     const sources = network()
-    const removed = releaseUserChannels(sources, SAM.id, 'remove', (record) => emptySlotRecord(record.channelNumber as number, 9))
-    expect(removed.map((record) => record.channelNumber)).toEqual([1001, 1002, 1003, 1004, 1005, 1006])
-    expect(removed.filter((record) => record.emptySlot).map((record) => record.channelNumber)).toEqual([1003, 1004, 1005])
+    const removed = sources.filter((source) => source.owner !== SAM.id)
     expect(removed.find((record) => record.channelNumber === 1006)).toBe(sources[5])
     expect(removed.some((record) => record.owner === SAM.id)).toBe(false)
-    expect(provider).toMatch(/releaseUserChannels\(existing, id, channels, \(source\) =>\s+source\.channelNumber === null \|\| source\.emptySlot \? source : emptySlotRecord\(source\.channelNumber, Date\.now\(\)\)/)
+    expect(provider).toContain("const remaining = channels === 'remove' ? existing.filter((source) => source.owner !== id) : releaseUserChannels(existing, id, 'move')")
+    expect(provider).toMatch(/forgetChannels\(goneNumbers\(existing, remaining\)/)
   })
 
   it('ADD STARTER NETWORK keeps the named users and every channel’s owner', () => {
