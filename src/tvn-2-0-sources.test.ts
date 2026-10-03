@@ -1,247 +1,139 @@
 import { readFileSync } from 'node:fs'
-import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { InfoActions } from './components/InfoActions.tsx'
-import { channels, shippedChannel, shippedProgrammes } from './data/catalogue.ts'
-import { padProps } from './info-pad.fixture.ts'
-import { buildCentralCuration, checkCentralCuration, overridesFromExport, reconcileOverride } from './services/central-curation.ts'
-import type { ChannelSource } from './services/channel-sources.ts'
-import { buildCuratedEdit, clearCuratedEdit, loadCuratedEdits, saveCuratedEdit, tvnSource } from './services/curated-edits.ts'
-import { curatedChannelManifest, manifestText } from './services/editorial-manifest.ts'
-import { originalOverrideOf, originalSourcesOf, UNSOURCED_NAME, UNSOURCED_REF, type PoolEntry } from './services/original-sources.ts'
-import { addToGuide, newGuide, type GuideRun } from './services/viewing-guides.ts'
+import { screenFace } from './app/screen-face.ts'
+import { isWebsiteSource } from './services/channel-sources.ts'
+import { channelsFromSources } from './services/channels-import.ts'
+import { lookUpFeed, sourcePreviewLines, type FoundFeed } from './services/podcast-source.ts'
+import { addPodcastChannel } from './services/user-network.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
-import { addedSourceLabels, contributionsOf, contributionText, originalLineup } from './view/channel-provenance.ts'
-import { guideEndAdvances } from './view/guide-following.ts'
 
-const NOW = Date.parse('2026-10-02T12:00:00Z')
-const memoryStore = () => {
-  const memory = new Map<string, string>()
-  return { memory, store: { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => void memory.set(key, value) } }
-}
+const read = (path: string) => readFileSync(path, 'utf8')
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
-const shipped = channels.find((channel) => channel.number <= 999 && shippedProgrammes(channel.id).length >= 4)!
-const ids = shippedProgrammes(shipped.id).map((programme) => programme.id)
-
-// A channel's library pool: two registered sources, one id the register does not know, and programmes with no source.
-const entry = (videoId: string, title: string, minutes: number, sourceId?: string): PoolEntry => ({ videoId, title, durationSeconds: minutes * 60, sourceId })
-const pool: PoolEntry[] = [
-  entry('aaaaaaaaaa1', 'Archive pilot', 30, 'src_archive'),
-  entry('aaaaaaaaaa2', 'Archive finale', 35, 'src_archive'),
-  entry('aaaaaaaaaa3', 'Archive special', 60, 'src_archive'),
-  entry('bbbbbbbbbb1', 'Talk one', 45, 'src_talk'),
-  entry('bbbbbbbbbb2', 'Talk two', 50, 'src_talk'),
-  entry('ccccccccccc', 'Stray', 20, 'src_unknown'),
-  entry('ddddddddddd', 'Loose reel', 10),
-  entry('aaaaaaaaaa1', 'Archive pilot (again)', 30, 'src_archive'),
-]
-const register = {
-  sources: {
-    src_archive: { name: 'Archive House', provider: 'youtube', channelUrl: 'https://www.youtube.com/@ArchiveHouse' },
-    src_talk: { name: 'Talk Hour', provider: 'youtube', channelUrl: 'https://www.youtube.com/@TalkHour' },
-  },
-}
-const originals = originalSourcesOf(pool, register)
-const archive = originals.find((source) => source.ref === 'src_archive')!
-
-describe('TVN 2.0 · original sources of a central channel', () => {
-  it('shows the original sources from recorded provenance, never invented', () => {
-    expect(originals.map((source) => source.ref)).toEqual(['src_archive', 'src_talk', 'src_unknown', UNSOURCED_REF])
-    expect(archive).toMatchObject({ name: 'Archive House', provider: 'youtube', url: 'https://www.youtube.com/@ArchiveHouse', registered: true })
-    expect(archive.videos.map((video) => video.id)).toEqual(['aaaaaaaaaa1', 'aaaaaaaaaa2', 'aaaaaaaaaa3'])
-    const unknown = originals.find((source) => source.ref === 'src_unknown')!
-    expect(unknown).toMatchObject({ name: 'src_unknown · not in the source register', provider: null, registered: false })
-    expect(unknown.url).toBeUndefined()
-    expect(originals.at(-1)).toMatchObject({ ref: UNSOURCED_REF, name: UNSOURCED_NAME, provider: null, registered: false })
-    expect(originals.at(-1)?.name).toBe('TVN catalogue · source unavailable')
-  })
-
-  it('an untouched channel keeps TVN scheduling and keeps no record', () => {
-    const { store } = memoryStore()
-    const noop = originalOverrideOf(archive, true, undefined)
-    expect(noop).toBeNull()
-    expect(saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource()], originals: [{ ref: 'src_archive', enabled: true, name: 'Archive House', programmes: 3 }] }, NOW, store, ids, ['aaaaaaaaaa1'])).toBeNull()
-    expect(loadCuratedEdits(store)).toEqual({})
-    const renamed = saveCuratedEdit(shipped, { name: 'Only renamed', sources: [tvnSource()] }, NOW, store, ids)!
-    const built = buildCuratedEdit(shipped, renamed, new Set(), shippedProgrammes(shipped.id), originals)
-    expect(built.programmes).toBeNull()
-    expect(built.channel.customLineup).toBe(shipped.customLineup)
-  })
-
-  it('disabling a source is a local override only: its programmes leave the channel, the catalogue is unchanged', () => {
-    const before = JSON.stringify({ channel: shippedChannel(shipped.number), programmes: shippedProgrammes(shipped.id), originals })
-    const { store } = memoryStore()
-    const off = originalOverrideOf(archive, false, undefined)!
-    expect(off).toEqual({ ref: 'src_archive', enabled: false, name: 'Archive House', programmes: 3 })
-    const saved = saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource()], originals: [off] }, NOW, store, ids)!
-    expect(saved.originals).toEqual([off])
-    expect(JSON.stringify(loadCuratedEdits(store))).not.toContain('Archive pilot')
-    const built = buildCuratedEdit(shipped, saved, new Set(), shippedProgrammes(shipped.id), originals)
-    const playing = built.programmes?.map((programme) => programme.videoId) ?? []
-    expect(built.channel.customLineup).toBe(true)
-    expect(playing.some((id) => id?.startsWith('aaaa'))).toBe(false)
-    expect(playing).toEqual(expect.arrayContaining(['bbbbbbbbbb1', 'bbbbbbbbbb2', 'ccccccccccc', 'ddddddddddd']))
-    expect(JSON.stringify({ channel: shippedChannel(shipped.number), programmes: shippedProgrammes(shipped.id), originals })).toBe(before)
-  })
-
-  it('Restore TVN original drops the override', () => {
-    const { store } = memoryStore()
-    saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource()], originals: [originalOverrideOf(archive, false, undefined)!] }, NOW, store, ids)
-    expect(Object.keys(loadCuratedEdits(store))).toEqual([String(shipped.number)])
-    clearCuratedEdit(shipped.number, store)
-    expect(loadCuratedEdits(store)).toEqual({})
-  })
-
-  it('an added source with programmes plays alongside the enabled originals; with TVN programming off, alone', () => {
-    const own: ChannelSource = {
-      id: 's1',
-      kind: 'youtube',
-      url: 'https://www.youtube.com/playlist?list=PL0123456789',
-      ref: 'PL0123456789',
-      youtube: 'playlist',
-      label: 'My list',
-      enabled: true,
-      videos: [{ id: 'eeeeeeeeee1', title: 'Mine', durationSec: 1500 }],
-    }
-    const { store } = memoryStore()
-    const saved = saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource(), own], originals: [originalOverrideOf(archive, false, undefined)!] }, NOW, store, ids)!
-    const built = buildCuratedEdit(shipped, saved, new Set(), shippedProgrammes(shipped.id), originals)
-    expect(built.programmes?.map((programme) => programme.videoId).sort()).toEqual(['bbbbbbbbbb1', 'bbbbbbbbbb2', 'ccccccccccc', 'ddddddddddd', 'eeeeeeeeee1'])
-    expect(saved.originals).toHaveLength(1)
-    const alone = buildCuratedEdit(shipped, { ...saved, sources: [{ ...tvnSource(), enabled: false }, own] }, new Set(), shippedProgrammes(shipped.id), originals)
-    expect(alone.programmes?.map((programme) => programme.videoId)).toEqual(['eeeeeeeeee1'])
-  })
-
-  it('a local filter over an original source keeps only its matching programmes', () => {
-    const filtered = originalOverrideOf(archive, true, { include: { terms: ['pilot'] } })!
-    expect(filtered.filter).toEqual({ include: { terms: ['pilot'] } })
-    expect(originalOverrideOf(originals.at(-1)!, true, { include: { terms: ['reel'] } })).toBeNull()
-    const { store } = memoryStore()
-    const saved = saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource()], originals: [filtered] }, NOW, store, ids)!
-    const playing = buildCuratedEdit(shipped, saved, new Set(), shippedProgrammes(shipped.id), originals).programmes?.map((programme) => programme.videoId) ?? []
-    expect([...new Set(playing.filter((id) => id?.startsWith('aaaa')))]).toEqual(['aaaaaaaaaa1'])
-    expect(playing).toContain('bbbbbbbbbb1')
-  })
-
-  it('counts each source’s contribution to the channel as edited', () => {
-    const { rows, total } = contributionsOf(originals, undefined)
-    expect(total).toBe((30 + 35 + 60 + 45 + 50 + 20 + 10) * 60)
-    expect(contributionText(rows[0], total)).toBe('3 programmes · 2h 05m · 50%')
-    expect(contributionText(rows[3], total)).toBe('1 programme · 10m · 4%')
-    const off = contributionsOf(originals, [originalOverrideOf(archive, false, undefined)!])
-    expect(off.rows[0]).toMatchObject({ programmes: 0, seconds: 0 })
-    expect(contributionText(off.rows[1], off.total)).toBe('2 programmes · 1h 35m · 76%')
-  })
-
-  it('labels each running-order programme with the source that supplied it', () => {
-    const lineup = originalLineup(originals, [originalOverrideOf(originals[1], false, undefined)!])
-    expect(lineup.map((video) => [video.id, video.from])).toEqual([
-      ['aaaaaaaaaa1', 'Archive House'],
-      ['aaaaaaaaaa2', 'Archive House'],
-      ['aaaaaaaaaa3', 'Archive House'],
-      ['ccccccccccc', 'src_unknown'],
-      ['ddddddddddd', 'TVN catalogue'],
+describe('a source read a slice at a time, its unstated lengths measured', () => {
+  it('follows the reader’s cursor, keeps each episode once, measures files and leaves out members-only and unreadable ones', async () => {
+    const asked: string[] = []
+    const reader = (async (input: string | URL) => {
+      const url = new URL(String(input), 'http://tvn.test')
+      asked.push(url.search)
+      if (url.searchParams.has('measure')) {
+        const durations: Record<string, number> = {}
+        for (const file of url.searchParams.getAll('measure')) durations[file] = file.endsWith('locked.mp4') ? -1 : file.endsWith('broken.mp4') ? 0 : 3600
+        return json({ durations })
+      }
+      const cursor = url.searchParams.get('cursor')
+      const base = { feedUrl: 'https://shows.example.org/podcast/', website: 'https://shows.example.org/', title: 'Example Podcast', description: '', shape: 'archive', via: 'archive' }
+      if (!cursor) {
+        return json({ ...base, pages: 2, listed: 3, excluded: { members: 0, unsupported: 1 }, next: 'c1', episodes: [
+          { id: 'web-1', title: 'One', durationSec: 0, media: 'https://cdn.example.net/one.mp4', type: 'video/mp4' },
+          { id: 'abcdefghijk', title: 'Two', durationSec: 1800, type: 'youtube', youtube: 'abcdefghijk' },
+        ] })
+      }
+      return json({ ...base, pages: 1, listed: 4, excluded: { members: 1, unsupported: 0 }, episodes: [
+        { id: 'web-1', title: 'One (again)', durationSec: 0, media: 'https://cdn.example.net/one.mp4', type: 'video/mp4' },
+        { id: 'web-3', title: 'Three', durationSec: 0, media: 'https://cdn.example.net/locked.mp4', type: 'video/mp4' },
+        { id: 'web-4', title: 'Four', durationSec: 0, media: 'https://cdn.example.net/broken.mp4', type: 'video/mp4' },
+        { id: 'web-5', title: 'Five', durationSec: 0, media: 'https://cdn.example.net/five.mp3', type: 'audio/mpeg' },
+      ] })
+    }) as typeof fetch
+    const progress: string[] = []
+    const found = await lookUpFeed('https://shows.example.org/podcast/', reader, { mode: 'all', onProgress: (text) => progress.push(text) })
+    expect(found.episodes).toEqual([
+      { id: 'web-1', title: 'One', durationSec: 3600, media: 'https://cdn.example.net/one.mp4', mediaKind: 'video' },
+      { id: 'abcdefghijk', title: 'Two', durationSec: 1800 },
+      { id: 'web-5', title: 'Five', durationSec: 3600, media: 'https://cdn.example.net/five.mp3' },
     ])
-    const labels = addedSourceLabels([tvnSource(), { id: 's1', kind: 'collection', url: '', label: 'Mine', enabled: true, videos: [{ id: 'x1', title: 'X', durationSec: 60 }] }], (source) => source.label)
-    expect([...labels]).toEqual([['x1', 'Mine']])
-    const editor = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
-    expect(editor).toContain('<span className="editor-video-from"')
-    expect(readFileSync('src/components/NowNextOverlay.tsx', 'utf8')).not.toContain('editor-video-from')
-  })
-
-  it('exports source decisions with their identity and restores them against the current shipped sources', () => {
-    const { store } = memoryStore()
-    const decisions = [originalOverrideOf(archive, false, undefined)!, originalOverrideOf(originals[1], true, { exclude: { terms: ['two'] } })!]
-    const saved = saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource()], originals: decisions, excluded: ['ccccccccccc'] }, NOW, store, ids, originals.flatMap((source) => source.videos.map((video) => video.id)))!
-    expect(saved.excluded).toEqual(['ccccccccccc'])
-    const central = buildCentralCuration([saved])
-    const errors: string[] = []
-    checkCentralCuration(central, 'central', errors)
-    expect(errors).toEqual([])
-    expect(central.overrides[0].originals).toEqual(decisions)
-    expect(JSON.stringify(central)).not.toContain('Archive pilot')
-    const [restored] = overridesFromExport(central)
-    const result = reconcileOverride(restored, shipped, ids, originals)
-    expect(result.conflicts).toEqual([])
-    expect(result.edit?.originals).toEqual(decisions)
-    expect(result.edit?.excluded).toEqual(['ccccccccccc'])
-  })
-
-  it('flags a shipped source that has gone or changed instead of misapplying the decision', () => {
-    const { store } = memoryStore()
-    const saved = saveCuratedEdit(shipped, { name: shipped.name, sources: [tvnSource()], originals: [originalOverrideOf(archive, false, undefined)!, originalOverrideOf(originals[1], false, undefined)!] }, NOW, store, ids)!
-    const [restored] = overridesFromExport(buildCentralCuration([saved]))
-    const later = originalSourcesOf(
-      [entry('bbbbbbbbbb1', 'Talk one', 45, 'src_talk'), entry('zzzzzzzzzz1', 'New', 30, 'src_new')],
-      { sources: { src_talk: { name: 'Talk Hour Classics', provider: 'youtube' } } },
-    )
-    const result = reconcileOverride(restored, shipped, ids, later)
-    expect(result.conflicts.some((line) => /no longer ships Archive House/.test(line))).toBe(true)
-    expect(result.conflicts.some((line) => /renamed .*Talk Hour to Talk Hour Classics/.test(line))).toBe(true)
-    expect(result.edit?.originals?.map((item) => item.ref)).toEqual(['src_talk'])
-    const shrunk = reconcileOverride(restored, shipped, ids, originalSourcesOf([entry('aaaaaaaaaa1', 'Archive pilot', 30, 'src_archive'), entry('bbbbbbbbbb1', 'Talk one', 45, 'src_talk'), entry('bbbbbbbbbb2', 'Talk two', 50, 'src_talk')], register))
-    expect(shrunk.conflicts.some((line) => /Archive House .* has changed \(3 → 1 programmes\)/.test(line))).toBe(true)
-  })
-
-  it('the manifest separates shipped sources, local source overrides and added sources, with contribution', () => {
-    const decisions = [originalOverrideOf(archive, false, undefined)!]
-    const manifest = curatedChannelManifest(shipped.number, { name: shipped.name, sources: [tvnSource()], originals: decisions }, shippedProgrammes(shipped.id), originals)
-    expect(manifest.provenance?.shippedSources.map((source) => [source.ref, source.enabled, source.shipped, source.programmes])).toEqual([
-      ['src_archive', false, 3, 0],
-      ['src_talk', true, 2, 2],
-      ['src_unknown', true, 1, 1],
-      [UNSOURCED_REF, true, 1, 1],
-    ])
-    expect(manifest.provenance?.localSourceOverrides).toEqual(decisions)
-    expect(manifest.provenance?.addedSources).toEqual([])
-    expect(manifest.current.programmeCount).toBe(4)
-    const text = manifestText(manifest)
-    expect(text).toContain('## SHIPPED SOURCES')
-    expect(text).toContain('## LOCAL SOURCE OVERRIDES')
-    expect(text).toContain('## ADDED SOURCES')
-    expect(text).toContain('- Archive House: disabled')
+    expect(found.summary).toEqual({ shape: 'archive', via: 'archive', pages: 3, listed: 7, media: { audio: 1, video: 1, youtube: 1 }, excluded: { members: 2, unsupported: 1, unmeasured: 1 }, segments: 0 })
+    expect(asked.filter((search) => search.includes('cursor=c1'))).toHaveLength(1)
+    expect(progress.some((text) => text.startsWith('MEASURING'))).toBe(true)
   })
 })
 
-describe('TVN 2.0 · the Guide follows the player', () => {
-  const first = { ...channels[0], id: 'end-a', number: 21, name: 'Alpha', origin: 'default', enabled: true } as Channel
-  const a1 = { id: 'a1', title: 'Alpha one', videoId: 'aaaaaaaaaa1', durationSeconds: 1500, channelId: first.id, category: 'x', source: 'youtube', kind: 'programme', playbackMode: 'linear' } as Programme
-  const a2 = { ...a1, id: 'a2', videoId: 'aaaaaaaaaa2', title: 'Alpha two' } as Programme
-  const guide = addToGuide(addToGuide(newGuide('Evening', NOW), first, a1, NOW + 1), first, a2, NOW + 2)
-  const run: GuideRun = { guide, index: 0, state: 'active', programmeId: 'guide-play-a1', endsAt: NOW + 1_500_000, skipped: [] }
-  const playing = { channelNumber: 21, programmeId: 'guide-play-a1', videoId: 'aaaaaaaaaa1' }
-  const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
-
-  it('advances on the actual ENDED of the Guide item playing now', () => {
-    expect(guideEndAdvances(run, { channelNumber: 21, videoId: 'aaaaaaaaaa1' }, playing)).toBe(true)
-    const ended = provider.slice(provider.indexOf("if (status === 'ended') {"), provider.indexOf("if (status !== 'error') return"))
-    expect(ended).toContain('if (guideEndAdvances(guideRunRef.current, asked, playing)) guideEngine.current.advance(true)')
+describe('the preview shows what TVN found before anything is saved', () => {
+  const feed = (overrides: Partial<FoundFeed['summary']>, episodes: FoundFeed['episodes']): FoundFeed => ({
+    feedUrl: 'https://veritas.example/vs.rss',
+    website: 'https://veritas.example/',
+    title: 'VERITAS',
+    description: '',
+    episodes,
+    summary: { shape: 'feed', via: 'directory', pages: 0, listed: 506, media: { audio: episodes.length, video: 0, youtube: 0 }, excluded: { members: 0, unsupported: 0, unmeasured: 0 }, segments: episodes.length, ...overrides },
   })
 
-  it('ignores a stale ENDED', () => {
-    expect(guideEndAdvances(run, { channelNumber: 21, videoId: 'aaaaaaaaaa2' }, playing)).toBe(false)
-    expect(guideEndAdvances(run, { channelNumber: 34, videoId: 'aaaaaaaaaa1' }, playing)).toBe(false)
-    expect(guideEndAdvances({ ...run, state: 'suspended' }, { channelNumber: 21, videoId: 'aaaaaaaaaa1' }, playing)).toBe(false)
-    expect(guideEndAdvances({ ...run, programmeId: 'guide-play-other' }, { channelNumber: 21, videoId: 'aaaaaaaaaa1' }, playing)).toBe(false)
-    expect(guideEndAdvances(run, { channelNumber: 21, videoId: 'aaaaaaaaaa1' }, null)).toBe(false)
-    expect(guideEndAdvances(null, { channelNumber: 21, videoId: 'aaaaaaaaaa1' }, playing)).toBe(false)
-    const stage = readFileSync('src/player/YoutubeStage.tsx', 'utf8')
-    expect(stage).toContain("} else if (event.data === 0 && (actualId(event.target) ?? requestedRef.current) === requestedRef.current) {")
+  it("names a directory-found feed, and calls the publisher's part-one episodes public segments, never full interviews", () => {
+    const lines = sourcePreviewLines(feed({}, [{ id: 'a', title: 'Guest | Part 1 of 2', durationSec: 3811, media: 'https://cdn.example/a.mp3' }]))
+    expect(lines).toEqual([
+      { label: 'Source', value: 'VERITAS' },
+      { label: 'Type', value: "Podcast feed · the publisher's own, found in the public podcast directory" },
+      { label: 'Found', value: '1 episode of 506 listed' },
+      { label: 'Media', value: '1 audio' },
+      { label: 'Public segments', value: 'All labelled by the publisher as a part or preview: not full programmes' },
+    ])
   })
 
-  it('keeps the listed length as the fallback when no ENDED arrives', () => {
-    expect(provider).toMatch(/if \(!manual \|\| manual\.programme\.id !== run\.programmeId\) \{\s+guideEngine\.current\.advance\(manual === null\)/)
+  it('describes an archive by its pages, its media and what it left out', () => {
+    const episodes = Array.from({ length: 161 }, (_, index) => ({ id: `e${index}`, title: `Episode ${index}`, durationSec: 3600 }))
+    const lines = sourcePreviewLines(feed({ shape: 'archive', via: 'archive', pages: 20, listed: 162, media: { audio: 0, video: 160, youtube: 1 }, excluded: { members: 0, unsupported: 1, unmeasured: 0 }, segments: 0 }, episodes))
+    expect(lines.map((line) => `${line.label}: ${line.value}`)).toEqual([
+      'Source: VERITAS',
+      'Type: Public episode archive · 20 pages',
+      'Found: 161 episodes of 162 listed',
+      'Media: 160 video · 1 YouTube',
+      'Left out: 1 in players TVN cannot use',
+    ])
   })
 
-  it('GUIDE is green wherever an active Guide controls what plays next, the Guide screen included', () => {
-    const pad = renderToStaticMarkup(createElement(InfoActions, { channel: first, programme: a1, ...padProps(), following: true }))
-    expect(pad).toMatch(/class="tune-key info-pad-guide is-following"/)
-    expect(pad).toContain('aria-label="Previous programme"')
-    expect(pad).not.toContain('Previous item in the Guide')
-    const guideView = readFileSync('src/components/Guide.tsx', 'utf8')
-    expect(guideView).toContain("following={tv.guideRun?.state === 'active'}")
-    expect(guideView).toMatch(/onNext=\{onNext\}\s+following=\{following\}/)
+  it('the ADD box reads a website first and shows the preview with Add channel and Cancel', () => {
+    const form = read('src/components/GuideAdd.tsx')
+    expect(form).toContain('found = await onPreview(link, setNote)')
+    expect(form).toContain('sourcePreviewLines(preview).map((line) => (')
+    expect(form).toContain('Add channel')
+    expect(read('src/components/Guide.tsx').match(/onPreview=\{tv\.previewSource\}/g)).toHaveLength(2)
+    expect(read('src/state/TvProvider.tsx')).toContain("const previewed = previewedRef.current?.link === link.trim() ? previewedRef.current.feed : null")
+  })
+})
+
+describe('what ADD reads as a website', () => {
+  it('any page or feed address, never a YouTube link or a media file or stream', () => {
+    expect(isWebsiteSource('https://topherhq.example/biocharisma-podcast/')).toBe(true)
+    expect(isWebsiteSource('veritas.example')).toBe(true)
+    expect(isWebsiteSource('https://shows.example.org/feed.rss')).toBe(true)
+    expect(isWebsiteSource('https://www.youtube.com/@daftpunk')).toBe(false)
+    expect(isWebsiteSource('https://cdn.example.net/show.mp3')).toBe(false)
+    expect(isWebsiteSource('https://radio.example.net/live.m3u8')).toBe(false)
+  })
+})
+
+describe('video episodes play with their picture; audio ones keep the radio face', () => {
+  it('an archive of video files is a picture channel; a mixed one shows the radio face only for its audio episodes', () => {
+    const result = addPodcastChannel([], {
+      feedUrl: 'https://shows.example.org/podcast/',
+      title: 'Example Podcast',
+      episodes: [
+        { id: 'web-1', title: 'Video', durationSec: 3600, media: 'https://cdn.example.net/one.mp4', mediaKind: 'video' },
+        { id: 'web-2', title: 'Audio', durationSec: 1800, media: 'https://cdn.example.net/two.mp3' },
+      ],
+    }, 1)
+    const built = channelsFromSources(result.sources)
+    const channel = built.channels[0] as Channel
+    const programmes = built.programmes.get(channel.id) as Programme[]
+    expect(channel.mediaKind).not.toBe('audio')
+    const video = programmes.find((programme) => programme.mediaUrl?.endsWith('.mp4')) as Programme
+    const audio = programmes.find((programme) => programme.mediaUrl?.endsWith('.mp3')) as Programme
+    expect(video).toMatchObject({ mediaKind: 'video', videoId: null })
+    expect(video.programmeType).not.toBe('radio')
+    expect(audio).toMatchObject({ mediaKind: 'audio', programmeType: 'radio' })
+    expect(screenFace(channel, video, 'playing')).toBe('picture')
+    expect(screenFace(channel, audio, 'playing')).toBe('radio')
+  })
+})
+
+describe('a slow publisher file is given time while it is still arriving', () => {
+  it('a web file fails only after 30 s with nothing sent, or two minutes in all', () => {
+    const stage = readFileSync('src/player/LocalStage.tsx', 'utf8')
+    expect(stage).toMatch(/WEB_FILE_TIMEOUT_MS = 30_000/)
+    expect(stage).toMatch(/WEB_FILE_LIMIT_MS = 120_000/)
+    expect(stage).toMatch(/addEventListener\('progress', onProgress\)/)
+    expect(stage).toMatch(/Math\.min\(WEB_FILE_TIMEOUT_MS, pending\.giveUpAt - Date\.now\(\)\)/)
   })
 })

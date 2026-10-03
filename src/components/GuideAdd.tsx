@@ -3,6 +3,7 @@ import { createGuidePress } from '../view/guide-press.ts'
 import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
 import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
+import { sourcePreviewLines, type FoundFeed } from '../services/podcast-source.ts'
 import { readRestoreFile, type TvnExport } from '../services/tvn-export.ts'
 import type { GuideTool } from '../types/input.ts'
 import { USER_NAME_MAX } from '../data/user-network/users.ts'
@@ -117,12 +118,15 @@ function GuideTab({ active, open, following, onOpen, onSearch }: { active: boole
 export function AddChannelForm({
   nextNumber,
   onAdd,
+  onPreview,
   onExport,
   onFocus,
   inputRef,
 }: {
   nextNumber: number | null
   onAdd: (link: string) => Promise<string>
+  /** Reads a website, feed or archive first, so the viewer sees what it holds before it is added; null adds directly. */
+  onPreview?: (link: string, onProgress: (text: string) => void) => Promise<FoundFeed | null>
   /** Download the User Network as a file; the answer is a short line for the viewer. */
   onExport?: () => Promise<string>
   onFocus?: () => void
@@ -133,6 +137,7 @@ export function AddChannelForm({
   const [note, setNote] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exported, setExported] = useState(false)
+  const [preview, setPreview] = useState<FoundFeed | null>(null)
 
   const runExport = () => {
     if (!onExport || exporting) return
@@ -151,19 +156,39 @@ export function AddChannelForm({
     return () => clearTimeout(timer)
   }, [exported])
 
-  const submit = async (event: FormEvent | KeyboardEvent<HTMLInputElement>) => {
-    event.preventDefault()
-    if (!link.trim() || busy) return
+  const add = async () => {
     setBusy(true)
     setNote('FINDING CHANNEL…')
     try {
       setNote(await onAdd(link))
       setLink('')
+      setPreview(null)
     } catch (caught) {
       setNote(viewerMessage(caught, 'THAT CHANNEL COULD NOT BE ADDED'))
     } finally {
       setBusy(false)
     }
+  }
+
+  const submit = async (event: FormEvent | KeyboardEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    if (!link.trim() || busy) return
+    if (!onPreview) return add()
+    setBusy(true)
+    setPreview(null)
+    setNote('READING SOURCE…')
+    let found: FoundFeed | null
+    try {
+      found = await onPreview(link, setNote)
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THAT SOURCE COULD NOT BE READ'))
+      setBusy(false)
+      return
+    }
+    setBusy(false)
+    if (!found) return add()
+    setNote(null)
+    setPreview(found)
   }
 
   return (
@@ -198,6 +223,26 @@ export function AddChannelForm({
         <span className="add-channel-note" role="status">
           {note}
         </span>
+      ) : null}
+      {preview ? (
+        <div className="add-preview" role="dialog" aria-label="What TVN found">
+          <dl>
+            {sourcePreviewLines(preview).map((line) => (
+              <div key={line.label}>
+                <dt>{line.label}</dt>
+                <dd>{line.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="add-preview-actions">
+            <button type="button" className="tab is-on" disabled={busy} onClick={() => void add()}>
+              Add channel
+            </button>
+            <button type="button" className="tab" disabled={busy} onClick={() => setPreview(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
       ) : null}
     </form>
   )

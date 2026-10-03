@@ -209,6 +209,14 @@ export function classifySourceUrl(raw: string, hint: SourceKind | 'auto' = 'auto
   return { kind: 'audio', url: url.toString() }
 }
 
+/** A web page or feed rather than a stream or media file: ADD reads it for a feed or a public episode archive. */
+export function isWebsiteSource(raw: string): boolean {
+  const { kind, url } = classifySourceUrl(raw)
+  if (kind === 'podcast') return true
+  if (kind !== 'audio') return false
+  return !/\.[a-z0-9]{2,5}$/i.test(new URL(url).pathname)
+}
+
 /**
  * A typed address as a URL. One with a scheme is read as it is; one without gets https:// only when it is
  * plainly a host name (example.com, www.example.com/path), so a word or phrase is never taken for a site.

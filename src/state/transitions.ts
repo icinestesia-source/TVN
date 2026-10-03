@@ -262,6 +262,8 @@ export interface Presentation {
   session: number
   number: number
   settings: TransitionSettings
+  /** The channel the title card names when it is not `number`: 000 surfing shows the channel it has just joined. */
+  cardNumber?: number
 }
 
 /**

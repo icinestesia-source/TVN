@@ -237,6 +237,27 @@
 
 .add-cell .ch-name { color: var(--gold); }
 
+/* What a website, feed or archive holds, shown before it is added. */
+.add-preview {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 40;
+  width: min(560px, 92vw);
+  transform: translateX(-50%);
+  padding: 14px 16px;
+  border: 1px solid var(--gold);
+  background: rgba(6, 16, 28, 0.97);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.add-preview dl { display: grid; gap: 6px; margin: 0 0 12px; }
+.add-preview dl > div { display: grid; grid-template-columns: 9.5em 1fr; gap: 10px; }
+.add-preview dt { color: var(--gold); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.add-preview dd { margin: 0; font-size: 14px; }
+.add-preview-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
 .guide-empty .add-channel {
   justify-content: center;
   width: min(720px, 92vw);

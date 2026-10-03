@@ -495,4 +495,12 @@ describe('000 TVN: a continuous channel surfer on the Random Cycle wait', () => 
     expect(provider).toContain('if (channelRef.current === TVN_CHANNEL_NUMBER) return setSurfHops((hops) => hops + 1)')
     expect(provider).toMatch(/if \(sampled && tvnChoice\(\) !== sampled\) presentTvnSurf\(\)/)
   })
+
+  it("a surf's title card names the channel 000 has just joined; a tune made during it names its own channel", () => {
+    const provider = read('src/state/TvProvider.tsx')
+    expect(provider).toContain('const sampled = tvnChoice()?.channelNumber')
+    expect(provider).toContain('number: TVN_CHANNEL_NUMBER, settings, ...(sampled !== undefined ? { cardNumber: sampled } : {}) }')
+    expect(provider).toContain('held ? { session: held.session, number, settings: held.settings }')
+    expect(read('src/app/TvScreen.tsx')).toContain('channelNumber={layer.presentation.cardNumber ?? layer.number}')
+  })
 })

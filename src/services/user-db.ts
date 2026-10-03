@@ -1,3 +1,4 @@
+import { readAllPaged } from '../library/idb-read.ts'
 import type { StoredSource } from './channels-import.ts'
 
 const DB_NAME = 'retrotv-user'
@@ -20,11 +21,7 @@ export async function loadStoredSources(): Promise<StoredSource[]> {
   if (typeof indexedDB === 'undefined') return []
   const db = await openDb()
   try {
-    return await new Promise((resolve, reject) => {
-      const request = db.transaction(STORE, 'readonly').objectStore(STORE).getAll()
-      request.onsuccess = () => resolve((request.result as StoredSource[]) ?? [])
-      request.onerror = () => reject(request.error ?? new Error('Could not read the user catalogue'))
-    })
+    return await readAllPaged<StoredSource>(db.transaction(STORE, 'readonly').objectStore(STORE), 'Could not read the user catalogue')
   } finally {
     db.close()
   }

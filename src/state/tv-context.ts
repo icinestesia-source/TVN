@@ -169,6 +169,8 @@ export interface TvContextValue {
   ) => Promise<void>
   /** Add a YouTube channel from a channel or video link as the last user channel (or refresh it if present); `owner` lists it on that user's tab. */
   addChannel: (link: string, owner?: string) => Promise<{ number: number | null; message: string }>
+  /** What a website, feed or episode archive holds, read before it is added; null for a YouTube link, which adds directly. */
+  previewSource: (link: string, onProgress?: (text: string) => void) => Promise<import('../services/podcast-source.ts').FoundFeed | null>
   /** Named users, each a User Network tab after TVN (src/data/user-network/users.ts). */
   networkUsers: readonly import('../data/user-network/users.ts').NetworkUser[]
   /** Create a named user and show its (empty) tab. Throws a viewer-readable reason for a refused name. */

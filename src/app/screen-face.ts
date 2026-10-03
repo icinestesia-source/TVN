@@ -11,7 +11,8 @@ export function screenFace(channel: Channel, programme: Programme, status: Playe
   if (session && !sessionActive()) return 'session-empty'
   // A live stream that will not play shows TVN's unavailable card, radio or not.
   if (programme.liveStream && status === 'error') return 'card'
-  if (channel.mediaKind === 'audio' || (session && programme.mediaKind === 'audio')) return 'radio'
+  // A channel mixing episodes (audio files beside video) shows the radio face for its audio ones.
+  if (channel.mediaKind === 'audio' || ((session || programme.mediaUrl !== undefined) && programme.mediaKind === 'audio')) return 'radio'
   if (!hasPicture(programme) || status === 'loading-api' || status === 'slate' || status === 'error') return 'card'
   return 'picture'
 }

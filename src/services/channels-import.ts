@@ -19,6 +19,8 @@ export interface ImportedVideo {
   lists?: string[]
   /** A podcast episode's public audio file. Its id is then the feed's episode id, never a YouTube id. */
   media?: string
+  /** That file is video (a publisher's own MP4, say), so it plays with its picture. */
+  mediaKind?: 'video'
 }
 
 export interface ImportedSource {
@@ -475,7 +477,7 @@ export function channelsFromSources(
       ordered ? ' in your running order on a clock schedule.' : wide ? ' from across the archive on a clock schedule.' : ' on a clock schedule.',
       refusedCount > 0 ? ` ${refusedCount} of its videos cannot play outside YouTube.` : '',
     ].join('')
-    channels.push({ ...base, description, ...(own.length > 0 && own.every((video) => video.media) ? { mediaKind: 'audio' as const } : {}) })
+    channels.push({ ...base, description, ...(own.length > 0 && own.every((video) => video.media && video.mediaKind !== 'video') ? { mediaKind: 'audio' as const } : {}) })
 
     const ownIndex = new Map(pool.map((video, index) => [video.id, index + 1]))
     const entry = (video: ImportedVideo) => ({ key: video.id, item: { video, earlier: false, programmeId: `${id}-p${ownIndex.get(video.id)}` }, repeat: false })
@@ -513,12 +515,13 @@ export function channelsFromSources(
   return { channels, programmes }
 }
 
-/** A podcast episode: its own public audio file, played by the browser's media element, never by YouTube. */
+/** A podcast or archive episode: its own public audio or video file, played by the browser's media element, never by YouTube. */
 function episodeProgramme(video: ImportedVideo, id: string, channelId: string, name: string): Programme {
+  const picture = video.mediaKind === 'video'
   return {
     id,
     title: video.title,
-    description: `${video.title} on ${name}, a podcast episode. The slot is the episode's own length.`,
+    description: `${video.title} on ${name}, ${picture ? 'a video episode' : 'a podcast episode'}. The slot is the episode's own length.`,
     videoId: null,
     mediaUrl: video.media,
     durationSeconds: video.durationSec,
@@ -527,8 +530,8 @@ function episodeProgramme(video: ImportedVideo, id: string, channelId: string, n
     category: 'User',
     source: 'imported',
     kind: 'programme',
-    programmeType: 'radio',
-    mediaKind: 'audio',
+    programmeType: picture ? programmeTypeFor(video.durationSec) : 'radio',
+    mediaKind: picture ? 'video' : 'audio',
     sourceRef: `podcast:${video.id}`,
     ...(video.published ? { publishedAt: video.published } : {}),
     creator: name,

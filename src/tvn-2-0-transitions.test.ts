@@ -257,7 +257,7 @@ describe('saved settings and the complete export', () => {
 
 describe('rapid tuning, refusals and start-up', () => {
   it('a tune during a presentation takes it over: same effect, newest channel’s card', () => {
-    expect(provider).toContain('presentationRef.current = presents ? (held ? { ...held, number } : { session: ++presentationSession.current, number, settings }) : null')
+    expect(provider).toContain('presentationRef.current = presents ? (held ? { session: held.session, number, settings: held.settings } : { session: ++presentationSession.current, number, settings }) : null')
     // 225 → 534 → 769: only 769 can be named, in tuning and after the commit.
     expect(seen({ presentation: presentation(769), tuningNumber: 769 })).toBe(769)
     expect(seen({ presentation: presentation(769), tuningNumber: 534 })).toBeNull()

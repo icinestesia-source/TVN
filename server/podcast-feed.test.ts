@@ -33,7 +33,7 @@ describe('podcast and RSS/Atom sources', () => {
   })
 
   it('reports a site with no feed, a paywall and a private address honestly, never as success', async () => {
-    await expect(resolveFeed('https://www.example.com/', (async () => page('<html>No feeds here</html>')) as typeof fetch)).rejects.toThrow(/does not announce a public RSS or Atom feed/)
+    await expect(resolveFeed('https://www.example.com/', (async () => page('<html>No feeds here</html>')) as typeof fetch)).rejects.toThrow(/has no public feed or episode archive TVN can play/)
     await expect(resolveFeed('https://members.example.com/', (async () => page('', 401)) as typeof fetch)).rejects.toThrow(/sign-in or subscription/)
     const paywalled = (async (url: string | URL, init?: RequestInit) => (init?.method === 'HEAD' ? page('', 402) : String(url).endsWith('/feed') ? page(FEED, 200, 'application/rss+xml') : page(''))) as typeof fetch
     await expect(resolveFeed('https://www.radio-example.org/feed', paywalled)).rejects.toThrow(/sign-in or subscription/)

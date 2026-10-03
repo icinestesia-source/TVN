@@ -1,4 +1,5 @@
 import { excludedProgramme } from '../library/exclusions.ts'
+import { readAllPaged } from '../library/idb-read.ts'
 import { CATALOGUE_VERSION } from './network.ts'
 import { addCalendarDays, broadcastDateFor } from './time.ts'
 import type { FrozenDailySchedule } from './types.ts'
@@ -168,11 +169,7 @@ async function idbAll(): Promise<FrozenDailySchedule[]> {
   if (typeof indexedDB === 'undefined') return []
   const db = await openDb()
   try {
-    return await new Promise((resolve, reject) => {
-      const request = db.transaction(STORE, 'readonly').objectStore(STORE).getAll()
-      request.onsuccess = () => resolve((request.result as FrozenDailySchedule[]) ?? [])
-      request.onerror = () => reject(request.error ?? new Error('Could not read schedules'))
-    })
+    return await readAllPaged<FrozenDailySchedule>(db.transaction(STORE, 'readonly').objectStore(STORE), 'Could not read schedules')
   } finally {
     db.close()
   }

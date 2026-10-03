@@ -93,6 +93,7 @@ describe('TVN 2.0 · Information Overlay playback label', () => {
     expect(playbackLabel(channel, video)).toBe('Video')
     expect(playbackLabel(channel, stream)).toBe('Live')
     expect(playbackLabel({ ...channel, origin: 'session' } as Channel, local)).toBe('Local')
+    expect(playbackLabel(channel, { ...video, videoId: null, mediaUrl: 'https://cdn.example.net/episode.mp3', mediaKind: 'audio' } as Programme)).toBe('Audio')
     const picked = render({ picked: true, startMs: NOW - 120 * MIN, endMs: NOW - 90 * MIN })
     expect(picked).toContain('<span class="info-kind is-picked">Video</span>')
     expect(picked).not.toMatch(/from guide|returning|already broadcast/i)

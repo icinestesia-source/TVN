@@ -33,7 +33,7 @@ import { loadRegister } from '../credits/load.ts'
 import type { SourceRegister } from '../credits/provenance.ts'
 import { reconcileOriginals, type OriginalSource } from '../services/original-sources.ts'
 import { channelOriginals } from '../view/channel-provenance.ts'
-import { lookUpFeed } from '../services/podcast-source.ts'
+import { lookUpFeed, type FoundFeed } from '../services/podcast-source.ts'
 import { guideEndAdvances } from '../view/guide-following.ts'
 import { guideSlots } from '../services/broadcast.ts'
 import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, readStarterNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
@@ -57,7 +57,7 @@ import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile,
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
-import { classifySourceUrl, type ChannelSource } from '../services/channel-sources.ts'
+import { classifySourceUrl, isWebsiteSource, type ChannelSource } from '../services/channel-sources.ts'
 import {
   appliedCuratedEdits,
   baselineChanged,
@@ -164,6 +164,7 @@ import { isOnAir } from '../network/airing.ts'
 import { confirmStart, soundHeld, viewerInteracted, type StartHold } from '../player/autoplay.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './history.ts'
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
+import { BUILD_INFO } from '../build-info.ts'
 import { addUser, checkUserName, loadUsers, releaseUserChannels, saveUsers, userFilter, type NetworkUser } from '../data/user-network/users.ts'
 import {
   TvContext,
@@ -834,7 +835,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       tuneTiming.current = transitionTiming(presents || settings.id === 'instant' ? settings : DEFAULT_TRANSITION_SETTINGS)
     }
     const held = presentationRef.current
-    presentationRef.current = presents ? (held ? { ...held, number } : { session: ++presentationSession.current, number, settings }) : null
+    presentationRef.current = presents ? (held ? { session: held.session, number, settings: held.settings } : { session: ++presentationSession.current, number, settings }) : null
     setPresentation(presentationRef.current)
     tuningRef.current = true
     setTuningNumber(number)
@@ -958,7 +959,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const presentTvnSurf = () => {
     const settings = transitionRef.current
     if (startupSettledRef.current && settings.id !== 'instant') {
-      presentationRef.current = { session: ++presentationSession.current, number: TVN_CHANNEL_NUMBER, settings }
+      const sampled = tvnChoice()?.channelNumber
+      presentationRef.current = { session: ++presentationSession.current, number: TVN_CHANNEL_NUMBER, settings, ...(sampled !== undefined ? { cardNumber: sampled } : {}) }
       setPresentation(presentationRef.current)
     }
     showOverlay('info', INFO_MS)
@@ -1906,7 +1908,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (phase === 'failed') return fail()
       const tuning = resolveStartupTuning(startup, stored)
       const start = tuning ? channelByNumber(tuning.channelNumber) : undefined
-      if (!tuning || !start) return fail()
+      if (!tuning || !start) {
+        console.error(`TVN could not start (commit ${BUILD_INFO.commit}): no channel to start on`)
+        return fail()
+      }
       commitChannel(tuning, false)
       historyRef.current = visit(EMPTY_HISTORY, tuning.channelNumber)
       setHistory(historyRef.current)
@@ -1923,7 +1928,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       phaseRef.current = 'ready'
       setStartupPhase('ready')
       bootRef.current()
-    })
+    }, undefined, (reason) => console.error(`TVN could not start (commit ${BUILD_INFO.commit}): ${reason}`))
     return () => {
       cancel = true
       stop()
@@ -1987,18 +1992,37 @@ export function TvProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // What a preview found, so adding it does not read the source a second time.
+  const previewedRef = useRef<{ link: string; feed: FoundFeed } | null>(null)
+
+  const previewSource = useCallback(async (link: string, onProgress?: (text: string) => void): Promise<FoundFeed | null> => {
+    const website = (() => {
+      try {
+        return isWebsiteSource(link)
+      } catch {
+        return false
+      }
+    })()
+    if (!website) return null
+    const feed = await lookUpFeed(link, fetch, { fresh: true, mode: 'all', onProgress })
+    previewedRef.current = { link: link.trim(), feed }
+    return feed
+  }, [])
+
   const addChannel = useCallback(
     async (link: string, owner?: string) => {
       const kind = (() => {
         try {
-          return classifySourceUrl(link).kind
+          return isWebsiteSource(link) ? 'podcast' : classifySourceUrl(link).kind
         } catch {
           return 'youtube'
         }
       })()
       if (kind === 'podcast') {
-        // A website or feed: its announced public feed becomes a channel named after the publisher.
-        const feed = await lookUpFeed(link, fetch, { fresh: true, mode: 'all' })
+        // A website or feed: its public feed, or its public episode archive, becomes a channel named after the publisher.
+        const previewed = previewedRef.current?.link === link.trim() ? previewedRef.current.feed : null
+        previewedRef.current = null
+        const feed = previewed ?? (await lookUpFeed(link, fetch, { fresh: true, mode: 'all' }))
         const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
         const result = addPodcastChannel(existing, feed, Date.now())
         if (result.status === 'full') throw new Error('The User Network is full')
@@ -2766,6 +2790,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       extendGuide,
       applyImport,
       addChannel,
+      previewSource,
       networkUsers,
       createNetworkUser,
       renameNetworkUser,
@@ -2801,6 +2826,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       playSession,
       importSession,
       addChannel,
+      previewSource,
       networkUsers,
       createNetworkUser,
       renameNetworkUser,

@@ -1,6 +1,7 @@
 import { independentSourceRecords } from '../data/independent/network.ts'
 import { defaultNetworkItems } from '../data/network/catalog.ts'
 import { setMediaLibrary } from '../director/library.ts'
+import { readAllPaged } from './idb-read.ts'
 import { expandPlayableCatalogue, shippedRecordSupersedes } from './playable-catalogue.ts'
 import { programmeForDirector } from './source-editorial.ts'
 import { userLibraryMode } from './mode.ts'
@@ -117,11 +118,7 @@ function openDb(): Promise<IDBDatabase> {
 }
 
 function requestAll<T>(store: IDBObjectStore): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    const request = store.getAll()
-    request.onsuccess = () => resolve((request.result as T[]) ?? [])
-    request.onerror = () => reject(request.error ?? new Error('Could not read the media library'))
-  })
+  return readAllPaged<T>(store, 'Could not read the media library')
 }
 
 const idbWriter: LibraryWriter = {

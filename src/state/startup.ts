@@ -52,6 +52,15 @@ export function resolveStartupTuning(
   }
 }
 
+/** One line naming what stopped the start, for the console: the viewer only ever sees the off-air card. */
+export function startupReason(error: unknown): string {
+  if (error instanceof Error || (typeof DOMException !== 'undefined' && error instanceof DOMException)) {
+    const { name, message } = error as Error
+    return `${name}: ${message}`.slice(0, 300)
+  }
+  return String(error).slice(0, 300)
+}
+
 /**
  * Runs the startup load. `load` resolves true when the network is usable; false or a rejection is a
  * failure. The phase leaves 'loading' only when the load settles, or when it stalls past `stallMs`;
@@ -61,11 +70,14 @@ export function runStartup(
   load: () => Promise<boolean>,
   onPhase: (phase: Exclude<StartupPhase, 'loading'>) => void,
   stallMs = STARTUP_STALL_MS,
+  report: (reason: string) => void = () => undefined,
 ): () => void {
   let settled = false
   let cancelled = false
   const stall = setTimeout(() => {
-    if (!settled && !cancelled) onPhase('failed')
+    if (settled || cancelled) return
+    report(`still loading after ${Math.round(stallMs / 1000)} s`)
+    onPhase('failed')
   }, stallMs)
   const settle = (phase: Exclude<StartupPhase, 'loading'>) => {
     if (cancelled || settled) return
@@ -74,8 +86,14 @@ export function runStartup(
     onPhase(phase)
   }
   load().then(
-    (usable) => settle(usable ? 'ready' : 'failed'),
-    () => settle('failed'),
+    (usable) => {
+      if (!usable && !cancelled && !settled) report('the shipped network did not load')
+      settle(usable ? 'ready' : 'failed')
+    },
+    (error: unknown) => {
+      if (!cancelled && !settled) report(startupReason(error))
+      settle('failed')
+    },
   )
   return () => {
     cancelled = true

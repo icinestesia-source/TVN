@@ -1,102 +1,70 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { decodeCursor, encodeCursor, readArchive, type ArchiveEpisode, type Cursor } from './media-archive.ts'
+import { measureMedia } from './media-probe.ts'
+import { attr, dayOf, FeedError, fetchText, field, fnv, parseDuration, publicFeedUrl, sameSite, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
+
+export { decodeText, FeedError, parseDuration, publicFeedUrl } from './web-read.ts'
 
 /**
- * A podcast or RSS/Atom source, without a key: a feed address, or a publisher's website that announces its
- * feed the standard way (`<link rel="alternate" type="application/rss+xml">`, or a plainly linked feed).
- * Only the public feed is read. Episode pages are never scraped, and an episode whose audio the publisher
- * keeps behind a sign-in or subscription is not offered: TVN never works around one.
+ * A podcast, RSS/Atom feed or public episode archive as a source, without a key. In order:
+ *   1. the address is itself a feed;
+ *   2. the website announces a feed the standard way (`<link rel="alternate">`, or a plainly linked feed);
+ *   3. the public podcast directory lists a feed on the publisher's own site (Apple's keyless search);
+ *   4. the page is an episode archive: its episode pages, and the public media each one plainly carries.
+ * An episode whose media the publisher keeps behind a sign-in or subscription is never offered: TVN does not
+ * sign in, run a page's scripts or decode a hidden address. Lengths a feed omits are read from the file.
  */
 
 export interface FeedEpisode {
-  /** Stable for the episode: from its guid, or its enclosure when it has none. */
+  /** Stable for the episode: from its guid, its file, or (for YouTube) the video id. */
   id: string
   title: string
+  /** 0 until measured, for a file whose length the publisher did not state. */
   durationSec: number
   /** The duration was estimated from the enclosure's size, because the feed gave none. */
   estimated?: boolean
   /** YYYY-MM-DD */
   published?: string
   /** The public audio (or video) file. */
-  media: string
+  media?: string
+  /** The file's MIME type, or 'youtube'. */
   type: string
+  youtube?: string
+  page?: string
+  image?: string
 }
 
+export type SourceShape = 'feed' | 'archive'
+
 export interface ResolvedFeed {
-  /** The canonical feed address: what TVN reads again on a rescan. */
+  /** The canonical source address: what TVN reads again on a rescan. */
   feedUrl: string
-  /** The publisher's site, when the feed names one. */
+  /** The publisher's site, when the source names one. */
   website: string | null
   title: string
   description: string
   episodes: FeedEpisode[]
-  /** Episodes the feed lists. */
+  /** Episodes the source lists. */
   listed: number
   /** Listed episodes with no public media or no length TVN can use. */
   unplayable: number
-}
-
-export class FeedError extends Error {
-  readonly status: number
-  constructor(status: number, message: string) {
-    super(message)
-    this.status = status
-  }
+  shape: SourceShape
+  /** How a feed was found: the address itself, the site's announcement, or the public podcast directory. */
+  via: 'address' | 'announced' | 'directory' | 'archive'
+  excluded?: { members: number; unsupported: number }
+  pages?: number
+  /** The archive has more: ask again with this cursor. */
+  next?: string
 }
 
 const RECENT_KEEP = 60
 const WIDE_KEEP = 500
-const MAX_BYTES = 12 * 1024 * 1024
-const TIMEOUT_MS = 15_000
+/** One call stays well inside a hosted function's time limit; a longer archive carries on in the next call. */
+export const CALL_BUDGET_MS = 5000
 /** Used only when a feed gives no duration: a typical spoken-word MP3 (128 kbit/s). */
 const ESTIMATE_BYTES_PER_SECOND = 16_000
-const HEADERS = { 'user-agent': 'TVN feed reader (+https://tvn.lol)', accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.9, text/html;q=0.8, */*;q=0.5' }
-
-/** Public web addresses only: no credentials, no local or private hosts. */
-export function publicFeedUrl(raw: string, base?: string): URL | null {
-  let url: URL
-  try {
-    url = base ? new URL(raw, base) : new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw.trim()) ? raw.trim() : `https://${raw.trim()}`)
-  } catch {
-    return null
-  }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
-  if (url.username || url.password) return null
-  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  if (!host.includes('.') && !host.includes(':')) return null
-  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) return null
-  if (/^(?:127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(host)) return null
-  if (host.includes(':') && /^(?:::1?|f[cd]|fe80)/i.test(host)) return null
-  return url
-}
-
-const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
-
-export function decodeText(raw: string): string {
-  const cdata = raw.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-  return cdata
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => {
-      if (name[0] === '#') {
-        const code = name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10)
-        return Number.isFinite(code) && code > 0 && code < 0x110000 ? String.fromCodePoint(code) : ''
-      }
-      return ENTITIES[name.toLowerCase()] ?? whole
-    })
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-const attr = (tag: string, name: string): string | null => {
-  const match = tag.match(new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i'))
-  return match ? decodeText(match[2] ?? match[3] ?? '') : null
-}
-
-/** The first `<name>` element's text in a block (namespaced names such as itunes:duration included). */
-const field = (block: string, name: string): string | null => {
-  const escaped = name.replace(/[.:]/g, (char) => `\\${char}`)
-  const match = block.match(new RegExp(`<${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)</${escaped}>`, 'i'))
-  return match ? decodeText(match[1]) : null
-}
+export const MEASURE_LIMIT = 24
+const DIRECTORY = 'https://itunes.apple.com/search'
 
 /** Feeds a page announces: `<link rel="alternate">` first, then plainly linked feed addresses on the same site. */
 export function discoverFeeds(html: string, pageUrl: string): string[] {
@@ -106,7 +74,7 @@ export function discoverFeeds(html: string, pageUrl: string): string[] {
     const url = publicFeedUrl(href, pageUrl)
     if (url && !found.some((item) => item.url === url.toString())) found.push({ url: url.toString(), rank })
   }
-  for (const tag of html.match(/<link\b[^>]*>/gi) ?? []) {
+  for (const tag of html.replace(/<!--[\s\S]*?-->/g, '').match(/<link\b[^>]*>/gi) ?? []) {
     const rel = (attr(tag, 'rel') ?? '').toLowerCase()
     const type = (attr(tag, 'type') ?? '').toLowerCase()
     if (!rel.split(/\s+/).includes('alternate') || !/application\/(?:rss|atom)\+xml/.test(type)) continue
@@ -116,35 +84,11 @@ export function discoverFeeds(html: string, pageUrl: string): string[] {
   const host = new URL(pageUrl).hostname
   for (const tag of html.match(/<a\b[^>]*>/gi) ?? []) {
     const href = attr(tag, 'href')
-    if (!href || !/(?:\/feed\/?(?:podcast\/?)?|\.rss|\/rss\/?|\.xml)(?:[?#]|$)/i.test(href)) continue
+    if (!href || !/(?:\/feed\/?(?:podcast\/?)?|\.rss|\/rss\/?|\.xml)(?:[?#]|$)/i.test(href) || /sitemap/i.test(href)) continue
     const url = publicFeedUrl(href, pageUrl)
     if (url && url.hostname === host) add(url.toString(), /podcast/i.test(href) ? 2 : 3)
   }
   return found.sort((a, b) => a.rank - b.rank).map((item) => item.url)
-}
-
-/** "1:02:03", "59:51", "3723" → seconds; 0 when it cannot be read. */
-export function parseDuration(text: string | null): number {
-  if (!text) return 0
-  const trimmed = text.trim()
-  if (/^\d+(?:\.\d+)?$/.test(trimmed)) return Math.round(Number(trimmed))
-  if (!/^\d{1,3}(?::\d{1,2}){1,2}$/.test(trimmed)) return 0
-  return trimmed.split(':').reduce((sum, part) => sum * 60 + Number(part), 0)
-}
-
-function fnv(text: string): string {
-  let hash = 0x811c9dc5
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  return (hash >>> 0).toString(36)
-}
-
-const dayOf = (text: string | null): string | undefined => {
-  if (!text) return undefined
-  const time = Date.parse(text)
-  return Number.isFinite(time) ? new Date(time).toISOString().slice(0, 10) : undefined
 }
 
 function episodeFrom(block: string, atom: boolean, feedUrl: string): FeedEpisode | null {
@@ -177,10 +121,22 @@ function episodeFrom(block: string, atom: boolean, feedUrl: string): FeedEpisode
     durationSec = Math.round(length / ESTIMATE_BYTES_PER_SECOND)
     estimated = true
   }
-  if (durationSec < 30) return null
+  // A stated length under 30 seconds is a trailer or a stub; an unstated one is measured from the file.
+  if (durationSec > 0 && durationSec < 30) return null
   const guid = field(block, atom ? 'id' : 'guid') || url.toString()
   const published = dayOf(field(block, atom ? 'published' : 'pubDate') ?? field(block, 'updated'))
-  return { id: `pod-${fnv(guid)}`, title, durationSec, ...(estimated ? { estimated } : {}), ...(published ? { published } : {}), media: url.toString(), type: type || 'audio/mpeg' }
+  const image = block.match(/<itunes:image\b[^>]*>/i)?.[0]
+  const art = image ? publicFeedUrl(attr(image, 'href') ?? '', feedUrl)?.toString() : undefined
+  return {
+    id: `pod-${fnv(guid)}`,
+    title,
+    durationSec,
+    ...(estimated ? { estimated } : {}),
+    ...(published ? { published } : {}),
+    media: url.toString(),
+    type: type || 'audio/mpeg',
+    ...(art ? { image: art } : {}),
+  }
 }
 
 export function isFeed(text: string): boolean {
@@ -189,7 +145,7 @@ export function isFeed(text: string): boolean {
 }
 
 /** A feed's publisher metadata and its episodes with public media, newest first as the feed lists them. */
-export function parseFeed(xml: string, feedUrl: string): Omit<ResolvedFeed, 'feedUrl'> {
+export function parseFeed(xml: string, feedUrl: string): Omit<ResolvedFeed, 'feedUrl' | 'shape' | 'via'> {
   if (!isFeed(xml)) throw new FeedError(422, 'That address is not an RSS or Atom feed')
   const atom = /<feed\b/i.test(xml.slice(0, 2000))
   const blocks = xml.match(atom ? /<entry\b[\s\S]*?<\/entry>/gi : /<item\b[\s\S]*?<\/item>/gi) ?? []
@@ -203,7 +159,7 @@ export function parseFeed(xml: string, feedUrl: string): Omit<ResolvedFeed, 'fee
     }
   } else {
     const link = head.match(/<link>([\s\S]*?)<\/link>/i)?.[1]
-    website = link ? (publicFeedUrl(decodeText(link), feedUrl)?.toString() ?? null) : null
+    website = link ? (publicFeedUrl(link.replace(/<!\[CDATA\[|\]\]>/g, '').trim(), feedUrl)?.toString() ?? null) : null
   }
   const description = (field(head, atom ? 'subtitle' : 'description') ?? field(head, 'itunes:summary') ?? '').slice(0, 500)
   const seen = new Set<string>()
@@ -217,29 +173,10 @@ export function parseFeed(xml: string, feedUrl: string): Omit<ResolvedFeed, 'fee
   return { website, title: title || new URL(feedUrl).hostname, description, episodes, listed: blocks.length, unplayable: blocks.length - episodes.length }
 }
 
-async function fetchText(url: string, read: typeof fetch): Promise<{ text: string; type: string; url: string }> {
-  let response: Response
-  try {
-    response = await read(url, { headers: HEADERS, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) })
-  } catch {
-    throw new FeedError(502, 'That site could not be reached')
-  }
-  if (response.status === 401 || response.status === 403) throw new FeedError(403, 'That site needs a sign-in or subscription, which TVN does not use')
-  if (response.status === 404) throw new FeedError(404, 'Nothing was found at that address')
-  if (!response.ok) throw new FeedError(502, 'That site did not answer')
-  const finalUrl = publicFeedUrl(response.url || url)
-  if (!finalUrl) throw new FeedError(400, 'That address leads somewhere TVN does not read')
-  const length = Number(response.headers.get('content-length')) || 0
-  if (length > MAX_BYTES) throw new FeedError(413, 'That feed is too large to read')
-  const text = await response.text()
-  if (text.length > MAX_BYTES) throw new FeedError(413, 'That feed is too large to read')
-  return { text, type: (response.headers.get('content-type') ?? '').toLowerCase(), url: finalUrl.toString() }
-}
-
 /** Whether the publisher serves an episode's media to anyone: a sign-in or paywall answers 401 or 403. */
 async function mediaIsPublic(media: string, read: typeof fetch): Promise<boolean> {
   try {
-    const response = await read(media, { method: 'HEAD', headers: { 'user-agent': HEADERS['user-agent'] }, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const response = await read(media, { method: 'HEAD', headers: { 'user-agent': USER_AGENT }, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) })
     if (response.status === 401 || response.status === 402 || response.status === 403) return false
     return true
   } catch {
@@ -247,38 +184,148 @@ async function mediaIsPublic(media: string, read: typeof fetch): Promise<boolean
   }
 }
 
-export async function resolveFeed(raw: string, read: typeof fetch = fetch, options: { wide?: boolean } = {}): Promise<ResolvedFeed> {
+/** A long feed is read only as far as the episodes TVN keeps; one cut short for time says where to carry on. */
+const readFeed = (url: string, read: typeof fetch, keep: number, deadline?: number, from?: number) =>
+  fetchText(url, read, { stopAfter: { tag: /<\/(?:item|entry)>/, count: keep + 1, ...(deadline ? { deadline } : {}) }, ...(from ? { from } : {}) })
+
+/** The rest of a feed after `cut`, if this read stopped for time before the episodes TVN keeps. */
+const feedNext = (feedUrl: string, cut: number | undefined, before: number, listed: number, keep: number): { next: string } | Record<string, never> =>
+  cut !== undefined && before + listed < keep ? { next: encodeCursor({ u: feedUrl, k: before + listed, n: cut, f: 1 }) } : {}
+
+async function feedResult(page: { text: string; url: string; cut?: number }, read: typeof fetch, keep: number, via: ResolvedFeed['via']): Promise<ResolvedFeed> {
+  const parsed = parseFeed(page.text, page.url)
+  if (parsed.episodes.length === 0) throw new FeedError(422, 'That feed lists no episodes with public audio TVN can play')
+  const first = parsed.episodes[0].media
+  if (first && !(await mediaIsPublic(first, read))) throw new FeedError(403, "That feed's episodes need a sign-in or subscription, which TVN does not use")
+  return { feedUrl: page.url, ...parsed, episodes: parsed.episodes.slice(0, keep), shape: 'feed', via, ...feedNext(page.url, page.cut, 0, parsed.listed, keep) }
+}
+
+/** A later slice of a feed, read from where the last one stopped. */
+async function feedRest(cursor: Cursor, read: typeof fetch, keep: number, deadline: number): Promise<ResolvedFeed> {
+  const left = keep - cursor.k
+  if (left <= 0) throw new FeedError(400, 'That cursor is past the episodes TVN keeps')
+  const rest = await readFeed(cursor.u, read, left, deadline, cursor.n)
+  const atom = !/<\/item>/i.test(rest.text) && /<\/entry>/i.test(rest.text)
+  const parsed = parseFeed(`${atom ? '<feed>' : '<rss>'}${rest.text}`, cursor.u)
+  return { ...parsed, feedUrl: cursor.u, website: null, description: '', episodes: parsed.episodes.slice(0, left), shape: 'feed', via: 'address', ...feedNext(cursor.u, rest.cut, cursor.k, parsed.listed, keep) }
+}
+
+/** The site's own name, for looking it up in the podcast directory. */
+function siteName(html: string): string | null {
+  const og = html.match(/<meta\b[^>]*property\s*=\s*["']og:site_name["'][^>]*>/i)?.[0]
+  const named = og ? attr(og, 'content') : null
+  const title = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1]
+  const name = named || (title ? title.replace(/<[^>]+>/g, '').split(/\s[|–—·-]\s/)[0] : '')
+  const clean = (name ?? '').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim()
+  return clean.length >= 2 && clean.length <= 80 ? clean : null
+}
+
+/** A feed the public podcast directory lists for this site, hosted on the publisher's own domain. */
+export async function directoryFeed(html: string, pageUrl: string, read: typeof fetch): Promise<string | null> {
+  const name = siteName(html)
+  if (!name) return null
+  const host = new URL(pageUrl).hostname
+  try {
+    const response = await read(`${DIRECTORY}?media=podcast&entity=podcast&limit=25&term=${encodeURIComponent(name)}`, { headers: { 'user-agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!response.ok) return null
+    const body = (await response.json()) as { results?: { feedUrl?: unknown }[] }
+    for (const result of body.results ?? []) {
+      const url = typeof result.feedUrl === 'string' ? publicFeedUrl(result.feedUrl) : null
+      if (url && sameSite(url.hostname, host)) return url.toString()
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+const archiveEpisode = (episode: ArchiveEpisode): FeedEpisode => ({
+  id: episode.id,
+  title: episode.title,
+  durationSec: episode.durationSec,
+  ...(episode.published ? { published: episode.published } : {}),
+  ...(episode.media ? { media: episode.media } : {}),
+  type: episode.type,
+  ...(episode.youtube ? { youtube: episode.youtube } : {}),
+  page: episode.page,
+  ...(episode.image ? { image: episode.image } : {}),
+})
+
+export async function resolveFeed(
+  raw: string,
+  read: typeof fetch = fetch,
+  options: { wide?: boolean; cursor?: string | null; clock?: () => number } = {},
+): Promise<ResolvedFeed> {
+  const clock = options.clock ?? Date.now
+  const deadline = clock() + CALL_BUDGET_MS
+  const keep = options.wide ? WIDE_KEEP : RECENT_KEEP
   const start = publicFeedUrl(raw)
   if (!start) throw new FeedError(400, 'That is not a public web address')
-  let page = await fetchText(start.toString(), read)
-  let feedUrl = page.url
-  if (!isFeed(page.text)) {
-    const candidates = discoverFeeds(page.text, page.url)
-    if (candidates.length === 0) throw new FeedError(404, 'That site does not announce a public RSS or Atom feed')
-    let found: typeof page | null = null
-    for (const candidate of candidates.slice(0, 3)) {
-      const next = await fetchText(candidate, read).catch(() => null)
-      if (next && isFeed(next.text)) {
-        found = next
-        break
-      }
+  const cursor = decodeCursor(options.cursor ?? null)
+  if (cursor && !sameSite(new URL(cursor.u).hostname, start.hostname)) throw new FeedError(400, 'That cursor belongs to another site')
+  if (cursor?.f) return feedRest(cursor, read, keep, deadline)
+
+  const page = await readFeed(start.toString(), read, keep, deadline)
+  if (isFeed(page.text)) return feedResult(page, read, keep, 'address')
+  if (!cursor) {
+    for (const candidate of discoverFeeds(page.text, page.url).slice(0, 3)) {
+      const next = await readFeed(candidate, read, keep, deadline).catch(() => null)
+      if (!next || !isFeed(next.text)) continue
+      const found = await feedResult(next, read, keep, 'announced').catch(() => null)
+      if (found) return found
     }
-    if (!found) throw new FeedError(404, 'The feed that site announces could not be read')
-    page = found
-    feedUrl = found.url
+    const listed = await directoryFeed(page.text, page.url, read)
+    if (listed) {
+      const next = await readFeed(listed, read, keep, deadline).catch(() => null)
+      const found = next && isFeed(next.text) ? await feedResult(next, read, keep, 'directory').catch(() => null) : null
+      if (found) return found
+    }
   }
-  const parsed = parseFeed(page.text, feedUrl)
-  if (parsed.episodes.length === 0) throw new FeedError(422, 'That feed lists no episodes with public audio TVN can play')
-  if (!(await mediaIsPublic(parsed.episodes[0].media, read))) throw new FeedError(403, "That feed's episodes need a sign-in or subscription, which TVN does not use")
-  return { feedUrl, ...parsed, episodes: parsed.episodes.slice(0, options.wide ? WIDE_KEEP : RECENT_KEEP) }
+  const archive = await readArchive({ url: page.url, html: page.text }, read, { cursor, deadline, clock })
+  if (archive.episodes.length === 0 && !archive.next && !cursor) {
+    if (archive.excluded.members > 0) throw new FeedError(403, "That site's episodes need a sign-in or subscription, which TVN does not use")
+    throw new FeedError(404, 'That site has no public feed or episode archive TVN can play')
+  }
+  return {
+    feedUrl: page.url,
+    website: archive.website,
+    title: archive.title,
+    description: archive.description,
+    episodes: archive.episodes.slice(0, keep).map(archiveEpisode),
+    listed: archive.episodes.length + archive.excluded.members + archive.excluded.unsupported,
+    unplayable: archive.excluded.members + archive.excluded.unsupported,
+    shape: 'archive',
+    via: 'archive',
+    excluded: archive.excluded,
+    pages: archive.pages,
+    ...(archive.next ? { next: archive.next } : {}),
+  }
+}
+
+/** Lengths for public files a source did not state, read from each file's header: -1 for a members' file. */
+export async function measureFiles(files: readonly { url: string; type: string }[], read: typeof fetch = fetch): Promise<Record<string, number>> {
+  const out: Record<string, number> = {}
+  await Promise.all(
+    files.slice(0, MEASURE_LIMIT).map(async ({ url, type }) => {
+      const measured = await measureMedia(url, type, read)
+      out[url] = 'locked' in measured ? -1 : measured.seconds
+    }),
+  )
+  return out
 }
 
 export async function handleFeedRequest(url: URL, read: typeof fetch = fetch): Promise<{ status: number; body: unknown }> {
+  const measure = url.searchParams.getAll('measure')
+  if (measure.length > 0) {
+    if (measure.length > MEASURE_LIMIT || measure.some((item) => item.length > 1000)) return { status: 400, body: { error: 'Too many files to measure at once' } }
+    const types = url.searchParams.getAll('type')
+    return { status: 200, body: { durations: await measureFiles(measure.map((item, index) => ({ url: item, type: types[index] ?? '' })), read) } }
+  }
   const link = url.searchParams.get('url') ?? ''
   if (!link.trim() || link.length > 500) return { status: 400, body: { error: 'Paste a podcast feed or website address' } }
   try {
     const mode = url.searchParams.get('mode')
-    return { status: 200, body: await resolveFeed(link, read, { wide: mode === 'archive' || mode === 'all' }) }
+    return { status: 200, body: await resolveFeed(link, read, { wide: mode === 'archive' || mode === 'all', cursor: url.searchParams.get('cursor') }) }
   } catch (error) {
     if (error instanceof FeedError) return { status: error.status, body: { error: error.message } }
     return { status: 500, body: { error: 'The feed could not be read' } }
@@ -286,6 +333,7 @@ export async function handleFeedRequest(url: URL, read: typeof fetch = fetch): P
 }
 
 export function feedCacheControl(url: URL, status: number): string {
+  if (status === 200 && url.searchParams.has('measure')) return 'public, max-age=86400'
   return status === 200 && !url.searchParams.has('refresh') ? 'public, max-age=900' : 'no-store'
 }
 

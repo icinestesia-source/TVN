@@ -6,12 +6,18 @@ import type { LocalPlayerHandle } from './routed.ts'
 import type { LoadResult, PlayerStatus } from './types.ts'
 
 const LOAD_TIMEOUT_MS = 10_000
+/** A publisher's file on the web may go this long without sending anything before it counts as failed. */
+const WEB_FILE_TIMEOUT_MS = 30_000
+/** A slow host still sending a large file's index gets this long in all before TVN moves on. */
+const WEB_FILE_LIMIT_MS = 120_000
 const STREAM_TIMEOUT_MS = 15_000
 
 interface Pending {
   id: number
   startSeconds: number
   live: boolean
+  /** When a web file still loading must give up, however steadily it is arriving. */
+  giveUpAt?: number
   resolve: (result: LoadResult) => void
 }
 
@@ -110,7 +116,8 @@ export function LocalStage({
           }
           const live = !request.localUrl
           const startSeconds = !live && Number.isFinite(request.startSeconds) ? Math.max(0, request.startSeconds) : 0
-          pendingRef.current = { id, startSeconds, live, resolve }
+          const web = !live && /^https?:/i.test(url)
+          pendingRef.current = { id, startSeconds, live, resolve, ...(web ? { giveUpAt: Date.now() + WEB_FILE_LIMIT_MS } : {}) }
           window.clearTimeout(timerRef.current)
           if (live && request.hls && !nativeHls((mime) => video.canPlayType(mime))) {
             release()
@@ -118,7 +125,7 @@ export function LocalStage({
             fail(id, 'stream format unsupported')
             return
           }
-          timerRef.current = window.setTimeout(() => fail(id), live ? STREAM_TIMEOUT_MS : LOAD_TIMEOUT_MS)
+          timerRef.current = window.setTimeout(() => fail(id), live ? STREAM_TIMEOUT_MS : web ? WEB_FILE_TIMEOUT_MS : LOAD_TIMEOUT_MS)
           onStatusRef.current('buffering')
           notePlayback({ playerState: 'buffering', expectedSeek: startSeconds })
           if (!live && video.getAttribute('src') === url && video.readyState >= 1) {
@@ -176,18 +183,27 @@ export function LocalStage({
       fail(requestId.current)
     }
     const onWaiting = () => onStatusRef.current('buffering')
+    const onProgress = () => {
+      const pending = pendingRef.current
+      if (!pending?.giveUpAt) return
+      const id = pending.id
+      window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(() => fail(id), Math.max(0, Math.min(WEB_FILE_TIMEOUT_MS, pending.giveUpAt - Date.now())))
+    }
     const onPlaying = () => onStatusRef.current('playing')
     // A live stream has no end; one that ends has dropped.
     const onEnded = () => (liveRef.current ? fail(requestId.current, 'stream ended') : onStatusRef.current('ended'))
     video.addEventListener('loadedmetadata', onMeta)
     video.addEventListener('error', onError)
     video.addEventListener('waiting', onWaiting)
+    video.addEventListener('progress', onProgress)
     video.addEventListener('playing', onPlaying)
     video.addEventListener('ended', onEnded)
     return () => {
       video.removeEventListener('loadedmetadata', onMeta)
       video.removeEventListener('error', onError)
       video.removeEventListener('waiting', onWaiting)
+      video.removeEventListener('progress', onProgress)
       video.removeEventListener('playing', onPlaying)
       video.removeEventListener('ended', onEnded)
       window.clearTimeout(timerRef.current)

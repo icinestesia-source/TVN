@@ -131,7 +131,7 @@ export function TvScreen() {
           <MultiviewGrid width={width} />
         )}
         {layer ? (
-          <ChannelTransition key={layer.presentation.session} settings={layer.presentation.settings} channelNumber={layer.number} revealing={layer.revealing} />
+          <ChannelTransition key={layer.presentation.session} settings={layer.presentation.settings} channelNumber={layer.presentation.cardNumber ?? layer.number} revealing={layer.revealing} />
         ) : null}
         {tv.credits ? <CreditsRoll /> : null}
         {tv.screenEdit !== null ? <ScreenEditor /> : info ? <NowNextOverlay leaving={info === 'closing'} /> : null}
