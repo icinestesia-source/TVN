@@ -3,7 +3,7 @@ import { openAbout } from '../legal/about-store.ts'
 import { ChannelChangeOptions } from './ChannelChangeOptions.tsx'
 import { listChannels } from '../data/catalogue.ts'
 import { USER_NUMBER_START } from '../data/network.ts'
-import { USER_NAME_MAX, type NetworkUser } from '../data/user-network/users.ts'
+import { USER_NAME_MAX, userFilter, userNetworkName, type NetworkUser } from '../data/user-network/users.ts'
 import { GUIDE_ZOOM_MAX, GUIDE_ZOOM_MIN, GUIDE_ZOOM_STEP } from '../epg/zoom.ts'
 import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
@@ -279,6 +279,31 @@ export function GuideOptions() {
         </Card>
 
         <Card title="Random Cycle">
+          <Row label="Random from">
+            <span className="options-choices" role="group" aria-label="Random from">
+              {(
+                [
+                  ['all', 'All'],
+                  ['user', userNetworkName(undefined, tv.networkUsers)],
+                  ...tv.networkUsers.map((user) => [userFilter(user.id), user.name] as const),
+                ] as const
+              ).map(([filter, label]) => (
+                <button
+                  key={filter}
+                  type="button"
+                  className={tv.guideFilter === filter ? 'tab is-on' : 'tab'}
+                  aria-pressed={tv.guideFilter === filter}
+                  onKeyDown={keepKey}
+                  onClick={() => tv.dispatch({ type: 'guide-filter', filter })}
+                >
+                  {label}
+                </button>
+              ))}
+            </span>
+          </Row>
+          <p className="options-note">
+            Random (TVN on the control pad, R on a keyboard), CH+ and CH− draw from the Guide tab chosen here. TVN on the control pad is underlined while it draws from a User Network.
+          </p>
           <p className="options-note">Hold TVN on the control pad to start or stop it (T on a keyboard); each hop comes after a random wait in this range.</p>
           <label className="options-row">
             <span className="options-label">Minimum</span>

@@ -358,6 +358,10 @@
   gap: 6px;
 }
 
+.remote-pad:focus { outline: none; }
+.remote-row .smart-key.is-on { color: var(--gold); border-color: var(--gold); }
+.remote-pad.is-smart button { border-color: var(--gold); }
+
 .remote-close { width: 100%; margin-top: 8px; }
 .remote-foot { display: flex; gap: 8px; margin-top: 8px; }
 .remote-foot button { flex: 1; }

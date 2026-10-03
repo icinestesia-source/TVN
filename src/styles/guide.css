@@ -454,6 +454,18 @@ span.editor-expand { border-color: transparent; }
 }
 
 .editor-lineup-head .editor-heading { margin: 4px 0; }
+.editor-sort { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.editor-sort .tab { min-height: 30px; height: 30px; padding: 0 10px; }
+.editor-live {
+  margin-right: 6px;
+  padding: 1px 6px;
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
 .editor-source.is-off { opacity: 0.6; }
 .editor-lineup li.is-off .editor-video-title { color: var(--muted); text-decoration: line-through; }
@@ -1406,6 +1418,12 @@ span.editor-expand { border-color: transparent; }
   border-color: var(--gold);
 }
 
+/* Random drawing from a User Network: the selected-tab mark, so it never reads as the Random Cycle running. */
+.info-pad > .info-corner.is-scoped {
+  color: var(--gold);
+  box-shadow: inset 0 -3px 0 var(--gold);
+}
+
 @media (max-width: 420px) {
   .info-pad { --watch-min: 72px; }
 }
@@ -1691,6 +1709,34 @@ span.editor-expand { border-color: transparent; }
 .guide-info.guide-plan {
   grid-template-columns: minmax(0, 1fr);
   gap: 6px;
+  /* My Guide is a Guide panel like OPTIONS and NETWORK, not the information bar it is laid out in. */
+  font-family: var(--font-ui);
+}
+.map-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.map-top .tab { min-height: 36px; height: 36px; }
+.map-list { display: flex; flex-direction: column; gap: 2px; max-width: 980px; margin: 0; padding: 0; list-style: none; }
+.map-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.1fr) auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 4px 6px;
+  background: var(--guide-cell-alt);
+}
+.map-row.is-current { box-shadow: inset 3px 0 0 var(--gold); }
+.map-row.is-playing { box-shadow: inset 3px 0 0 var(--follow); }
+.map-name { overflow: hidden; color: var(--ink); font-size: 16px; font-weight: 600; letter-spacing: 0.04em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.map-sources { overflow: hidden; color: var(--muted); font-size: 13px; letter-spacing: 0.04em; text-overflow: ellipsis; white-space: nowrap; }
+.map-state { color: var(--gold); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.map-state.is-following { color: var(--follow); }
+.map-playing { display: grid; gap: 4px; padding: 4px 0 6px; border-bottom: 1px solid rgba(29, 76, 120, 0.65); }
+.map-playing-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.map-programmes-head { margin: 6px 0 2px; }
+.plan-state.is-unsaved { color: var(--gold); }
+@media (max-width: 700px) {
+  .map-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .map-sources { grid-column: 1 / -1; }
+  .map-row .plan-actions { grid-column: 1 / -1; justify-content: flex-end; flex-wrap: wrap; }
 }
 .plan-search { display: flex; flex-wrap: wrap; align-items: end; gap: 6px; }
 .plan-search-field { flex: 1 1 260px; max-width: 520px; }

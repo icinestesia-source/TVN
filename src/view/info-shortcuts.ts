@@ -38,6 +38,8 @@ export interface ShortcutContext {
   subtitles: boolean
   remoteOpen: boolean
   surfing: boolean
+  /** Random draws from a User Network (the TVN tab or a named user's), not the whole network. */
+  randomScoped?: boolean
   /** Opens the Random settings: the Random Cycle's timing. */
   openRandomSettings: () => void
   dispatch: (command: TvCommand) => void
@@ -64,6 +66,8 @@ export interface ShortcutDefinition extends ShortcutBase {
   hold?: (context: ShortcutContext) => void
   /** A right-click. Touch has none: the same options are in Settings. */
   menu?: (context: ShortcutContext) => void
+  /** Marked as a selected tab is: what the key draws from, rather than something running. */
+  scoped?: (context: ShortcutContext) => boolean
 }
 
 export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
@@ -109,8 +113,9 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
     unavailable: 'Random channel is not available',
     available: () => true,
     run: (context) => context.dispatch({ type: 'random-channel' }),
-    // Lit while the Random Cycle runs.
+    // Lit while the Random Cycle runs; underlined while Random draws from a User Network (Random from, in Options).
     pressed: (context) => context.surfing,
+    scoped: (context) => context.randomScoped === true,
     hold: (context) => context.dispatch({ type: 'surf' }),
     menu: (context) => context.openRandomSettings(),
   },
@@ -122,17 +127,24 @@ export type CornerActions = {
   subtitles: boolean
   remoteOpen: boolean
   surfing: boolean
+  randomScoped?: boolean
   openRandomSettings: () => void
   dispatch: (command: TvCommand) => void
 }
 
+/** Random follows the selected tab: a User Network tab (TVN or a named user) is a scope of its own. */
+export function randomScoped(filter: string): boolean {
+  return filter === 'user' || filter.startsWith('user:')
+}
+
 export function cornerActions(
-  tv: Pick<TvContextValue, 'infoShortcuts' | 'subtitles' | 'remoteOpen' | 'surfing' | 'dispatch'>,
+  tv: Pick<TvContextValue, 'infoShortcuts' | 'subtitles' | 'remoteOpen' | 'surfing' | 'dispatch'> & Partial<Pick<TvContextValue, 'guideFilter'>>,
 ): CornerActions {
   return {
     assignment: tv.infoShortcuts,
     subtitles: tv.subtitles,
     remoteOpen: tv.remoteOpen,
+    randomScoped: randomScoped(tv.guideFilter ?? 'all'),
     surfing: tv.surfing,
     // The Random settings take the remote's place.
     openRandomSettings: () => {

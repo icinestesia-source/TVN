@@ -55,12 +55,18 @@ export function commandFromKey(
     case 'i':
     case 'I':
       return { type: 'info' }
-    case 'k':
-    case 'K':
-      return { type: 'mute' }
     case 'm':
     case 'M':
+      return { type: 'mute' }
+    case '/':
       return { type: 'multiview' }
+    case ',':
+      return { type: 'history-back' }
+    case '.':
+      return { type: 'history-forward' }
+    case 'a':
+    case 'A':
+      return { type: 'guide-tool', tool: 'add' }
     case 'f':
     case 'F':
       return { type: 'fullscreen' }
@@ -104,12 +110,13 @@ export function commandFromKey(
     case 'E':
     case 'ContextMenu':
       return { type: 'guide-tool', tool: 'edit' }
-    case '+':
+    // The unshifted keys: in the Guide they zoom the timeline, over the picture they set the volume.
     case '=':
-      return { type: 'volume-up' }
+    case '+':
+      return guideOpen ? { type: 'guide-zoom', direction: 1 } : { type: 'volume-up' }
     case '-':
     case '_':
-      return { type: 'volume-down' }
+      return guideOpen ? { type: 'guide-zoom', direction: -1 } : { type: 'volume-down' }
     case 'PageUp':
       return guideOpen ? { type: 'nav', direction: 'up', rows: 8 } : { type: 'channel-up' }
     case 'PageDown':

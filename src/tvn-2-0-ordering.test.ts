@@ -189,14 +189,15 @@ describe('EDITOR TABS and TERMINOLOGY', () => {
       expect(read(path), path).not.toMatch(/\bch guide\b|channel guide/i)
     }
     const panel = read('src/components/GuidePanel.tsx')
-    for (const label of ['>My Guide</h3>', '>My Guide Sources</span>', "'Build My Guide'"]) expect(panel).toContain(label)
+    for (const label of ['>My Guide</h3>', '>Channel sources</span>', "'Build from sources'", "'+ New Map'"]) expect(panel).toContain(label)
     expect(read('src/components/Guide.tsx')).toContain("Add to {guideName ?? 'My Guide'}")
   })
 
   it('the Information Overlay keeps GUIDE: it opens the listings and reads green while My Guide plays', () => {
     const pad = read('src/components/InfoActions.tsx')
     expect(pad).toContain("className={following ? 'tune-key info-pad-guide is-following' : 'tune-key info-pad-guide'}")
-    expect(pad).toContain("onClick={() => corners.dispatch({ type: 'guide' })}")
+    expect(pad).toContain("corners.dispatch({ type: 'guide' })")
+    expect(pad).toContain("corners.dispatch({ type: 'guide', listings: true })")
     expect(pad).toMatch(/>\s*Guide\s*<\/button>/)
   })
 })

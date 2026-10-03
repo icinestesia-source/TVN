@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dayOf } from './web-read.ts'
-import { feedDates, resolveChannel } from './youtube-channel.ts'
+import { DATE_PLAYLISTS, feedDates, resolveChannel } from './youtube-channel.ts'
 
 describe('upload dates read without a key', () => {
   it('RSS dates keep the publisher’s calendar day, with no UTC shift', () => {
@@ -33,7 +33,39 @@ describe('upload dates read without a key', () => {
     }) as typeof fetch
     const channel = await resolveChannel(`https://www.youtube.com/channel/${'UC'+'0'.repeat(21)+'1'}`, fake)
     expect(channel.videos.map((video) => [video.id, video.published])).toEqual([['aaaaaaaaaa1', '2026-09-03'], ['aaaaaaaaaa4', '2019-05-03'], ['aaaaaaaaaa7', undefined]])
-    expect(urls.filter((url) => url.includes('/feeds/'))).toHaveLength(1)
+    expect(urls.filter((url) => url.includes('videos.xml?channel_id='))).toHaveLength(1)
   })
 
+
+  it('the feeds of the playlists a channel lists date its older uploads, one request per playlist and none per video', async () => {
+    const lockup = (id: string, title: string) => ({
+      lockupViewModel: {
+        contentId: id,
+        contentType: 'LOCKUP_CONTENT_TYPE_VIDEO',
+        contentImage: { thumbnailViewModel: { overlays: [{ thumbnailBottomOverlayViewModel: { badges: [{ thumbnailBadgeViewModel: { text: '20:00' } }] } }] } },
+        metadata: { lockupMetadataViewModel: { title: { content: title } } },
+      },
+    })
+    const listing = (id: string) => ({ lockupViewModel: { contentId: id, contentType: 'LOCKUP_CONTENT_TYPE_PLAYLIST', metadata: { lockupMetadataViewModel: { title: { content: `List ${id}` } } } } })
+    const uploads = `<script>var ytInitialData = ${JSON.stringify({ contents: [lockup('bbbbbbbbbb1', 'New'), lockup('bbbbbbbbbb2', 'Old'), lockup('bbbbbbbbbb3', 'Unlisted anywhere')] })};</script>`
+    const lists = Array.from({ length: DATE_PLAYLISTS + 3 }, (_, index) => `PL${String(index).padStart(16, '0')}`)
+    const tab = `<script>var ytInitialData = ${JSON.stringify({ contents: lists.map(listing) })};</script>`
+    const entry = (id: string, day: string) => `<entry><yt:videoId>${id}</yt:videoId><published>${day}T12:00:00+00:00</published></entry>`
+    const urls: string[] = []
+    const fake = (async (input: string | URL | Request) => {
+      const url = String(input)
+      urls.push(url)
+      if (url.startsWith('https://www.youtube.com/playlist?list=')) return new Response(uploads)
+      if (url.endsWith('/playlists')) return new Response(tab)
+      if (url.includes('videos.xml?channel_id=')) return new Response(`<feed>${entry('bbbbbbbbbb1', '2026-09-30')}</feed>`)
+      if (url.includes(`videos.xml?playlist_id=${lists[1]}`)) return new Response(`<feed>${entry('bbbbbbbbbb2', '2018-04-02')}${entry('bbbbbbbbbb1', '2026-09-30')}</feed>`)
+      if (url.includes('videos.xml?playlist_id=')) return new Response('<feed></feed>')
+      return new Response('{}')
+    }) as typeof fetch
+    const channel = await resolveChannel(`https://www.youtube.com/channel/${'UC' + '0'.repeat(21) + '2'}`, fake)
+    expect(channel.videos.map((video) => [video.id, video.published])).toEqual([['bbbbbbbbbb1', '2026-09-30'], ['bbbbbbbbbb2', '2018-04-02'], ['bbbbbbbbbb3', undefined]])
+    expect(urls.filter((url) => url.includes('videos.xml?playlist_id='))).toHaveLength(DATE_PLAYLISTS + 2)
+    expect(urls.some((url) => url.includes(`playlist_id=UULF${'0'.repeat(21)}2`))).toBe(true)
+    expect(urls.some((url) => /\/watch\?|\/youtubei\/v1\/player/.test(url))).toBe(false)
+  })
 })

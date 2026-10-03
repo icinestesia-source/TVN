@@ -30,6 +30,7 @@ import { PlaylistDiscovery } from './PlaylistDiscovery.tsx'
 import { playlistUrl } from '../services/add-channel.ts'
 import { withOriginalOverride } from '../services/original-sources.ts'
 import { addedContributions, addedSourceLabels, channelOriginals, contributionsOf, contributionText, originalLineup } from '../view/channel-provenance.ts'
+import { alphabeticalVideos, latestVideos } from '../view/programme-order.ts'
 
 /** Enter and Space press these controls; they must not also reach the Guide. */
 function keepKey(event: KeyboardEvent<HTMLElement>) {
@@ -71,6 +72,8 @@ interface ListedVideo {
   from?: string
   /** One of TVN's original programmes, which the viewer keeps or leaves out. */
   original?: boolean
+  /** Upload or publication day (YYYY-MM-DD), when the source gave one. */
+  published?: string
 }
 
 /** What a source holds, from its last scan: nothing is fetched to show it. */
@@ -93,7 +96,7 @@ function tvnProgrammes(number: number): ListedVideo[] {
   return shipped
     ? shippedProgrammes(shipped.id)
         .filter((programme) => programme.videoId !== null)
-        .map((programme) => ({ id: programme.id, title: programme.title, durationSec: programme.durationSeconds, href: watchUrl(programme.videoId), from: 'TVN catalogue' }))
+        .map((programme) => ({ id: programme.id, title: programme.title, durationSec: programme.durationSeconds, href: watchUrl(programme.videoId), from: 'TVN catalogue', published: programme.publishedAt }))
     : []
 }
 
@@ -129,6 +132,7 @@ export function ChannelEditor({
   onClose,
   onExport,
   archiveOf,
+  onPlay,
   initial = null,
 }: {
   channel: Channel
@@ -145,6 +149,8 @@ export function ChannelEditor({
   onExport?: (channelNumber: number, edit: ChannelEdit, as: ChannelExportKind) => Promise<string>
   /** TVN's shipped back catalogue for a source, so the filter preview counts what ARCHIVE and ALL would add. */
   archiveOf?: (source: ChannelSource) => readonly ImportedVideo[]
+  /** Plays one of the channel's programmes now (PLAY LATEST); a message when it cannot, or nothing. */
+  onPlay?: (channelNumber: number, programmeId: string) => string | null
   /** The channel as already read, shown until the editor's own read completes. */
   initial?: ChannelEdit | null
 }) {
@@ -253,6 +259,14 @@ export function ChannelEditor({
     change({ ...edit, excluded: next.length ? next : undefined })
   }
   const onAir = onAirVideo(channel, now)
+  const [sorted, setSorted] = useState<'az' | 'latest' | null>(null)
+  const sortBy = (how: 'az' | 'latest') => {
+    if (!edit) return
+    const ids = (how === 'az' ? alphabeticalVideos(lineup) : latestVideos(lineup)).map((video) => video.id)
+    change({ ...edit, order: ids })
+    setSorted(how)
+  }
+  const latest = sorted === 'latest' ? lineup.find((video) => !left.has(video.id)) : undefined
   const move = (index: number, delta: -1 | 1) => {
     const to = index + delta
     if (!edit || to < 0 || to >= lineup.length) return
@@ -596,14 +610,40 @@ export function ChannelEditor({
             )}
             <div className="editor-lineup-head">
               <p className="editor-heading">Running order · {ownOrder ? 'yours' : 'automatic'}</p>
+              {lineup.length > 1 && !liveStreamOf(edit.sources) ? (
+                <span className="editor-sort" role="group" aria-label="Order the programmes">
+                  <button type="button" className={sorted === 'az' ? 'tab is-on' : 'tab'} disabled={busy !== null} onKeyDown={keepKey} onClick={() => sortBy('az')} title="Order by title, A to Z">
+                    A–Z
+                  </button>
+                  <button type="button" className={sorted === 'latest' ? 'tab is-on' : 'tab'} disabled={busy !== null} onKeyDown={keepKey} onClick={() => sortBy('latest')} title="Newest upload first; programmes with no date follow">
+                    Latest
+                  </button>
+                  {latest && onPlay ? (
+                    <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => setNote(onPlay(number, latest.id))} title={`Play ${latest.title}`}>
+                      Play latest
+                    </button>
+                  ) : null}
+                </span>
+              ) : null}
               {arranged ? (
-                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => change({ ...edit, order: undefined, excluded: undefined })}>
+                <button
+                  type="button"
+                  className="tab"
+                  disabled={busy !== null}
+                  onKeyDown={keepKey}
+                  onClick={() => {
+                    change({ ...edit, order: undefined, excluded: undefined })
+                    setSorted(null)
+                  }}
+                >
                   {tvnLineup ? 'Reset order to TVN' : 'Reset to automatic'}
                 </button>
               ) : null}
             </div>
             {liveStreamOf(edit.sources) ? (
-              <p className="guide-tool-note">A live stream carries this channel, so it has no running order.</p>
+              <p className="guide-tool-note">
+                <span className="editor-live">Live</span> A live stream carries this channel, so it has no running order: tune to it to watch it live.
+              </p>
             ) : lineup.length === 0 ? (
               <p className="guide-tool-note">
                 {edit.sources.some((source) => source.kind === 'tvn' && source.enabled)

@@ -157,7 +157,7 @@ describe('TVN 2.0 final: the diagnostic names the build and the reserved channel
 
 describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
   const header = (tool: GuideTool | null, following = false) =>
-    renderToStaticMarkup(createElement(GuideActions, { tool, picked: false, following, query: following ? 'Music' : null, onNow: () => {}, onTool: () => {} }))
+    renderToStaticMarkup(createElement(GuideActions, { tool, picked: false, following, onNow: () => {}, onTool: () => {} }))
   const active = (markup: string) => [...markup.matchAll(/class="tab[^"]*\bis-on\b[^"]*"[^>]*>([A-Za-z ]+)</g)].map((match) => match[1])
 
   it('one section carries the gold underline: GUIDE while the listings show, OPTIONS, ADD or MEDIA while they are open', () => {

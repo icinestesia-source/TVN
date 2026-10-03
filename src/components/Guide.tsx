@@ -565,7 +565,6 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           tool={tool}
           picked={picked}
           following={following}
-          query={tv.guideSearch && tv.guideLibrary.current?.id === tv.guideSearch.guideId ? tv.guideSearch.query : null}
           onNow={() => tv.dispatch({ type: 'guide-now' })}
           onClose={() => tv.dispatch({ type: 'cancel' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
@@ -770,6 +769,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
           onExport={tv.exportChannelFile}
           archiveOf={tv.sourceArchive}
+          onPlay={tv.playChannelProgramme}
         />
       ) : tool === 'media' ? (
         <SessionImportTools onImport={tv.importSession} />

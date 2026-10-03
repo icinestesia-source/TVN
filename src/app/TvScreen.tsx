@@ -225,6 +225,7 @@ function ScreenEditor() {
         onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
         onExport={tv.exportChannelFile}
         archiveOf={tv.sourceArchive}
+        onPlay={tv.playChannelProgramme}
       />
     </div>
   )

@@ -119,7 +119,6 @@ import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, typ
 import {
   addToGuide as addProgrammeToGuide,
   applyGuideAction,
-  DEFAULT_GUIDE_NAME,
   guideId,
   libraryFrom,
   loadGuideLibrary,
@@ -128,6 +127,8 @@ import {
   resolveItem,
   saveGuideLibrary,
   sourceChannel,
+  unnamedMap,
+  NEW_MAP_NAME,
   type GuideAction,
   type GuideSource,
   type GuideItem,
@@ -197,6 +198,8 @@ const INFO_MS = 6000
 const VOLUME_MS = 1200
 /** How long after the press that released held sound a MUTE from that same press still means sound on. */
 const SOUND_RELEASE_MS = 1500
+/** One press of = or - on the Guide: a quarter more, or less, time per screen. */
+const GUIDE_KEY_ZOOM = 1.25
 const NUMERIC_MS = 1600
 // A refused or failed first programme is usually replaced within a second or two (the refusal fallback).
 const STARTUP_RETRY_MS = 4000
@@ -410,6 +413,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const failuresRef = useRef<{ videoId: string; reason: string }[]>([])
   const failureScopes = useRef(new Set<'library' | 'user'>())
   const numericTimer = useRef(0)
+  const [smart, setSmartState] = useState(false)
+  const smartRef = useRef(false)
+  const setSmart = (on: boolean) => {
+    smartRef.current = on
+    setSmartState(on)
+  }
   const overlayTimer = useRef(0)
   const noticeTimer = useRef(0)
   const bufferRef = useRef('')
@@ -880,11 +889,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!raw) return
     const number = Number(raw)
     if (!channelByNumber(number)) {
+      // SMART stays armed with the remote open, for the number to be typed again.
       flash('NO CHANNEL')
       return
     }
     closeGuide()
     requestTune(number)
+    if (smartRef.current) {
+      setSmart(false)
+      setRemoteOpen(false)
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    }
   }
 
   bootRef.current = () => {
@@ -1199,6 +1214,21 @@ export function TvProvider({ children }: { children: ReactNode }) {
     showOverlay('info', INFO_MS)
   }
 
+  /** PLAY LATEST in Edit Channel: one programme of a channel, from its beginning, as a Guide pick plays it. */
+  const playChannelRef = useRef<(channelNumber: number, programmeId: string) => string | null>(() => null)
+  playChannelRef.current = (channelNumber, programmeId) => {
+    const target = channelByNumber(channelNumber)
+    if (!target) return 'THAT CHANNEL IS NOT IN THE NETWORK'
+    const found = programmesFor(target.id).filter(
+      (programme) => programme.id === programmeId || programme.videoId === programmeId || programme.id.endsWith(`-${programmeId}`),
+    )
+    const programme = found.find((item) => !item.id.endsWith('-r')) ?? found[0]
+    if (!programme) return 'SAVE THE CHANNEL FIRST, THEN PLAY IT'
+    playFromGuide(target, programme)
+    return null
+  }
+  const playChannelProgramme = useCallback((channelNumber: number, programmeId: string) => playChannelRef.current(channelNumber, programmeId), [])
+
   // ── GUIDES: the viewer's own viewing sequences, played through the same picks as the Guide grid ──
 
   const setGuideLibrary = (next: GuideLibrary) => {
@@ -1275,7 +1305,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!channel) throw new Error('That channel is not available')
     const now = Date.now()
     const library = guideLibraryRef.current
-    const current = addProgrammeToGuide(library.current ?? newGuide(DEFAULT_GUIDE_NAME, now), channel, programme, now)
+    const current = addProgrammeToGuide(library.current ?? newGuide(NEW_MAP_NAME, now), channel, programme, now)
     setGuideLibrary({ ...library, current })
     return `ADDED TO ${current.name.toUpperCase()} · ${current.items.length} ${current.items.length === 1 ? 'ITEM' : 'ITEMS'}`
   }
@@ -1335,7 +1365,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       channelName: pick.entry.channel.name,
       programme: pick.entry.programme.guide ?? { id: pick.entry.programme.id, title: pick.entry.programme.title, videoId: pick.entry.programme.videoId ?? null, durationSeconds: pick.entry.programme.durationSeconds, source: 'imported' },
     }))
-    if (guide?.name === DEFAULT_GUIDE_NAME) editGuideAction({ type: 'rename', name: channels.map((channel) => channel.name).join(' + ').slice(0, 60) })
+    if (unnamedMap(guide)) editGuideAction({ type: 'rename', name: channels.map((channel) => channel.name).join(' + ').slice(0, 60) })
     editGuideAction({ type: 'fill', items })
     guideSearchRef.current = null
     setGuideSearchState(null)
@@ -1367,7 +1397,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       channelName: pick.entry.channel.name,
       programme: pick.entry.programme.guide ?? { id: pick.entry.programme.id, title: pick.entry.programme.title, videoId: pick.entry.programme.videoId ?? null, durationSeconds: pick.entry.programme.durationSeconds, source: 'imported' },
     }))
-    if (!again) editGuideAction({ type: 'new', name: query })
+    // The Map being edited takes the programmes; a Map that already has a name of its own keeps it.
+    if (!again && !library.current) editGuideAction({ type: 'new', name: query })
+    else if (!again && unnamedMap(library.current)) editGuideAction({ type: 'rename', name: query })
     editGuideAction({ type: 'fill', items })
     const guide = guideLibraryRef.current.current!
     guideSearchRef.current = { query, guideId: guide.id, seed, matched: built.matched, small: built.small }
@@ -1625,7 +1657,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         break
       case 'cancel':
         if (debugOpen) setDebugOpen(false)
-        else if (remoteOpen) setRemoteOpen(false)
+        else if (remoteOpen) {
+          setRemoteOpen(false)
+          setSmart(false)
+        }
         else if (screenEditRef.current !== null) closeScreenEdit()
         else if (guideOpenRef.current && (editingRef.current() || panelOpenRef.current())) closeGuideTool()
         else if (guideOpenRef.current) {
@@ -1635,13 +1670,19 @@ export function TvProvider({ children }: { children: ReactNode }) {
         else setOverlay('none')
         break
       case 'guide':
+        if (command.listings) {
+          // The broadcast listings at NOW; a Map being played goes on playing.
+          if (guideModeRef.current === 'closed') openGuide('expanded')
+          else if (guideToolRef.current) closeGuideTool()
+          break
+        }
         if (guideModeRef.current === 'closed') openGuide('expanded')
         else {
           closeGuide()
           showOverlay('info', INFO_MS)
           break
         }
-        // A Guide being played opens with it in view, not behind a menu.
+        // A Map being played opens with its schedule in view, not behind a menu.
         if (guideRunRef.current) openGuideTool('guides')
         break
       case 'guide-expand':
@@ -1721,6 +1762,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
         break
       case 'remote':
         setRemoteOpen((open) => !open)
+        setSmart(false)
+        break
+      case 'smart':
+        if (!smartRef.current) setRemoteOpen(true)
+        setSmart(!smartRef.current)
         break
       case 'credits':
         setCreditsOn(!creditsRef.current)
@@ -1806,6 +1852,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setGuideFilter(nextFilter)
         break
       }
+      case 'guide-zoom':
+        // From here the viewer's zoom stands until the Guide is opened afresh.
+        if (guideOpenRef.current) setGuideZoomState((zoom) => clampZoom(zoom * (command.direction > 0 ? GUIDE_KEY_ZOOM : 1 / GUIDE_KEY_ZOOM)))
+        break
       case 'guide-now': {
         // A second NOW, the cursor still where the first left it, goes back to the playing picture.
         if (guideOpenRef.current && nowCursorRef.current !== null && cursorRef.current === nowCursorRef.current && manualAiring(channelRef.current, Date.now()) === null) {
@@ -2941,6 +2991,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       canGoBack: canGoBack(history),
       canGoForward: canGoForward(history),
       startHold,
+      smart,
       visibleChannels,
       guideVisiting,
       volume,
@@ -3042,6 +3093,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       exportChannelFile,
       importChannelFile,
       sourceArchive,
+      playChannelProgramme,
       deleteUserChannel,
       moveUserChannel,
       arrangeUserNetwork,
@@ -3056,6 +3108,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       rescanChannelEdit,
       exportChannelFile,
       importChannelFile,
+      playChannelProgramme,
       deleteUserChannel,
       moveUserChannel,
       arrangeUserNetwork,
@@ -3107,6 +3160,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       previousChannel,
       history,
       startHold,
+    smart,
       startupPhase,
       startupProgress,
       sleepMinutes,

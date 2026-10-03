@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { openAbout } from '../legal/about-store.ts'
 import { sleepLabel } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
@@ -14,6 +14,7 @@ const KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 export function TouchRemote() {
   const tv = useTv()
   const settingsOpen = useRandomSettingsOpen()
+  const padRef = useRef<HTMLDivElement>(null)
 
   // The remote and the settings share a place; the one opened last takes it.
   useEffect(() => {
@@ -126,6 +127,19 @@ export function TouchRemote() {
             <button type="button" onClick={() => tv.dispatch({ type: 'user-channels' })}>
               User
             </button>
+            <button
+              type="button"
+              className={tv.smart ? 'smart-key is-on' : 'smart-key'}
+              aria-pressed={tv.smart}
+              title="SMART: type a channel number; it tunes and the remote closes"
+              onClick={() => {
+                tv.dispatch({ type: 'smart' })
+                // Keys typed now feed the channel number, and no remote button holds focus to take Enter or Space.
+                padRef.current?.focus()
+              }}
+            >
+              Smart
+            </button>
             <button type="button" onClick={() => tv.dispatch({ type: 'favourite' })}>
               Fav
             </button>
@@ -133,7 +147,7 @@ export function TouchRemote() {
               {tv.muted ? 'Sound' : 'Mute'}
             </button>
           </div>
-          <div className="remote-pad" aria-label="Channel number">
+          <div ref={padRef} tabIndex={-1} className={tv.smart ? 'remote-pad is-smart' : 'remote-pad'} aria-label="Channel number">
             {KEYS.map((digit) => (
               <button key={digit} type="button" onClick={() => tv.dispatch({ type: 'digit', digit })}>
                 {digit}

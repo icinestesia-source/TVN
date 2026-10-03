@@ -27,7 +27,8 @@ export type TvCommand =
   | { type: 'surf' }
   /** Prev (-1) or Next (1) along the channel: in the Guide, or over the picture. */
   | { type: 'step'; direction: -1 | 1 }
-  | { type: 'guide' }
+  /** `listings`: the television Guide itself, even while a Map is playing (a right-click on the green GUIDE). */
+  | { type: 'guide'; listings?: boolean }
   | { type: 'guide-expand' }
   | { type: 'guide-dock' }
   | { type: 'guide-split'; share: number }
@@ -41,6 +42,8 @@ export type TvCommand =
   | { type: 'media' }
   | { type: 'guide-tool'; tool: GuideTool; channelNumber?: number }
   | { type: 'remote' }
+  /** SMART on the remote: the next channel number typed tunes and closes the remote. An action, not a tab. */
+  | { type: 'smart' }
   /** CREDITS on the remote: the credit roll over the picture, on and off. */
   | { type: 'credits' }
   /** The next sleep choice, or exactly `minutes` (OPTIONS). */
@@ -56,6 +59,8 @@ export type TvCommand =
   | { type: 'debug' }
   | { type: 'guide-filter'; filter?: GuideFilter }
   | { type: 'guide-now' }
+  /** = zooms the Guide's timeline in (wider programmes, less time), - zooms it out. */
+  | { type: 'guide-zoom'; direction: -1 | 1 }
   | { type: 'hints' }
   | { type: 'nav'; direction: NavDirection; rows?: number }
 

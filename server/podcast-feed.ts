@@ -10,6 +10,8 @@ export { decodeText, FeedError, parseDuration, publicFeedUrl } from './web-read.
  *   1. the address is itself a feed;
  *   2. the website announces a feed the standard way (`<link rel="alternate">`, or a plainly linked feed);
  *   3. the public podcast directory lists a feed on the publisher's own site (Apple's keyless search);
+ *      a feed verified by hand as the site's public one is tried before either, and a members', subscribers' or
+ *      tokened feed is never taken, whichever route offers it;
  *   4. the page is an episode archive: its episode pages, and the public media each one plainly carries.
  * An episode whose media the publisher keeps behind a sign-in or subscription is never offered, nor is a later
  * part of a split interview or an item the publisher marks for members: TVN does not
@@ -247,23 +249,64 @@ function siteName(html: string): string | null {
   return clean.length >= 2 && clean.length <= 80 ? clean : null
 }
 
-/** A feed the public podcast directory lists for this site, hosted on the publisher's own domain. */
-export async function directoryFeed(html: string, pageUrl: string, read: typeof fetch): Promise<string | null> {
+/** Feeds the public podcast directory lists for this site, hosted on the publisher's own domain, in its order. */
+export async function directoryFeeds(html: string, pageUrl: string, read: typeof fetch): Promise<string[]> {
   const name = siteName(html)
-  if (!name) return null
+  if (!name) return []
   const host = new URL(pageUrl).hostname
+  const found: string[] = []
   try {
     const response = await read(`${DIRECTORY}?media=podcast&entity=podcast&limit=25&term=${encodeURIComponent(name)}`, { headers: { 'user-agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) })
-    if (!response.ok) return null
+    if (!response.ok) return []
     const body = (await response.json()) as { results?: { feedUrl?: unknown }[] }
     for (const result of body.results ?? []) {
       const url = typeof result.feedUrl === 'string' ? publicFeedUrl(result.feedUrl) : null
-      if (url && sameSite(url.hostname, host)) return url.toString()
+      if (url && sameSite(url.hostname, host) && !found.includes(url.toString())) found.push(url.toString())
     }
   } catch {
-    return null
+    return found
   }
-  return null
+  return found
+}
+
+/** The first feed the public podcast directory lists for this site. */
+export async function directoryFeed(html: string, pageUrl: string, read: typeof fetch): Promise<string | null> {
+  return (await directoryFeeds(html, pageUrl, read))[0] ?? null
+}
+
+/**
+ * Public feeds verified by hand for sites that announce none, so a busy or reordered directory never sends TVN
+ * to the site's archive pages instead. Each is still read and checked like any other feed.
+ */
+export const VERIFIED_PUBLIC_FEEDS: Readonly<Record<string, string>> = {
+  'veritas7.com': 'https://veritas7.com/vs.rss',
+}
+
+export function verifiedPublicFeed(pageUrl: string): string | null {
+  const host = new URL(pageUrl).hostname.toLowerCase().replace(/^www\./, '')
+  return VERIFIED_PUBLIC_FEEDS[host] ?? null
+}
+
+/** A feed address that belongs to members, subscribers or patrons, or carries a personal token: never a public source. */
+const PRIVATE_FEED = /(?:^|[/._?&=-])(?:members?|membership|subscribers?|subscription|private|premium|patrons?|paid|vip|supporters?|exclusive|insiders?)(?:[/._?&=-]|$)|[?&](?:token|key|auth|access_token|apikey|api_key|sig|signature|uid|user|secret|pass(?:word)?)=/i
+/** A feed whose own title says it is for members or subscribers. */
+const PRIVATE_TITLE = /\b(?:members?(?:[\s-]+only)?|subscribers?(?:[\s-]+only)?|premium|patrons?|private feed|supporters?)\b/i
+
+export const isPrivateFeed = (url: string): boolean => PRIVATE_FEED.test(url.replace(/^https?:\/\/[^/]+/i, ''))
+
+/**
+ * The feeds worth reading for a website, best first: a verified public record, then what the site announces,
+ * then what the public directory lists. Addresses for members, subscribers or a personal token are dropped,
+ * and a feed that says it is public outranks one that says nothing.
+ */
+export function rankFeedCandidates(candidates: readonly { url: string; rank: number }[]): string[] {
+  const seen = new Set<string>()
+  return candidates
+    .filter((candidate) => !isPrivateFeed(candidate.url))
+    .map((candidate, index) => ({ ...candidate, index, score: candidate.rank - (/public/i.test(candidate.url) ? 0.5 : 0) }))
+    .sort((a, b) => a.score - b.score || a.index - b.index)
+    .map((candidate) => candidate.url)
+    .filter((url) => (seen.has(url) ? false : (seen.add(url), true)))
 }
 
 const archiveEpisode = (episode: ArchiveEpisode): FeedEpisode => ({
@@ -295,18 +338,25 @@ export async function resolveFeed(
   const page = await readFeed(start.toString(), read, keep, deadline)
   if (isFeed(page.text)) return feedResult(page, read, keep, 'address')
   if (!cursor) {
-    for (const candidate of discoverFeeds(page.text, page.url).slice(0, 3)) {
-      const next = await readFeed(candidate, read, keep, deadline).catch(() => null)
-      if (!next || !isFeed(next.text)) continue
-      const found = await feedResult(next, read, keep, 'announced').catch(() => null)
-      if (found) return found
+    const announced = discoverFeeds(page.text, page.url).slice(0, 3)
+    const verified = verifiedPublicFeed(page.url)
+    const tried = new Set<string>()
+    const tryFeeds = async (urls: readonly string[], via: ResolvedFeed['via']): Promise<ResolvedFeed | null> => {
+      for (const candidate of urls) {
+        if (tried.has(candidate)) continue
+        tried.add(candidate)
+        const next = await readFeed(candidate, read, keep, deadline).catch(() => null)
+        if (!next || !isFeed(next.text)) continue
+        const found = await feedResult(next, read, keep, via).catch(() => null)
+        if (found && !isPrivateFeed(found.feedUrl) && !PRIVATE_TITLE.test(found.title)) return found
+      }
+      return null
     }
-    const listed = await directoryFeed(page.text, page.url, read)
-    if (listed) {
-      const next = await readFeed(listed, read, keep, deadline).catch(() => null)
-      const found = next && isFeed(next.text) ? await feedResult(next, read, keep, 'directory').catch(() => null) : null
-      if (found) return found
-    }
+    const first = await tryFeeds(rankFeedCandidates([...(verified ? [{ url: verified, rank: -1 }] : []), ...announced.map((url, rank) => ({ url, rank }))]), 'announced')
+    if (first) return first
+    const listed = rankFeedCandidates((await directoryFeeds(page.text, page.url, read)).map((url, rank) => ({ url, rank }))).slice(0, 3)
+    const found = await tryFeeds(listed, 'directory')
+    if (found) return found
   }
   const archive = await readArchive({ url: page.url, html: page.text }, read, { cursor, deadline, clock })
   if (archive.episodes.length === 0 && !archive.next && !cursor) {

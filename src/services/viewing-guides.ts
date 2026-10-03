@@ -12,6 +12,13 @@ export const GUIDES_KEY = 'tvn.guides.v1'
 export const GUIDES_FORMAT = 'tvn-guides-v1'
 export const GUIDE_LIMITS = { items: 300, guides: 200, name: 60, sources: 12 } as const
 export const DEFAULT_GUIDE_NAME = 'My Guide'
+/** What + NEW MAP calls a Map until it is named, or built from words or channels that name it. */
+export const NEW_MAP_NAME = 'New Map'
+
+/** A Map still called what TVN called it, which BUILD may name after what it was built from. */
+export function unnamedMap(guide: Pick<ViewingGuide, 'name'> | null | undefined): boolean {
+  return guide?.name === DEFAULT_GUIDE_NAME || guide?.name === NEW_MAP_NAME
+}
 
 /** The programme as it was when added: enough to play it again, never its media. */
 export type GuideProgramme = Pick<Programme, 'id' | 'title' | 'videoId' | 'durationSeconds' | 'source'> &
@@ -131,8 +138,9 @@ export type GuideAction =
   | { type: 'clear' }
   | { type: 'loop'; loop: boolean }
   | { type: 'save' }
-  | { type: 'duplicate' }
-  | { type: 'delete' }
+  /** With `id`, a saved Map other than the one being edited, which is left as it is. */
+  | { type: 'duplicate'; id?: string }
+  | { type: 'delete'; id?: string }
   | { type: 'load'; id: string }
   /** The current Guide's programmes replaced wholesale, as CREATE GUIDE FROM… and RESCAN do. */
   | { type: 'fill'; items: GuideItem[] }
@@ -167,12 +175,19 @@ export function applyGuideAction(library: GuideLibrary, action: GuideAction, now
       return { ...library, saved: exists ? library.saved.map((guide) => (guide.id === current.id ? copy : guide)) : [...library.saved, copy] }
     }
     case 'duplicate': {
+      const other = action.id && action.id !== current?.id ? library.saved.find((guide) => guide.id === action.id) : undefined
+      if (other) {
+        if (library.saved.length >= GUIDE_LIMITS.guides) throw new Error('Too many saved Guides')
+        const copy: ViewingGuide = { ...copyGuide(other), id: guideId('g', now), name: cleanGuideName(`${other.name} copy`), createdAt: now, modifiedAt: now }
+        return { ...library, saved: [...library.saved, copy] }
+      }
       if (!current) return library
       if (library.saved.length >= GUIDE_LIMITS.guides) throw new Error('Too many saved Guides')
       const copy: ViewingGuide = { ...copyGuide(current), id: guideId('g', now), name: cleanGuideName(`${current.name} copy`), createdAt: now, modifiedAt: now }
       return { current: copy, saved: [...library.saved, copyGuide(copy)] }
     }
     case 'delete':
+      if (action.id && action.id !== current?.id) return { ...library, saved: library.saved.filter((guide) => guide.id !== action.id) }
       if (!current) return library
       return { current: null, saved: library.saved.filter((guide) => guide.id !== current.id) }
     case 'rename': {

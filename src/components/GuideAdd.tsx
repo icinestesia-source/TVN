@@ -36,15 +36,12 @@ export function GuideActions({
   tool,
   picked,
   following = false,
-  query = null,
   onNow,
   onClose,
   onTool,
   onGuideSearch,
 }: {
   tool: GuideTool | null
-  /** The words the Guide on show was created from, shown beside GUIDE while it is. */
-  query?: string | null
   /** A programme chosen in the Guide is playing; NOW returns to air. */
   picked: boolean
   /** A viewing Guide is choosing what plays. */
@@ -85,11 +82,6 @@ export function GuideActions({
         Guide
       </button>
       <ChannelGuideTab open={open} following={following} onOpen={open ? () => onTool('guides') : openGuide} onSearch={onGuideSearch ?? openGuide} />
-      {query ? (
-        <span className="guide-query" title={`This My Guide was created from “${query}”`}>
-          {query}
-        </span>
-      ) : null}
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
       {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'The channel playing, now · press again for the picture')}
       {action('Add', tool === 'add', () => onTool('add'))}

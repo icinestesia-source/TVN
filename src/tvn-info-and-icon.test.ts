@@ -112,8 +112,8 @@ describe('the Guide button', () => {
     const programme = { id: 'p', title: 'Film', videoId: 'abcdefghijk', durationSeconds: 1800 } as Programme
     const markup = renderToStaticMarkup(createElement(InfoActions, { channel, programme, ...padProps({ sent }) }))
     expect(markup).toMatch(/<button[^>]*class="tune-key info-pad-guide"[^>]*aria-label="Guide"[^>]*>Guide<\/button>/)
-    expect(readFileSync('src/components/InfoActions.tsx', 'utf8')).toContain("onClick={() => corners.dispatch({ type: 'guide' })}")
-    expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(/case 'guide':\s*if \(guideModeRef\.current === 'closed'\) openGuide\('expanded'\)\s*else \{\s*closeGuide\(\)/)
+    expect(readFileSync('src/components/InfoActions.tsx', 'utf8')).toContain("corners.dispatch({ type: 'guide' })")
+    expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(/case 'guide':\s*if \(command\.listings\) \{[\s\S]*?break\s*\}\s*if \(guideModeRef\.current === 'closed'\) openGuide\('expanded'\)\s*else \{\s*closeGuide\(\)/)
     const remote = readFileSync('src/components/TouchRemote.tsx', 'utf8')
     expect(remote).not.toContain('remote-bar')
     expect(remote).not.toContain('guide-key')

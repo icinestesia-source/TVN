@@ -225,13 +225,12 @@ describe('CREATE GUIDE FROM… search', () => {
     expect(small.small).toBe(true)
   })
 
-  it('shows the words beside MY GUIDE, which turns green while My Guide is watched', () => {
-    const markup = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, following: true, query: 'Daft Punk', onNow: () => {}, onTool: () => {} }))
+  it('MY GUIDE turns green while a Map is watched, and the words it was built from stay inside the Map editor', () => {
+    const markup = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, following: true, onNow: () => {}, onTool: () => {} }))
     expect(markup).toContain('class="tab guide-follow is-following"')
     expect(markup).toContain('class="tab guide-section is-on"')
-    expect(markup).toContain('<span class="guide-query"')
-    expect(markup.indexOf('Daft Punk')).toBeLessThan(markup.indexOf('Options'))
-    expect(renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))).not.toContain('guide-query')
+    expect(markup).not.toContain('guide-query')
+    expect(readFileSync('src/components/GuidePanel.tsx', 'utf8')).toContain('<p className="plan-note map-built">Built from “{search.query}”</p>')
   })
 
   it('a generated Guide saves under its words with the existing Guide system and exports, podcasts included', () => {

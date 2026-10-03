@@ -42,6 +42,8 @@ export interface TvContextValue {
   canGoForward: boolean
   /** What the browser held back at startup until the viewer's first key or tap. */
   startHold: StartHold
+  /** SMART is armed on the remote: the next channel number tunes and closes it. */
+  smart: boolean
   visibleChannels: readonly Channel[]
   /** The channel being watched, shown in the Guide although the selected tab does not list it; null when it does. */
   guideVisiting: number | null
@@ -220,6 +222,8 @@ export interface TvContextValue {
   importChannelFile: (text: string, owner: string) => Promise<{ message: string; number: number }>
   /** TVN's shipped back catalogue for a channel source, which ARCHIVE and ALL add to it; for the editor's preview. */
   sourceArchive: (source: import('../services/channel-sources.ts').ChannelSource) => readonly import('../services/channels-import.ts').ImportedVideo[]
+  /** Play one of a channel's programmes (by its editor id) now; a message when it cannot, or null. */
+  playChannelProgramme: (channelNumber: number, programmeId: string) => string | null
   /** Delete one user channel (after the editor's confirmation): it leaves the network, its Favourite with it. */
   deleteUserChannel: (channelNumber: number) => Promise<string>
   /** MOVE TO: a user channel inserted at User position `to`; every 1001+ channel is renumbered from 1001. */

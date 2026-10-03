@@ -6,7 +6,7 @@ export function Hints() {
 
   return (
     <p className="hints">
-      ↑↓ Channel · G Guide · I Info · 0–9 Tune · ⌫ Last · R Random · T Surf · B/N Prev/Next · Home now
+      ↑↓ Channel · G Guide · I Info · 0–9 Tune · ⌫ Last · , . Prev/Next · M Mute · / Multi · A Add · R Random · T Surf · − = Guide zoom · Home now
     </p>
   )
 }

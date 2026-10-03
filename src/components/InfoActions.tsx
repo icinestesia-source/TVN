@@ -44,6 +44,9 @@ function keepKey(event: KeyboardEvent<HTMLElement>) {
 /** One hold timer for the corner keys, kept across the bar's once-a-second renders. A held mouse button counts. */
 let holdAction: () => void = () => {}
 const cornerHold = createLongPress(() => holdAction(), undefined, undefined, true)
+/** The green GUIDE key's own hold (the normal Guide while a Map plays), apart from the corners' timer. */
+let guideHoldAction: () => void = () => {}
+const guideHold = createLongPress(() => guideHoldAction(), undefined, undefined, true)
 /** How the last press on a corner began: a touch hold also raises the context menu on some phones. */
 let lastPointer = 'mouse'
 
@@ -52,6 +55,7 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
   const className = `info-square info-corner is-${shortcut.id}`
   const action = available ? shortcut : null
   const pressed = action?.pressed?.(context)
+  const scoped = action?.scoped?.(context) ?? false
   const hold = action?.hold
   // A right-click opens the key's menu; a key without one treats it as its hold.
   const menu = action?.menu ?? hold
@@ -60,7 +64,7 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
     <button
       key={at}
       type="button"
-      className={pressed ? `${className} is-on` : className}
+      className={`${className}${pressed ? ' is-on' : ''}${scoped ? ' is-scoped' : ''}`}
       disabled={!available}
       aria-pressed={pressed}
       aria-haspopup={action?.menu ? 'dialog' : undefined}
@@ -160,6 +164,7 @@ export function InfoActions({
     subtitles: corners.subtitles,
     remoteOpen: corners.remoteOpen,
     surfing: corners.surfing,
+    randomScoped: corners.randomScoped,
     openRandomSettings: corners.openRandomSettings,
     dispatch: corners.dispatch,
   }
@@ -207,9 +212,44 @@ export function InfoActions({
         type="button"
         className={following ? 'tune-key info-pad-guide is-following' : 'tune-key info-pad-guide'}
         aria-label={following ? 'Guide, TVN is following My Guide' : 'Guide'}
-        title={following ? 'TVN is following My Guide' : undefined}
+        title={following ? 'TVN is following a Map: click for its schedule · right-click or hold for the Guide' : undefined}
         onKeyDown={keepKey}
-        onClick={() => corners.dispatch({ type: 'guide' })}
+        onPointerDown={
+          following
+            ? (event) => {
+                // The bar's own hold edits the channel; this one is the Guide key's.
+                event.stopPropagation()
+                lastPointer = event.pointerType
+                guideHoldAction = () => corners.dispatch({ type: 'guide', listings: true })
+                if (event.button === 0) guideHold.down(event)
+              }
+            : undefined
+        }
+        onPointerMove={following ? (event) => guideHold.move(event) : undefined}
+        onPointerUp={following ? guideHold.up : undefined}
+        onPointerCancel={following ? guideHold.cancel : undefined}
+        onPointerLeave={following ? guideHold.cancel : undefined}
+        onContextMenu={
+          following
+            ? (event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                if (lastPointer !== 'mouse') {
+                  // The phone's own menu during a touch hold: the hold itself, once.
+                  const holding = guideHold.holding()
+                  guideHold.opened()
+                  if (holding) corners.dispatch({ type: 'guide', listings: true })
+                  return
+                }
+                guideHold.cancel()
+                corners.dispatch({ type: 'guide', listings: true })
+              }
+            : undefined
+        }
+        onClick={() => {
+          if (following && guideHold.swallowClick()) return
+          corners.dispatch({ type: 'guide' })
+        }}
       >
         Guide
       </button>

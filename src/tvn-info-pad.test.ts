@@ -225,7 +225,7 @@ describe('information overlay: 3×3 control pad', () => {
     const { sent, press } = pad()
     press('Guide')
     expect(sent).toEqual([{ type: 'guide' }])
-    expect(provider).toMatch(/case 'guide':\s*if \(guideModeRef\.current === 'closed'\) openGuide\('expanded'\)\s*else \{\s*closeGuide\(\)/)
+    expect(provider).toMatch(/case 'guide':\s*if \(command\.listings\) \{[\s\S]*?break\s*\}\s*if \(guideModeRef\.current === 'closed'\) openGuide\('expanded'\)\s*else \{\s*closeGuide\(\)/)
   })
 
   it('11. REMOTE opens and closes the remote, and lights while it is open', () => {

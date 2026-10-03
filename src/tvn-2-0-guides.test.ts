@@ -78,7 +78,7 @@ const settings: PortableSettings = {
 
 describe('TVN 2.0 · building a viewing Guide', () => {
   it('ADD TO GUIDE makes a Guide when there is none and keeps references only', () => {
-    expect(provider).toContain('library.current ?? newGuide(DEFAULT_GUIDE_NAME, now)')
+    expect(provider).toContain('library.current ?? newGuide(NEW_MAP_NAME, now)')
     const guide = addToGuide(newGuide(DEFAULT_GUIDE_NAME, NOW), first, a1, NOW)
     expect(guide.name).toBe('My Guide')
     expect(guide.items).toHaveLength(1)

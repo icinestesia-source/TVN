@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { discoverFeeds, FeedError, parseFeed, resolveFeed } from './podcast-feed.ts'
+import { discoverFeeds, FeedError, isPrivateFeed, parseFeed, rankFeedCandidates, resolveFeed, verifiedPublicFeed } from './podcast-feed.ts'
 import { parseChannelInput } from './youtube-channel.ts'
 
 const page = (body: string, status = 200, type = 'text/html') => new Response(body, { status, headers: { 'content-type': type } })
@@ -77,5 +77,58 @@ describe('a bare @handle', () => {
   it('is read as a YouTube handle for the keyless resolver to confirm', () => {
     expect(parseChannelInput('@daftpunk')).toEqual({ kind: 'handle', handle: 'daftpunk' })
     expect(parseChannelInput('youtube.com/@daftpunk')).toEqual({ kind: 'handle', handle: 'daftpunk' })
+  })
+})
+
+describe('a website resolves to its public feed, never a members feed', () => {
+  const publicFeed = (title: string) => FEED.replace('<title>Example Radio</title>', `<title>${title}</title>`)
+  const site = '<html><head><title>VERITAS by Mel | Truth</title><meta property="og:site_name" content="VERITAS"></head><body><a href="/sitemaps/sitemap.xml">Sitemap</a></body></html>'
+
+  it('drops members, subscribers, premium and tokened feed addresses, and prefers one that says it is public', () => {
+    expect(isPrivateFeed('https://example.org/members.rss')).toBe(true)
+    expect(isPrivateFeed('https://example.org/feed/subscriber/')).toBe(true)
+    expect(isPrivateFeed('https://example.org/premium-feed.xml')).toBe(true)
+    expect(isPrivateFeed('https://example.org/rss?token=abc')).toBe(true)
+    expect(isPrivateFeed('https://veritas7.com/vs.rss')).toBe(false)
+    expect(isPrivateFeed('https://veritas7.com/rssfeeds-public.php')).toBe(false)
+    expect(rankFeedCandidates([{ url: 'https://a.org/members.rss', rank: 0 }, { url: 'https://a.org/feed', rank: 1 }, { url: 'https://a.org/public.rss', rank: 1 }])).toEqual(['https://a.org/public.rss', 'https://a.org/feed'])
+  })
+
+  it('reads the verified public feed for veritas7.com, whatever the directory lists first', async () => {
+    expect(verifiedPublicFeed('https://veritas7.com/')).toBe('https://veritas7.com/vs.rss')
+    expect(verifiedPublicFeed('https://www.veritas7.com/episodes')).toBe('https://veritas7.com/vs.rss')
+    const asked: string[] = []
+    const read = (async (url: string | URL, init?: RequestInit) => {
+      const address = String(url)
+      asked.push(address)
+      if (init?.method === 'HEAD') return page('')
+      if (address === 'https://veritas7.com/') return page(site)
+      if (address === 'https://veritas7.com/vs.rss') return page(publicFeed('VERITAS'), 200, 'application/rss+xml')
+      return page('', 404)
+    }) as typeof fetch
+    const feed = await resolveFeed('https://veritas7.com/', read)
+    expect(feed.feedUrl).toBe('https://veritas7.com/vs.rss')
+    expect(feed.episodes.length).toBeGreaterThan(0)
+    expect(asked.some((address) => address.includes('itunes.apple.com'))).toBe(false)
+  })
+
+  it('passes over a members feed the directory lists ahead of the public one, by address or by its own title', async () => {
+    for (const [members, membersTitle] of [
+      ['https://radio-example.org/members.rss?token=x', 'Example Radio'],
+      ['https://radio-example.org/extra.rss', 'Example Radio Members'],
+    ]) {
+      const read = (async (url: string | URL, init?: RequestInit) => {
+        const address = String(url)
+        if (init?.method === 'HEAD') return page('')
+        if (address === 'https://radio-example.org/') return page(site.replace(/VERITAS/g, 'Example Radio'))
+        if (address.startsWith('https://itunes.apple.com/')) return page(JSON.stringify({ results: [{ feedUrl: members }, { feedUrl: 'https://radio-example.org/public.rss' }] }), 200, 'application/json')
+        if (address === members) return page(publicFeed(membersTitle), 200, 'application/rss+xml')
+        if (address === 'https://radio-example.org/public.rss') return page(publicFeed('Example Radio'), 200, 'application/rss+xml')
+        return page('', 404)
+      }) as typeof fetch
+      const feed = await resolveFeed('https://radio-example.org/', read)
+      expect(feed.feedUrl).toBe('https://radio-example.org/public.rss')
+      expect(feed.via).toBe('directory')
+    }
   })
 })

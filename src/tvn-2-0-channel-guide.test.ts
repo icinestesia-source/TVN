@@ -103,8 +103,8 @@ describe('CHANNEL GUIDE: channel sources', () => {
   it('the panel reads CHANNEL GUIDE with ADD CHANNEL, BUILD GUIDE and each source as “NNN · Name”', () => {
     const panel = read('src/components/GuidePanel.tsx')
     expect(panel).toContain('>My Guide</h3>')
-    expect(panel).toMatch(/Add channel/)
-    expect(panel).toMatch(/Build My Guide/)
+    expect(panel).toMatch(/Add source/)
+    expect(panel).toMatch(/Build from sources/)
     expect(panel).toContain('plan-source-list')
     expect(read('src/components/Guide.tsx')).toContain("Add to {guideName ?? 'My Guide'}")
     const provider = read('src/state/TvProvider.tsx')
