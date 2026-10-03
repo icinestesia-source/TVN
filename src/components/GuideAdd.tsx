@@ -26,9 +26,9 @@ function viewerMessage(caught: unknown, fallback: string): string {
 }
 
 /**
- * TVN · GUIDE · CH GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the Guide
- * itself. TVN is the Network Editor; GUIDE is the television listings; CH GUIDE holds the viewer's own Channel Guides
- * and reads green only while one is being followed. OPTIONS holds the users and every viewer setting.
+ * NETWORK · GUIDE · MY GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the
+ * Guide itself. NETWORK is the Network Editor (curate the channels); GUIDE is the television listings (what is on);
+ * MY GUIDE holds the viewer's own programme sequences and reads green only while one is being followed. OPTIONS holds the users and every viewer setting.
  * ADD opens the Add Channel row, MEDIA builds 1000 Local Media from local files. New users and channel-list
  * imports live behind the + tab (after TVN and the users, before FAV).
  */
@@ -68,7 +68,7 @@ export function GuideActions({
   )
   return (
     <div className="guide-import guide-actions">
-      {action('TVN', tool === 'editor', () => onTool('editor'), 'Network editor: arrange and edit the channels')}
+      {action('Network', tool === 'editor', () => onTool('editor'), 'Network Editor: arrange and edit the channels')}
       <button
         type="button"
         className={`tab guide-section${tool !== 'options' && tool !== 'add' && tool !== 'media' && tool !== 'editor' && tool !== 'guides' ? ' is-on' : ''}`}
@@ -81,7 +81,7 @@ export function GuideActions({
       </button>
       <ChannelGuideTab open={open} following={following} onOpen={open ? () => onTool('guides') : openGuide} onSearch={onGuideSearch ?? openGuide} />
       {query ? (
-        <span className="guide-query" title={`This Channel Guide was created from “${query}”`}>
+        <span className="guide-query" title={`This My Guide was created from “${query}”`}>
           {query}
         </span>
       ) : null}
@@ -94,15 +94,15 @@ export function GuideActions({
 }
 
 /**
- * CH GUIDE opens (and closes) the CHANNEL GUIDE, the viewer's programmable viewing sequence. Green, a Channel
- * Guide choosing what plays, colours its text. A right-click or a hold opens CREATE FROM… in it.
+ * MY GUIDE opens (and closes) the viewer's programmable viewing sequence. Green, My Guide choosing what plays,
+ * colours its text. A right-click or a hold opens CREATE FROM… in it.
  */
 function ChannelGuideTab({ open, following, onOpen, onSearch }: { open: boolean; following: boolean; onOpen: () => void; onSearch: () => void }) {
   const [press] = useState(() => createGuidePress())
   const actions = { open: onOpen, search: onSearch }
   useEffect(() => press.cancel, [press])
   const point = (event: PointerEvent<HTMLButtonElement>) => ({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })
-  const label = following ? 'Channel Guide, TVN is following a Channel Guide' : 'Channel Guide'
+  const label = following ? 'My Guide, TVN is following My Guide' : 'My Guide'
   return (
     <button
       type="button"
@@ -110,7 +110,7 @@ function ChannelGuideTab({ open, following, onOpen, onSearch }: { open: boolean;
       aria-pressed={open}
       aria-expanded={open}
       aria-label={`${label}. Right-click or hold to create one from words`}
-      title={following ? 'TVN is following a Channel Guide · right-click or hold: Create from…' : 'Channel Guide · right-click or hold: Create from…'}
+      title={following ? 'TVN is following My Guide · right-click or hold: Create from…' : 'My Guide · right-click or hold: Create from…'}
       onKeyDown={keepKey}
       onClick={() => press.click(actions)}
       onContextMenu={(event) => {
@@ -123,7 +123,7 @@ function ChannelGuideTab({ open, following, onOpen, onSearch }: { open: boolean;
       onPointerCancel={press.cancel}
       onPointerLeave={press.cancel}
     >
-      Ch Guide
+      My Guide
     </button>
   )
 }

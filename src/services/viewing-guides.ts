@@ -26,7 +26,7 @@ export interface GuideItem {
 }
 
 /**
- * A channel a Channel Guide draws its programmes from: a reference to the channel's pool, never a copy of
+ * A channel a Guide draws its programmes from: a reference to the channel's pool, never a copy of
  * it. Known by the channel's stable id, so a renumbered channel is still the same source; the number and
  * name are what it was called when added, shown if the channel has since gone.
  */
@@ -40,7 +40,7 @@ export interface ViewingGuide {
   id: string
   name: string
   items: GuideItem[]
-  /** CHANNEL SOURCES: the channels BUILD GUIDE schedules from, in the viewer's order. */
+  /** MY GUIDE SOURCES: the channels BUILD MY GUIDE schedules from, in the viewer's order. */
   sources?: GuideSource[]
   /** Start again after the last item. Off unless the viewer asks for it. */
   loop?: boolean
@@ -136,7 +136,7 @@ export type GuideAction =
   | { type: 'load'; id: string }
   /** The current Guide's programmes replaced wholesale, as CREATE GUIDE FROM… and RESCAN do. */
   | { type: 'fill'; items: GuideItem[] }
-  /** The current Guide's CHANNEL SOURCES replaced (added to, removed from or reordered). */
+  /** The current Guide's MY GUIDE SOURCES replaced (added to, removed from or reordered). */
   | { type: 'sources'; sources: GuideSource[] }
 
 const copyGuide = (guide: ViewingGuide): ViewingGuide => structuredClone(guide)
@@ -197,7 +197,7 @@ export function applyGuideAction(library: GuideLibrary, action: GuideAction, now
       return current ? { ...library, current: touched(current, now, { items: action.items.slice(0, GUIDE_LIMITS.items).map((item) => structuredClone(item)) }) } : library
     case 'sources': {
       const unique = action.sources.filter((source, index) => action.sources.findIndex((other) => other.channelId === source.channelId) === index)
-      if (unique.length > GUIDE_LIMITS.sources) throw new Error(`A Channel Guide draws on at most ${GUIDE_LIMITS.sources} channels`)
+      if (unique.length > GUIDE_LIMITS.sources) throw new Error(`My Guide draws on at most ${GUIDE_LIMITS.sources} channels`)
       const sources = unique.map((source) => ({ ...source }))
       const guide = current ?? newGuide(DEFAULT_GUIDE_NAME, now)
       return { ...library, current: touched(guide, now, { sources: sources.length ? sources : undefined }) }

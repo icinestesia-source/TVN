@@ -206,8 +206,8 @@ export function InfoActions({
       <button
         type="button"
         className={following ? 'tune-key info-pad-guide is-following' : 'tune-key info-pad-guide'}
-        aria-label={following ? 'Guide, TVN is following a Channel Guide' : 'Guide'}
-        title={following ? 'TVN is following a Channel Guide' : undefined}
+        aria-label={following ? 'Guide, TVN is following My Guide' : 'Guide'}
+        title={following ? 'TVN is following My Guide' : undefined}
         onKeyDown={keepKey}
         onClick={() => corners.dispatch({ type: 'guide' })}
       >

@@ -162,7 +162,7 @@ describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
 
   it('one section carries the gold underline: GUIDE while the listings show, OPTIONS, ADD or MEDIA while they are open', () => {
     expect(active(header(null))).toEqual(['Guide'])
-    expect(active(header('guides'))).toEqual(['Ch Guide'])
+    expect(active(header('guides'))).toEqual(['My Guide'])
     expect(active(header('options'))).toEqual(['Options'])
     expect(active(header('add'))).toEqual(['Add'])
     expect(active(header('media'))).toEqual(['Media'])

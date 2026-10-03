@@ -144,7 +144,7 @@ describe('MEDIA (1000 Local Media from local files)', () => {
   it('is a visible Guide action, after NOW and ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'media', picked: false, onNow: () => undefined, onTool: () => undefined }))
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['TVN', 'Guide', 'Ch Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect(labels).toEqual(['Network', 'Guide', 'My Guide', 'Options', 'Now', 'Add', 'Media'])
     expect(markup).toMatch(/aria-pressed="true"[^>]*>Media</)
   })
 

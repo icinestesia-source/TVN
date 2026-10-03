@@ -175,7 +175,7 @@ describe('TVN 2.0 · playing a Guide', () => {
 
     const pad = (following: boolean) => renderToStaticMarkup(createElement(InfoActions, { channel: first, programme: a1, onPrev: () => {}, onNext: () => {}, ...padProps(), following, ...(following ? { guideSteps: { onPrev: () => {}, onNext: () => {} } } : {}) }))
     expect(pad(false)).not.toContain('is-following')
-    expect(pad(true)).toMatch(/class="tune-key info-pad-guide is-following"[^>]*aria-label="Guide, TVN is following a Channel Guide"/)
+    expect(pad(true)).toMatch(/class="tune-key info-pad-guide is-following"[^>]*aria-label="Guide, TVN is following My Guide"/)
     expect(pad(true)).toContain('aria-label="Next item in the Guide"')
 
     const info = (props: { picked?: boolean; following?: ReturnType<typeof followingInfo> }) =>
@@ -194,7 +194,7 @@ describe('TVN 2.0 · playing a Guide', () => {
     const add = readFileSync('src/components/GuideAdd.tsx', 'utf8')
     expect(add).toMatch(/onContextMenu=\{\(event\) => \{\s+event\.preventDefault\(\)\s+press\.contextMenu\(actions\)/)
     expect(add).toContain('onClick={() => press.click(actions)}')
-    expect(header(false, null)).toMatch(/>Guide<\/button><button[^>]*>Ch Guide<\/button><button[^>]*>Options<\/button><button[^>]*>Now<\/button><button[^>]*>Add<\/button><button[^>]*>Media</)
+    expect(header(false, null)).toMatch(/>Guide<\/button><button[^>]*>My Guide<\/button><button[^>]*>Options<\/button><button[^>]*>Now<\/button><button[^>]*>Add<\/button><button[^>]*>Media</)
     expect(guideView).toContain("const following = tv.guideRun?.state === 'active'")
   })
 

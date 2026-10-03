@@ -33,7 +33,7 @@ function fromLibrary(item: MediaItem): SearchProgramme | null {
     durationSeconds: item.durationSeconds,
     videoId: item.externalId,
     source,
-    guide: { id: `search-${item.externalId}`, title: item.title, videoId: item.externalId, durationSeconds: item.durationSeconds, source: 'imported', programmeType: item.programmeType },
+    guide: { id: `search-${item.externalId}`, title: item.title, videoId: item.externalId, durationSeconds: item.durationSeconds, source: 'imported', programmeType: item.programmeType, ...(item.publishedAt ? { publishedAt: item.publishedAt } : {}) },
   }
 }
 

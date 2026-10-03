@@ -130,11 +130,11 @@ export interface TvContextValue {
   guideSearch: GuideSearchState | null
   /** CREATE GUIDE FROM…: a new Guide from TVN's catalogue for these words, or RESCAN (`rescan`) of the last; the answer is a short line. */
   searchGuide: (query: string, rescan?: boolean) => string
-  /** CHANNEL GUIDE · ADD CHANNEL: the channel on this number becomes a source of the current Channel Guide, kept by its identity. */
+  /** MY GUIDE SOURCES · ADD CHANNEL: the channel on this number becomes a source of the current Guide, kept by its identity. */
   addGuideSource: (channelNumber: number) => string
   /** A CHANNEL SOURCE as it is now: the channel it follows (by id) and the usable programming it offers. */
   guideSupply: (source: import('../services/viewing-guides.ts').GuideSource) => { channel: import('../types/channel.ts').Channel | undefined; programmes: number; seconds: number }
-  /** BUILD GUIDE: the current Channel Guide's programmes scheduled afresh from its CHANNEL SOURCES; the answer is a short line. */
+  /** BUILD MY GUIDE: the current Guide's programmes scheduled afresh from its MY GUIDE SOURCES; the answer is a short line. */
   buildChannelGuide: () => string
   /** ADD TO GUIDE: the programme joins the end of the current Guide (a new one if there is none). */
   addToGuide: (channelNumber: number, programme: import('../types/programme.ts').Programme) => string
@@ -220,8 +220,10 @@ export interface TvContextValue {
   sourceArchive: (source: import('../services/channel-sources.ts').ChannelSource) => readonly import('../services/channels-import.ts').ImportedVideo[]
   /** Delete one user channel (after the editor's confirmation): it leaves the network, its Favourite with it. */
   deleteUserChannel: (channelNumber: number) => Promise<string>
-  /** Move a user channel to where channel `to` is in the User Network; every 1001+ channel is renumbered from 1001. */
+  /** MOVE TO: a user channel inserted at User position `to`; every 1001+ channel is renumbered from 1001. */
   moveUserChannel: (channelNumber: number, to: number) => Promise<string>
+  /** SORT A–Z or RANDOMISE the User Network once; the new order is its stored running order. */
+  arrangeUserNetwork: (how: 'alphabetical' | 'shuffle') => Promise<string>
   /** Drops the viewer's change to a curated channel, so it is exactly as TVN ships it again. */
   restoreCuratedChannel: (channelNumber: number) => Promise<string>
   setSourceOverride: (channelNumber: number, videoId: string | null) => void

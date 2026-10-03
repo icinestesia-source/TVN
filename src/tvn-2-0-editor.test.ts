@@ -130,7 +130,7 @@ describe('NETWORK EDITOR: reorder renumbers, identity stays', () => {
 
   it('TVN opens the Network Editor from the Guide header; 001–999 are never renumbered', () => {
     const html = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['TVN', 'Guide', 'Ch Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Guide', 'My Guide', 'Options', 'Now', 'Add', 'Media'])
     const central = [{ ...added(1001, 'A') }, { ...added(1002, 'B') }, { ...added(5, 'X'), channelNumber: 5 }]
     const { sources } = renumberUserNetwork(central, ['yt:' + channelId(1002), 'yt:' + channelId(1001)])
     expect(sources.find((source) => source.name === 'X')?.channelNumber).toBe(5)

@@ -27,6 +27,16 @@ export interface ImportedVideo {
   page?: string
 }
 
+/** A source's upload date as the canonical YYYY-MM-DD calendar day, or nothing when it is not a real one. */
+export function calendarDate(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/)
+  if (!match) return undefined
+  const [, year, month, day] = match.map(Number)
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return year >= 1900 && year <= 2099 && month >= 1 && month <= 12 && day >= 1 && day <= last ? match[0].slice(0, 10) : undefined
+}
+
 export interface ImportedSource {
   id: string
   name: string
@@ -146,7 +156,7 @@ export function parseChannelsExport(text: string): ParsedExport {
     const seenVideos = new Set<string>()
     for (const item of raw.videos) {
       if (!item || typeof item !== 'object') continue
-      const video = item as { id?: unknown; title?: unknown; durationSec?: unknown; watched?: unknown }
+      const video = item as { id?: unknown; title?: unknown; durationSec?: unknown; watched?: unknown; published?: unknown }
       const id = typeof video.id === 'string' ? video.id.trim() : ''
       const title = typeof video.title === 'string' ? video.title.trim() : ''
       const durationSec = typeof video.durationSec === 'number' ? video.durationSec : Number.NaN
@@ -156,11 +166,13 @@ export function parseChannelsExport(text: string): ParsedExport {
       }
       if (seenVideos.has(id)) continue
       seenVideos.add(id)
+      const published = calendarDate(video.published)
       videos.push({
         id,
         title,
         durationSec: Math.round(durationSec),
         watched: video.watched === true ? true : undefined,
+        ...(published ? { published } : {}),
       })
       videoCount += 1
       totalSeconds += Math.round(durationSec)
@@ -282,6 +294,7 @@ export function mergeParsedExports(parts: readonly ParsedExport[]): ParsedExport
         if (existing) {
           if (video.watched) existing.watched = true
           if (video.durationSec > existing.durationSec) existing.durationSec = video.durationSec
+          if (!existing.published && video.published) existing.published = video.published
           continue
         }
         const copy = { ...video }
@@ -437,7 +450,7 @@ export function channelsFromSources(
     }
 
     if (source.emptySlot) {
-      channels.push({ ...base, name: EMPTY_SLOT_NAME, shortName: '··', logo: '··', description: `Empty user channel ${number}. Add a source in the Guide to fill it.`, emptySlot: true })
+      channels.push({ ...base, name: EMPTY_SLOT_NAME, shortName: '··', logo: '··', description: `Empty user channel ${number}. Add a source in NETWORK to fill it.`, emptySlot: true })
       programmes.set(id, [emptySlotProgramme(id)])
       continue
     }
@@ -470,7 +483,10 @@ export function channelsFromSources(
     const ordered = (source.runningOrder?.length ?? 0) > 0
     // ARCHIVE and ALL hold their back catalogue as eligible programmes already, spread across the span: no recency weighting.
     const wide = source.channelSources ? reachesArchive(source.channelSources) : false
-    const archive = archived && !ordered && !wide ? planArchive(ownPlayable, playable(options.archive?.({ id: source.id, name: source.listName ?? source.name })?.videos ?? [])) : []
+    const shipped = options.archive?.({ id: source.id, name: source.listName ?? source.name })?.videos ?? []
+    const archive = archived && !ordered && !wide ? planArchive(ownPlayable, playable(shipped)) : []
+    // The shipped archive's upload days date the channel's own copies of the same videos, with nothing fetched.
+    const shippedDays = new Map(shipped.flatMap((video) => (video.published ? [[video.id, video.published] as const] : [])))
     // A collection none of whose videos can play embedded still lists them when the uploader has nothing
     // else playable, so the channel explains the refusal instead of vanishing.
     const own = ownPlayable.length > 0 || archive.length === 0 ? (ownPlayable.length > 0 ? ownPlayable : pool) : []
@@ -512,6 +528,7 @@ export function channelsFromSources(
       mediaKind: 'video' as const,
       sourceRef: `youtube:${video.id}`,
       playbackMode: 'linear' as const,
+      ...(video.published || shippedDays.has(video.id) ? { publishedAt: video.published ?? shippedDays.get(video.id) } : {}),
     }))
     programmes.set(id, list)
   }
@@ -578,7 +595,7 @@ function emptySlotProgramme(channelId: string): Programme {
     source: 'imported',
     kind: 'programme',
     playbackMode: 'linear',
-    caption: 'EMPTY USER CHANNEL · ADD A SOURCE IN THE GUIDE',
+    caption: 'EMPTY USER CHANNEL · ADD A SOURCE IN NETWORK',
   }
 }
 
@@ -594,7 +611,7 @@ function holdingProgramme(channelId: string, name: string): Programme {
     source: 'imported',
     kind: 'programme',
     playbackMode: 'linear',
-    caption: 'NO PROGRAMMES · EDIT THIS CHANNEL IN THE GUIDE',
+    caption: 'NO PROGRAMMES · EDIT THIS CHANNEL IN NETWORK',
   }
 }
 

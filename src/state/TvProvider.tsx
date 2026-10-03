@@ -89,7 +89,10 @@ import {
   remapNumber,
   remapNumbers,
   renumberUserNetwork,
+  alphabeticalOrder,
+  moveTarget,
   moveTo,
+  shuffledOrder,
   userOrder,
 } from '../services/network-order.ts'
 import {
@@ -1255,7 +1258,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * CREATE GUIDE FROM…: a new, unsaved Guide named after the words, built from TVN's own catalogue. RESCAN
    * (`rescan`) rebuilds the same words differently; the Guide on show stays until its replacement is ready.
    */
-  /** The programmes every channel can lend a Channel Guide now, after edits, filters and refusals. */
+  /** The programmes every channel can lend a Guide now, after edits, filters and refusals. */
   const guideIndex = () => {
     const edits = appliedCuratedEdits(shippedChannel)
     const editorialFor = (number: number) => (number <= 999 ? (edits[String(number)]?.editorial ?? shippedEditorial(number)) : userEditorialRef.current.get(number))
@@ -1289,7 +1292,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   const channelGuideSeed = useRef(0)
-  /** BUILD GUIDE: the current Channel Guide's programmes, scheduled afresh from its CHANNEL SOURCES. */
+  /** BUILD MY GUIDE: the current Guide's programmes, scheduled afresh from its MY GUIDE SOURCES. */
   const buildChannelGuideAction = (): string => {
     const guide = guideLibraryRef.current.current
     const channels = (guide?.sources ?? []).map((source) => sourceChannel(source, listChannels())).filter((channel): channel is Channel => channel !== undefined)
@@ -1366,17 +1369,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const name = next.current?.name.toUpperCase() ?? ''
     switch (action.type) {
       case 'new':
-        return 'NEW CHANNEL GUIDE'
+        return 'NEW MY GUIDE'
       case 'save':
         return `${name} SAVED`
       case 'duplicate':
         return `${name} SAVED AS A COPY`
       case 'delete':
-        return 'CHANNEL GUIDE DELETED'
+        return 'MY GUIDE DELETED'
       case 'load':
         return `${name} LOADED`
       case 'clear':
-        return 'CHANNEL GUIDE CLEARED'
+        return 'MY GUIDE CLEARED'
       case 'rename':
         return `RENAMED ${name}`
       default:
@@ -1387,7 +1390,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const playGuideAction = (fromIndex = 0) => {
     const current = guideLibraryRef.current.current
     if (!current || current.items.length === 0) {
-      flash('THIS CHANNEL GUIDE IS EMPTY')
+      flash('MY GUIDE IS EMPTY')
       return
     }
     playGuideFrom({ guide: structuredClone(current), index: fromIndex, state: 'active', programmeId: null, endsAt: null, skipped: [] }, fromIndex, 1)
@@ -2660,14 +2663,28 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
-  /** Move one user channel to where `to` is in the User Network, and renumber from 1001. */
+  /** MOVE TO: one user channel taken out and put in at User position `to`; the rest close up and renumber from 1001. */
   const moveUserChannel = useCallback(
     async (number: number, to: number) => {
       const order = userOrder(migrateLegacyUserNumbers(await loadStoredSources()).sources)
       const from = order.find((source) => source.channelNumber === number)
-      const at = order.findIndex((source) => source.channelNumber === to)
-      if (!from || at < 0) throw new Error('That channel is no longer in your User Network')
-      return reorderUserNetwork(moveTo(order.map((source) => source.id), from.id, at))
+      if (!from) throw new Error('That channel is no longer in your User Network')
+      const target = moveTarget(order, to)
+      if ('error' in target) throw new Error(target.error)
+      return reorderUserNetwork(moveTo(order.map((source) => source.id), from.id, target.index))
+    },
+    [reorderUserNetwork],
+  )
+
+  /** SORT A–Z or RANDOMISE: the whole User Network put in a new order once, kept as its running order. */
+  const arrangeUserNetwork = useCallback(
+    async (how: 'alphabetical' | 'shuffle') => {
+      const sources = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      const shown = new Map(listChannels().map((channel) => [channel.id, channel.name]))
+      const ids = how === 'alphabetical' ? alphabeticalOrder(sources, (source) => shown.get(`user-${source.id}`) ?? source.name) : shuffledOrder(userOrder(sources).map((source) => source.id))
+      const done = await reorderUserNetwork(ids)
+      if (done === 'THE ORDER IS UNCHANGED') return how === 'alphabetical' ? 'THE USER NETWORK IS ALREADY A–Z' : done
+      return done.replace('USER NETWORK RENUMBERED', how === 'alphabetical' ? 'USER NETWORK SORTED A–Z' : 'USER NETWORK RANDOMISED')
     },
     [reorderUserNetwork],
   )
@@ -2982,6 +2999,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       sourceArchive,
       deleteUserChannel,
       moveUserChannel,
+      arrangeUserNetwork,
       restoreCuratedChannel,
       setSourceOverride,
       playSession,
@@ -2995,6 +3013,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importChannelFile,
       deleteUserChannel,
       moveUserChannel,
+      arrangeUserNetwork,
       restoreCuratedChannel,
       playSession,
       importSession,

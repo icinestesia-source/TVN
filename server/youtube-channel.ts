@@ -10,6 +10,8 @@ export interface ResolvedVideo {
   id: string
   title: string
   durationSec: number
+  /** Upload day (YYYY-MM-DD), where the source's public feed gave one. */
+  published?: string
 }
 
 export interface ResolvedChannel {
@@ -341,6 +343,36 @@ async function embeddable(id: string, read: typeof fetch): Promise<boolean> {
   }
 }
 
+/**
+ * Upload days by video id from a channel's or playlist's public feed. Listing pages give only "3 years
+ * ago", and the feed gives the exact day for the newest entries in one keyless request for the whole
+ * source, never one per video.
+ */
+export function feedDates(xml: string): Map<string, string> {
+  const days = new Map<string, string>()
+  for (const entry of xml.split('<entry>').slice(1)) {
+    const id = entry.match(/<yt:videoId>([\w-]{11})<\/yt:videoId>/)?.[1]
+    const day = entry.match(/<published>(\d{4}-\d{2}-\d{2})T/)?.[1]
+    if (id && day && !days.has(id)) days.set(id, day)
+  }
+  return days
+}
+
+async function readFeedDates(query: string, read: typeof fetch): Promise<Map<string, string>> {
+  try {
+    const response = await read(`https://www.youtube.com/feeds/videos.xml?${query}`, { headers: HEADERS })
+    return response.ok ? feedDates(await response.text()) : new Map()
+  } catch {
+    return new Map()
+  }
+}
+
+const withDates = (videos: readonly ResolvedVideo[], days: ReadonlyMap<string, string>): ResolvedVideo[] =>
+  videos.map((video) => {
+    const published = video.published ?? days.get(video.id)
+    return published ? { ...video, published } : video
+  })
+
 export async function resolveChannel(raw: string, read: typeof fetch = fetch, options: { wide?: boolean } = {}): Promise<ResolvedChannel> {
   const keep = options.wide ? WIDE_KEEP : KEEP
   const input = parseChannelInput(raw)
@@ -350,14 +382,14 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
     const list = await readPlaylist(input.id, read, pages)
     const listed = list.videos.filter((video) => video.durationSec >= MIN_SECONDS)
     if (listed.length === 0) throw new ChannelError(404, 'That playlist has no videos TVN can schedule')
-    const kept = await embeddableVideos(listed, read, keep)
+    const [kept, days] = await Promise.all([embeddableVideos(listed, read, keep), readFeedDates(`playlist_id=${input.id}`, read)])
     if (kept.videos.length === 0) throw new ChannelError(422, 'That playlist does not allow its videos to play outside YouTube')
     const ownerId = playlistOwnerFrom(list.data)
     return {
       channelId: input.id,
       sourceType: 'youtube-playlist',
       title: playlistTitleFrom(list.data) ?? input.id,
-      videos: kept.videos,
+      videos: withDates(kept.videos, days),
       scanned: listed.length,
       refused: kept.refused,
       ...(ownerId ? { ownerId } : {}),
@@ -372,9 +404,9 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   const listed = list.videos.filter((video) => video.durationSec >= MIN_SECONDS)
   if (listed.length === 0) throw new ChannelError(404, 'That channel has no videos TVN can schedule')
 
-  const { videos, refused } = await embeddableVideos(listed, read, keep)
+  const [{ videos, refused }, days] = await Promise.all([embeddableVideos(listed, read, keep), readFeedDates(`channel_id=${channelId}`, read)])
   if (videos.length === 0) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
-  return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos, scanned: listed.length, refused, pages: list.pages }
+  return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos: withDates(videos, days), scanned: listed.length, refused, pages: list.pages }
 }
 
 async function channelNamed(input: Exclude<ChannelInput, { kind: 'playlist' }>, read: typeof fetch): Promise<{ channelId: string; title: string | null }> {

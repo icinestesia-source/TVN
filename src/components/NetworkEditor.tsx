@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { listChannels } from '../data/catalogue.ts'
-import { channelMatchesFilter, USER_NUMBER_START } from '../data/network.ts'
+import { channelMatchesFilter } from '../data/network.ts'
 import { userFilter } from '../data/user-network/users.ts'
 import type { StoredSource } from '../services/channels-import.ts'
 import { loadStoredSources } from '../services/user-db.ts'
@@ -10,8 +10,8 @@ import type { Channel } from '../types/channel.ts'
 import type { GuideFilter } from '../types/preferences.ts'
 import { networkRows, networkStatus, unloaded } from '../view/network-rows.ts'
 
-/** The editor's lists: the Guide's own tabs, and TVN's shipped 001–999 on their own. */
-type EditorList = GuideFilter | 'central'
+/** The editor's lists: ALL, USER (1001+), each named user's channels, and FAV. */
+type EditorList = GuideFilter
 
 const pad = (number: number) => String(number).padStart(3, '0')
 const isUser = (channel: Channel) => channel.origin === 'user-import' || channel.origin === 'user-created'
@@ -28,16 +28,17 @@ function keepKey(event: KeyboardEvent<HTMLElement>) {
 
 /** A channel as listed here: hidden and resting channels too, which the Guide leaves out. */
 function listedIn(channel: Channel, list: EditorList, favourites: readonly number[]): boolean {
-  if (list === 'central') return !isUser(channel) && channel.origin !== 'session' && channel.origin !== 'tvn' && channel.number < USER_NUMBER_START && channelMatchesFilter({ ...channel, enabled: true }, 'all', favourites)
+  // USER is the whole User Network, 1001+, whoever's channel it is.
+  if (list === 'user') return isUser(channel)
   return channelMatchesFilter({ ...channel, enabled: true }, list, favourites)
 }
 
 /**
- * NETWORK EDITOR (TVN in the Guide's header): the television network itself, in the same lists the Guide
- * has. Each row is one channel, wherever it is listed: renaming, deleting or renumbering it shows in every
- * list at once, because every list is a view of the one network. User channels (1001+) can be moved, which
- * renumbers the User Network from 1001; TVN's 001–999 keep their numbers. EDIT opens the Channel Editor
- * the Guide already has, and 000 opens TVN's own settings.
+ * NETWORK EDITOR (TVN in the header): the television network itself, as ALL, USER and FAV. Each row is one
+ * channel, wherever it is listed: renaming, deleting or renumbering it shows in every list at once, because
+ * every list is a view of the one network. User channels (1001+) can be moved, wherever they are listed, by
+ * ↑ ↓, MOVE TO, dragging, SORT A–Z or RANDOMISE; each renumbers the User Network from 1001 and is kept as its
+ * running order. TVN's 001–999 keep their numbers. EDIT opens the Channel Editor, and 000 opens TVN's settings.
  */
 export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => void }) {
   const tv = useTv()
@@ -45,6 +46,8 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState<number | null>(null)
+  const [confirm, setConfirm] = useState<'alphabetical' | 'shuffle' | null>(null)
+  const [targets, setTargets] = useState<Record<string, string>>({})
   const listRef = useRef<HTMLOListElement>(null)
   // What is stored, not only what can air: a channel whose source has not been read yet is still a channel.
   const [stored, setStored] = useState<readonly StoredSource[]>([])
@@ -69,11 +72,12 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list, tv.favourites, tv.visibleChannels, tv.networkUsers, stored])
 
-  const canMove = list !== 'favourites' && list !== 'central'
+  const canMove = list !== 'favourites'
   const users = rows.filter(isUser)
 
   const move = async (channel: Channel, to: number | undefined, focus = true) => {
     if (to === undefined || to === channel.number || busy) return
+    setConfirm(null)
     setBusy(true)
     try {
       const id = channel.id
@@ -87,6 +91,35 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
       setBusy(false)
     }
   }
+  const moveToTyped = (channel: Channel) => {
+    const typed = (targets[channel.id] ?? '').trim()
+    const to = Number(typed)
+    if (!typed || !Number.isInteger(to)) {
+      setNote('TYPE THE USER NUMBER TO MOVE IT TO')
+      return
+    }
+    setTargets((current) => ({ ...current, [channel.id]: '' }))
+    void move(channel, to)
+  }
+
+  /** SORT A–Z and RANDOMISE renumber the whole User Network, so each asks once before it runs. */
+  const arrange = async (how: 'alphabetical' | 'shuffle') => {
+    if (busy) return
+    if (confirm !== how) {
+      setConfirm(how)
+      return
+    }
+    setConfirm(null)
+    setBusy(true)
+    try {
+      setNote(await tv.arrangeUserNetwork(how))
+    } catch (caught) {
+      setNote(message(caught, 'THE USER NETWORK COULD NOT BE REORDERED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const neighbour = (channel: Channel, step: -1 | 1) => users[users.findIndex((item) => item.number === channel.number) + step]?.number
 
   const rowKey = (event: KeyboardEvent<HTMLLIElement>, channel: Channel) => {
@@ -115,8 +148,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
 
   const tabs: [EditorList, string][] = [
     ['all', 'All'],
-    ['central', '001–999'],
-    ['user', 'TVN'],
+    ['user', 'User'],
     ...tv.networkUsers.map((user) => [userFilter(user.id), user.name] as [EditorList, string]),
     ['favourites', 'Fav'],
   ]
@@ -127,13 +159,34 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
         <h3 className="options-head">Network editor</h3>
         <div className="tabs" role="tablist" aria-label="Network lists">
           {tabs.map(([id, label]) => (
-            <button key={id} type="button" role="tab" aria-selected={list === id} className={list === id ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => setList(id)}>
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={list === id}
+              className={list === id ? 'tab is-on' : 'tab'}
+              onKeyDown={keepKey}
+              onClick={() => {
+                setList(id)
+                setConfirm(null)
+              }}
+            >
               {label}
             </button>
           ))}
+          {list === 'user' ? (
+            <span className="network-order" role="group" aria-label="Order the User Network">
+              <button type="button" className={confirm === 'alphabetical' ? 'tab is-on' : 'tab'} disabled={busy || users.length < 2} onKeyDown={keepKey} onClick={() => void arrange('alphabetical')} title="Sort every User channel by name and renumber from 1001">
+                {confirm === 'alphabetical' ? 'Sort User Network A–Z?' : 'Sort A–Z'}
+              </button>
+              <button type="button" className={confirm === 'shuffle' ? 'tab is-on' : 'tab'} disabled={busy || users.length < 2} onKeyDown={keepKey} onClick={() => void arrange('shuffle')} title="Shuffle the User Network once and renumber from 1001">
+                {confirm === 'shuffle' ? 'Randomise User Network?' : 'Randomise'}
+              </button>
+            </span>
+          ) : null}
         </div>
         <p className="network-hint">
-          {canMove ? 'Move your channels with ↑ ↓, Alt+↑ ↓ or by dragging: the User Network renumbers from 1001.' : list === 'central' ? 'TVN’s own channels keep their numbers.' : 'Favourites are listed in your own order.'}
+          {canMove ? 'Move your channels with ↑ ↓, MOVE TO, Alt+↑ ↓ or by dragging: the User Network renumbers from 1001. TVN’s own 001–999 keep their numbers.' : 'Favourites are listed in your own order.'}
         </p>
         {note ? (
           <p className="options-status" role="status">
@@ -188,6 +241,22 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
                     </button>
                     <button type="button" className="tab network-move" disabled={busy || neighbour(channel, 1) === undefined} aria-label={`Move ${channel.name} down`} onKeyDown={keepKey} onClick={() => void move(channel, neighbour(channel, 1))}>
                       ↓
+                    </button>
+                    <input
+                      className="network-target"
+                      value={targets[channel.id] ?? ''}
+                      inputMode="numeric"
+                      maxLength={5}
+                      placeholder={pad(channel.number)}
+                      aria-label={`User number to move ${channel.name} to`}
+                      onChange={(event) => setTargets((current) => ({ ...current, [channel.id]: event.target.value.replace(/[^0-9]/g, '') }))}
+                      onKeyDown={(event) => {
+                        event.stopPropagation()
+                        if (event.key === 'Enter') moveToTyped(channel)
+                      }}
+                    />
+                    <button type="button" className="tab network-move-to" disabled={busy || !(targets[channel.id] ?? '').trim()} onKeyDown={keepKey} onClick={() => moveToTyped(channel)} title={`Insert ${channel.name} at that User number; the channels between move along one`}>
+                      Move to
                     </button>
                   </>
                 ) : null}

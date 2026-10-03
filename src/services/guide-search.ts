@@ -382,13 +382,13 @@ function arrange(pool: readonly ScoredProgramme[], options: { seed: number; prev
   return { picks, seconds }
 }
 
-/** What one channel can give a Channel Guide now: its usable programmes and their running time. */
+/** What one channel can give My Guide now: its usable programmes and their running time. */
 export interface ChannelSupply {
   programmes: number
   seconds: number
 }
 
-/** A channel's programmes as a Channel Guide would use them: no clips under two minutes, no repeats. */
+/** A channel's programmes as My Guide would use them: no clips under two minutes, no repeats. */
 function supplyOf(index: SearchIndex, number: number): IndexedProgramme[] {
   const seen = new Set<string>()
   return index.entries.filter((entry) => {
@@ -398,7 +398,7 @@ function supplyOf(index: SearchIndex, number: number): IndexedProgramme[] {
   })
 }
 
-/** The usable programming a channel offers a Channel Guide, from what TVN already knows: nothing is fetched. */
+/** The usable programming a channel offers My Guide, from what TVN already knows: nothing is fetched. */
 export function channelSupply(index: SearchIndex, number: number): ChannelSupply {
   const entries = supplyOf(index, number)
   return { programmes: entries.length, seconds: entries.reduce((sum, entry) => sum + entry.programme.durationSeconds, 0) }
@@ -412,7 +412,7 @@ export interface ChannelGuide {
 }
 
 /**
- * BUILD GUIDE from CHANNEL SOURCES: a mixed two to four hours from the chosen channels' own programmes, each
+ * BUILD MY GUIDE from MY GUIDE SOURCES: a mixed two to four hours from the chosen channels' own programmes, each
  * channel taking its turn (not strictly in rotation), nothing twice. `seed` varies it; `previous` are the
  * keys of the schedule being replaced, which are passed over where something else will do.
  */

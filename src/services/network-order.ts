@@ -28,6 +28,41 @@ export function moveTo(ids: readonly string[], id: string, to: number): string[]
   return next
 }
 
+const byName = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+
+/**
+ * SORT A–Z: the User Network's ids in human alphabetical order of the names the viewer sees (case and accents
+ * aside, numbers by value). Empty slots keep their relative order after the named channels.
+ */
+export function alphabeticalOrder(sources: readonly StoredSource[], nameOf: (source: StoredSource) => string = (source) => source.name): string[] {
+  const users = userOrder(sources)
+  const named = users.filter((source) => !source.emptySlot)
+  const empty = users.filter((source) => source.emptySlot)
+  const sorted = named
+    .map((source, index) => ({ id: source.id, name: nameOf(source).trim(), index }))
+    .sort((a, b) => byName.compare(a.name, b.name) || a.index - b.index)
+  return [...sorted.map((item) => item.id), ...empty.map((source) => source.id)]
+}
+
+/** RANDOMISE: the ids shuffled once (Fisher–Yates), each order equally likely. */
+export function shuffledOrder(ids: readonly string[], random: () => number = Math.random): string[] {
+  const next = ids.slice()
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(random() * (index + 1))
+    ;[next[index], next[other]] = [next[other]!, next[index]!]
+  }
+  return next
+}
+
+/** MOVE TO: where `target` puts a channel in the User Network, or why it cannot. */
+export function moveTarget(order: readonly StoredSource[], target: number): { index: number } | { error: string } {
+  const last = USER_NUMBER_START + order.length - 1
+  if (!Number.isInteger(target) || target < USER_NUMBER_START || target > last) {
+    return { error: order.length ? `User channels run ${USER_NUMBER_START}–${last}` : 'There are no User channels to move' }
+  }
+  return { index: target - USER_NUMBER_START }
+}
+
 export interface Renumbered {
   sources: StoredSource[]
   /** Old number → new number, for every channel whose number changed. */

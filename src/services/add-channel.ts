@@ -1,4 +1,5 @@
 import type { AddedChannel } from './user-network.ts'
+import { calendarDate } from './channels-import.ts'
 
 /** TVN's own lookup (a Netlify Function in production, the Vite server locally). It needs no key. */
 export const CHANNEL_API = '/api/channel'
@@ -28,9 +29,10 @@ export async function lookUpChannel(link: string, read: typeof fetch = fetch, op
   if (!response.ok || !body) throw new Error(typeof body?.error === 'string' ? body.error : 'The channel could not be added')
   if (typeof body.channelId !== 'string' || !Array.isArray(body.videos)) throw new Error('The channel could not be added')
   const videos = body.videos.flatMap((row) => {
-    const { id, title, durationSec } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown }
+    const { id, title, durationSec, published } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown; published?: unknown }
+    const day = calendarDate(published)
     return typeof id === 'string' && typeof title === 'string' && typeof durationSec === 'number' && durationSec > 0
-      ? [{ id, title, durationSec: Math.round(durationSec) }]
+      ? [{ id, title, durationSec: Math.round(durationSec), ...(day ? { published: day } : {}) }]
       : []
   })
   if (videos.length === 0) throw new Error('That channel has no videos TVN can schedule')

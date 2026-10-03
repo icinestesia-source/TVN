@@ -225,7 +225,7 @@ describe('CREATE GUIDE FROM… search', () => {
     expect(small.small).toBe(true)
   })
 
-  it('shows the words beside CH GUIDE, which turns green while the Channel Guide is watched', () => {
+  it('shows the words beside MY GUIDE, which turns green while My Guide is watched', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, following: true, query: 'Daft Punk', onNow: () => {}, onTool: () => {} }))
     expect(markup).toContain('class="tab guide-follow is-following"')
     expect(markup).toContain('class="tab guide-section is-on"')

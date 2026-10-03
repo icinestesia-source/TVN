@@ -255,8 +255,17 @@ export function previewFilter(source: Pick<ChannelSource, 'videos'>, filter: Sou
 }
 
 /** A rescan's programmes: ALL keeps everything found before (newest first, bounded); the other modes take the fresh list. */
+/** Fresh copies of programmes, each keeping the upload date an earlier read found when this read gave none. */
+export function keepingDates(fresh: readonly ImportedVideo[], held: readonly ImportedVideo[] = []): ImportedVideo[] {
+  const dated = new Map(held.flatMap((video) => (video.published ? [[video.id, video.published] as const] : [])))
+  return fresh.map((video) => {
+    const published = video.published ?? dated.get(video.id)
+    return published ? { ...video, published } : { ...video }
+  })
+}
+
 export function rescanned(fresh: readonly ImportedVideo[], held: readonly ImportedVideo[] = [], mode: SourceMode = 'recent'): ImportedVideo[] {
-  const out = fresh.map((video) => ({ ...video }))
+  const out = keepingDates(fresh, held)
   if (mode === 'all') {
     const seen = new Set(out.map((video) => video.id))
     for (const video of held) if (!seen.has(video.id)) out.push({ ...video })

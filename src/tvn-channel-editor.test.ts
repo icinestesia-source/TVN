@@ -250,7 +250,7 @@ describe('editing one user channel', () => {
     const channel = channelByNumber(1003)!
     const now = broadcast(channel, T0).current.programme
     expect(now.videoId).toBeNull()
-    expect(now.caption).toBe('NO PROGRAMMES · EDIT THIS CHANNEL IN THE GUIDE')
+    expect(now.caption).toBe('NO PROGRAMMES · EDIT THIS CHANNEL IN NETWORK')
   })
 
   it('opening and saving without a change keeps the schedule exactly as it was', () => {
@@ -529,7 +529,7 @@ describe('editing curated 001–999 channels', () => {
     const shipped = shippedChannel(3)!
     saveCuratedEdit(shipped, { name: shipped.name, sources: [{ ...curatedEditOf(shipped, null).sources[0], enabled: false }] }, 1, store)
     layOver(store)
-    expect(broadcast(channelByNumber(3)!, T0).current.programme.caption).toBe('NO PROGRAMMES · EDIT THIS CHANNEL IN THE GUIDE')
+    expect(broadcast(channelByNumber(3)!, T0).current.programme.caption).toBe('NO PROGRAMMES · EDIT THIS CHANNEL IN NETWORK')
     clearCuratedEdit(3, store)
     layOver(store)
     expect(channelByNumber(3)).toBe(shipped)

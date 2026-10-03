@@ -53,7 +53,8 @@ describe('TVN 1.0.8: a YouTube playlist as a User Channel source', () => {
     expect(found).toMatchObject({ channelId: LIST, sourceType: 'youtube-playlist', title: 'Cooking Classics' })
     expect(found.videos.map((video) => video.id)).toEqual(['pppppppppp1', 'pppppppppp2', 'pppppppppp3'])
     const pages = asked.filter((url) => !url.startsWith('https://www.youtube.com/oembed'))
-    expect(pages).toEqual([`https://www.youtube.com/playlist?list=${LIST}`])
+    // The playlist's own page, and its own feed for upload days: never the uploader's.
+    expect(pages).toEqual([`https://www.youtube.com/playlist?list=${LIST}`, `https://www.youtube.com/feeds/videos.xml?playlist_id=${LIST}`])
   })
 
   it('reports a channel link as a channel source', async () => {

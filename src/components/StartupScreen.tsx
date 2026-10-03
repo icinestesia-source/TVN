@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import logoImage from '../assets/TVNolo.png'
 import type { StartupPhase } from '../state/startup.ts'
 import { ringColour } from './ring-colour.ts'
@@ -77,6 +77,13 @@ export function LoadingRing({ percent }: { percent: number }) {
   const [colour] = useState(() => ringColour())
   const phrase = `${STARTUP_COPY.loading.replace(/\.+$/, '')} · ${percent}% · `
   const letters = [...phrase.repeat(2)]
+  // Firefox ignores textLength on a textPath, so the spare length is shared between the letters as dx.
+  const measure = useRef<SVGTextElement>(null)
+  const [gap, setGap] = useState(0)
+  useLayoutEffect(() => {
+    const natural = measure.current?.getComputedTextLength?.() ?? 0
+    setGap(natural > 0 ? (RING_LENGTH - 0.5 - natural) / letters.length : 0)
+  }, [phrase, letters.length])
   const gold = new Set<number>()
   letters.forEach((_, index) => {
     const at = index % phrase.length
@@ -88,12 +95,16 @@ export function LoadingRing({ percent }: { percent: number }) {
       <defs>
         <path id="startup-ring-path" d={RING_PATH} />
       </defs>
+      <text ref={measure} className="startup-ring-text" visibility="hidden" xmlSpace="preserve">
+        {letters.join('')}
+      </text>
       <text className="startup-ring-text">
         <textPath href="#startup-ring-path" textLength={RING_LENGTH - 0.5} lengthAdjust="spacing">
           {letters.map((letter, index) => (
             <tspan
               key={index}
               className={gold.has(index) ? 'is-gold' : undefined}
+              dx={gap && index > 0 ? gap.toFixed(3) : undefined}
               style={{ animationDelay: `${(((index - letters.length) / letters.length) * 2.4).toFixed(3)}s` }}
             >
               {letter}

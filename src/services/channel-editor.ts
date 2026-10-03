@@ -2,6 +2,7 @@ import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import {
   cleanEditorial,
   cleanFilter,
+  keepingDates,
   rescanned,
   sourceModeOf,
   widenSource,
@@ -95,7 +96,7 @@ export function withPlaylistVideos(videos: readonly ImportedVideo[], listed: rea
       continue
     }
     const lists = [...new Set([...(out[index].lists ?? []), ...(video.lists ?? [])])]
-    out[index] = { ...out[index], lists }
+    out[index] = { ...out[index], lists, ...(!out[index].published && video.published ? { published: video.published } : {}) }
   }
   return out
 }
@@ -108,7 +109,7 @@ export function widenSources(sources: readonly ChannelSource[], archiveOf: ((sou
 /** A rescanned list: the uploader's current programmes first, then everything it already had that they do not repeat. */
 function mergedFresh(fresh: readonly ImportedVideo[], kept: readonly ImportedVideo[] = []): ImportedVideo[] {
   const seen = new Set(fresh.map((video) => video.id))
-  return [...fresh.map((video) => ({ ...video })), ...kept.filter((video) => !seen.has(video.id)).map((video) => ({ ...video }))]
+  return [...keepingDates(fresh, kept), ...kept.filter((video) => !seen.has(video.id)).map((video) => ({ ...video }))]
 }
 
 const copySource = (source: ChannelSource): ChannelSource => ({
