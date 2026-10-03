@@ -166,15 +166,15 @@ describe('FAV DELETE', () => {
 describe('DATE', () => {
   const at = (publishedAt?: string, source?: Programme['source']) => programmeDate({ publishedAt, source } as Programme)
 
-  it('YouTube upload time, podcast dates and plain dates read DDMMYY with no timezone shift', () => {
-    expect(at('2019-05-03T23:30:00Z')).toBe('(030519)')
-    expect(at('2019-05-03T00:10:00+09:00')).toBe('(030519)')
-    expect(at('2021-12-31')).toBe('(311221)')
-    expect(at('2024-02-29')).toBe('(290224)')
+  it('YouTube upload time, podcast dates and plain dates read DD/MM/YY with no timezone shift', () => {
+    expect(at('2019-05-03T23:30:00Z')).toBe('(03/05/19)')
+    expect(at('2019-05-03T00:10:00+09:00')).toBe('(03/05/19)')
+    expect(at('2021-12-31')).toBe('(31/12/21)')
+    expect(at('2024-02-29')).toBe('(29/02/24)')
   })
 
-  it('unknown, malformed and demonstration dates read (------); nothing is guessed', () => {
-    expect(UNKNOWN_DATE).toBe('(------)')
+  it('unknown, malformed and demonstration dates read (--/--/--); nothing is guessed', () => {
+    expect(UNKNOWN_DATE).toBe('(--/--/--)')
     for (const value of [undefined, '', 'yesterday', '2021-02-30', '2023-02-29', '2021-13-01', '1899-12-31', '03/05/2019', 'Episode 2019-05-03']) {
       expect(at(value), String(value)).toBe(UNKNOWN_DATE)
     }
@@ -186,7 +186,7 @@ describe('DATE', () => {
     const programme = { id: 'p', title: 'A Long Title', description: '', durationSeconds: 600, videoId: 'abcdefghijk', publishedAt: '2020-07-14T10:00:00Z' } as Programme
     const html = renderToStaticMarkup(createElement(ProgrammeInfo, { channel, programme, startMs: 0, endMs: 600_000, now: 0 }))
     expect(html).toContain('<h2 class="info-title">A Long Title</h2>')
-    expect(html).toContain('<span>10 min</span><span class="info-date">(140720)</span>')
+    expect(html).toContain('<span>10 min</span><span class="info-date">(14/07/20)</span>')
     expect(guideProgramme(programme).publishedAt).toBe('2020-07-14T10:00:00Z')
     expect(read('src/styles/guide.css')).toMatch(/\.info-date \{[^}]*white-space: nowrap/)
     expect(read('src/components/Guide.tsx')).not.toContain('programmeDate')

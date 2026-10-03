@@ -57,6 +57,8 @@ export interface TvContextValue {
   /** The Guide's timeline zoom: chosen for the listings when the Guide opens, then the viewer's; NOW restores 1. */
   guideZoom: number
   setGuideZoom: (zoom: number) => void
+  /** Counts NOW presses that brought the Guide to the current time: each one centres the channel playing. */
+  guideNowAsk: number
   guideOpen: boolean
   guideMode: GuideMode
   guideSplit: number

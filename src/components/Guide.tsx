@@ -433,6 +433,22 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     setScrollLeft(grid.scrollLeft)
   }, [focused, focusedChannel?.number, pxPerMinute, startMs, tv.guideCursor, tv.visibleChannels])
 
+  // NOW centres the channel playing, with the current time in view as when the Guide opens.
+  const nowAsked = useRef(tv.guideNowAsk)
+  useLayoutEffect(() => {
+    if (nowAsked.current === tv.guideNowAsk) return
+    nowAsked.current = tv.guideNowAsk
+    const grid = gridRef.current
+    if (!grid) return
+    grid.scrollLeft = openScrollLeft(Date.now(), startMs, pxPerMinute, grid.clientWidth)
+    const index = tv.visibleChannels.findIndex((channel) => channel.number === tv.guideCursor.channelNumber)
+    if (index >= 0) grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, tv.visibleChannels.length)
+    if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
+    if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
+    setScrollTop(grid.scrollTop)
+    setScrollLeft(grid.scrollLeft)
+  }, [tv.guideNowAsk, tv.guideCursor, tv.visibleChannels, startMs, pxPerMinute])
+
   useLayoutEffect(() => {
     const target = bandJump.current
     const grid = gridRef.current
@@ -551,6 +567,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           following={following}
           query={tv.guideSearch && tv.guideLibrary.current?.id === tv.guideSearch.guideId ? tv.guideSearch.query : null}
           onNow={() => tv.dispatch({ type: 'guide-now' })}
+          onClose={() => tv.dispatch({ type: 'cancel' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
           onGuideSearch={() => {
             setSearchAsk((asked) => asked + 1)

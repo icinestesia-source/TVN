@@ -192,9 +192,9 @@ describe('Guide timeline zoom', () => {
   })
 
   it('14. NOW still returns the Guide to the current time', () => {
-    const now = provider.slice(provider.indexOf("case 'guide-now': {"), provider.indexOf("case 'guide-now': {") + 1400)
+    const now = provider.slice(provider.indexOf("case 'guide-now': {"), provider.indexOf("case 'guide-now': {") + 2200)
     expect(now).toContain('if (clearManual())')
-    expect(now).toContain('const nextCursor = { ...cursorRef.current, timeMs: now }')
+    expect(now).toContain('const nextCursor = { channelNumber: channelRef.current, timeMs: now }')
     expect(now).toContain('setGuideCursor(nextCursor)')
     expect(now).toContain('const nextWindow = windowAround(now)')
     // NOW carries no aimed anchor, so the reveal still scrolls the current programme into view.

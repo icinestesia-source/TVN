@@ -38,6 +38,7 @@ export function GuideActions({
   following = false,
   query = null,
   onNow,
+  onClose,
   onTool,
   onGuideSearch,
 }: {
@@ -49,6 +50,8 @@ export function GuideActions({
   /** A viewing Guide is choosing what plays. */
   following?: boolean
   onNow: () => void
+  /** GUIDE pressed while the listings are already showing: the same as CLOSE. */
+  onClose?: () => void
   onTool: (tool: GuideTool) => void
   /** CREATE GUIDE FROM…: a right-click or a hold on GUIDE. */
   onGuideSearch?: () => void
@@ -57,9 +60,11 @@ export function GuideActions({
   const openGuide = () => {
     if (!open) onTool('guides')
   }
-  // GUIDE is the television listings: from any panel standing in their place it brings them back.
+  // GUIDE is the television listings: from any panel standing in their place it brings them back; over the
+  // listings themselves it closes the Guide, as CLOSE does.
   const listings = () => {
     if (tool && tool !== 'edit') onTool(tool)
+    else onClose?.()
   }
   const action = (label: string, on: boolean, run: () => void, title?: string, extra = '') => (
     <button type="button" className={`${on ? 'tab is-on' : 'tab'}${extra}`} aria-pressed={on} title={title} onKeyDown={keepKey} onClick={run}>
@@ -86,7 +91,7 @@ export function GuideActions({
         </span>
       ) : null}
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
-      {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'Back to the current time')}
+      {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'The channel playing, now · press again for the picture')}
       {action('Add', tool === 'add', () => onTool('add'))}
       {action('Media', tool === 'media', () => onTool('media'))}
     </div>

@@ -202,6 +202,27 @@ describe('EDITOR TABS and TERMINOLOGY', () => {
   })
 })
 
+describe('GUIDE and NOW in the header', () => {
+  it('GUIDE over the listings closes the Guide as CLOSE does; from a panel it brings the listings back', () => {
+    const actions = read('src/components/GuideAdd.tsx')
+    expect(actions).toContain("if (tool && tool !== 'edit') onTool(tool)\n    else onClose?.()")
+    expect(read('src/components/Guide.tsx')).toContain("onClose={() => tv.dispatch({ type: 'cancel' })}")
+  })
+
+  it('NOW centres the channel playing at the current time; a second NOW, cursor untouched, returns to the picture', () => {
+    const now = provider.slice(provider.indexOf("case 'guide-now': {"), provider.indexOf("case 'guide-now': {") + 2200)
+    expect(now).toContain('cursorRef.current === nowCursorRef.current')
+    expect(now.indexOf('closeGuide()')).toBeLessThan(now.indexOf('guideEngine.current.suspend()'))
+    expect(now).toContain("showOverlay('info', INFO_MS)")
+    expect(now).toContain('const nextCursor = { channelNumber: channelRef.current, timeMs: now }')
+    expect(now).toContain('setGuideNowAsk((asked) => asked + 1)')
+    const guide = read('src/components/Guide.tsx')
+    const centre = guide.slice(guide.indexOf('const nowAsked'), guide.indexOf('const nowAsked') + 900)
+    expect(centre).toContain('centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, tv.visibleChannels.length)')
+    expect(centre).toContain('openScrollLeft(Date.now(), startMs, pxPerMinute, grid.clientWidth)')
+  })
+})
+
 describe('LOADING RING in Firefox', () => {
   it('fills the whole rim without textLength: the spare length is shared between the letters as dx', () => {
     const ring = read('src/components/StartupScreen.tsx')
@@ -212,14 +233,14 @@ describe('LOADING RING in Firefox', () => {
   })
 })
 
-describe('DATES: canonical YYYY-MM-DD, shown DDMMYY or (------)', () => {
+describe('DATES: canonical YYYY-MM-DD, shown DD/MM/YY or (--/--/--)', () => {
   const at = (publishedAt?: string) => programmeDate({ publishedAt } as Programme)
 
   it('validates the canonical day and never guesses', () => {
     expect(calendarDate('2024-09-03T23:30:00+00:00')).toBe('2024-09-03')
     expect(calendarDate('2024-02-29')).toBe('2024-02-29')
     for (const bad of ['2023-02-29', '2024-13-01', 'Episode 2019-05-03', '03/09/2024', '', undefined, 20240903]) expect(calendarDate(bad), String(bad)).toBeUndefined()
-    expect(at('2026-09-03')).toBe('(030926)')
+    expect(at('2026-09-03')).toBe('(03/09/26)')
     expect(at(undefined)).toBe(UNKNOWN_DATE)
     expect(at('not a date')).toBe(UNKNOWN_DATE)
   })
@@ -238,7 +259,7 @@ describe('DATES: canonical YYYY-MM-DD, shown DDMMYY or (------)', () => {
     const list = channelsFromSources([source]).programmes.get(`user-${source.id}`) ?? []
     const first = list.find((programme) => programme.videoId === 'aaaaaaaaaa1')
     expect(first?.publishedAt).toBe('2026-09-03')
-    expect(programmeDate(first!)).toBe('(030926)')
+    expect(programmeDate(first!)).toBe('(03/09/26)')
     expect(programmeDate(list.find((programme) => programme.videoId === 'aaaaaaaaaa2')!)).toBe(UNKNOWN_DATE)
     expect(guideProgramme(first!).publishedAt).toBe('2026-09-03')
     const collection = { ...source, channelSources: [{ id: 's1', kind: 'collection', label: 'Dated', enabled: true, url: '', ref: 'Dated', videos: source.videos }] } as StoredSource

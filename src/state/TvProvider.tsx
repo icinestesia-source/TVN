@@ -428,6 +428,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const guideOpen = guideMode !== 'closed'
   const [guideQuery, setGuideQuery] = useState('')
   const [guideZoom, setGuideZoomState] = useState(1)
+  const [guideNowAsk, setGuideNowAsk] = useState(0)
+  // The cursor NOW last placed: while it is still the cursor, a second NOW goes back to the picture.
+  const nowCursorRef = useRef<GuideCursor | null>(null)
   const setGuideZoom = useCallback((zoom: number) => setGuideZoomState(clampZoom(zoom)), [])
   const guideList = useMemo(() => {
     const listed = listChannels().filter((item) => channelMatchesFilter(item, guideFilter, favourites))
@@ -1774,6 +1777,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
         break
       }
       case 'guide-now': {
+        // A second NOW, the cursor still where the first left it, goes back to the playing picture.
+        if (guideOpenRef.current && nowCursorRef.current !== null && cursorRef.current === nowCursorRef.current && manualAiring(channelRef.current, Date.now()) === null) {
+          nowCursorRef.current = null
+          closeGuide()
+          showOverlay('info', INFO_MS)
+          break
+        }
         // Back to television as it is airing: a Guide pick ends and the broadcast resumes in place.
         guideEngine.current.suspend()
         if (clearManual()) {
@@ -1787,9 +1797,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (!guideOpenRef.current) break
         setGuideZoomState(1)
         const now = Date.now()
-        const nextCursor = { ...cursorRef.current, timeMs: now }
+        // NOW is the channel playing, at the current time, centred in the listings.
+        const nextCursor = { channelNumber: channelRef.current, timeMs: now }
         cursorRef.current = nextCursor
+        nowCursorRef.current = nextCursor
         setGuideCursor(nextCursor)
+        setGuideNowAsk((asked) => asked + 1)
         if (now < windowRef.current.startMs || now > windowRef.current.endMs) {
           const nextWindow = windowAround(now)
           windowRef.current = nextWindow
@@ -2910,6 +2923,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       setGuideQuery,
       guideZoom,
       setGuideZoom,
+      guideNowAsk,
       guideOpen,
       guideMode,
       guideSplit,
@@ -3045,6 +3059,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideQuery,
       guideZoom,
       setGuideZoom,
+      guideNowAsk,
       guideMode,
       guideSplit,
       guideWindow,

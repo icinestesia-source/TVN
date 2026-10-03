@@ -79,7 +79,7 @@ describe('the time line', () => {
     expect(airing).not.toContain('info-status')
     expect(airing).not.toContain('News')
     expect(airing).not.toContain('info-meta')
-    expect(airing).toMatch(/<p class="info-time"><span class="info-kind">Video<\/span><span>[^<]+<\/span><span>[^<]+<\/span><span class="info-date">\([0-9-]{6}\)<\/span><span>[^<]+<\/span><\/p>/)
+    expect(airing).toMatch(/<p class="info-time"><span class="info-kind">Video<\/span><span>[^<]+<\/span><span>[^<]+<\/span><span class="info-date">\([0-9-]{2}\/[0-9-]{2}\/[0-9-]{2}\)<\/span><span>[^<]+<\/span><\/p>/)
   })
 
   it('still names the exceptions, and never repeats the creator, type or tags', () => {
