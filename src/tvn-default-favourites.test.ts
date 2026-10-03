@@ -258,7 +258,7 @@ describe('unchanged around it', () => {
   const css = read('src/styles/guide.css')
 
   it('keeps the tabs, the yellow playing programme and the gold cursor', () => {
-    expect(guide).toMatch(/\['all', 'All'\],\s*\['user', 'TVN'\],\s*\.\.\.tv\.networkUsers\.map/)
+    expect(guide).toMatch(/\['all', 'All'\],\s*\['user', userNetworkName\(undefined, tv\.networkUsers\)\],\s*\.\.\.tv\.networkUsers\.map/)
     const plus = guide.indexOf('className={tool === \'users\' ? \'tab guide-plus is-on\'')
     expect(plus).toBeGreaterThan(guide.indexOf('...tv.networkUsers.map'))
     expect(plus).toBeLessThan(guide.indexOf('            Fav\n'))

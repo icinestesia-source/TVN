@@ -39,7 +39,7 @@ import { GuideOptions } from './GuideOptions.tsx'
 import { NetworkEditor } from './NetworkEditor.tsx'
 import { GuidePanel } from './GuidePanel.tsx'
 import { AddChannelForm, GuideActions, NewUserTools, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
-import { filterUserId, freeUserName, TVN_OWNER, userFilter } from '../data/user-network/users.ts'
+import { filterUserId, freeUserName, TVN_OWNER, userFilter, userNetworkName } from '../data/user-network/users.ts'
 import { ChannelEditor } from './ChannelEditor.tsx'
 import { useEditPress } from './use-edit-press.ts'
 import { createLongPress, editorScope } from '../view/channel-edit.ts'
@@ -525,7 +525,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {(
             [
               ['all', 'All'],
-              ['user', 'TVN'],
+              ['user', userNetworkName(undefined, tv.networkUsers)],
               ...tv.networkUsers.map((user) => [userFilter(user.id), user.name] as const),
             ] as const
           ).map(([filter, label]) => (

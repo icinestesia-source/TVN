@@ -8,7 +8,7 @@ const css = read('src/styles/guide.css')
 
 describe('Guide tabs: All · TVN · users · + · Fav', () => {
   it('lists the viewer’s own network as TVN, with no separate TVN-only tab', () => {
-    expect(guide).toMatch(/\['all', 'All'\],\s*\['user', 'TVN'\],\s*\.\.\.tv\.networkUsers\.map/)
+    expect(guide).toMatch(/\['all', 'All'\],\s*\['user', userNetworkName\(undefined, tv\.networkUsers\)\],\s*\.\.\.tv\.networkUsers\.map/)
     const plus = guide.indexOf('className={tool === \'users\' ? \'tab guide-plus is-on\'')
     expect(plus).toBeGreaterThan(guide.indexOf('...tv.networkUsers.map'))
     expect(plus).toBeLessThan(guide.indexOf('            Fav\n'))

@@ -169,13 +169,12 @@ describe('STABLE IDENTITY after a renumber', () => {
 })
 
 describe('EDITOR TABS and TERMINOLOGY', () => {
-  it('the Network Editor lists ALL, USER and FAV; the 0–999 tab is gone', () => {
+  it('the Network Editor lists ALL, the named User Network and FAV; the 0–999 tab is gone', () => {
     expect(editor).toContain("['all', 'All']")
-    expect(editor).toContain("['user', 'User']")
+    expect(editor).toContain("['user', userNetworkName(undefined, tv.networkUsers)]")
     expect(editor).toContain("['favourites', 'Fav']")
     const tabs = editor.slice(editor.indexOf("['all', 'All']"), editor.indexOf("['favourites', 'Fav']"))
-    expect(tabs).not.toMatch(/TVN|001–999|0–999|'tvn'/)
-    expect(editor).toContain("if (list === 'user') return isUser(channel)")
+    expect(tabs).not.toMatch(/'TVN'|'User'|001–999|0–999|'tvn'/)
   })
 
   it('the header reads NETWORK · GUIDE · MY GUIDE · OPTIONS · NOW · ADD · MEDIA, and no CH GUIDE remains', () => {

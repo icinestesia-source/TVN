@@ -80,7 +80,7 @@ describe('TVN brand', () => {
     const html = readFileSync('index.html', 'utf8')
     expect(html).toContain('<title>TVN</title>')
     expect(html).not.toMatch(/retro ?tv/i)
-    expect(readFileSync('src/components/Guide.tsx', 'utf8')).toContain("['user', 'TVN']")
+    expect(readFileSync('src/components/Guide.tsx', 'utf8')).toContain("['user', userNetworkName(undefined, tv.networkUsers)]")
     expect(networkLabel({ number: 101, origin: 'default' } as Channel)).toBeNull()
   })
 

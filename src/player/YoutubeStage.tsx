@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
 import { CaptionController } from './captions.ts'
 import { loadYouTubeApi } from './load-api.ts'
 import { PLAYER_LOAD_TIMEOUT_MS, playingRequested } from './picture.ts'
+import { shieldProviderFrame } from './picture-shield.ts'
 import { notePlayback } from './trace.ts'
 import type { LoadResult, PlayerHandle, PlayerLoadRequest, PlayerStatus } from './types.ts'
 import type { YouTubePlayer } from '../types/youtube.ts'
@@ -215,6 +216,7 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
     loadYouTubeApi()
       .then(() => {
         if (destroyed || !hostRef.current || !window.YT) return
+        const slot = hostRef.current.parentElement
         created = new window.YT.Player(hostRef.current, {
           width: '100%',
           height: '100%',
@@ -236,6 +238,7 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
                 event.target.destroy()
                 return
               }
+              shieldProviderFrame(event.target.getIframe?.())
               ytRef.current = event.target
               const queued = queuedRef.current
               queuedRef.current = null
@@ -278,6 +281,7 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
             },
           },
         })
+        shieldProviderFrame(slot?.querySelector('iframe'))
       })
       .catch(() => {
         if (destroyed) return

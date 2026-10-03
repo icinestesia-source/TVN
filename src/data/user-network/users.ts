@@ -7,6 +7,10 @@ export const USER_FILTER_PREFIX = 'user:'
 export const USER_NAME_MAX = 24
 /** The built-in owner of every user channel no named user holds. Never a NetworkUser, never deleted. */
 export const TVN_OWNER = 'tvn'
+/** The name the built-in owner's User Network goes by. */
+export const TVN_OWNER_NAME = 'TVN'
+/** What a User Network tab says when its owner has no name to show. */
+export const USER_NETWORK_FALLBACK = 'User'
 export const USER_ID = /^u[a-z0-9]+$/
 const RESERVED = ['all', 'tvn', 'fav', 'favourites']
 
@@ -77,6 +81,15 @@ export function addUser(users: readonly NetworkUser[], name: string, now: number
 
 export function userFilter(id: string): `user:${string}` {
   return `${USER_FILTER_PREFIX}${id}`
+}
+
+/**
+ * The name of the User Network an owner holds, as its tab shows it: the built-in owner's (no owner is TVN's),
+ * a named user's own, or USER when the owner has no name here.
+ */
+export function userNetworkName(owner: string | undefined, users: readonly NetworkUser[]): string {
+  if (owner === undefined || owner === TVN_OWNER) return TVN_OWNER_NAME
+  return users.find((user) => user.id === owner)?.name.trim() || USER_NETWORK_FALLBACK
 }
 
 /** The user a Guide filter lists, or null for every other filter (TVN included). */

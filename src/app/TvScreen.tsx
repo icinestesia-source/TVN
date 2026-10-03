@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createWheelStepper, swipeStep } from '../input/gestures.ts'
 import { PlayerStage } from '../player/PlayerStage.tsx'
 import { pictureOwner } from '../player/picture.ts'
+import { guardProviderFocus } from '../player/picture-shield.ts'
 import { SessionCard } from '../components/SessionCard.tsx'
 import { TvnChannelPanel } from '../components/TvnChannelPanel.tsx'
 import { screenFace } from './screen-face.ts'
@@ -72,6 +73,7 @@ export function TvScreen() {
   const programme = onScreen(tv.channel, now).current.programme
   const [held, setHeld] = useState(false)
   const holding = held && single
+  useEffect(() => guardProviderFocus(), [])
   // INSTANT holds the old picture while the destination loads unseen: nothing is drawn over it until the cut.
   const face = holding ? 'picture' : screenFace(tv.channel, programme, tv.playerStatus)
   const owner = holding ? 'picture' : pictureOwner({ face, live: tv.pictureLive, paused: tv.paused })
@@ -173,6 +175,7 @@ function PictureCatch() {
         else tv.dispatch({ type: 'info' })
       }}
       onDoubleClick={() => tv.dispatch({ type: 'fullscreen' })}
+      onContextMenu={(event) => event.preventDefault()}
       onWheel={(event) => {
         const step = wheel(event)
         if (step) tv.dispatch(step)

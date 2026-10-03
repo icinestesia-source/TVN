@@ -153,7 +153,7 @@ export async function applyBuiltInCatalogues(input: {
 export const STARTER_NETWORK_FILE = '/user-network/starter-network.json'
 
 /** Starter networks TVN shipped before this one: still read so Remove starter finds the channels they installed. */
-export const PREVIOUS_STARTER_FILES = ['/user-network/starter-network-2026-10-02.json'] as const
+export const PREVIOUS_STARTER_FILES = ['/user-network/starter-network-2026-10-02.json', '/user-network/starter-network-2026-10-03.json'] as const
 
 /** The starter network as shipped, read fresh each time and never written to. */
 export async function readStarterNetwork(path: string = STARTER_NETWORK_FILE): Promise<UserNetworkExport> {

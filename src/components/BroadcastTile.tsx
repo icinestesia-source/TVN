@@ -90,6 +90,7 @@ export function BroadcastTile({
       className={focused ? 'tile is-focus' : 'tile'}
       onClick={() => tv.dispatch({ type: 'focus-tile', index })}
       onDoubleClick={() => tv.dispatch({ type: 'confirm' })}
+      onContextMenu={(event) => event.preventDefault()}
     >
       {audio ? <RadioFace channel={channel} compact /> : null}
       {still ? <img className="tile-still" src={still} alt="" loading="lazy" decoding="async" /> : null}

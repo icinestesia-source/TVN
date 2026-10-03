@@ -90,6 +90,10 @@
   z-index: 4;
   /* A vertical swipe on the picture changes channel rather than panning the page. */
   touch-action: pinch-zoom;
+  /* A held touch is TVN's, not the browser's: no callout, no selection, no tap flash over the picture. */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .test-card {

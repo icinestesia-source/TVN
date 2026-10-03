@@ -17,6 +17,8 @@ export interface YouTubePlayer extends CaptionPlayer {
   cueVideoById(videoId: string | { videoId: string; startSeconds?: number }): void
   getVideoData?(): { video_id?: string; title?: string }
   setPlaybackQuality?(suggestedQuality: string): void
+  /** Official IFrame Player API: the iframe that replaced the host element. */
+  getIframe?(): HTMLIFrameElement
 }
 
 export interface YouTubePlayerOptions {

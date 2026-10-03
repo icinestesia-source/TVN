@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { listChannels } from '../data/catalogue.ts'
 import { channelMatchesFilter } from '../data/network.ts'
-import { userFilter } from '../data/user-network/users.ts'
+import { userFilter, userNetworkName } from '../data/user-network/users.ts'
 import type { StoredSource } from '../services/channels-import.ts'
 import { loadStoredSources } from '../services/user-db.ts'
 import { useTv } from '../state/tv-context.ts'
@@ -28,8 +28,7 @@ function keepKey(event: KeyboardEvent<HTMLElement>) {
 
 /** A channel as listed here: hidden and resting channels too, which the Guide leaves out. */
 function listedIn(channel: Channel, list: EditorList, favourites: readonly number[]): boolean {
-  // USER is the whole User Network, 1001+, whoever's channel it is.
-  if (list === 'user') return isUser(channel)
+  // A User Network tab lists its own owner's channels only; named users have tabs of their own.
   return channelMatchesFilter({ ...channel, enabled: true }, list, favourites)
 }
 
@@ -148,7 +147,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
 
   const tabs: [EditorList, string][] = [
     ['all', 'All'],
-    ['user', 'User'],
+    ['user', userNetworkName(undefined, tv.networkUsers)],
     ...tv.networkUsers.map((user) => [userFilter(user.id), user.name] as [EditorList, string]),
     ['favourites', 'Fav'],
   ]
@@ -198,7 +197,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
         {rows.map((channel) => {
           const user = isUser(channel)
           const favourite = tv.favourites.includes(channel.number)
-          const owner = user ? (tv.networkUsers.find((item) => item.id === channel.owner)?.name ?? 'TVN') : null
+          const owner = user ? userNetworkName(channel.owner, tv.networkUsers) : null
           const network = channel.number === TVN_CHANNEL_NUMBER ? 'TVN' : user ? `User · ${owner}` : channel.origin === 'session' ? 'Local' : 'TVN 001–999'
           const movable = canMove && user
           return (
