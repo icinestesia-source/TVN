@@ -324,7 +324,20 @@ export function buildSearchGuide(index: SearchIndex, text: string, options: { se
   const seed = options.seed ?? 0
   const previous = options.previous ?? new Set<string>()
   const pool = scored.slice(0, CANDIDATES)
-  const top = pool[0]?.score ?? 1
+  const { picks, seconds } = arrange(pool, { seed, previous, channelSpread: 0.7 })
+  const repeated = picks.filter((item) => previous.has(item.entry.key)).length
+  const small = picks.length === 0 || picks.length >= scored.length || (previous.size > 0 && repeated / picks.length >= 0.7)
+  return { query: query.text, picks, seconds, matched: scored.length, matchedSeconds, small }
+}
+
+/**
+ * The schedule-making shared by both ways of building a Guide: no programme or near-identical upload twice,
+ * nothing back to back from one channel where another will do, channels and sources taking turns (as
+ * strongly as `channelSpread` asks), about three hours and never over four.
+ */
+function arrange(pool: readonly ScoredProgramme[], options: { seed: number; previous: ReadonlySet<string>; channelSpread: number }): { picks: ScoredProgramme[]; seconds: number } {
+  const { seed, previous, channelSpread } = options
+  const top = pool.reduce((best, item) => Math.max(best, item.score), 0) || 1
   const channelUses = new Map<number, number>()
   const sourceUses = new Map<string, number>()
   const cores = new Set<string>()
@@ -343,7 +356,7 @@ export function buildSearchGuide(index: SearchIndex, text: string, options: { se
       if (seconds + entry.programme.durationSeconds > SEARCH_TARGET.max) continue
       const jitter = 0.75 + 0.5 * hash(`${seed}:${entry.key}`)
       const repeat = previous.has(entry.key) ? 0.4 : 1
-      const spread = 1 + 0.7 * (channelUses.get(entry.channel.number) ?? 0) + 0.4 * (sourceUses.get(entry.programme.source ?? '') ?? 0)
+      const spread = 1 + channelSpread * (channelUses.get(entry.channel.number) ?? 0) + 0.4 * (sourceUses.get(entry.programme.source ?? '') ?? 0)
       const runs = entry.programme.durationSeconds
       const length = runs > 5400 ? 0.45 : runs > 3600 ? 0.75 : 1
       const value = (Math.sqrt(item.score / top) * jitter * repeat * length) / spread
@@ -366,7 +379,47 @@ export function buildSearchGuide(index: SearchIndex, text: string, options: { se
     sourceUses.set(next.entry.programme.source ?? '', (sourceUses.get(next.entry.programme.source ?? '') ?? 0) + 1)
     seconds += next.entry.programme.durationSeconds
   }
-  const repeated = picks.filter((item) => previous.has(item.entry.key)).length
-  const small = picks.length === 0 || picks.length >= scored.length || (previous.size > 0 && repeated / picks.length >= 0.7)
-  return { query: query.text, picks, seconds, matched: scored.length, matchedSeconds, small }
+  return { picks, seconds }
+}
+
+/** What one channel can give a Channel Guide now: its usable programmes and their running time. */
+export interface ChannelSupply {
+  programmes: number
+  seconds: number
+}
+
+/** A channel's programmes as a Channel Guide would use them: no clips under two minutes, no repeats. */
+function supplyOf(index: SearchIndex, number: number): IndexedProgramme[] {
+  const seen = new Set<string>()
+  return index.entries.filter((entry) => {
+    if (entry.channel.number !== number || entry.programme.durationSeconds < SHORT_SECONDS || entry.programme.durationSeconds > LONGEST || seen.has(entry.key)) return false
+    seen.add(entry.key)
+    return true
+  })
+}
+
+/** The usable programming a channel offers a Channel Guide, from what TVN already knows: nothing is fetched. */
+export function channelSupply(index: SearchIndex, number: number): ChannelSupply {
+  const entries = supplyOf(index, number)
+  return { programmes: entries.length, seconds: entries.reduce((sum, entry) => sum + entry.programme.durationSeconds, 0) }
+}
+
+export interface ChannelGuide {
+  picks: ScoredProgramme[]
+  seconds: number
+  /** Programmes the chosen channels offered in all. */
+  available: number
+}
+
+/**
+ * BUILD GUIDE from CHANNEL SOURCES: a mixed two to four hours from the chosen channels' own programmes, each
+ * channel taking its turn (not strictly in rotation), nothing twice. `seed` varies it; `previous` are the
+ * keys of the schedule being replaced, which are passed over where something else will do.
+ */
+export function buildChannelGuide(index: SearchIndex, numbers: readonly number[], options: { seed?: number; previous?: ReadonlySet<string> } = {}): ChannelGuide {
+  const pool: ScoredProgramme[] = [...new Set(numbers)].flatMap((number) =>
+    supplyOf(index, number).map((entry) => ({ entry, score: 1, reasons: ['channel source'], titled: false, phrase: false, anchored: true })),
+  )
+  const { picks, seconds } = arrange(pool, { seed: options.seed ?? 0, previous: options.previous ?? new Set(), channelSpread: 1.6 })
+  return { picks, seconds, available: pool.length }
 }

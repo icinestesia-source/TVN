@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { channelByNumber, programmesFor } from '../data/catalogue.ts'
 import { refusedVideos } from '../services/embed-refusals.ts'
-import { resolveItem, unsaved, type GuideItem, type GuideRun, type ViewingGuide } from '../services/viewing-guides.ts'
+import { resolveItem, unsaved, type GuideItem, type GuideRun, type GuideSource, type ViewingGuide } from '../services/viewing-guides.ts'
 import { useTv } from '../state/tv-context.ts'
 import { padChannel } from '../utils/time.ts'
 
@@ -40,8 +40,10 @@ const STATE_LABEL: Record<Exclude<ItemState, null>, string> = {
 }
 
 /**
- * GUIDE: the viewer's own viewing Guide, an ordered list of programmes from any channels played one after
- * another. It holds references only; schedules and running orders are never touched.
+ * CHANNEL GUIDE (CH GUIDE in the Guide's header): the viewer's own programmable viewing sequence, played one
+ * programme after another. Three ways make one: programmes added from the Guide, a few words (CREATE FROM…),
+ * or CHANNEL SOURCES that BUILD GUIDE schedules from. It holds references only; schedules and running orders
+ * are never touched. (Inside TVN it is still a viewing Guide; GUIDE alone is the television listings.)
  */
 export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
   const tv = useTv()
@@ -55,6 +57,15 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
   const [words, setWords] = useState('')
   const [building, setBuilding] = useState(false)
   const wordsRef = useRef<HTMLInputElement>(null)
+  const [number, setNumber] = useState('')
+  const sources = useMemo(() => guide?.sources ?? [], [guide?.sources])
+  // Each source as it is now: the channel its id names (whatever its number) and what it can supply.
+  const supplies = useMemo(
+    () => sources.map((source) => ({ source, ...tv.guideSupply(source) })),
+    // The network moving changes what a source supplies; visibleChannels is what moves with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sources, tv.visibleChannels, tv.guideSupply],
+  )
   const search = tv.guideSearch && guide && tv.guideSearch.guideId === guide.id ? tv.guideSearch : null
   useEffect(() => {
     // Asked for with a mouse (a right-click on GUIDE), the words box is ready to type in; a touch keeps the keyboard down.
@@ -104,6 +115,33 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
     create(false)
   }
 
+  const addSource = (event: FormEvent) => {
+    event.preventDefault()
+    const typed = Number(number.trim())
+    if (!number.trim() || !Number.isInteger(typed) || typed < 0) {
+      setNote('TYPE A CHANNEL NUMBER')
+      return
+    }
+    act(() => tv.addGuideSource(typed))
+    setNumber('')
+  }
+  const setSources = (next: GuideSource[]) => act(() => tv.editGuide({ type: 'sources', sources: next }))
+  const moveSource = (index: number, delta: -1 | 1) => {
+    const next = sources.slice()
+    const [moved] = next.splice(index, 1)
+    next.splice(index + delta, 0, moved!)
+    setSources(next)
+  }
+  const buildFromSources = () => {
+    if (building) return
+    setBuilding(true)
+    setNote('BUILDING A CHANNEL GUIDE…')
+    window.setTimeout(() => {
+      act(() => tv.buildChannelGuide())
+      setBuilding(false)
+    }, 30)
+  }
+
   const lookup = { channelByNumber, programmesFor, refused: refusedVideos() }
   const button = (label: string, onClick: () => void, options: { disabled?: boolean; on?: boolean; title?: string; className?: string } = {}) => (
     <button
@@ -121,16 +159,17 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
   const position = run ? `${Math.min(run.index + 1, run.guide.items.length)} OF ${run.guide.items.length}` : ''
 
   return (
-    <footer className="guide-info guide-editor guide-plan" aria-label="Viewing Guide">
-      <form className="plan-search" onSubmit={submitWords} aria-label="Create Guide from">
+    <footer className="guide-info guide-editor guide-plan" aria-label="Channel Guide">
+      <h3 className="options-head plan-title-head">Channel Guide</h3>
+      <form className="plan-search" onSubmit={submitWords} aria-label="Create Channel Guide from">
         <label className="editor-field plan-search-field">
-          <span className="editor-heading">Create Guide from…</span>
+          <span className="editor-heading">Create from…</span>
           <input
             ref={wordsRef}
             value={words}
             maxLength={60}
             placeholder="Music, Daft Punk, Italian cooking…"
-            aria-label="Create a Guide from these words"
+            aria-label="Create a Channel Guide from these words"
             autoComplete="off"
             spellCheck={false}
             enterKeyHint="search"
@@ -146,19 +185,58 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
         </button>
         {search ? (
           <>
-            {button('Watch Guide', () => tv.playGuide(0), { disabled: building || !guide || guide.items.length === 0, className: 'guide-follow', title: 'Play this Guide from the start' })}
+            {button('Watch', () => tv.playGuide(0), { disabled: building || !guide || guide.items.length === 0, className: 'guide-follow', title: 'Play this Channel Guide from the start' })}
             {button('Rescan', () => create(true), { disabled: building, title: search.small ? `Only ${search.matched} programmes match, so a rescan cannot vary much` : `Build ${search.query} again, differently` })}
           </>
         ) : null}
       </form>
+      <form className="plan-search plan-sources" onSubmit={addSource} aria-label="Channel sources">
+        <label className="editor-field plan-source-field">
+          <span className="editor-heading">Channel sources</span>
+          <input
+            value={number}
+            maxLength={5}
+            inputMode="numeric"
+            placeholder="001"
+            aria-label="Add a channel by its number"
+            autoComplete="off"
+            onChange={(event) => setNumber(event.target.value.replace(/[^0-9]/g, ''))}
+            onKeyDown={(event) => {
+              event.stopPropagation()
+              if (event.key === 'Enter') addSource(event)
+            }}
+          />
+        </label>
+        <button type="submit" className="tab" onKeyDown={keepKey}>
+          Add channel
+        </button>
+        {button('Build Guide', buildFromSources, { disabled: building || sources.length === 0, title: 'Schedule two to four hours from these channels, mixed' })}
+      </form>
+      {supplies.length > 0 ? (
+        <ol className="plan-source-list" aria-label="Channels this Channel Guide draws on">
+          {supplies.map(({ source, channel, programmes, seconds }, index) => (
+            <li key={source.channelId} className={channel ? 'plan-source' : 'plan-source is-gone'}>
+              <span className="plan-channel">
+                {padChannel(channel?.number ?? source.channelNumber)} · {channel?.name ?? source.channelName}
+              </span>
+              <span className="plan-meta">{!channel ? 'No longer in the network' : programmes === 0 ? 'Nothing to schedule yet' : `${programmes} ${programmes === 1 ? 'programme' : 'programmes'} · ${minutes(seconds)} available`}</span>
+              <span className="plan-actions">
+                {button('▲', () => moveSource(index, -1), { disabled: index === 0, title: 'Move up' })}
+                {button('▼', () => moveSource(index, 1), { disabled: index === supplies.length - 1, title: 'Move down' })}
+                {button('×', () => setSources(sources.filter((item) => item.channelId !== source.channelId)), { title: `Remove ${channel?.name ?? source.channelName}` })}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
       <div className="plan-head">
         <label className="editor-field plan-name">
-          <span className="editor-heading">Guide</span>
+          <span className="editor-heading">Name</span>
           <input
             value={name}
             maxLength={60}
-            placeholder="Name this Guide"
-            aria-label="Guide name"
+            placeholder="Name this Channel Guide"
+            aria-label="Channel Guide name"
             onChange={(event) => setName(event.target.value)}
             onBlur={commitName}
             onKeyDown={(event) => {
@@ -180,11 +258,11 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
 
       <div className="plan-controls">
         {run && !following
-          ? button('Resume Guide', () => tv.resumeGuide(), { className: 'guide-follow', title: 'Follow the Guide again from where it was' })
-          : button('Play', () => tv.playGuide(0), { disabled: !guide || guide.items.length === 0, title: 'Play this Guide from the start' })}
-        {button('‹ Prev', () => tv.guideStep(-1), { disabled: !run, title: 'Previous item in the Guide' })}
-        {button('Next ›', () => tv.guideStep(1), { disabled: !run, title: 'Next item in the Guide' })}
-        {button('Stop', () => tv.stopGuide(), { disabled: !run, title: 'Stop following the Guide' })}
+          ? button('Resume', () => tv.resumeGuide(), { className: 'guide-follow', title: 'Follow the Channel Guide again from where it was' })
+          : button('Play', () => tv.playGuide(0), { disabled: !guide || guide.items.length === 0, title: 'Play this Channel Guide from the start' })}
+        {button('‹ Prev', () => tv.guideStep(-1), { disabled: !run, title: 'Previous item in the Channel Guide' })}
+        {button('Next ›', () => tv.guideStep(1), { disabled: !run, title: 'Next item in the Channel Guide' })}
+        {button('Stop', () => tv.stopGuide(), { disabled: !run, title: 'Stop following the Channel Guide' })}
         <label className="plan-loop">
           <input
             type="checkbox"
@@ -220,8 +298,8 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
                     disabled: index === guide.items.length - 1,
                     title: 'Move down',
                   })}
-                  {button('Play', () => tv.playGuide(index), { disabled: !resolved.ok, title: 'Play the Guide from here' })}
-                  {button('Remove', () => act(() => tv.editGuide({ type: 'remove', itemId: item.id })), { title: 'Remove from this Guide' })}
+                  {button('Play', () => tv.playGuide(index), { disabled: !resolved.ok, title: 'Play the Channel Guide from here' })}
+                  {button('Remove', () => act(() => tv.editGuide({ type: 'remove', itemId: item.id })), { title: 'Remove from this Channel Guide' })}
                 </span>
               </li>
             )
@@ -229,7 +307,7 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
         </ol>
       ) : (
         <p className="plan-empty">
-          Type a few words above to build a Guide from TVN's channels, or right-click or hold a programme in the Guide and choose ADD TO GUIDE. A normal click still plays it.
+          Type a few words, or add channels by number and BUILD GUIDE, or right-click or hold a programme in the Guide and choose ADD TO CHANNEL GUIDE. A normal click still plays it.
         </p>
       )}
 
@@ -248,13 +326,13 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
             setConfirmDelete(false)
             act(() => tv.editGuide({ type: 'delete' }))
           },
-          { disabled: !guide, title: 'Delete this Guide' },
+          { disabled: !guide, title: 'Delete this Channel Guide' },
         )}
       </div>
 
       {library.saved.length > 0 ? (
         <div className="plan-saved">
-          <span className="editor-heading">Saved Guides</span>
+          <span className="editor-heading">Saved Channel Guides</span>
           <ul>
             {library.saved.map((saved) => (
               <li key={saved.id} className={saved.id === guide?.id ? 'is-current' : undefined}>

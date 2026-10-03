@@ -175,7 +175,7 @@ describe('TVN 2.0 · playing a Guide', () => {
 
     const pad = (following: boolean) => renderToStaticMarkup(createElement(InfoActions, { channel: first, programme: a1, onPrev: () => {}, onNext: () => {}, ...padProps(), following, ...(following ? { guideSteps: { onPrev: () => {}, onNext: () => {} } } : {}) }))
     expect(pad(false)).not.toContain('is-following')
-    expect(pad(true)).toMatch(/class="tune-key info-pad-guide is-following"[^>]*aria-label="Guide, TVN is following a Guide"/)
+    expect(pad(true)).toMatch(/class="tune-key info-pad-guide is-following"[^>]*aria-label="Guide, TVN is following a Channel Guide"/)
     expect(pad(true)).toContain('aria-label="Next item in the Guide"')
 
     const info = (props: { picked?: boolean; following?: ReturnType<typeof followingInfo> }) =>
@@ -187,13 +187,14 @@ describe('TVN 2.0 · playing a Guide', () => {
 
     const header = (following: boolean, tool: 'guides' | null) => renderToStaticMarkup(createElement(GuideActions, { tool, picked: true, following, onNow: () => {}, onTool: () => {} }))
     expect(header(false, 'guides')).not.toContain('is-following')
-    expect(header(true, null)).toContain('guide-follow is-on is-following')
-    expect(header(false, null)).toMatch(/class="tab guide-follow is-on"[^>]*aria-current="page"[^>]*aria-expanded="false"/)
+    expect(header(true, null)).toContain('class="tab guide-follow is-following"')
+    expect(header(false, null)).toMatch(/class="tab guide-follow"[^>]*aria-expanded="false"/)
+    expect(header(false, null)).toMatch(/class="tab guide-section is-on"[^>]*aria-current="page"/)
     expect(header(false, 'guides')).toContain('class="tab guide-follow is-on is-open"')
     const add = readFileSync('src/components/GuideAdd.tsx', 'utf8')
     expect(add).toMatch(/onContextMenu=\{\(event\) => \{\s+event\.preventDefault\(\)\s+press\.contextMenu\(actions\)/)
     expect(add).toContain('onClick={() => press.click(actions)}')
-    expect(header(false, null)).toMatch(/>Guide<\/button><button[^>]*>Options<\/button><button[^>]*>Now<\/button><button[^>]*>Add<\/button><button[^>]*>Media</)
+    expect(header(false, null)).toMatch(/>Guide<\/button><button[^>]*>Ch Guide<\/button><button[^>]*>Options<\/button><button[^>]*>Now<\/button><button[^>]*>Add<\/button><button[^>]*>Media</)
     expect(guideView).toContain("const following = tv.guideRun?.state === 'active'")
   })
 
@@ -205,7 +206,7 @@ describe('TVN 2.0 · playing a Guide', () => {
     expect(provider).toContain("if (run?.state === 'active') setGuideRun({ ...run, state: 'suspended' })")
     const resume = provider.slice(provider.indexOf('const resumeGuideAction'), provider.indexOf('const stopGuideAction'))
     expect(resume).toContain('playGuideFrom(run, run.index, 1)')
-    expect(readFileSync('src/components/GuidePanel.tsx', 'utf8')).toContain("button('Resume Guide', () => tv.resumeGuide()")
+    expect(readFileSync('src/components/GuidePanel.tsx', 'utf8')).toContain("button('Resume', () => tv.resumeGuide()")
   })
 
   it('Prev and Next step through the Guide while following; channel history is left alone', () => {

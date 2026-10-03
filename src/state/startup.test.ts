@@ -8,8 +8,9 @@ import { installUserCatalogue } from '../data/user-overlay.ts'
 import { resetDirector } from '../director/director.ts'
 import { setMediaLibrary } from '../director/library.ts'
 import { expandPlayableCatalogue } from '../library/playable-catalogue.ts'
-import { firstOnAir, isOnAir, refreshAiring } from '../network/airing.ts'
+import { isOnAir, refreshAiring } from '../network/airing.ts'
 import { channelsFromSources, mergeParsedExports, parseChannelsExport, planImport } from '../services/channels-import.ts'
+import { DEFAULT_PREFERENCES } from '../services/preferences.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, STARTUP_STALL_MS } from './startup.ts'
 import { commitTuned, stepTarget, type Tuned } from './tuning.ts'
@@ -177,7 +178,7 @@ describe('initial tuned channel', () => {
   it('D/E: the fallback start (saved channel off air) is also the channel CH+/CH- step from', () => {
     const offAir = listChannels().find((channel) => channel.number < 1001 && !isOnAir(channel))!
     const tuned = start(offAir.number, null)
-    expect(tuned.channelNumber).toBe(firstOnAir(listChannels())!.number)
+    expect(tuned.channelNumber).toBe(0)
     expect(stepTarget(tuned, null, 1)).toBe(adjacentChannel(tuned.channelNumber, 1).number)
   })
 
@@ -219,17 +220,51 @@ describe('initial tuned channel', () => {
     expect(stepTarget(tuned, null, 1)).toBe(adjacentChannel(picked.number, 1).number)
   })
 
-  it('J: 999 steps to 1000 Local Media, then 1001; numbers 1001+ are unchanged', () => {
+  it('J: 999 steps past 1000 Local Media to 1001; numbers 1001+ are unchanged', () => {
     installUserChannels()
     try {
       expect(channelByNumber(1000)?.origin).toBe('session')
       expect(isOnAir(channelByNumber(999)!)).toBe(true)
       const up = commitTuned(start(999), stepTarget(start(999), null, 1))
-      expect(up).toEqual({ channelNumber: 1000, previousNumber: 999 })
-      const on = commitTuned(up, stepTarget(up, null, 1))
-      expect(on).toEqual({ channelNumber: 1001, previousNumber: 1000 })
-      const down = commitTuned(on, stepTarget(on, null, -1))
-      expect(down).toEqual({ channelNumber: 1000, previousNumber: 1001 })
+      expect(up).toEqual({ channelNumber: 1001, previousNumber: 999 })
+      const down = commitTuned(up, stepTarget(up, null, -1))
+      expect(down).toEqual({ channelNumber: 999, previousNumber: 1001 })
+      // 1000 is still reached by number, and steps on from there.
+      expect(stepTarget(start(999), 1000, 1)).toBe(1001)
+    } finally {
+      installUserCatalogue([], new Map())
+    }
+  })
+
+  it('N: a start with nothing valid to resume is 000 TVN, never a random channel and never 1000', () => {
+    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(0)
+    expect(start(DEFAULT_PREFERENCES.lastChannelNumber).channelNumber).toBe(0)
+    expect(start(1500).channelNumber).toBe(0)
+    expect(start(99999, 225)).toEqual({ channelNumber: 0, previousNumber: 225 })
+    expect(start(1000, null).channelNumber).toBe(0)
+    expect(start(1000, 1000).channelNumber).toBe(0)
+    expect(resolveStartupTuning(createStartupRestore(), { lastChannelNumber: 225, previousChannelNumber: null }, 'tvn')!.channelNumber).toBe(0)
+    for (const path of ['src/state/startup.ts', 'src/state/startup-channel.ts']) {
+      expect(readFileSync(path, 'utf8')).not.toMatch(/Math\.random|randomChannel/)
+    }
+  })
+
+  it('O: from 000, CH+ is 001 and CH- is the highest User channel; 1000 is never stepped onto but tunes by number', () => {
+    expect(stepTarget(start(0), null, 1)).toBe(1)
+    installUserChannels()
+    try {
+      const highest = Math.max(...listChannels().filter((channel) => channel.number > 1000 && channel.enabled && !channel.emptySlot && isOnAir(channel)).map((channel) => channel.number))
+      expect(highest).toBeGreaterThan(1000)
+      expect(stepTarget(start(0), null, -1)).toBe(highest)
+      expect(adjacentChannel(highest, 1).number).toBe(0)
+      const ring = new Set<number>()
+      for (let number = 0, steps = 0; steps < listChannels().length; steps += 1) {
+        number = adjacentChannel(number, 1).number
+        ring.add(number)
+      }
+      expect(ring.has(1000)).toBe(false)
+      expect(channelByNumber(1000)?.origin).toBe('session')
+      expect(commitTuned(start(225), 1000)).toEqual({ channelNumber: 1000, previousNumber: 225 })
     } finally {
       installUserCatalogue([], new Map())
     }
@@ -248,7 +283,7 @@ describe('initial tuned channel', () => {
       const after = start(1001, 225)
       expect(after).toEqual({ channelNumber: 1001, previousNumber: 225 })
       expect(start(225, 1001).previousNumber).toBe(1001)
-      expect(stepTarget(after, null, -1)).toBe(1000)
+      expect(stepTarget(after, null, -1)).toBe(999)
     } finally {
       installUserCatalogue([], new Map())
     }

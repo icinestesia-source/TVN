@@ -1739,6 +1739,19 @@ span.editor-expand { border-color: transparent; }
 .plan-item.is-paused .plan-meta { color: var(--gold); }
 .plan-actions { display: flex; gap: 4px; }
 .plan-actions .tab { min-width: 36px; min-height: 32px; height: 32px; padding: 0 8px; }
+.plan-title-head { margin: 0; }
+.plan-source-field { flex: 0 1 140px; }
+.plan-source-list { display: flex; flex-direction: column; gap: 2px; max-width: 980px; margin: 0; padding: 0; list-style: none; }
+.plan-source {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 3px 6px;
+  background: var(--guide-cell-alt);
+}
+.plan-source .plan-channel { color: var(--ink); }
+.plan-source.is-gone { opacity: 0.6; }
 .plan-empty,
 .plan-note { margin: 0; color: var(--muted); font-size: 14px; }
 .plan-note { font-family: var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; }
@@ -1793,7 +1806,9 @@ span.editor-expand { border-color: transparent; }
 .network-status.is-on-air,
 .network-status.is-surfing { color: var(--ink); }
 .network-status.is-empty,
-.network-status.is-off { color: #c98b6b; }
+.network-status.is-disabled,
+.network-status.is-source-not-loaded { color: #c98b6b; }
+.network-name:disabled { cursor: default; opacity: 0.75; }
 .network-star { border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; }
 .network-star.is-on { color: var(--gold); }
 .network-star:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }

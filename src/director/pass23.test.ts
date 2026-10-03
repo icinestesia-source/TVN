@@ -333,7 +333,7 @@ describe('Pass 23 release-candidate hardening', () => {
   })
 
   it('surfs every on-air channel in both directions and steps off an off-air channel to its neighbour', () => {
-    const onAir = listChannels().filter((channel) => channel.enabled && isOnAir(channel)).map((channel) => channel.number)
+    const onAir = listChannels().filter((channel) => channel.enabled && channel.origin !== 'session' && isOnAir(channel)).map((channel) => channel.number)
     let number = onAir[0]
     for (let step = 0; step < onAir.length; step += 1) {
       const next = adjacentChannel(number, 1).number
@@ -406,7 +406,7 @@ describe('Pass 23 release-candidate hardening', () => {
     expect(airingClass(rightsChannel, broadcast(rightsChannel, NOW).current.programme)).toBe('RIGHTS_BLOCKED')
   })
 
-  it('crosses 999 ↔ 1000 ↔ 1001 with user channels installed and keeps both sides isolated', () => {
+  it('crosses 999 ↔ 1001 past 1000 Local Media with user channels installed and keeps both sides isolated', () => {
     const merged = mergeParsedExports([
       parseChannelsExport(readFileSync('public/user-network/channels.txt', 'utf8')),
       parseChannelsExport(readFileSync('public/user-network/more-channels.txt', 'utf8')),
@@ -418,9 +418,9 @@ describe('Pass 23 release-candidate hardening', () => {
       expect(first.number).toBe(1001)
       expect(channelByNumber(1000)?.origin).toBe('session')
       const lastNetwork = [...listChannels()].filter((channel) => channel.number <= 999 && isOnAir(channel)).pop()!
-      expect(adjacentChannel(lastNetwork.number, 1).number).toBe(1000)
+      expect(adjacentChannel(lastNetwork.number, 1).number).toBe(1001)
       expect(adjacentChannel(1000, 1).number).toBe(1001)
-      expect(adjacentChannel(1001, -1).number).toBe(1000)
+      expect(adjacentChannel(1001, -1).number).toBe(lastNetwork.number)
       const userIds = new Set([...built.programmes.values()].flat().map((programme) => programme.videoId).filter(Boolean))
       const catalogueIds = new Set(items.map((item) => item.externalId))
       const user = broadcast(first, NOW).current.programme

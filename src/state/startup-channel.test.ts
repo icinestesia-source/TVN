@@ -5,7 +5,7 @@ import { installUserCatalogue } from '../data/user-overlay.ts'
 import { resetDirector } from '../director/director.ts'
 import { setMediaLibrary } from '../director/library.ts'
 import { expandPlayableCatalogue } from '../library/playable-catalogue.ts'
-import { firstOnAir, isOnAir, refreshAiring } from '../network/airing.ts'
+import { isOnAir, refreshAiring } from '../network/airing.ts'
 import type { Channel } from '../types/channel.ts'
 import { createStartupRestore } from './startup-channel.ts'
 
@@ -50,11 +50,11 @@ describe('startup channel restoration', () => {
     expect(createStartupRestore().target(saved, listChannels())?.number).toBe(501)
   })
 
-  it('falls back to the first on-air channel when the saved one is off air or missing', () => {
+  it('falls back to 000 TVN, never a random or first channel, when the saved one is off air, missing or 1000', () => {
     const offAir = listChannels().find((channel) => channel.number < 1001 && !isOnAir(channel))!
-    const first = firstOnAir(listChannels())!
-    expect(createStartupRestore().target(offAir, listChannels())?.number).toBe(first.number)
-    expect(createStartupRestore().target(undefined, listChannels())?.number).toBe(first.number)
+    expect(createStartupRestore().target(offAir, listChannels())?.number).toBe(0)
+    expect(createStartupRestore().target(undefined, listChannels())?.number).toBe(0)
+    expect(createStartupRestore().target(channelByNumber(1000), listChannels())?.number).toBe(0)
   })
 
   it('restores a saved 1001+ channel that only exists once the user network installs', () => {

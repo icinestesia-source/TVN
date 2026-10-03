@@ -288,7 +288,7 @@ describe('1001+ is part of every installation unless the viewer removed it', () 
     expect(startup(store, back.sources).added).toEqual([])
   })
 
-  it('R9–R12. ALL lists 001–999 and 1001+, 1001 tunes, CH+/CH− cross 999→1000→1001, 1000 is Local Media', () => {
+  it('R9–R12. ALL lists 001–999 and 1001+, 1001 tunes, CH+/CH− cross 999→1001 past 1000 Local Media', () => {
     showUser(startup(memoryStore({ [STARTER_KEY]: 'skipped' }), []).sources)
     const all = listChannels().filter((channel) => channelMatchesFilter(channel, 'all', []))
     const numbers = all.map((channel) => channel.number)
@@ -298,9 +298,9 @@ describe('1001+ is part of every installation unless the viewer removed it', () 
     expect(channelByNumber(1001)?.origin).toBe('user-import')
     expect(channelByNumber(1000)?.origin).toBe('session')
     const lastCurated = listChannels().filter((channel) => channel.enabled && channel.number <= 999).at(-1)!
-    expect(adjacentChannel(lastCurated.number, 1).number).toBe(1000)
+    expect(adjacentChannel(lastCurated.number, 1).number).toBe(1001)
     expect(adjacentChannel(1000, 1).number).toBe(1001)
-    expect(adjacentChannel(1001, -1).number).toBe(1000)
+    expect(adjacentChannel(1001, -1).number).toBe(lastCurated.number)
     expect(adjacentChannel(1000, -1).number).toBe(lastCurated.number)
   })
 

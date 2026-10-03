@@ -1,6 +1,7 @@
 import { channelByNumber, listChannels } from '../data/catalogue.ts'
 import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
 import type { TvCommand } from '../types/input.ts'
+import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 import type { StartupRestore } from './startup-channel.ts'
 
 export type StartupPhase = 'loading' | 'ready' | 'failed'
@@ -34,7 +35,10 @@ export interface StartupTuning {
 export function resolveStartupTuning(
   restore: StartupRestore,
   stored: { lastChannelNumber: number; previousChannelNumber: number | null },
+  entry: 'television' | 'tvn' = 'television',
 ): StartupTuning | null {
+  // The /tvn entry asks for surfing from the first moment, which is what 000 is.
+  if (entry === 'tvn') stored = { lastChannelNumber: TVN_CHANNEL_NUMBER, previousChannelNumber: null }
   // A new session starts with an empty session channel, so it is never the place to resume: a viewer
   // who left on 000 comes back to the channel they watched before it.
   const leftOnSession = stored.lastChannelNumber === SESSION_CHANNEL_NUMBER

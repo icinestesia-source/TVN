@@ -88,8 +88,16 @@ export function fnv(text: string): string {
   return (hash >>> 0).toString(36)
 }
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+/** The calendar day the publisher wrote, not that moment's day in UTC: 19:01 on 3 Sep in California is still 3 Sep. */
 export const dayOf = (text: string | null | undefined): string | undefined => {
   if (!text) return undefined
+  const iso = text.match(/^\s*(\d{4})-(\d{2})-(\d{2})/)
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+  const written = text.match(/\b(\d{1,2})\s+([a-z]{3})[a-z]*\.?\s+(\d{4})\b/i)
+  const month = written ? MONTHS.indexOf(written[2].toLowerCase()) : -1
+  if (written && month >= 0) return `${written[3]}-${String(month + 1).padStart(2, '0')}-${written[1].padStart(2, '0')}`
   const time = Date.parse(text)
   return Number.isFinite(time) ? new Date(time).toISOString().slice(0, 10) : undefined
 }

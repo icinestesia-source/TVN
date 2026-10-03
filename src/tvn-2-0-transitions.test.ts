@@ -69,7 +69,7 @@ describe('TV Tune: the title card lasts the whole transition and leaves just bef
   it('the screen keeps one overlay from press to picture, and INFO waits for the picture', () => {
     expect(screen).toContain('<ChannelTransition key={layer.presentation.session}')
     expect(screen).toContain('covered: owner === \'cover\'')
-    expect(screen).toContain("usePresence(tv.overlay === 'info' && tv.tuningNumber === null && presented === null, INFO_FADE_MS)")
+    expect(screen).toContain("usePresence(tv.overlay === 'info' && tv.tuningNumber === null && presented === null && !holding, INFO_FADE_MS)")
     expect(screen).not.toContain('<StaticOverlay')
   })
 })

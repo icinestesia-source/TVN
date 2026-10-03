@@ -110,7 +110,7 @@ import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import type { GuideTool, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
-import { clamp, sleep } from '../utils/time.ts'
+import { clamp, padChannel, sleep } from '../utils/time.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
 import {
@@ -124,13 +124,15 @@ import {
   nextPlayable,
   resolveItem,
   saveGuideLibrary,
+  sourceChannel,
   type GuideAction,
+  type GuideSource,
   type GuideItem,
   type GuideLibrary,
   type GuideRun,
   type ItemLookup,
 } from '../services/viewing-guides.ts'
-import { buildSearchGuide, SEARCH_TARGET } from '../services/guide-search.ts'
+import { buildChannelGuide, buildSearchGuide, channelSupply, SEARCH_TARGET } from '../services/guide-search.ts'
 import { searchIndex } from '../services/guide-search-pool.ts'
 import { shippedEditorial } from '../data/central-editorial.ts'
 import type { ChannelEditorial } from '../services/channel-curation.ts'
@@ -1253,16 +1255,72 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * CREATE GUIDE FROM…: a new, unsaved Guide named after the words, built from TVN's own catalogue. RESCAN
    * (`rescan`) rebuilds the same words differently; the Guide on show stays until its replacement is ready.
    */
+  /** The programmes every channel can lend a Channel Guide now, after edits, filters and refusals. */
+  const guideIndex = () => {
+    const edits = appliedCuratedEdits(shippedChannel)
+    const editorialFor = (number: number) => (number <= 999 ? (edits[String(number)]?.editorial ?? shippedEditorial(number)) : userEditorialRef.current.get(number))
+    const stamp = JSON.stringify([Object.values(edits).map((edit) => [edit.channelNumber, edit.editorial ?? null]), [...userEditorialRef.current]])
+    return searchIndex(editorialFor, refusedVideos(), stamp)
+  }
+
+  const runningTime = (seconds: number) => {
+    const minutes = Math.round(seconds / 60)
+    return minutes >= 60 ? `${Math.floor(minutes / 60)}H ${String(minutes % 60).padStart(2, '0')}M` : `${minutes}M`
+  }
+
+  /** What a CHANNEL SOURCE is now (followed by its id) and what it can supply. */
+  const guideSupplyAction = (source: GuideSource) => {
+    const channel = sourceChannel(source, listChannels())
+    return channel ? { channel, ...channelSupply(guideIndex(), channel.number) } : { channel: undefined, programmes: 0, seconds: 0 }
+  }
+
+  /** ADD CHANNEL: a channel number becomes a source, stored by the channel's identity. */
+  const addGuideSourceAction = (number: number): string => {
+    const channel = channelByNumber(number)
+    if (!channel) throw new Error(`No channel ${padChannel(number)}`)
+    if (channel.origin === 'tvn' || channel.origin === 'session') throw new Error(`${padChannel(number)} ${channel.name} has no programmes of its own`)
+    const current = guideLibraryRef.current.current?.sources ?? []
+    if (current.some((source) => source.channelId === channel.id)) return `${padChannel(number)} · ${channel.name.toUpperCase()} IS ALREADY A SOURCE`
+    editGuideAction({ type: 'sources', sources: [...current, { channelId: channel.id, channelNumber: channel.number, channelName: channel.name }] })
+    const supply = channelSupply(guideIndex(), channel.number)
+    const label = `${padChannel(number)} · ${channel.name.toUpperCase()}`
+    if (supply.programmes === 0) return `${label} ADDED · NOTHING TO SCHEDULE FROM IT YET`
+    return `${label} ADDED · ${supply.programmes} ${supply.programmes === 1 ? 'PROGRAMME' : 'PROGRAMMES'} · ${runningTime(supply.seconds)}`
+  }
+
+  const channelGuideSeed = useRef(0)
+  /** BUILD GUIDE: the current Channel Guide's programmes, scheduled afresh from its CHANNEL SOURCES. */
+  const buildChannelGuideAction = (): string => {
+    const guide = guideLibraryRef.current.current
+    const channels = (guide?.sources ?? []).map((source) => sourceChannel(source, listChannels())).filter((channel): channel is Channel => channel !== undefined)
+    if (channels.length === 0) throw new Error('Add a channel to build from')
+    const keyOf = (item: GuideItem) => item.programme.videoId || item.programme.mediaUrl || ''
+    const previous = guide && guide.items.length ? new Set(guide.items.map(keyOf)) : undefined
+    channelGuideSeed.current += 1
+    const built = buildChannelGuide(guideIndex(), channels.map((channel) => channel.number), { seed: channelGuideSeed.current, previous })
+    if (built.picks.length === 0) return 'THESE CHANNELS HAVE NOTHING TO SCHEDULE YET'
+    const now = Date.now()
+    const items: GuideItem[] = built.picks.map((pick) => ({
+      id: guideId('i', now),
+      channelNumber: pick.entry.channel.number,
+      channelName: pick.entry.channel.name,
+      programme: pick.entry.programme.guide ?? { id: pick.entry.programme.id, title: pick.entry.programme.title, videoId: pick.entry.programme.videoId ?? null, durationSeconds: pick.entry.programme.durationSeconds, source: 'imported' },
+    }))
+    if (guide?.name === DEFAULT_GUIDE_NAME) editGuideAction({ type: 'rename', name: channels.map((channel) => channel.name).join(' + ').slice(0, 60) })
+    editGuideAction({ type: 'fill', items })
+    guideSearchRef.current = null
+    setGuideSearchState(null)
+    const used = new Set(items.map((item) => item.channelNumber)).size
+    return `${items.length} ${items.length === 1 ? 'PROGRAMME' : 'PROGRAMMES'} · ${runningTime(built.seconds)} · ${used} OF ${channels.length} ${channels.length === 1 ? 'CHANNEL' : 'CHANNELS'}`
+  }
+
   const searchGuideAction = (text: string, rescan = false): string => {
     const state = guideSearchRef.current
     const library = guideLibraryRef.current
     const again = rescan && state !== null && library.current?.id === state.guideId
     const query = (again ? state.query : text).replace(/\s+/g, ' ').trim().slice(0, 60)
     if (!query) throw new Error('Type what the Guide should be about')
-    const edits = appliedCuratedEdits(shippedChannel)
-    const editorialFor = (number: number) => (number <= 999 ? (edits[String(number)]?.editorial ?? shippedEditorial(number)) : userEditorialRef.current.get(number))
-    const stamp = JSON.stringify([Object.values(edits).map((edit) => [edit.channelNumber, edit.editorial ?? null]), [...userEditorialRef.current]])
-    const index = searchIndex(editorialFor, refusedVideos(), stamp)
+    const index = guideIndex()
     const keyOf = (item: GuideItem) => item.programme.videoId || item.programme.mediaUrl || ''
     const previous = again && library.current ? new Set(library.current.items.map(keyOf)) : undefined
     const seed = again ? state.seed + 1 : 0
@@ -1308,17 +1366,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const name = next.current?.name.toUpperCase() ?? ''
     switch (action.type) {
       case 'new':
-        return 'NEW GUIDE'
+        return 'NEW CHANNEL GUIDE'
       case 'save':
         return `${name} SAVED`
       case 'duplicate':
         return `${name} SAVED AS A COPY`
       case 'delete':
-        return 'GUIDE DELETED'
+        return 'CHANNEL GUIDE DELETED'
       case 'load':
         return `${name} LOADED`
       case 'clear':
-        return 'GUIDE CLEARED'
+        return 'CHANNEL GUIDE CLEARED'
       case 'rename':
         return `RENAMED ${name}`
       default:
@@ -1329,7 +1387,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const playGuideAction = (fromIndex = 0) => {
     const current = guideLibraryRef.current.current
     if (!current || current.items.length === 0) {
-      flash('THIS GUIDE IS EMPTY')
+      flash('THIS CHANNEL GUIDE IS EMPTY')
       return
     }
     playGuideFrom({ guide: structuredClone(current), index: fromIndex, state: 'active', programmeId: null, endsAt: null, skipped: [] }, fromIndex, 1)
@@ -1924,7 +1982,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const stop = runStartup(load, (phase) => {
       if (cancel) return
       if (phase === 'failed') return fail()
-      const tuning = resolveStartupTuning(startup, stored)
+      const tuning = resolveStartupTuning(startup, stored, currentEntryMode())
       const start = tuning ? channelByNumber(tuning.channelNumber) : undefined
       if (!tuning || !start) {
         console.error(`TVN could not start (commit ${BUILD_INFO.commit}): no channel to start on`)
@@ -2791,8 +2849,23 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const guideApi = useRef({ add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction, search: searchGuideAction })
-  guideApi.current = { add: addToGuideAction, edit: editGuideAction, play: playGuideAction, resume: resumeGuideAction, stop: stopGuideAction, step: guideStepAction, search: searchGuideAction }
+  const guideActions = () => ({
+    add: addToGuideAction,
+    edit: editGuideAction,
+    play: playGuideAction,
+    resume: resumeGuideAction,
+    stop: stopGuideAction,
+    step: guideStepAction,
+    search: searchGuideAction,
+    addSource: addGuideSourceAction,
+    supply: guideSupplyAction,
+    buildFromChannels: buildChannelGuideAction,
+  })
+  const guideApi = useRef(guideActions())
+  guideApi.current = guideActions()
+  const addGuideSource = useCallback((channelNumber: number) => guideApi.current.addSource(channelNumber), [])
+  const guideSupply = useCallback((source: GuideSource) => guideApi.current.supply(source), [])
+  const buildChannelGuideFromSources = useCallback(() => guideApi.current.buildFromChannels(), [])
   const searchGuide = useCallback((query: string, rescan?: boolean) => guideApi.current.search(query, rescan), [])
   const addToGuide = useCallback((channelNumber: number, programme: Programme) => guideApi.current.add(channelNumber, programme), [])
   const editGuide = useCallback((action: GuideAction) => guideApi.current.edit(action), [])
@@ -2869,6 +2942,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideRun,
       guideSearch,
       searchGuide,
+      addGuideSource,
+      guideSupply,
+      buildChannelGuide: buildChannelGuideFromSources,
       addToGuide,
       editGuide,
       playGuide,
@@ -2991,6 +3067,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideRun,
       guideSearch,
       searchGuide,
+      addGuideSource,
+      guideSupply,
+      buildChannelGuideFromSources,
       addToGuide,
       editGuide,
       playGuide,

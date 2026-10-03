@@ -102,7 +102,7 @@ describe('A. an RSS podcast, including one that states no lengths', () => {
     const found = await resolveFeed(`${SITE}/feed.rss`, read)
     expect(found).toMatchObject({ shape: 'feed', via: 'address', title: 'Interviews' })
     expect(found.episodes.map((episode) => [episode.title, episode.durationSec])).toEqual([['Guest One | Part 1 of 2', 0], ['Guest Two', 2700]])
-    expect(found.episodes[0]).toMatchObject({ published: '2026-09-04', image: `${SITE}/one.jpg`, media: 'https://cdn.example.net/one.mp3' })
+    expect(found.episodes[0]).toMatchObject({ published: '2026-09-03', image: `${SITE}/one.jpg`, media: 'https://cdn.example.net/one.mp3' })
     expect(await measureFiles([{ url: 'https://cdn.example.net/one.mp3', type: 'audio/mpeg' }], read)).toEqual({ 'https://cdn.example.net/one.mp3': Math.round((138_000 * 1152) / 44100) })
   })
 

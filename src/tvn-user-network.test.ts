@@ -297,7 +297,7 @@ describe('network domains after the fix', () => {
       expect(built.channels.map((entry) => entry.number)).toEqual(Array.from({ length: built.channels.length }, (_, index) => 1001 + index))
       const curated = listChannels().filter((entry) => entry.number >= 1 && entry.number <= 999)
       expect(curated.every((entry) => entry.origin !== 'user-import' && entry.origin !== 'session')).toBe(true)
-      expect(adjacentChannel(1001, -1).number).toBe(1000)
+      expect(adjacentChannel(1001, -1).number).toBeLessThanOrEqual(999)
       expect(adjacentChannel(1001, -1).number).toBeGreaterThanOrEqual(1)
     } finally {
       installUserCatalogue([], new Map())

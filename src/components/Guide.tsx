@@ -915,7 +915,7 @@ function ProgrammeRow({
   onActivate: () => void
   /** Programmes in the viewer's Guide, keyed `channel:programme`; the one being followed is 'active'. */
   marks: ReadonlyMap<string, 'queued' | 'active'>
-  /** The secondary action on a programme (right-click or hold): offers ADD TO GUIDE. A click still plays. */
+  /** The secondary action on a programme (right-click or hold): offers ADD TO CHANNEL GUIDE. A click still plays. */
   onMenu: (programme: Programme, x: number, y: number) => void
 }) {
   // A hold fires long after this render: it uses the handler and programme taken when the press began.
@@ -997,7 +997,7 @@ interface AddMenu {
   y: number
 }
 
-/** The small menu a right-click or hold on a programme opens: ADD TO GUIDE, kept to one choice. */
+/** The small menu a right-click or hold on a programme opens: ADD TO CHANNEL GUIDE, kept to one choice. */
 function AddToGuideMenu({ menu, guideName, onAdd, onClose }: { menu: AddMenu; guideName: string | null; onAdd: (menu: AddMenu) => void; onClose: () => void }) {
   const first = useRef<HTMLButtonElement>(null)
   useEffect(() => first.current?.focus(), [])
@@ -1021,7 +1021,7 @@ function AddToGuideMenu({ menu, guideName, onAdd, onClose }: { menu: AddMenu; gu
           {padChannel(menu.channelNumber)} · {menu.programme.title}
         </p>
         <button type="button" role="menuitem" ref={first} className="guide-menu-item" onClick={() => onAdd(menu)}>
-          Add to {guideName ?? 'Guide'}
+          Add to {guideName ?? 'Channel Guide'}
         </button>
         <button type="button" role="menuitem" className="guide-menu-item is-quiet" onClick={onClose}>
           Cancel

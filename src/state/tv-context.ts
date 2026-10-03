@@ -130,6 +130,12 @@ export interface TvContextValue {
   guideSearch: GuideSearchState | null
   /** CREATE GUIDE FROM…: a new Guide from TVN's catalogue for these words, or RESCAN (`rescan`) of the last; the answer is a short line. */
   searchGuide: (query: string, rescan?: boolean) => string
+  /** CHANNEL GUIDE · ADD CHANNEL: the channel on this number becomes a source of the current Channel Guide, kept by its identity. */
+  addGuideSource: (channelNumber: number) => string
+  /** A CHANNEL SOURCE as it is now: the channel it follows (by id) and the usable programming it offers. */
+  guideSupply: (source: import('../services/viewing-guides.ts').GuideSource) => { channel: import('../types/channel.ts').Channel | undefined; programmes: number; seconds: number }
+  /** BUILD GUIDE: the current Channel Guide's programmes scheduled afresh from its CHANNEL SOURCES; the answer is a short line. */
+  buildChannelGuide: () => string
   /** ADD TO GUIDE: the programme joins the end of the current Guide (a new one if there is none). */
   addToGuide: (channelNumber: number, programme: import('../types/programme.ts').Programme) => string
   /** One Guide editor action (NEW, SAVE, RENAME, reorder…); the answer is a short line for the viewer. */

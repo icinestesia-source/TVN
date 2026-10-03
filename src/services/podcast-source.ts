@@ -55,12 +55,17 @@ interface Row {
   media?: string
   type: string
   youtube?: string
+  summary?: string
+  image?: string
+  page?: string
 }
 
 function rowOf(raw: unknown): Row | null {
-  const { id, title, durationSec, published, media, type, youtube } = (raw ?? {}) as Record<string, unknown>
+  const { id, title, durationSec, published, media, type, youtube, summary, image, page } = (raw ?? {}) as Record<string, unknown>
   if (typeof id !== 'string' || typeof title !== 'string' || typeof durationSec !== 'number' || !(durationSec >= 0)) return null
   const file = httpsUrl(media)
+  const art = httpsUrl(image)
+  const link = httpsUrl(page)
   const video = typeof youtube === 'string' && /^[\w-]{11}$/.test(youtube) ? youtube : null
   if (!file && !video) return null
   return {
@@ -71,6 +76,9 @@ function rowOf(raw: unknown): Row | null {
     ...(file && !video ? { media: file } : {}),
     type: video ? 'youtube' : typeof type === 'string' ? type : 'audio/mpeg',
     ...(video ? { youtube: video } : {}),
+    ...(typeof summary === 'string' && summary.trim() ? { summary: summary.trim().slice(0, 300) } : {}),
+    ...(art ? { image: art } : {}),
+    ...(link ? { page: link } : {}),
   }
 }
 
@@ -81,6 +89,9 @@ const programmeOf = (row: Row): ImportedVideo => ({
   ...(row.media ? { media: row.media } : {}),
   ...(row.media && row.type.startsWith('video/') ? { mediaKind: 'video' as const } : {}),
   ...(row.published ? { published: row.published } : {}),
+  ...(row.summary ? { summary: row.summary } : {}),
+  ...(row.image ? { image: row.image } : {}),
+  ...(row.page ? { page: row.page } : {}),
 })
 
 async function readJson(read: typeof fetch, url: string, fresh: boolean): Promise<Record<string, unknown>> {

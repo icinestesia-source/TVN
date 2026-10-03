@@ -108,14 +108,13 @@ describe('YouTube status record', () => {
 })
 
 describe('first channel', () => {
-  it('a viewer with no saved state starts on 225', () => {
+  it('a viewer with no saved state starts on 000 TVN', () => {
     withStorage(() => {
-      expect(FIRST_CHANNEL_NUMBER).toBe(225)
-      expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(225)
+      expect(FIRST_CHANNEL_NUMBER).toBe(0)
+      expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(0)
       const fresh = loadPreferences()
-      expect(fresh.lastChannelNumber).toBe(225)
-      expect(isOnAir(channelByNumber(225)!)).toBe(true)
-      expect(resolveStartupTuning(createStartupRestore(), fresh)).toEqual({ channelNumber: 225, previousNumber: null })
+      expect(fresh.lastChannelNumber).toBe(0)
+      expect(resolveStartupTuning(createStartupRestore(), fresh)).toEqual({ channelNumber: 0, previousNumber: null })
     })
   })
 

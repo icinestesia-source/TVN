@@ -365,18 +365,19 @@ describe('tuning around 1000', () => {
     }
   })
 
-  it('T: 999 then CH+ goes to 1000; 001 then CH- goes to 000 TVN', () => {
-    expect(adjacentChannel(999, 1)).toBe(SESSION_CHANNEL)
+  it('T: 1000 is not stepped onto: 999 then CH+ wraps to 000 with no User Network; 001 then CH- goes to 000 TVN', () => {
+    expect(adjacentChannel(999, 1).origin).toBe('tvn')
     expect(adjacentChannel(1, -1).origin).toBe('tvn')
   })
 
-  it('U: 1001+ keeps its numbers, with 1000 Local Media between 999 and 1001', () => {
+  it('U: 1001+ keeps its numbers; 1000 Local Media stays tunable but CH+/CH- pass from 999 to 1001', () => {
     installUserChannels()
     try {
       expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
-      expect(adjacentChannel(999, 1).number).toBe(1000)
+      expect(adjacentChannel(999, 1).number).toBe(1001)
       expect(adjacentChannel(1000, 1).number).toBe(1001)
-      expect(adjacentChannel(1001, -1).number).toBe(1000)
+      expect(adjacentChannel(1000, -1).number).toBe(999)
+      expect(adjacentChannel(1001, -1).number).toBe(999)
     } finally {
       installUserCatalogue([], new Map())
     }
@@ -495,7 +496,7 @@ describe('isolation and privacy', () => {
     expect(readFileSync('src/state/startup.ts', 'utf8')).not.toMatch(/session\/import|replaceSession|sessionActive/)
     const restore = () => createStartupRestore()
     expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: 225 })).toEqual({ channelNumber: 225, previousNumber: null })
-    expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: null })?.channelNumber).toBe(firstOnAir(listChannels())!.number)
+    expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: null })?.channelNumber).toBe(0)
     expect(firstOnAir(listChannels())!.number).not.toBe(0)
     expect(firstOnAir(listChannels())!.number).not.toBe(1000)
     expect(resolveStartupTuning(restore(), { lastChannelNumber: 225, previousChannelNumber: 1000 })).toEqual({ channelNumber: 225, previousNumber: null })

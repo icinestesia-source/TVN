@@ -11,7 +11,8 @@ export { decodeText, FeedError, parseDuration, publicFeedUrl } from './web-read.
  *   2. the website announces a feed the standard way (`<link rel="alternate">`, or a plainly linked feed);
  *   3. the public podcast directory lists a feed on the publisher's own site (Apple's keyless search);
  *   4. the page is an episode archive: its episode pages, and the public media each one plainly carries.
- * An episode whose media the publisher keeps behind a sign-in or subscription is never offered: TVN does not
+ * An episode whose media the publisher keeps behind a sign-in or subscription is never offered, nor is a later
+ * part of a split interview or an item the publisher marks for members: TVN does not
  * sign in, run a page's scripts or decode a hidden address. Lengths a feed omits are read from the file.
  */
 
@@ -32,6 +33,8 @@ export interface FeedEpisode {
   youtube?: string
   page?: string
   image?: string
+  /** The publisher's own few lines about the episode, as plain text. */
+  summary?: string
 }
 
 export type SourceShape = 'feed' | 'archive'
@@ -91,6 +94,11 @@ export function discoverFeeds(html: string, pageUrl: string): string[] {
   return found.sort((a, b) => a.rank - b.rank).map((item) => item.url)
 }
 
+/** A later part of a split interview, or an item the publisher marks for members: never a public programme. */
+const WITHHELD = /\bpart\s*(?:[2-9]|two|three|ii|iii)\s*(?:of|\/)\s*\d+\b|\bmembers?(?:[\s-]+only)\b|\bsubscribers?[\s-]+only\b/i
+
+export const isWithheld = (title: string): boolean => WITHHELD.test(title)
+
 function episodeFrom(block: string, atom: boolean, feedUrl: string): FeedEpisode | null {
   const title = field(block, 'title')
   let media: string | null = null
@@ -127,6 +135,10 @@ function episodeFrom(block: string, atom: boolean, feedUrl: string): FeedEpisode
   const published = dayOf(field(block, atom ? 'published' : 'pubDate') ?? field(block, 'updated'))
   const image = block.match(/<itunes:image\b[^>]*>/i)?.[0]
   const art = image ? publicFeedUrl(attr(image, 'href') ?? '', feedUrl)?.toString() : undefined
+  const about = (field(block, atom ? 'summary' : 'description') ?? field(block, 'itunes:summary') ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const summary = about.length > 300 ? `${about.slice(0, 297).replace(/\s+\S*$/, '')}…` : about
+  const link = atom ? null : field(block, 'link')
+  const page = link ? publicFeedUrl(link, feedUrl)?.toString() : undefined
   return {
     id: `pod-${fnv(guid)}`,
     title,
@@ -135,7 +147,9 @@ function episodeFrom(block: string, atom: boolean, feedUrl: string): FeedEpisode
     ...(published ? { published } : {}),
     media: url.toString(),
     type: type || 'audio/mpeg',
+    ...(page ? { page } : {}),
     ...(art ? { image: art } : {}),
+    ...(summary ? { summary } : {}),
   }
 }
 
@@ -164,13 +178,26 @@ export function parseFeed(xml: string, feedUrl: string): Omit<ResolvedFeed, 'fee
   const description = (field(head, atom ? 'subtitle' : 'description') ?? field(head, 'itunes:summary') ?? '').slice(0, 500)
   const seen = new Set<string>()
   const episodes: FeedEpisode[] = []
+  let members = 0
   for (const block of blocks) {
     const episode = episodeFrom(block, atom, feedUrl)
     if (!episode || seen.has(episode.id)) continue
+    if (isWithheld(episode.title)) {
+      members += 1
+      continue
+    }
     seen.add(episode.id)
     episodes.push(episode)
   }
-  return { website, title: title || new URL(feedUrl).hostname, description, episodes, listed: blocks.length, unplayable: blocks.length - episodes.length }
+  return {
+    website,
+    title: title || new URL(feedUrl).hostname,
+    description,
+    episodes,
+    listed: blocks.length,
+    unplayable: blocks.length - episodes.length,
+    ...(members ? { excluded: { members, unsupported: 0 } } : {}),
+  }
 }
 
 /** Whether the publisher serves an episode's media to anyone: a sign-in or paywall answers 401 or 403. */

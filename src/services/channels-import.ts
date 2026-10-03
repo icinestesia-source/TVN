@@ -21,6 +21,10 @@ export interface ImportedVideo {
   media?: string
   /** That file is video (a publisher's own MP4, say), so it plays with its picture. */
   mediaKind?: 'video'
+  /** The publisher's own few lines about the episode, its artwork and its page, where the source gave them. */
+  summary?: string
+  image?: string
+  page?: string
 }
 
 export interface ImportedSource {
@@ -521,7 +525,8 @@ function episodeProgramme(video: ImportedVideo, id: string, channelId: string, n
   return {
     id,
     title: video.title,
-    description: `${video.title} on ${name}, ${picture ? 'a video episode' : 'a podcast episode'}. The slot is the episode's own length.`,
+    description: video.summary ?? `${video.title} on ${name}, ${picture ? 'a video episode' : 'a podcast episode'}. The slot is the episode's own length.`,
+    ...(video.image ? { thumbnail: video.image } : {}),
     videoId: null,
     mediaUrl: video.media,
     durationSeconds: video.durationSec,

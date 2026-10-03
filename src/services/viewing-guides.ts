@@ -10,7 +10,7 @@ import type { Programme, ProgrammeSource } from '../types/programme.ts'
  */
 export const GUIDES_KEY = 'tvn.guides.v1'
 export const GUIDES_FORMAT = 'tvn-guides-v1'
-export const GUIDE_LIMITS = { items: 300, guides: 200, name: 60 } as const
+export const GUIDE_LIMITS = { items: 300, guides: 200, name: 60, sources: 12 } as const
 export const DEFAULT_GUIDE_NAME = 'My Guide'
 
 /** The programme as it was when added: enough to play it again, never its media. */
@@ -25,10 +25,23 @@ export interface GuideItem {
   programme: GuideProgramme
 }
 
+/**
+ * A channel a Channel Guide draws its programmes from: a reference to the channel's pool, never a copy of
+ * it. Known by the channel's stable id, so a renumbered channel is still the same source; the number and
+ * name are what it was called when added, shown if the channel has since gone.
+ */
+export interface GuideSource {
+  channelId: string
+  channelNumber: number
+  channelName: string
+}
+
 export interface ViewingGuide {
   id: string
   name: string
   items: GuideItem[]
+  /** CHANNEL SOURCES: the channels BUILD GUIDE schedules from, in the viewer's order. */
+  sources?: GuideSource[]
   /** Start again after the last item. Off unless the viewer asks for it. */
   loop?: boolean
   createdAt: number
@@ -123,6 +136,8 @@ export type GuideAction =
   | { type: 'load'; id: string }
   /** The current Guide's programmes replaced wholesale, as CREATE GUIDE FROM… and RESCAN do. */
   | { type: 'fill'; items: GuideItem[] }
+  /** The current Guide's CHANNEL SOURCES replaced (added to, removed from or reordered). */
+  | { type: 'sources'; sources: GuideSource[] }
 
 const copyGuide = (guide: ViewingGuide): ViewingGuide => structuredClone(guide)
 
@@ -180,6 +195,13 @@ export function applyGuideAction(library: GuideLibrary, action: GuideAction, now
       return current ? { ...library, current: touched(current, now, { loop: action.loop || undefined }) } : library
     case 'fill':
       return current ? { ...library, current: touched(current, now, { items: action.items.slice(0, GUIDE_LIMITS.items).map((item) => structuredClone(item)) }) } : library
+    case 'sources': {
+      const unique = action.sources.filter((source, index) => action.sources.findIndex((other) => other.channelId === source.channelId) === index)
+      if (unique.length > GUIDE_LIMITS.sources) throw new Error(`A Channel Guide draws on at most ${GUIDE_LIMITS.sources} channels`)
+      const sources = unique.map((source) => ({ ...source }))
+      const guide = current ?? newGuide(DEFAULT_GUIDE_NAME, now)
+      return { ...library, current: touched(guide, now, { sources: sources.length ? sources : undefined }) }
+    }
   }
 }
 
@@ -294,7 +316,8 @@ export function buildGuidesExport(library: GuideLibrary): GuidesExport {
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
-const GUIDE_FIELDS = new Set(['id', 'name', 'items', 'loop', 'createdAt', 'modifiedAt'])
+const GUIDE_FIELDS = new Set(['id', 'name', 'items', 'sources', 'loop', 'createdAt', 'modifiedAt'])
+const SOURCE_FIELDS = new Set(['channelId', 'channelNumber', 'channelName'])
 const ITEM_FIELDS = new Set(['id', 'channelNumber', 'channelName', 'programme'])
 
 function checkGuide(value: unknown, at: string, errors: string[]): void {
@@ -307,6 +330,18 @@ function checkGuide(value: unknown, at: string, errors: string[]): void {
   if (typeof value.name !== 'string') errors.push(`${at}.name is not text`)
   if (value.loop !== undefined && typeof value.loop !== 'boolean') errors.push(`${at}.loop is not true or false`)
   for (const name of ['createdAt', 'modifiedAt'] as const) if (typeof value[name] !== 'number' || !Number.isFinite(value[name])) errors.push(`${at}.${name} is not a time`)
+  if (value.sources !== undefined) {
+    if (!Array.isArray(value.sources) || value.sources.length > GUIDE_LIMITS.sources) errors.push(`${at}.sources is not a list of at most ${GUIDE_LIMITS.sources}`)
+    else
+      value.sources.forEach((source, index) => {
+        const where = `${at}.sources[${index}]`
+        if (!isRecord(source)) return void errors.push(`${where} is not a channel source`)
+        for (const name of Object.keys(source)) if (!SOURCE_FIELDS.has(name)) errors.push(`${where}.${name} is not a channel source field`)
+        if (typeof source.channelId !== 'string' || !source.channelId || source.channelId.length > 220) errors.push(`${where}.channelId is not a channel id`)
+        if (typeof source.channelNumber !== 'number' || !Number.isInteger(source.channelNumber) || source.channelNumber < 0 || source.channelNumber > 99_999) errors.push(`${where}.channelNumber is not a channel`)
+        if (typeof source.channelName !== 'string') errors.push(`${where}.channelName is not text`)
+      })
+  }
   if (!Array.isArray(value.items) || value.items.length > GUIDE_LIMITS.items) {
     errors.push(`${at}.items is not a list of at most ${GUIDE_LIMITS.items}`)
     return
@@ -363,6 +398,7 @@ const cleanGuide = (guide: ViewingGuide): ViewingGuide => ({
   id: guide.id,
   name: cleanGuideName(guide.name),
   items: guide.items.map((item) => ({ id: item.id, channelNumber: item.channelNumber, channelName: item.channelName, programme: guideProgramme(item.programme) })),
+  ...(guide.sources?.length ? { sources: guide.sources.map(({ channelId, channelNumber, channelName }) => ({ channelId, channelNumber, channelName })) } : {}),
   ...(guide.loop ? { loop: true } : {}),
   createdAt: guide.createdAt,
   modifiedAt: guide.modifiedAt,
@@ -371,4 +407,9 @@ const cleanGuide = (guide: ViewingGuide): ViewingGuide => ({
 /** A checked library in its canonical shape: only the fields a Guide keeps. */
 export function libraryFrom(doc: { current?: ViewingGuide | null; saved: ViewingGuide[] }): GuideLibrary {
   return { current: doc.current ? cleanGuide(doc.current) : null, saved: doc.saved.map(cleanGuide) }
+}
+
+/** The channel a source names now: by its stable id, whatever number it has been given since. */
+export function sourceChannel<T extends { id: string }>(source: GuideSource, channels: readonly T[]): T | undefined {
+  return channels.find((channel) => channel.id === source.channelId)
 }

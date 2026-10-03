@@ -1,12 +1,14 @@
-import { useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { listChannels } from '../data/catalogue.ts'
 import { channelMatchesFilter, USER_NUMBER_START } from '../data/network.ts'
 import { userFilter } from '../data/user-network/users.ts'
-import { isOnAir } from '../network/airing.ts'
+import type { StoredSource } from '../services/channels-import.ts'
+import { loadStoredSources } from '../services/user-db.ts'
 import { useTv } from '../state/tv-context.ts'
 import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 import type { Channel } from '../types/channel.ts'
 import type { GuideFilter } from '../types/preferences.ts'
+import { networkRows, networkStatus, unloaded } from '../view/network-rows.ts'
 
 /** The editor's lists: the Guide's own tabs, and TVN's shipped 001–999 on their own. */
 type EditorList = GuideFilter | 'central'
@@ -30,14 +32,6 @@ function listedIn(channel: Channel, list: EditorList, favourites: readonly numbe
   return channelMatchesFilter({ ...channel, enabled: true }, list, favourites)
 }
 
-function statusOf(channel: Channel): string {
-  if (channel.number === TVN_CHANNEL_NUMBER) return 'Surfing'
-  if (channel.emptySlot) return 'Empty'
-  if (!channel.enabled) return 'Off'
-  if (channel.origin === 'session') return 'This device'
-  return isOnAir(channel) ? 'On air' : 'Resting'
-}
-
 /**
  * NETWORK EDITOR (TVN in the Guide's header): the television network itself, in the same lists the Guide
  * has. Each row is one channel, wherever it is listed: renaming, deleting or renumbering it shows in every
@@ -52,15 +46,28 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState<number | null>(null)
   const listRef = useRef<HTMLOListElement>(null)
+  // What is stored, not only what can air: a channel whose source has not been read yet is still a channel.
+  const [stored, setStored] = useState<readonly StoredSource[]>([])
+  useEffect(() => {
+    let live = true
+    loadStoredSources().then(
+      (sources) => live && setStored(sources),
+      () => undefined,
+    )
+    return () => {
+      live = false
+    }
+  }, [tv.visibleChannels])
 
   const rows = useMemo(() => {
-    const listed = listChannels().filter((channel) => listedIn(channel, list, tv.favourites))
+    const merged = networkRows(listChannels(), stored, new Set(tv.networkUsers.map((user) => user.id)))
+    const listed = merged.filter((channel) => listedIn(channel, list, tv.favourites))
     if (list !== 'favourites') return listed
     const at = new Map(tv.favourites.map((number, index) => [number, index]))
     return listed.sort((a, b) => (at.get(a.number) ?? 0) - (at.get(b.number) ?? 0))
     // The network changes under the same function; visibleChannels is what moves when it does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list, tv.favourites, tv.visibleChannels])
+  }, [list, tv.favourites, tv.visibleChannels, tv.networkUsers, stored])
 
   const canMove = list !== 'favourites' && list !== 'central'
   const users = rows.filter(isUser)
@@ -158,11 +165,11 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               onKeyDown={(event) => rowKey(event, channel)}
             >
               <span className="network-number">{pad(channel.number)}</span>
-              <button type="button" className="network-name" onKeyDown={keepKey} onClick={() => onEdit(channel.number)} title={`Edit ${channel.name}`}>
+              <button type="button" className="network-name" disabled={unloaded(channel)} onKeyDown={keepKey} onClick={() => onEdit(channel.number)} title={unloaded(channel) ? `${channel.name}: editable once its source has loaded` : `Edit ${channel.name}`}>
                 <span className="network-title">{channel.name}</span>
                 <span className="network-kind">{network}</span>
               </button>
-              <span className={`network-status is-${statusOf(channel).toLowerCase().replace(/\s+/g, '-')}`}>{statusOf(channel)}</span>
+              <span className={`network-status is-${networkStatus(channel).toLowerCase().replace(/\s+/g, '-')}`}>{networkStatus(channel)}</span>
               <button
                 type="button"
                 className={favourite ? 'network-star is-on' : 'network-star'}
@@ -185,7 +192,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
                   </>
                 ) : null}
               </span>
-              <button type="button" className="tab network-edit" onKeyDown={keepKey} onClick={() => onEdit(channel.number)}>
+              <button type="button" className="tab network-edit" disabled={unloaded(channel)} onKeyDown={keepKey} onClick={() => onEdit(channel.number)}>
                 {channel.number === TVN_CHANNEL_NUMBER ? 'Settings' : 'Edit'}
               </button>
             </li>

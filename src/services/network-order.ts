@@ -69,8 +69,14 @@ export function remapHistory(history: ViewingHistory, moves: ReadonlyMap<number,
 }
 
 function remapGuide(guide: ViewingGuide, moves: ReadonlyMap<number, number>): ViewingGuide {
-  if (!guide.items.some((item) => moves.has(item.channelNumber))) return guide
-  return { ...guide, items: guide.items.map((item) => (moves.has(item.channelNumber) ? { ...item, channelNumber: remapNumber(item.channelNumber, moves) } : item)) }
+  const sources = guide.sources?.some((source) => moves.has(source.channelNumber))
+  if (!sources && !guide.items.some((item) => moves.has(item.channelNumber))) return guide
+  return {
+    ...guide,
+    items: guide.items.map((item) => (moves.has(item.channelNumber) ? { ...item, channelNumber: remapNumber(item.channelNumber, moves) } : item)),
+    // A source is known by its channel's id; its number only names it, and follows too.
+    ...(sources ? { sources: guide.sources!.map((source) => ({ ...source, channelNumber: remapNumber(source.channelNumber, moves) })) } : {}),
+  }
 }
 
 /** Saved Guides follow renumbered channels; the edit stamps are left alone, since nothing the viewer chose changed. */

@@ -158,11 +158,11 @@ describe('TVN 2.0 final: the diagnostic names the build and the reserved channel
 describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
   const header = (tool: GuideTool | null, following = false) =>
     renderToStaticMarkup(createElement(GuideActions, { tool, picked: false, following, query: following ? 'Music' : null, onNow: () => {}, onTool: () => {} }))
-  const active = (markup: string) => [...markup.matchAll(/class="tab[^"]*\bis-on\b[^"]*"[^>]*>([A-Za-z]+)</g)].map((match) => match[1])
+  const active = (markup: string) => [...markup.matchAll(/class="tab[^"]*\bis-on\b[^"]*"[^>]*>([A-Za-z ]+)</g)].map((match) => match[1])
 
   it('one section carries the gold underline: GUIDE while the listings show, OPTIONS, ADD or MEDIA while they are open', () => {
     expect(active(header(null))).toEqual(['Guide'])
-    expect(active(header('guides'))).toEqual(['Guide'])
+    expect(active(header('guides'))).toEqual(['Ch Guide'])
     expect(active(header('options'))).toEqual(['Options'])
     expect(active(header('add'))).toEqual(['Add'])
     expect(active(header('media'))).toEqual(['Media'])
@@ -170,7 +170,8 @@ describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
   })
 
   it('a Guide choosing what plays keeps GUIDE green, apart from which section is active', () => {
-    expect(header(null, true)).toContain('class="tab guide-follow is-on is-following"')
+    expect(header(null, true)).toContain('class="tab guide-follow is-following"')
+    expect(header('guides', true)).toContain('class="tab guide-follow is-on is-open is-following"')
     expect(header('options', true)).toContain('class="tab guide-follow is-following"')
     const css = readFileSync('src/styles/guide.css', 'utf8')
     expect(css).toContain('.tab.guide-follow.is-following { color: var(--follow); font-weight: 600; }')

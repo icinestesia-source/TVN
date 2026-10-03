@@ -42,6 +42,37 @@ describe('podcast and RSS/Atom sources', () => {
 })
 
 
+describe('a publisher whose free archive is the first segment of each interview', () => {
+  const ITEM = (title: string, file: string, about = '') =>
+    `<item><title>${title}</title><description>${about}</description><enclosure url="https://media.veritas-example.org/${file}.mp3" type="audio/mpeg"/><guid isPermaLink="false">https://media.veritas-example.org/${file}.mp3</guid><pubDate>Thu, 03 Sep 2026 19:01:00 -0700</pubDate><itunes:image href="https://www.veritas-example.org/images/${file}.jpg"/></item>`
+  const SPLIT = `<?xml version="1.0"?><rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"><channel><title>VERITAS</title><link>https://www.veritas-example.org</link><description>Interviews</description>
+${ITEM('Jane Guest | The Big Question | Part 1 of 2', 'vs-1', 'First line.&lt;br /&gt;Second line.')}
+${ITEM('Jane Guest | The Big Question | Part 2 of 2', 'vs-2')}
+${ITEM('Members Only: the full interview', 'vs-3')}
+${ITEM('Old Guest | Earlier Days | Part 1 of 2', 'vs-4')}
+</channel></rss>`
+
+  it('finds the public feed through the podcast directory and keeps only the free first parts, with their metadata', async () => {
+    const read = (async (url: string | URL) => {
+      const at = String(url)
+      if (at === 'https://www.veritas-example.org/') return page('<html><head><meta property="og:site_name" content="VERITAS"><title>VERITAS</title></head></html>')
+      if (at.startsWith('https://itunes.apple.com/search')) return page(JSON.stringify({ results: [{ feedUrl: 'https://www.veritas-example.org/vs.rss' }] }), 200, 'application/json')
+      if (at === 'https://www.veritas-example.org/vs.rss') return page(SPLIT, 200, 'application/rss+xml')
+      return page('', 200, 'audio/mpeg')
+    }) as typeof fetch
+    const found = await resolveFeed('https://www.veritas-example.org/', read, { wide: true })
+    expect(found).toMatchObject({ feedUrl: 'https://www.veritas-example.org/vs.rss', via: 'directory', listed: 4, excluded: { members: 2, unsupported: 0 } })
+    expect(found.episodes.map((episode) => episode.title)).toEqual(['Jane Guest | The Big Question | Part 1 of 2', 'Old Guest | Earlier Days | Part 1 of 2'])
+    expect(found.episodes[0]).toMatchObject({
+      durationSec: 0,
+      published: '2026-09-03',
+      media: 'https://media.veritas-example.org/vs-1.mp3',
+      image: 'https://www.veritas-example.org/images/vs-1.jpg',
+      summary: 'First line. Second line.',
+    })
+  })
+})
+
 describe('a bare @handle', () => {
   it('is read as a YouTube handle for the keyless resolver to confirm', () => {
     expect(parseChannelInput('@daftpunk')).toEqual({ kind: 'handle', handle: 'daftpunk' })

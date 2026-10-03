@@ -75,9 +75,9 @@ describe('the first programme really starts', () => {
 })
 
 describe('startup activates the selected channel', () => {
-  it('fresh viewers start on 225 and returning viewers on their own channel, then the player is loaded and checked', () => {
-    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(225)
-    expect(provider).toContain('const tuning = resolveStartupTuning(startup, stored)')
+  it('fresh viewers start on 000 TVN and returning viewers on their own channel, then the player is loaded and checked', () => {
+    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(0)
+    expect(provider).toContain('const tuning = resolveStartupTuning(startup, stored, currentEntryMode())')
     expect(provider).toMatch(/commitChannel\(tuning, false\)[\s\S]{0,600}bootRef\.current\(\)/)
     expect(provider).toMatch(/void loadProgramme\(current, Date\.now\(\)\)\.then\(\(result\) => \{[\s\S]{0,500}void confirmStart\(player, stillFirst, sleep\)/)
   })

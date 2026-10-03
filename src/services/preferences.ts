@@ -31,8 +31,8 @@ const FILTERS: readonly GuideFilter[] = [
   'science',
 ]
 
-/** Where a viewer with no saved state starts; a returning viewer resumes their own channel. */
-export const FIRST_CHANNEL_NUMBER = 225
+/** Where a viewer with no saved state starts: 000 TVN, which surfs the network itself. A returning viewer resumes their own channel. */
+export const FIRST_CHANNEL_NUMBER = 0
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   version: 2,

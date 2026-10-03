@@ -431,8 +431,13 @@ export function randomChannel(
   return choices[Math.floor(random() * choices.length)]
 }
 
+/**
+ * CH+ / CH- over the whole network, one ring: 000 TVN sits between the User Network (below, by wrapping) and
+ * 001 (above). 1000 Local Media is a utility reached by number or MEDIA, never by stepping; stepping from it
+ * goes on to its neighbours.
+ */
 export function adjacentChannel(number: number, delta: number): Channel {
-  const enabled = listChannels().filter((channel) => channel.enabled && !channel.emptySlot && isOnAir(channel))
+  const enabled = listChannels().filter((channel) => channel.enabled && channel.origin !== 'session' && !channel.emptySlot && isOnAir(channel))
   if (enabled.length === 0) {
     const fallback = listChannels().filter((channel) => channel.enabled)
     const index = fallback.findIndex((channel) => channel.number === number)

@@ -42,12 +42,15 @@ describe('one TVN, two entries', () => {
     expect(PREFERENCES_KEY).toBe('retrotv.preferences.v1')
     expect(SURF_KEY).toBe('tvn.surf.v1')
     const users = provider.split('\n').filter((line) => /currentEntryMode|entryMode\(/.test(line) && !line.startsWith('import'))
-    expect(users).toEqual(['  const [surfing, setSurfing] = useState(() => surfsOnEntry(currentEntryMode()))'])
+    expect(users).toEqual([
+      '  const [surfing, setSurfing] = useState(() => surfsOnEntry(currentEntryMode()))',
+      '      const tuning = resolveStartupTuning(startup, stored, currentEntryMode())',
+    ])
   })
 
-  it('a fresh viewer starts on 225 from either entry; a returning viewer keeps their channel', () => {
-    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(225)
-    expect(provider).toContain('const tuning = resolveStartupTuning(startup, stored)')
+  it('a fresh viewer starts on 000 TVN; /tvn always starts on 000; a returning viewer keeps their channel', () => {
+    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(0)
+    expect(provider).toContain('const tuning = resolveStartupTuning(startup, stored, currentEntryMode())')
     expect(provider).toContain('commitChannel(tuning, false)')
     expect(provider).toContain('historyRef.current = visit(EMPTY_HISTORY, tuning.channelNumber)')
   })
