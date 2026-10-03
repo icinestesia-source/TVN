@@ -1488,15 +1488,21 @@ span.editor-expand { border-color: transparent; }
 }
 
 @media (max-width: 640px) {
-  :root { --channel-col: 148px; }
+  /* The channel name matters more than the star here: favourites stay on the remote and in the Network Editor. */
+  :root { --channel-col: 168px; }
   .guide-brand { min-width: 0; }
   .tab { padding: 0 8px; }
-  .ch-name { display: none; }
+  .channel-cell { gap: 4px; padding: 0 6px 0 8px; }
+  .channel-cell .star { display: none; }
+  .ch-tune { gap: 6px; }
+  .ch-name { font-size: 12px; letter-spacing: 0.02em; }
 }
 
 @media (max-width: 480px) {
-  :root { --channel-col: 112px; }
+  :root { --channel-col: 140px; }
   .ch-head { padding: 0 6px; }
+  .ch-number { width: 4.2ch; font-size: 15px; }
+  .ch-name { font-size: 11px; }
 }
 
 /* OPTIONS: users and settings, laid out as cards in the Guide's own colours. */

@@ -6,8 +6,8 @@ import type { PlayerHandle } from './types.ts'
  */
 export type StartHold = 'sound' | 'picture' | null
 
-export const START_HOLD_COPY: Record<Exclude<StartHold, null>, string> = {
-  sound: 'Sound off · press any key or tap for sound',
+/** Held sound needs no words: it shows as Muted, and UNMUTE or any key or tap brings it. */
+export const START_HOLD_COPY: Record<'picture', string> = {
   picture: 'Press any key or tap to start',
 }
 

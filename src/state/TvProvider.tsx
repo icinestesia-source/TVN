@@ -195,6 +195,8 @@ import {
 
 const INFO_MS = 6000
 const VOLUME_MS = 1200
+/** How long after the press that released held sound a MUTE from that same press still means sound on. */
+const SOUND_RELEASE_MS = 1500
 const NUMERIC_MS = 1600
 // A refused or failed first programme is usually replaced within a second or two (the refusal fallback).
 const STARTUP_RETRY_MS = 4000
@@ -393,6 +395,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const bootedRef = useRef(false)
   const [startHold, setStartHold] = useState<StartHold>(null)
   const startHoldRef = useRef<StartHold>(null)
+  const soundReleasedAt = useRef(0)
   const startCheckRef = useRef(false)
   const loadedKey = useRef('')
   const loadToken = useRef(0)
@@ -943,6 +946,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!startHold) return
     const release = () => {
+      if (startHoldRef.current === 'sound') soundReleasedAt.current = Date.now()
       startHoldRef.current = null
       setStartHold(null)
       const player = playerRef.current
@@ -1745,6 +1749,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
         }
         break
       case 'mute': {
+        // The press that released the browser's sound hold was the viewer asking for sound, which reads as Muted.
+        if (!mutedRef.current && Date.now() - soundReleasedAt.current < SOUND_RELEASE_MS) {
+          soundReleasedAt.current = 0
+          playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, false)
+          showOverlay('volume', VOLUME_MS)
+          break
+        }
         const nextMuted = !mutedRef.current
         mutedRef.current = nextMuted
         setMuted(nextMuted)
@@ -2933,7 +2944,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       visibleChannels,
       guideVisiting,
       volume,
-      muted,
+      // Sound the browser holds back until the viewer interacts shows as Muted, so UNMUTE is what brings it.
+      muted: muted || startHold === 'sound',
       paused,
       subtitles,
       favourites,

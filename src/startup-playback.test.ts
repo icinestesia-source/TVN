@@ -54,7 +54,7 @@ describe('the first programme really starts', () => {
     const blocked = fakePlayer(() => false)
     expect(await confirmStart(blocked.player, () => true, blocked.wait)).toBe('picture')
     expect(START_HOLD_COPY.picture).toBe('Press any key or tap to start')
-    expect(START_HOLD_COPY.sound).toBe('Sound off · press any key or tap for sound')
+    expect(Object.keys(START_HOLD_COPY)).toEqual(['picture'])
   })
 
   it('stops if the viewer has already tuned, paused or left single view: their interaction allows sound', async () => {
@@ -126,8 +126,20 @@ describe('startup activates the selected channel', () => {
     expect(boot.match(/startCheckRef\.current = false/g)?.length).toBe(2)
   })
 
-  it('shows the held state on screen', () => {
-    expect(read('src/app/TvScreen.tsx')).toContain('{tv.startHold && !tv.paused ? <div className="paused-bug" role="status">{START_HOLD_COPY[tv.startHold]}</div> : null}')
+  it('asks for a key or tap only when the picture is held; held sound shows as Muted, with no message', () => {
+    const screen = read('src/app/TvScreen.tsx')
+    expect(screen).toContain("{tv.startHold === 'picture' && !tv.paused ? <div className=\"paused-bug\" role=\"status\">{START_HOLD_COPY.picture}</div> : null}")
+    expect(screen).not.toMatch(/press any key or tap for sound|Sound off/)
+    expect(read('src/state/TvProvider.tsx')).toContain("muted: muted || startHold === 'sound',")
+  })
+
+  it('UNMUTE pressed while sound is held turns sound on, rather than muting TVN on the same press', () => {
+    const provider = read('src/state/TvProvider.tsx')
+    const release = provider.slice(provider.indexOf('const release = () => {'), provider.indexOf('}, [startHold])'))
+    expect(release).toContain("if (startHoldRef.current === 'sound') soundReleasedAt.current = Date.now()")
+    const mute = provider.slice(provider.indexOf("case 'mute': {"), provider.indexOf("case 'subtitles': {"))
+    expect(mute).toMatch(/if \(!mutedRef\.current && Date\.now\(\) - soundReleasedAt\.current < SOUND_RELEASE_MS\) \{[\s\S]*?setAudible\(!tuningRef\.current, volumeRef\.current, false\)[\s\S]*?break/)
+    expect(mute.indexOf('soundReleasedAt')).toBeLessThan(mute.indexOf('const nextMuted'))
   })
 
   it('a direct stream the browser will not start yet is waiting, not unavailable', () => {

@@ -144,7 +144,7 @@ export function TvScreen() {
         {tv.numeric ? <NumericEntry digits={tv.numeric} /> : null}
         {tv.notice ? <div className="notice">{tv.notice}</div> : null}
         {tv.paused ? <div className="paused-bug">Paused</div> : null}
-        {tv.startHold && !tv.paused ? <div className="paused-bug" role="status">{START_HOLD_COPY[tv.startHold]}</div> : null}
+        {tv.startHold === 'picture' && !tv.paused ? <div className="paused-bug" role="status">{START_HOLD_COPY.picture}</div> : null}
         <Hints />
       </div>
       {tv.guideMode === 'integrated' && single && !narrow ? <GuideSplitter /> : null}

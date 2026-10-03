@@ -265,7 +265,10 @@ describe('Guide timeline zoom', () => {
     expect(css).toMatch(/\.guide-zoom \{[^}]*flex: 1 1 auto;[^}]*min-width: 28px;/)
     expect(css).toMatch(/\.guide-zoom \{[^}]*max-width: 132px;/)
     expect(read('src/styles/tokens.css')).toContain('--channel-col: 280px')
-    for (const width of ['210px', '148px', '112px']) expect(css).toContain(`--channel-col: ${width}`)
+    // Phones show the channel name rather than the star, so their channel column is a little wider.
+    for (const width of ['210px', '168px', '140px']) expect(css).toContain(`--channel-col: ${width}`)
+    expect(css).toMatch(/@media \(max-width: 640px\) \{[^@]*\.channel-cell \.star \{ display: none; \}/)
+    expect(css).not.toMatch(/@media \(max-width: 640px\) \{[^@]*\.ch-name \{ display: none; \}/)
     expect(read('src/epg/geometry.ts')).toContain('return windowWidth < 720 ? 4.6 : windowWidth < 1100 ? 6.2 : 8')
     // At 1x, the phone Guide opens exactly where it always did.
     const now = Date.UTC(2026, 9, 1, 12, 10)
