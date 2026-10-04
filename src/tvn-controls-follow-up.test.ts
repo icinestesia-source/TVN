@@ -153,7 +153,7 @@ describe('WEBSITE: interaction owns the keys; a paused website resumes where it 
   })
 })
 
-describe('INFORMATION OVERLAY: the creator leading the title line', () => {
+describe('INFORMATION OVERLAY: the creator after the channel name', () => {
   const channel = { number: 1001, name: 'Science', origin: 'user' } as unknown as Channel
   const base = { id: 'p', title: 'Video', description: '', videoId: 'YrZyJuaBfKA', durationSeconds: 600, channelId: 'c', category: 'User', source: 'imported', kind: 'programme', playbackMode: 'linear' } as Programme
   const markup = (programme: Programme) =>
@@ -163,8 +163,7 @@ describe('INFORMATION OVERLAY: the creator leading the title line', () => {
     const html = markup({ ...base, ...creatorFields({ name: 'Tom Scott', channelId: TOM, handle: 'TomScottGo' }) })
     expect(html).toContain('<a class="info-creator" href="https://www.youtube.com/@TomScottGo" target="_blank" rel="noopener noreferrer">@TomScottGo</a>')
     expect(html.indexOf('Science')).toBeLessThan(html.indexOf('@TomScottGo'))
-    expect(html).toMatch(/<div class="info-headline"><a class="info-creator"[^>]*>@TomScottGo<\/a><h2 class="info-title">Video<\/h2><\/div>/)
-    expect(html).not.toMatch(/<p class="info-kicker">(?:(?!<\/p>)[^])*info-creator/)
+    expect(html).toMatch(/<span>Science<\/span><a class="info-creator"[^>]*>@TomScottGo<\/a><\/p><h2 class="info-title">Video<\/h2>/)
     expect(html).not.toMatch(/<p class="info-kicker"[^>]*onclick|<a[^>]*class="info-kicker"/i)
   })
 

@@ -65,21 +65,17 @@ export function ProgrammeInfo({
         {label ? <span className="info-net">{label}</span> : null}
         <span>{padChannel(channel.number)}</span>
         <span>{channel.name}</span>
-      </p>
-      {by ? (
-        <div className="info-headline">
-          {by.url ? (
+        {by ? (
+          by.url ? (
             <a className="info-creator" href={by.url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
               {by.text}
             </a>
           ) : (
             <span className="info-creator">{by.text}</span>
-          )}
-          <h2 className="info-title">{programme.title}</h2>
-        </div>
-      ) : (
-        <h2 className="info-title">{programme.title}</h2>
-      )}
+          )
+        ) : null}
+      </p>
+      <h2 className="info-title">{programme.title}</h2>
       {programme.relay ? (
         <p className="info-relay">
           On {padChannel(programme.relay.channelNumber)}

@@ -14,7 +14,7 @@ const CHANNEL_ID = 'ch-tvn'
 export const TVN_CHANNEL: Channel = {
   id: CHANNEL_ID,
   number: TVN_CHANNEL_NUMBER,
-  name: 'TVN',
+  name: 'Channel Zero',
   shortName: 'TVN',
   description: 'TVN’s own channel: TVN surfs the network for you, one channel after another.',
   logo: 'TVN',

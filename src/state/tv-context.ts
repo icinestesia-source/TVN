@@ -105,6 +105,9 @@ export interface TvContextValue {
   surfRange: import('./surf.ts').SurfRange
   /** A TVN setting; `moved` is the end the viewer changed, which wins if the two cross. */
   setSurfRange: (range: import('./surf.ts').SurfRange, moved?: 'min' | 'max') => void
+  /** TV Surf waits for the programme on screen to finish before the next hop (off by default). */
+  surfUntilEnd: boolean
+  setSurfUntilEnd: (untilEnd: boolean) => void
   /** How a channel change is presented (src/state/transitions.ts), a saved setting. Never waits for the player. */
   transition: import('./transitions.ts').TransitionSettings
   setTransition: (settings: import('./transitions.ts').TransitionSettings) => void
@@ -226,6 +229,12 @@ export interface TvContextValue {
   loadMoreChannelSource: (source: ChannelSource, options: LoadMoreOptions) => Promise<ChannelSource>
   /** A newly added source read for its first programmes, as RESCAN would read it; nothing is saved. */
   acquireChannelSource: (source: ChannelSource) => Promise<ChannelSource>
+  /** Whether LOAD can read a source further (an imported list only when TVN knows its uploader). */
+  canLoadChannelSource: (source: ChannelSource) => boolean
+  /** LATEST FIRST: the channel's newest programme now, then newest to oldest; again, back to TVN's arrangement. A message for the viewer. */
+  latestFirst: (channelNumber: number) => Promise<string>
+  /** RELOAD: rescan the channel and put it back in its kind of order. A message for the viewer. */
+  reloadChannel: (channelNumber: number) => Promise<string>
   /**
    * EXPORT CHANNEL: download one user channel, as the editor shows it, as a tvn-channel-v1 file (`json`) or its
    * readable manifest (`md`). Reads only: nothing is saved.

@@ -61,6 +61,8 @@ export interface Channel {
   liveSinceMs?: number
   /** A curated channel the viewer has re-sourced in this browser: it plays its own list, not TVN's schedule. */
   customLineup?: boolean
+  /** Latest first, live: the newest programme went to air at this moment, the rest following newest to oldest. */
+  liveFromMs?: number
   /** A cleared 1001+ slot: it keeps its number and can be filled again, but has nothing to air. */
   emptySlot?: boolean
 }

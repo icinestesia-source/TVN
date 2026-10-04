@@ -333,6 +333,8 @@ export function GuideOptions() {
               <output className="options-value">{tv.surfRange.maxSeconds} s</output>
             </span>
           </label>
+          <Row label="Wait for the end">{toggle(tv.surfUntilEnd, ['On', 'Off'], () => tv.setSurfUntilEnd(!tv.surfUntilEnd))}</Row>
+          <p className="options-note">With Wait for the end on, TV Surf lets each programme finish before it moves to the next channel; the wait above applies only where a programme has no end in reach.</p>
           <Row label="Random Cycle">{toggle(tv.surfing, ['Stop', 'Start'], tv.toggleSurf)}</Row>
         </Card>
 

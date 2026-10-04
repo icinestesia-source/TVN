@@ -345,12 +345,14 @@
 
 .editor-source {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 2px 12px;
   padding: 3px 4px 3px 4px;
   background: #0b1c30;
 }
+.editor-source-load { grid-column: 4; }
+.editor-source-remove { grid-column: 5; }
 
 .editor-expand {
   width: 28px;
@@ -771,7 +773,9 @@ span.editor-expand { border-color: transparent; }
 
 @media (max-width: 640px) {
   .guide-info.guide-editor { grid-template-columns: minmax(0, 1fr); }
-  .editor-source { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .editor-source { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .editor-source-load { grid-column: 3; grid-row: 1; }
+  .editor-source-remove { grid-column: 4; grid-row: 1; }
   .editor-source-status { grid-column: 2; grid-row: 2; padding-left: 26px; white-space: normal; }
   .editor-videos, .editor-videos-empty, .editor-discover, .editor-depth { padding-left: 8px; }
   .editor-show-all { margin-left: 8px; }
@@ -890,14 +894,14 @@ span.editor-expand { border-color: transparent; }
   outline-offset: 1px;
 }
 
-/* Timeline zoom: a slim slider filling what the channel heading leaves, from 1x up. */
+/* Timeline zoom: a slim slider filling what the channel heading leaves, from 1x up, kept to its right edge. */
 .guide-zoom {
   flex: 1 1 auto;
   width: 0;
   min-width: 28px;
   max-width: 132px;
   height: 22px;
-  margin: 0 0 0 4px;
+  margin: 0 0 0 auto;
   accent-color: var(--gold);
   cursor: pointer;
 }
@@ -1040,6 +1044,24 @@ span.editor-expand { border-color: transparent; }
 }
 
 .star.is-on { color: var(--gold); }
+
+/* The selected channel's own actions, before its star: LATEST FIRST, then EDIT, RELOAD and DELETE where there is room. */
+.ch-act {
+  width: 22px;
+  flex: none;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+}
+.ch-act:hover:not(:disabled),
+.ch-act:focus-visible { color: var(--ink); }
+.ch-act:disabled { opacity: 0.55; }
+.ch-latest.is-on,
+.ch-latest.is-on:disabled { color: var(--gold); opacity: 1; }
+.ch-delete.is-confirm { color: var(--danger); font-weight: 700; }
 
 .guide-grid {
   flex: 1;
@@ -1283,23 +1305,6 @@ span.editor-expand { border-color: transparent; }
   text-overflow: ellipsis;
   min-width: 0;
 }
-
-/* The creator leads the title line, smaller and quieter than the title it credits. */
-.info-headline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 14px;
-  min-width: 0;
-  margin-top: 2px;
-}
-.info-headline .info-creator {
-  flex: 0 1 auto;
-  max-width: 45%;
-  font-family: var(--font-ui);
-  font-size: 13px;
-}
-.info-headline .info-title { margin-top: 0; min-width: 0; }
 
 a.info-creator:hover,
 a.info-creator:focus-visible {
@@ -1612,6 +1617,7 @@ a.info-creator:focus-visible {
 
 @media (max-width: 900px) {
   :root { --channel-col: 210px; --safe: 12px; }
+  .channel-cell .ch-extra { display: none; }
   .ch-number { font-size: 18px; }
 }
 
@@ -1622,6 +1628,8 @@ a.info-creator:focus-visible {
   .tab { padding: 0 8px; }
   .channel-cell { gap: 4px; padding: 0 6px 0 8px; }
   .channel-cell .star { display: none; }
+  .channel-cell.is-selected .star,
+  .channel-cell .star.is-on { display: block; }
   .ch-tune { gap: 6px; }
   .ch-name { font-size: 12px; letter-spacing: 0.02em; }
 }

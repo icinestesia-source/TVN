@@ -62,6 +62,28 @@ export function saveSurfOn(on: boolean, store: Store | null = browserStore()): v
   store?.setItem(SURF_KEY, JSON.stringify({ ...readStored(store), on }))
 }
 
+/** Whether surfing waits for the programme on screen to finish before the next hop. Off unless the viewer chose it. */
+export function loadSurfUntilEnd(store: Store | null = browserStore()): boolean {
+  return readStored(store).untilEnd === true
+}
+
+export function saveSurfUntilEnd(untilEnd: boolean, store: Store | null = browserStore()): void {
+  store?.setItem(SURF_KEY, JSON.stringify({ ...readStored(store), untilEnd }))
+}
+
+/** Beyond this, a programme's end is too far to wait for (a live stream, a long film): the range applies instead. */
+export const SURF_END_LIMIT_MS = 3 * 3600_000
+
+/**
+ * The wait for a surf that lets the programme finish: until its end, and a moment more so the next channel
+ * is chosen once the programme has ended. Null when there is no end within reach.
+ */
+export function surfUntilEndMs(endMs: number, nowMs: number): number | null {
+  const left = endMs - nowMs
+  if (!Number.isFinite(left) || left > SURF_END_LIMIT_MS) return null
+  return Math.max(1500, Math.round(left) + 800)
+}
+
 /** The wait before the next hop, anywhere in the range, to the millisecond. */
 export function surfDelayMs(range: SurfRange, random: () => number = Math.random): number {
   const { minSeconds, maxSeconds } = asSurfRange(range)

@@ -26,6 +26,7 @@ import {
   type OrderKind,
 } from './channel-sources.ts'
 import { ADDED_PREFIX } from './user-network.ts'
+import { latestVideos } from '../view/programme-order.ts'
 import type { OriginalOverride } from './original-sources.ts'
 import type { FoundFeed } from './podcast-source.ts'
 
@@ -55,6 +56,14 @@ export interface ChannelEdit {
   orderKind?: OrderKind
   /** `eligibilityKey` as the last successful rescan compiled the channel. */
   compiled?: string
+  /** With a latest-first order: when its newest programme went to air (Latest first, live). */
+  liveFromMs?: number
+}
+
+/** A latest-first order stays newest first whatever arrives; any other order is kept as the viewer left it. */
+export function orderFor(sources: readonly ChannelSource[], edit: Pick<ChannelEdit, 'order' | 'orderKind'>): string[] | undefined {
+  if (edit.orderKind === 'latest' && edit.order?.length) return latestVideos(inventoryOf(airingSources(sources))).map((video) => video.id)
+  return keptOrder(sources, edit.order)
 }
 
 /** The running order to keep: every enabled programme on air, the viewer's arrangement first. None while TVN arranges it. */
@@ -246,6 +255,7 @@ export function editOf(record: StoredSource): ChannelEdit {
     ...(record.runningOrder && record.orderKind ? { orderKind: record.orderKind } : {}),
     ...(record.editorial ? { editorial: structuredClone(record.editorial) } : {}),
     ...(record.compiled ? { compiled: record.compiled } : {}),
+    ...(record.runningOrder && record.orderKind === 'latest' && record.liveFromMs ? { liveFromMs: record.liveFromMs } : {}),
   }
 }
 
@@ -262,9 +272,9 @@ export function cleanName(name: string, fallback: string): string {
 
 function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredSource {
   const sources = edit.sources.map(curatedSource)
-  const { runningOrder: _previous, scheduleSize: _size, emptySlot: _empty, editorial: _notes, orderKind: _kind, compiled: _compiled, ...bare } = record
+  const { runningOrder: _previous, scheduleSize: _size, emptySlot: _empty, editorial: _notes, orderKind: _kind, compiled: _compiled, liveFromMs: _live, ...bare } = record
   const editorial = cleanEditorial(edit.editorial)
-  const order = keptOrder(sources, edit.order)
+  const order = orderFor(sources, edit)
   const scheduleSize = keptScheduleSize(order, edit.scheduleSize)
   const rest = {
     ...bare,
@@ -272,6 +282,7 @@ function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredS
     ...(scheduleSize ? { scheduleSize } : {}),
     ...(order && edit.orderKind ? { orderKind: edit.orderKind } : {}),
     ...(edit.compiled ? { compiled: edit.compiled } : {}),
+    ...(order && edit.orderKind === 'latest' && edit.liveFromMs ? { liveFromMs: edit.liveFromMs } : {}),
   }
   if (record.emptySlot) {
     // A slot stays empty until it has a source; the first source's title names it unless the viewer typed a name.
@@ -419,6 +430,8 @@ export interface LoadMoreDeps {
   resolveBatch(cursor: string, signal?: AbortSignal): Promise<{ videos: readonly ImportedVideo[]; listed?: number; next?: string }>
   /** A podcast or website feed read in full (its ALL mode). */
   resolveFeed?: RescanDeps['resolveFeed']
+  /** The YouTube channel an imported list came from, when TVN knows it: such a list is read further from that channel. */
+  uploaderOf?: RescanDeps['uploaderOf']
 }
 
 export interface LoadMoreOptions {
@@ -428,10 +441,10 @@ export interface LoadMoreOptions {
   onProgress?(loaded: number, listed: number | undefined): void
 }
 
-/** Whether a source can be read further than it has been. */
-export function canLoadMore(source: ChannelSource): boolean {
+/** Whether a source can be read further than it has been; an imported list only when its uploader is known. */
+export function canLoadMore(source: ChannelSource, uploaderKnown = false): boolean {
   if (!source.enabled || source.complete || (source.videos?.length ?? 0) >= MAX_SOURCE_VIDEOS) return false
-  return source.kind === 'youtube' || (source.kind === 'podcast' && !source.deep)
+  return source.kind === 'youtube' || (source.kind === 'podcast' && !source.deep) || (source.kind === 'collection' && uploaderKnown)
 }
 
 /**
@@ -441,6 +454,13 @@ export function canLoadMore(source: ChannelSource): boolean {
  * batch is one listing page, read one after another, so TVN never floods the provider.
  */
 export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, options: LoadMoreOptions = {}, now = Date.now()): Promise<ChannelSource> {
+  if (source.kind === 'collection') {
+    const uploader = source.ref ? deps.uploaderOf?.(source.ref) : null
+    if (!uploader) throw new Error('TVN does not know which channel this list came from')
+    const read = await loadMoreSource({ ...source, kind: 'youtube', youtube: 'channel', ref: uploader, url: `https://www.youtube.com/channel/${uploader}` }, deps, options, now)
+    const { youtube: _youtube, ...rest } = read
+    return { ...rest, kind: 'collection', url: source.url, ref: source.ref }
+  }
   const held = (source.videos ?? []).map((video) => ({ ...video }))
   const seen = new Set(held.map((video) => video.id))
   const add = (fresh: readonly ImportedVideo[]) => {

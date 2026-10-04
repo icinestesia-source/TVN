@@ -60,6 +60,11 @@ export function TouchRemote() {
             />
             <output>{tv.surfRange.maxSeconds} s</output>
           </label>
+          <label className="tvn-range tvn-until-end">
+            <span>Wait for the end</span>
+            <input type="checkbox" checked={tv.surfUntilEnd} onChange={(event) => tv.setSurfUntilEnd(event.target.checked)} />
+            <output>{tv.surfUntilEnd ? 'On' : 'Off'}</output>
+          </label>
           <fieldset className="tvn-shortcuts">
             <legend className="tvn-settings-head">Information Overlay shortcuts</legend>
             {CORNERS.map((corner) => (

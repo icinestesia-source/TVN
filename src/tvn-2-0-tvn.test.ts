@@ -54,7 +54,7 @@ const SLOT = 30 * MIN
 describe('the numbering: 000 TVN, 1000 Local Media', () => {
   it('000 is TVN and no longer local media; 1000 is Local Media', () => {
     expect(channelByNumber(0)).toBe(TVN_CHANNEL)
-    expect(TVN_CHANNEL).toMatchObject({ number: 0, name: 'TVN', origin: 'tvn' })
+    expect(TVN_CHANNEL).toMatchObject({ number: 0, name: 'Channel Zero', origin: 'tvn' })
     expect(SESSION_CHANNEL_NUMBER).toBe(1000)
     expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
     expect(SESSION_CHANNEL).toMatchObject({ id: 'ch-1000', name: 'Local Media', origin: 'session' })
@@ -166,7 +166,7 @@ describe('000 TVN: the network’s own sampler', () => {
     const markup = renderToStaticMarkup(
       createElement(ProgrammeInfo, { channel: TVN_CHANNEL, programme: snap.current.programme, startMs: snap.current.startMs, endMs: snap.current.endMs, now }),
     )
-    expect(markup).toContain('<span>000</span><span>TVN</span>')
+    expect(markup).toContain('<span>000</span><span>Channel Zero</span>')
     expect(markup).toContain(`On ${String(choice.channelNumber).padStart(3, '0')} · Channel ${choice.channelNumber} · chosen by TVN`)
   })
 

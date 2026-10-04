@@ -265,6 +265,7 @@ describe('Guide timeline zoom', () => {
   it('18. the mobile layout keeps its columns, and the slider fits the narrowest heading', () => {
     expect(css).toMatch(/\.guide-zoom \{[^}]*flex: 1 1 auto;[^}]*min-width: 28px;/)
     expect(css).toMatch(/\.guide-zoom \{[^}]*max-width: 132px;/)
+    expect(css).toMatch(/\.guide-zoom \{[^}]*margin: 0 0 0 auto;/)
     expect(read('src/styles/tokens.css')).toContain('--channel-col: 280px')
     // Phones show the channel name rather than the star, so their channel column is a little wider.
     for (const width of ['210px', '168px', '140px']) expect(css).toContain(`--channel-col: ${width}`)

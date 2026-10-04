@@ -201,6 +201,19 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   // Each right-click or hold on GUIDE asks the Guide panel to make CREATE GUIDE FROM… ready.
   const [addMenu, setAddMenu] = useState<AddMenu | null>(null)
   const [addNote, setAddNote] = useState<string | null>(null)
+  // A channel's own action (LATEST FIRST, RELOAD, DELETE) in progress, and what it said.
+  const [channelBusy, setChannelBusy] = useState<number | null>(null)
+  const channelAction = (number: number, action: (channelNumber: number) => Promise<string>) => {
+    if (channelBusy !== null) return
+    setChannelBusy(number)
+    setAddNote(`${padChannel(number)} · WORKING…`)
+    action(number)
+      .then(
+        (message) => setAddNote(message),
+        (caught: unknown) => setAddNote(caught instanceof Error && caught.message ? caught.message.toUpperCase().slice(0, 110) : 'THAT DID NOT WORK'),
+      )
+      .finally(() => setChannelBusy(null))
+  }
   useEffect(() => {
     if (!addNote) return
     const id = window.setTimeout(() => setAddNote(null), 2200)
@@ -664,6 +677,11 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       onFavourite={() =>
                         tv.dispatch({ type: 'favourite', channelNumber: channel.number })
                       }
+                      live={channel.liveFromMs !== undefined}
+                      busy={channelBusy === channel.number}
+                      onLatest={editorScope(channel) ? () => channelAction(channel.number, tv.latestFirst) : undefined}
+                      onReload={editorScope(channel) ? () => channelAction(channel.number, tv.reloadChannel) : undefined}
+                      onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}
                     />
                   ))}
                 </div>
@@ -770,6 +788,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onRescan={tv.rescanChannelEdit}
           onLoadMore={tv.loadMoreChannelSource}
           onAcquire={tv.acquireChannelSource}
+          canLoad={tv.canLoadChannelSource}
           onDelete={editScope === 'curated' ? tv.restoreCuratedChannel : tv.deleteUserChannel}
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
           onExport={tv.exportChannelFile}
@@ -840,6 +859,11 @@ function ChannelCell({
   onTune,
   onEdit,
   onFavourite,
+  live = false,
+  busy = false,
+  onLatest,
+  onReload,
+  onDelete,
 }: {
   channel: Channel
   watching: boolean
@@ -853,7 +877,24 @@ function ChannelCell({
   /** Present when this channel can be edited: right-click or a long press opens its editor. */
   onEdit?: () => void
   onFavourite: () => void
+  /** The channel plays latest first, live. */
+  live?: boolean
+  /** One of its own actions is in progress. */
+  busy?: boolean
+  onLatest?: () => void
+  onReload?: () => void
+  onDelete?: () => void
 }) {
+  const [confirming, setConfirming] = useState(false)
+  useEffect(() => {
+    if (!confirming) return
+    const id = window.setTimeout(() => setConfirming(false), 4000)
+    return () => window.clearTimeout(id)
+  }, [confirming])
+  const act = (action: (() => void) | undefined) => (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    action?.()
+  }
   const editRef = useRef(onEdit)
   editRef.current = onEdit
   const [press] = useState(() => createLongPress(() => editRef.current?.()))
@@ -887,6 +928,50 @@ function ChannelCell({
         <span className="ch-number">{padChannel(channel.number)}</span>
         <span className="ch-name">{channel.name}</span>
       </button>
+      {onLatest && (selected || live) ? (
+        <button
+          type="button"
+          className={live ? 'ch-act ch-latest is-on' : 'ch-act ch-latest'}
+          disabled={busy || !selected}
+          onClick={act(onLatest)}
+          aria-pressed={live}
+          title={live ? 'Latest first is on: press to let TVN arrange the channel again' : 'Latest first: play the newest programme now, then newest to oldest'}
+        >
+          <span aria-hidden="true">◉</span>
+          <span className="sr">
+            Latest first {padChannel(channel.number)}
+          </span>
+        </button>
+      ) : null}
+      {selected && onEdit ? (
+        <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onEdit)} title="Edit channel">
+          <span aria-hidden="true">✎</span>
+          <span className="sr">Edit channel {padChannel(channel.number)}</span>
+        </button>
+      ) : null}
+      {selected && onReload ? (
+        <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onReload)} title="Reload: rescan the channel and put it back in its order">
+          <span aria-hidden="true">↻</span>
+          <span className="sr">Reload channel {padChannel(channel.number)}</span>
+        </button>
+      ) : null}
+      {selected && onDelete ? (
+        <button
+          type="button"
+          className={confirming ? 'ch-act ch-extra ch-delete is-confirm' : 'ch-act ch-extra ch-delete'}
+          disabled={busy}
+          onClick={act(() => {
+            if (!confirming) return setConfirming(true)
+            setConfirming(false)
+            onDelete()
+          })}
+          title={confirming ? `Press again to delete ${padChannel(channel.number)}` : 'Delete channel'}
+        >
+          <span aria-hidden="true">{confirming ? '?' : '✕'}</span>
+          <span className="sr">{confirming ? `Confirm deleting ${padChannel(channel.number)}` : `Delete channel ${padChannel(channel.number)}`}</span>
+        </button>
+      ) : null}
+      {selected || favourite ? (
       <button
         type="button"
         className={favourite ? 'star is-on' : 'star'}
@@ -901,6 +986,7 @@ function ChannelCell({
           {favourite ? 'Remove favourite' : 'Add favourite'} {padChannel(channel.number)}
         </span>
       </button>
+      ) : null}
     </div>
   )
 }

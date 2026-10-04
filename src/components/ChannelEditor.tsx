@@ -171,7 +171,7 @@ function OriginalLink({ video }: { video: ListedVideo }) {
 }
 
 /**
- * How much of a source TVN holds, and LOAD MORE / LOAD ALL to read further: the first batch arrives fast,
+ * How much of a source TVN holds, and LOAD ALL to read to the end (LOAD MORE sits on the source's own line): the first batch arrives fast,
  * the rest only when asked for. While loading, the count climbs and STOP keeps what has arrived.
  */
 function SourceDepth({
@@ -179,7 +179,6 @@ function SourceDepth({
   loading,
   disabled,
   canLoad,
-  onMore,
   onAll,
   onStop,
 }: {
@@ -187,7 +186,6 @@ function SourceDepth({
   loading: { loaded: number; listed?: number; all: boolean } | null
   disabled: boolean
   canLoad: boolean
-  onMore: () => void
   onAll: () => void
   onStop: () => void
 }) {
@@ -206,16 +204,9 @@ function SourceDepth({
           Stop
         </button>
       ) : canLoad ? (
-        <>
-          {source.kind === 'youtube' ? (
-            <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={onMore} title="Read the next batch of this source">
-              Load more
-            </button>
-          ) : null}
-          <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={onAll} title="Read this source to the end of its public list">
-            Load all
-          </button>
-        </>
+        <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={onAll} title="Read this source to the end of its public list">
+          Load all
+        </button>
       ) : null}
     </div>
   )
@@ -233,6 +224,7 @@ export function ChannelEditor({
   onRescan,
   onLoadMore,
   onAcquire,
+  canLoad,
   onDelete,
   onClose,
   onExport,
@@ -249,6 +241,8 @@ export function ChannelEditor({
   onLoadMore?: (source: ChannelSource, options: LoadMoreOptions) => Promise<ChannelSource>
   /** A newly added source read for its first programmes; the editor saves them as available, not yet scheduled. */
   onAcquire?: (source: ChannelSource) => Promise<ChannelSource>
+  /** Whether a source can be read further; without it, only YouTube and podcast sources can. */
+  canLoad?: (source: ChannelSource) => boolean
   onDelete: (channelNumber: number) => Promise<string>
   onClose: () => void
   /**
@@ -410,14 +404,17 @@ export function ChannelEditor({
   const dirty = edit !== null && (held.size > 0 || drafts.size > 0 || (edit.compiled !== undefined && eligibilityKey(edit) !== edit.compiled))
   // Programmes newly read join the schedule at once only while the channel has nothing on air to disturb.
   const holding = edit !== null && (scope === 'curated' || inventoryOf(airingSources(edit.sources)).length > 0)
-  const orderLabel = !ownOrder ? (tvnLineup ? "TVN's own" : 'Automatic') : edit?.orderKind ? ORDER_KINDS[edit.orderKind].label : 'Yours'
+  const liveOrder = ownOrder && edit?.orderKind === 'latest' && edit.liveFromMs !== undefined
+  const orderLabel = !ownOrder ? (tvnLineup ? "TVN's own" : 'Automatic') : liveOrder ? 'Latest first · live' : edit?.orderKind ? ORDER_KINDS[edit.orderKind].label : 'Yours'
   const orderHint = !ownOrder
     ? tvnLineup
       ? 'TVN schedules its own programmes for this channel'
       : 'TVN arranges these itself'
-    : edit?.orderKind
-      ? ORDER_KINDS[edit.orderKind].hint
-      : 'Your own running order'
+    : liveOrder
+      ? 'The newest programme went to air when Latest first was pressed in the Guide; the rest follow newest to oldest'
+      : edit?.orderKind
+        ? ORDER_KINDS[edit.orderKind].hint
+        : 'Your own running order'
   /** The order with the viewer's kept programmes first and any left out after them. */
   const withLeft = (ids: readonly string[]) => [...ids, ...lineup.filter((video) => left.has(video.id)).map((video) => video.id)]
   const setScheduleSize = (size: number | undefined) => {
@@ -486,7 +483,8 @@ export function ChannelEditor({
   }
 
   // Sources LOAD can read further: enabled, not yet read to the end.
-  const loadable = edit ? edit.sources.filter(canLoadMore) : []
+  const loadableSource = (source: ChannelSource) => onLoadMore !== undefined && (canLoad ? canLoad(source) : canLoadMore(source))
+  const loadable = edit ? edit.sources.filter(loadableSource) : []
   /**
    * LOAD: one more batch from every enabled source that has more, one source after another. What arrives is
    * available at once and scheduled only after RESCAN, so the channel on air is not rebuilt mid-edit.
@@ -765,6 +763,27 @@ export function ChannelEditor({
                     {sourceStatusText(source, edit.sources)}
                     {added?.rows.get(source.id)?.programmes ? ` · adds ${contributionText(added.rows.get(source.id)!, channelSeconds)}` : null}
                   </span>
+                  {onLoadMore && (source.kind === 'youtube' || source.kind === 'podcast' || source.kind === 'collection') ? (
+                    <button
+                      type="button"
+                      className="tab editor-source-load"
+                      disabled={busy !== null || !loadableSource(source)}
+                      aria-label={`Load more programmes from ${sourceTitle(source)}`}
+                      title={
+                        loadableSource(source)
+                          ? 'Read the next batch of this source; RESCAN then schedules them'
+                          : source.complete
+                            ? 'The whole source is read'
+                            : !source.enabled
+                              ? 'Enable this source to read more of it'
+                              : 'TVN cannot read this source any further'
+                      }
+                      onKeyDown={keepKey}
+                      onClick={() => loadMore(source, false)}
+                    >
+                      {loading?.id === source.id ? 'Loading…' : 'Load more'}
+                    </button>
+                  ) : null}
                   {source.kind === 'tvn' ? (
                     <span className="editor-source-remove" aria-hidden="true" />
                   ) : (
@@ -779,13 +798,12 @@ export function ChannelEditor({
                       Remove
                     </button>
                   )}
-                  {(source.kind === 'youtube' || source.kind === 'podcast') && (source.videos?.length ?? 0) > 0 ? (
+                  {(source.kind === 'youtube' || source.kind === 'podcast' || source.kind === 'collection') && (source.videos?.length ?? 0) > 0 ? (
                     <SourceDepth
                       source={source}
                       loading={loading?.id === source.id ? loading : null}
                       disabled={busy !== null}
-                      canLoad={onLoadMore !== undefined && canLoadMore(source)}
-                      onMore={() => loadMore(source, false)}
+                      canLoad={loadableSource(source)}
                       onAll={() => loadMore(source, true)}
                       onStop={() => stopRef.current?.abort()}
                     />

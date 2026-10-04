@@ -351,7 +351,7 @@ describe('tuning around 1000', () => {
     expect(tunerStep('100', numbers())).toBe('wait')
     expect(channelByNumber(Number('1000'))).toBe(SESSION_CHANNEL)
     expect(tunerStep('000', numbers())).toBe('commit')
-    expect(channelByNumber(0)?.name).toBe('TVN')
+    expect(channelByNumber(0)?.name).toBe('Channel Zero')
   })
 
   it('S: 1000 then CH+ goes to the User Network, or round to 000 without one', () => {

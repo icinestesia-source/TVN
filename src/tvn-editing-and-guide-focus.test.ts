@@ -309,7 +309,7 @@ describe('CHANNEL EDITOR: what the viewer sees', () => {
 
   it('LOAD reads one batch per source, keeps Stop, and adding a source reads its first programmes without rebuilding', () => {
     const editor = read('src/components/ChannelEditor.tsx')
-    expect(editor).toContain('const loadable = edit ? edit.sources.filter(canLoadMore) : []')
+    expect(editor).toContain('const loadable = edit ? edit.sources.filter(loadableSource) : []')
     expect(editor).toMatch(/const found = await onLoadMore\(source, \{\s*signal: stop\.signal,/)
     expect(editor).not.toMatch(/loadBatch[^]*all: true[^]*const noteDraft/)
     expect(editor).toContain('Loading · {batch.of}')

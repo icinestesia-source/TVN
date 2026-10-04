@@ -54,12 +54,13 @@ import {
 } from '../services/channels-import.ts'
 import { lookUpBatch, lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
-import { applyChannelEdit, editOf, eligibilityKey, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
+import { applyChannelEdit, canLoadMore, editOf, eligibilityKey, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
-import type { ChannelSource } from '../services/channel-sources.ts'
+import { airingSources, inventoryOf, type ChannelSource } from '../services/channel-sources.ts'
+import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
 import { addRoute } from '../sources/providers.ts'
 import {
   appliedCuratedEdits,
@@ -118,7 +119,7 @@ import type { GuideTool, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, padChannel, sleep } from '../utils/time.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
-import { asSurfRange, loadSurfRange, saveSurfOn, saveSurfRange, surfDelayMs, type SurfRange } from './surf.ts'
+import { asSurfRange, loadSurfRange, loadSurfUntilEnd, saveSurfOn, saveSurfRange, saveSurfUntilEnd, surfDelayMs, surfUntilEndMs, type SurfRange } from './surf.ts'
 import {
   addToGuide as addProgrammeToGuide,
   applyGuideAction,
@@ -380,6 +381,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const surfingRef = useRef(surfing)
   const [surfHops, setSurfHops] = useState(0)
   const [surfRange, setSurfRangeState] = useState<SurfRange>(() => loadSurfRange())
+  const [surfUntilEnd, setSurfUntilEndState] = useState(() => loadSurfUntilEnd())
   const [transition, setTransitionState] = useState<TransitionSettings>(() => loadTransitionSettings())
   const transitionRef = useRef(transition)
   /** The transition presenting the current tune, if one is; tunes during it take it over. */
@@ -2749,6 +2751,63 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources, rescanDeps],
   )
 
+  /** The watched channel was rearranged: its new schedule plays from where it stands now. */
+  const replayIfWatching = (number: number) => {
+    const target = channelByNumber(number)
+    if (!target) return
+    if (channelRef.current !== number || multiviewRef.current !== '1') return requestTune(number)
+    clearManual()
+    loadedKey.current = ''
+    if (!tuningRef.current && playerRef.current && playerReadyRef.current) void loadProgramme(target, Date.now())
+  }
+
+  /**
+   * LATEST FIRST in the Guide: the channel's newest programme goes to air now, from its start, and the rest
+   * follow newest to oldest, so the channel feels live. Pressed again, TVN arranges the channel itself.
+   */
+  const latestFirst = useCallback(
+    async (number: number) => {
+      const edit = await openChannelEdit(number)
+      if (!edit) throw new Error('This channel cannot be arranged here')
+      const { review: _review, ...current } = edit
+      if (current.orderKind === 'latest' && current.liveFromMs) {
+        await saveChannelEdit(number, { ...current, order: undefined, orderKind: undefined, liveFromMs: undefined, scheduleSize: undefined })
+        if (channelRef.current === number) replayIfWatching(number)
+        return 'LATEST FIRST OFF · TVN ARRANGES THE CHANNEL AGAIN'
+      }
+      const pool = inventoryOf(airingSources(current.sources))
+      if (pool.length === 0) throw new Error("TVN schedules this channel's own programming: add a source to play it newest first")
+      const order = latestVideos(pool).map((video) => video.id)
+      await saveChannelEdit(number, { ...current, order, orderKind: 'latest', liveFromMs: Date.now(), scheduleSize: undefined })
+      replayIfWatching(number)
+      const first = pool.find((video) => video.id === order[0])
+      return `LATEST FIRST · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [openChannelEdit, saveChannelEdit],
+  )
+
+  /** RELOAD in the Guide: the channel rescanned, then put back in the kind of order it keeps, and replayed if watched. */
+  const reloadChannel = useCallback(
+    async (number: number) => {
+      const edit = await openChannelEdit(number)
+      if (!edit) throw new Error('This channel cannot be reloaded here')
+      const { review: _review, ...current } = edit
+      const result = await rescanChannelEdit(number, current)
+      const next = result.edit
+      const pool = inventoryOf(airingSources(next.sources))
+      const kind = next.order?.length ? next.orderKind : undefined
+      const fromSource = new Map(next.sources.flatMap((source) => (source.videos ?? []).map((video) => [video.id, source.id] as const)))
+      const order =
+        kind === 'latest' ? latestVideos(pool) : kind === 'az' ? alphabeticalVideos(pool) : kind === 'random' ? shuffledVideos(pool) : kind === 'rebuilt' ? rebuiltVideos(pool.map((video) => ({ ...video, from: fromSource.get(video.id) }))) : null
+      if (order) await saveChannelEdit(number, { ...next, order: order.map((video) => video.id), ...(kind === 'latest' ? { liveFromMs: Date.now() } : {}) })
+      replayIfWatching(number)
+      return `${result.message} · ${kind === 'latest' ? 'NEWEST FIRST FROM NOW' : kind === 'az' ? 'A–Z' : kind === 'random' ? 'RESHUFFLED' : kind === 'rebuilt' ? 'REBUILT' : kind === 'manual' ? 'YOUR ORDER KEPT' : 'ARRANGED BY TVN'}`
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [openChannelEdit, rescanChannelEdit, saveChannelEdit],
+  )
+
   const loadMoreChannelSource = useCallback(
     (source: ChannelSource, options: LoadMoreOptions) =>
       loadMoreSource(
@@ -2757,11 +2816,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
           resolveYouTube: (url: string, more?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { ...more }),
           resolveBatch: (cursor: string, signal?: AbortSignal) => lookUpBatch(cursor, fetch, signal),
           resolveFeed: (url: string, more?: { mode?: SourceMode; as?: 'website' }) => lookUpFeed(url, fetch, { fresh: true, ...more }),
+          uploaderOf: uploaderIdFor,
         },
         options,
       ),
     [],
   )
+
+  const canLoadChannelSource = useCallback((source: ChannelSource) => canLoadMore(source, source.kind === 'collection' && !!source.ref && uploaderIdFor(source.ref) !== null), [])
 
   const exportChannelFile = useCallback(
     async (number: number, edit: ChannelEdit, as: ChannelExportKind) => {
@@ -3025,6 +3087,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const setSurfUntilEnd = useCallback((untilEnd: boolean) => {
+    saveSurfUntilEnd(untilEnd)
+    setSurfUntilEndState(untilEnd)
+    flash(untilEnd ? 'TVN SURF · WAITS FOR EACH PROGRAMME TO END' : 'TVN SURF · HOPS AFTER THE RANDOM WAIT', 1600)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const setSurfRange = useCallback((range: SurfRange, moved: 'min' | 'max' = 'min') => {
     const next = asSurfRange(range, moved)
     saveSurfRange(next)
@@ -3055,6 +3124,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // A first visit stays on its first channel until the welcome notice is dismissed.
     if (!surfing || asleep || guideOpen || screenEdit !== null || startupPhase !== 'ready' || !noticeSeen) return
+    // Waiting for the programme to end: the hop comes as it finishes; 000, Multi View and a programme with no end in reach keep the random wait.
+    const watching = surfUntilEnd && multiviewRef.current === '1' && channelRef.current !== TVN_CHANNEL_NUMBER ? channelByNumber(channelRef.current) : undefined
+    const now = Date.now()
+    const untilEnd = watching ? surfUntilEndMs(onScreen(watching, now).current.endMs, now) : null
     const id = window.setTimeout(() => {
       if (multiviewRef.current === '1') {
         // 000 is itself TVN surfing, on the same wait: the Random Cycle leaves the viewer there.
@@ -3073,10 +3146,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
         }
       }
       setSurfHops((hops) => hops + 1)
-    }, surfDelayMs(surfRange))
+    }, untilEnd ?? surfDelayMs(surfRange))
     return () => window.clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [surfing, surfHops, surfRange, asleep, guideOpen, screenEdit, multiviewMode, startupPhase, noticeSeen])
+  }, [surfing, surfHops, surfRange, surfUntilEnd, channelNumber, asleep, guideOpen, screenEdit, multiviewMode, startupPhase, noticeSeen])
 
   useEffect(() => {
     if (!hintsOn || startupPhase !== 'ready') return
@@ -3210,6 +3283,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       surfing,
       toggleSurf,
       surfRange,
+      surfUntilEnd,
+      setSurfUntilEnd,
       setSurfRange,
       transition,
       setTransition,
@@ -3268,6 +3343,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       rescanChannelEdit,
       loadMoreChannelSource,
       acquireChannelSource,
+      canLoadChannelSource,
+      latestFirst,
+      reloadChannel,
       exportChannelFile,
       importChannelFile,
       sourceArchive,
@@ -3286,6 +3364,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       rescanChannelEdit,
       loadMoreChannelSource,
       acquireChannelSource,
+      canLoadChannelSource,
+      latestFirst,
+      reloadChannel,
       exportChannelFile,
       importChannelFile,
       playChannelProgramme,
@@ -3353,6 +3434,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       toggleSurfScope,
       surfScopeName,
       surfRange,
+      surfUntilEnd,
+      setSurfUntilEnd,
       setSurfRange,
       transition,
       setTransition,

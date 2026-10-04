@@ -2,7 +2,7 @@ import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import { isShippedEditorial, shippedEditorial } from '../data/central-editorial.ts'
 import { cleanEditorial } from './channel-curation.ts'
-import { cleanName, curatedSource, keptOrder, keptScheduleSize, type ChannelEdit } from './channel-editor.ts'
+import { cleanName, curatedSource, keptScheduleSize, orderFor, type ChannelEdit } from './channel-editor.ts'
 import { airingSources, inOrder, inventoryOf, liveStreamOf, type ChannelSource } from './channel-sources.ts'
 import { channelsFromSources } from './channels-import.ts'
 import { activeOriginals, cleanOriginals, ORIGINAL_ID_PREFIX, originalChannelSources, type OriginalSource } from './original-sources.ts'
@@ -155,6 +155,7 @@ export function curatedEditOf(channel: Pick<Channel, 'number' | 'name'>, saved: 
     ...(saved.originals?.length ? { originals: structuredClone(saved.originals) } : {}),
     ...(saved.order && saved.orderKind ? { orderKind: saved.orderKind } : {}),
     ...(saved.compiled ? { compiled: saved.compiled } : {}),
+    ...(saved.order && saved.orderKind === 'latest' && saved.liveFromMs ? { liveFromMs: saved.liveFromMs } : {}),
   }
 }
 
@@ -197,7 +198,7 @@ export function canonicalEdit(
   // Mixed with TVN's original sources, the viewer's order may also place TVN's own programmes.
   const mixedIds = poolIds.length && edit.order?.length ? new Set([...inventoryOf(sources).map((video) => video.id), ...poolIds]) : null
   const mixedOrder = mixedIds ? [...new Set(edit.order)].filter((id) => mixedIds.has(id)) : []
-  const order = ownProgrammes ? (mixedIds ? (mixedOrder.length ? mixedOrder : undefined) : keptOrder(sources, edit.order)) : tvnOrder?.some((id, index) => id !== tvnIds[index]) ? tvnOrder : undefined
+  const order = ownProgrammes ? (mixedIds ? (mixedOrder.length ? mixedOrder : undefined) : orderFor(sources, edit)) : tvnOrder?.some((id, index) => id !== tvnIds[index]) ? tvnOrder : undefined
   const excluded = [...new Set(edit.excluded ?? [])].filter((id) => known.has(id))
   const scheduleSize = keptScheduleSize(order, edit.scheduleSize)
   const description = cleanDescription(edit.description, shipped.description)
@@ -214,6 +215,7 @@ export function canonicalEdit(
     ...(originals ? { originals } : {}),
     ...((order || excluded.length) && edit.orderKind ? { orderKind: edit.orderKind } : {}),
     ...(edit.compiled ? { compiled: edit.compiled } : {}),
+    ...(order && edit.orderKind === 'latest' && edit.liveFromMs ? { liveFromMs: edit.liveFromMs } : {}),
   }
 }
 
@@ -318,7 +320,7 @@ function fromSources(
   original = false,
 ): { channel: Channel; programmes: Programme[] } {
   const built = channelsFromSources(
-    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: [...own], runningOrder: edit.order, ...(edit.order?.length && edit.scheduleSize ? { scheduleSize: edit.scheduleSize } : {}) }],
+    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: [...own], runningOrder: edit.order, ...(edit.order?.length && edit.scheduleSize ? { scheduleSize: edit.scheduleSize } : {}), ...(edit.liveFromMs ? { liveFromMs: edit.liveFromMs } : {}) }],
     { refused },
   )
   const made = built.channels[0]
@@ -331,6 +333,7 @@ function fromSources(
       mediaKind: made.mediaKind,
       playbackType: made.playbackType,
       liveSinceMs: made.liveSinceMs,
+      ...(edit.liveFromMs && edit.order?.length ? { phaseOffsetSeconds: made.phaseOffsetSeconds, liveFromMs: edit.liveFromMs } : {}),
       customLineup: true,
     },
     programmes,

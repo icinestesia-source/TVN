@@ -265,7 +265,7 @@ describe('the Channel Editor', () => {
     expect(html).toContain('>Load all</button>')
     const done = render({ name: 'Deep', sources: [deepSource({ videos: DEEP, more: undefined, complete: true })] })
     expect(done).toContain('742 loaded · 759 listed · whole source read')
-    expect(done).not.toContain('>Load more</button>')
+    expect(done).toMatch(/<button[^>]*disabled=""[^>]*title="The whole source is read"[^>]*>Load more<\/button>/)
   })
 
   it('counts available, eligible and scheduled, and offers RANDOMISE and REBUILD', () => {

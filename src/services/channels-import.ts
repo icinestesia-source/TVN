@@ -5,6 +5,7 @@ import { reachesArchive, type ChannelEditorial } from './channel-curation.ts'
 import { airingSources, inOrder, inventoryOf, liveStreamOf, refreshOrigin, type ChannelSource, type OrderKind } from './channel-sources.ts'
 import type { ArchiveLookup } from './user-archive.ts'
 import { planArchive, runningOrder } from './user-depth.ts'
+import { SCHEDULE_EPOCH_MS } from '../scheduler/epoch.ts'
 
 export interface ImportedVideo {
   id: string
@@ -105,6 +106,8 @@ export interface StoredSource {
   orderKind?: OrderKind
   /** The channel's eligibility fingerprint as last compiled by a rescan; another one means RESCAN has work to do. */
   compiled?: string
+  /** Latest first, live: the newest programme went to air at this moment and the rest follow, newest to oldest. */
+  liveFromMs?: number
   /** With a running order: how many of its programmes go to air, from the top; absent, every eligible programme does. */
   scheduleSize?: number
   /** How an added channel was named: one YouTube channel's uploads, or one playlist and nothing else. */
@@ -488,7 +491,8 @@ export function channelsFromSources(
       mediaKind: 'video',
       sources: [{ kind: 'youtube-channel', id: source.id, label: source.name }],
       scheduleMode: 'loop',
-      phaseOffsetSeconds: phaseFor(source.id),
+      phaseOffsetSeconds: source.liveFromMs && (source.runningOrder?.length ?? 0) > 0 ? livePhase(source.liveFromMs) : phaseFor(source.id),
+      ...(source.liveFromMs && (source.runningOrder?.length ?? 0) > 0 ? { liveFromMs: source.liveFromMs } : {}),
       ...(source.owner && (!options.users || options.users.has(source.owner)) ? { owner: source.owner } : {}),
     }
 
@@ -693,6 +697,11 @@ export function programmeTypeFor(durationSec: number): ProgrammeType {
   if (durationSec >= 75 * 60) return 'film'
   if (durationSec < 8 * 60) return 'short'
   return 'episode'
+}
+
+/** The phase that starts a channel's running order from its top at `liveFromMs`. */
+export function livePhase(liveFromMs: number): number {
+  return -(liveFromMs - SCHEDULE_EPOCH_MS) / 1000
 }
 
 function phaseFor(id: string): number {
