@@ -56,6 +56,8 @@ export interface TvnExport {
   format: typeof TVN_EXPORT_FORMAT
   version: typeof TVN_EXPORT_VERSION
   exportedAt: string
+  /** The TVN that wrote the file, whose shipped catalogue the 001–999 overrides are read against. Absent in older files. */
+  app?: ExportApp
   userNetwork: UserNetworkExport
   favourites: number[]
   /** Any setting left out is left as it is on restore. */
@@ -71,12 +73,18 @@ export interface TvnExport {
   manifests: EditorialManifest[]
 }
 
+export interface ExportApp {
+  commit: string
+  build: string
+}
+
 export interface TvnExportInput {
   stored: readonly StoredSource[]
   users: readonly ExportUser[]
   favourites: readonly number[]
   settings: PortableSettings
   now: Date
+  app?: ExportApp
   uploaderOf?: UploaderOf
   curated?: readonly CuratedEdit[]
   /** A curated channel's shipped programmes, for its manifest. */
@@ -86,7 +94,7 @@ export interface TvnExportInput {
   originalsOf?: (number: number) => readonly OriginalSource[]
 }
 
-export function buildTvnExport({ stored, users, favourites, settings, now, uploaderOf, curated = [], shippedOf = () => [], guides = EMPTY_LIBRARY, originalsOf = () => [] }: TvnExportInput): TvnExport {
+export function buildTvnExport({ stored, users, favourites, settings, now, app, uploaderOf, curated = [], shippedOf = () => [], guides = EMPTY_LIBRARY, originalsOf = () => [] }: TvnExportInput): TvnExport {
   const userNetwork = buildUserNetworkExport(stored, now, uploaderOf, users)
   const central = buildCentralCuration(curated, uploaderOf)
   const numbers = new Set(userNetwork.channels.map((channel) => channel.number))
@@ -101,6 +109,7 @@ export function buildTvnExport({ stored, users, favourites, settings, now, uploa
     format: TVN_EXPORT_FORMAT,
     version: TVN_EXPORT_VERSION,
     exportedAt: now.toISOString(),
+    ...(app ? { app: { commit: app.commit, build: app.build } } : {}),
     userNetwork,
     favourites: [...favourites],
     settings: {
@@ -181,6 +190,7 @@ export function validateTvnExport(data: unknown): { ok: true; value: TvnExport }
   if (data.format !== TVN_EXPORT_FORMAT) errors.push(`Unknown format ${JSON.stringify(data.format)}`)
   if (data.version !== TVN_EXPORT_VERSION) errors.push(`Unsupported version ${JSON.stringify(data.version)}`)
   if (typeof data.exportedAt !== 'string' || Number.isNaN(Date.parse(data.exportedAt))) errors.push('exportedAt is not a date')
+  if (data.app !== undefined && !(isRecord(data.app) && typeof data.app.commit === 'string' && typeof data.app.build === 'string')) errors.push('app is not a TVN build')
   const network = validateUserNetworkExport(data.userNetwork)
   if (!network.ok) errors.push(...network.errors.filter((error) => !error.includes('is a secret field')).map((error) => `userNetwork: ${error}`))
   if (!Array.isArray(data.favourites)) errors.push('favourites is not a list')

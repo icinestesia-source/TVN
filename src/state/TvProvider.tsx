@@ -2556,6 +2556,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         tvnChannel: tvnChannelSettings(),
       },
       now,
+      app: { commit: BUILD_INFO.commit, build: BUILD_INFO.build },
       uploaderOf: uploaderIdFor,
       curated: Object.values(loadCuratedEdits()),
       guides: guideLibraryRef.current,

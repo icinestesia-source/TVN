@@ -2,7 +2,8 @@ import type { Channel } from '../types/channel.ts'
 import { cleanEditorial, type ChannelEditorial } from './channel-curation.ts'
 import type { StoredSource } from './channels-import.ts'
 import { canonicalEdit, shippedBaseline, TVN_SOURCE_ID, type CuratedBaseline, type CuratedEdit } from './curated-edits.ts'
-import { checkEditorial, checkSources, exportSource, type ExportSource } from './user-network-export.ts'
+import { checkEditorial, checkOrderKind, checkSources, exportSource, type ExportSource } from './user-network-export.ts'
+import type { OrderKind } from './channel-sources.ts'
 import { channelSource } from './user-network-restore.ts'
 import type { UploaderOf } from './user-network.ts'
 import { checkOriginals, cleanOriginals, reconcileOriginals, type OriginalOverride, type OriginalSource } from './original-sources.ts'
@@ -23,6 +24,9 @@ export interface CentralOverride {
   runningOrder?: string[]
   /** How many of the running order are scheduled, from the top. */
   scheduleSize?: number
+  /** How the running order was made, and a latest-first order's moment on air. Absent in older files. */
+  orderKind?: OrderKind
+  liveFromMs?: number
   excluded?: string[]
   editorial?: ChannelEditorial
   /** Decisions about TVN's original sources, by source id: never the sources' programmes themselves. */
@@ -50,6 +54,8 @@ export function buildCentralCuration(edits: readonly CuratedEdit[], uploaderOf: 
         sources: edit.sources.map((source) => exportSource(source, uploaderOf)),
         ...(edit.order?.length ? { runningOrder: [...edit.order] } : {}),
         ...(edit.order?.length && edit.scheduleSize ? { scheduleSize: edit.scheduleSize } : {}),
+        ...(edit.order?.length && edit.orderKind ? { orderKind: edit.orderKind } : {}),
+        ...(edit.order?.length && edit.orderKind === 'latest' && edit.liveFromMs ? { liveFromMs: edit.liveFromMs } : {}),
         ...(edit.excluded?.length ? { excluded: [...edit.excluded] } : {}),
         ...(editorial ? { editorial } : {}),
         ...(originals ? { originals } : {}),
@@ -62,7 +68,7 @@ export function buildCentralCuration(edits: readonly CuratedEdit[], uploaderOf: 
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const isTextList = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === 'string')
-const OVERRIDE_FIELDS = new Set(['number', 'name', 'description', 'sources', 'runningOrder', 'scheduleSize', 'excluded', 'editorial', 'originals', 'baseline', 'savedAt'])
+const OVERRIDE_FIELDS = new Set(['number', 'name', 'description', 'sources', 'runningOrder', 'scheduleSize', 'orderKind', 'liveFromMs', 'excluded', 'editorial', 'originals', 'baseline', 'savedAt'])
 
 /** The whole section must be valid before any of it is restored. */
 export function checkCentralCuration(value: unknown, at: string, errors: string[]): void {
@@ -93,6 +99,7 @@ export function checkCentralCuration(value: unknown, at: string, errors: string[
     if (item.scheduleSize !== undefined && (typeof item.scheduleSize !== 'number' || !Number.isInteger(item.scheduleSize) || item.scheduleSize < 1))
       errors.push(`${where}.scheduleSize is not a number of programmes`)
     if (item.excluded !== undefined && !isTextList(item.excluded)) errors.push(`${where}.excluded is not a list of programme ids`)
+    checkOrderKind(item, where, errors)
     if (typeof item.savedAt !== 'string' || Number.isNaN(Date.parse(item.savedAt))) errors.push(`${where}.savedAt is not a date`)
     checkEditorial(item.editorial, `${where}.editorial`, errors)
     checkOriginals(item.originals, `${where}.originals`, errors)
@@ -128,6 +135,8 @@ export function overridesFromExport(doc: CentralCuration): CuratedEdit[] {
     }),
     ...(override.runningOrder?.length ? { order: [...override.runningOrder] } : {}),
     ...(override.runningOrder?.length && override.scheduleSize ? { scheduleSize: override.scheduleSize } : {}),
+    ...(override.runningOrder?.length && override.orderKind ? { orderKind: override.orderKind } : {}),
+    ...(override.runningOrder?.length && override.orderKind === 'latest' && override.liveFromMs ? { liveFromMs: override.liveFromMs } : {}),
     ...(override.excluded?.length ? { excluded: [...override.excluded] } : {}),
     ...(override.description ? { description: override.description } : {}),
     ...(override.editorial ? { editorial: structuredClone(override.editorial) } : {}),

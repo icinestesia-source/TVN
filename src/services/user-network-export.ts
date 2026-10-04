@@ -1,5 +1,5 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
-import type { StoredSource, VideoCreator } from './channels-import.ts'
+import type { ImportedVideo, StoredSource, VideoCreator } from './channels-import.ts'
 import {
   cleanArtwork,
   cleanEditorial,
@@ -9,7 +9,7 @@ import {
   RELATED_NUMBER_MAX,
   SOURCE_MODES, sourceModeOf, type ChannelEditorial, type SourceFilter, type SourceMode } from './channel-curation.ts'
 import { sourcesOf } from './channel-editor.ts'
-import { canonicalYouTubeUrl, youTubeSourceType, type ChannelSource, type SourceInfo, type SourceKind } from './channel-sources.ts'
+import { canonicalYouTubeUrl, youTubeSourceType, type ChannelSource, type OrderKind, type SourceInfo, type SourceKind } from './channel-sources.ts'
 import type { UploaderOf } from './user-network.ts'
 import { checkUserName, ownerOf, TVN_OWNER, USER_ID } from '../data/user-network/users.ts'
 
@@ -21,8 +21,12 @@ import { checkUserName, ownerOf, TVN_OWNER, USER_ID } from '../data/user-network
  */
 export const USER_NETWORK_FORMAT = 'tvn-user-network-v1'
 export const USER_NETWORK_VERSION = 1
-/** An imported list carries its programmes, because nothing else can rebuild it. At most this many per list. */
-export const MAX_LIST_VIDEOS = 500
+/**
+ * Every source carries the programmes it holds (what LOAD and RESCAN found, not just what is scheduled), so the
+ * file is the network itself and not only addresses to read again. A sanity bound per source, far above the
+ * most a source keeps (MAX_SOURCE_VIDEOS).
+ */
+export const MAX_LIST_VIDEOS = 20_000
 
 export type ExportSourceType =
   | 'youtube-channel'
@@ -44,6 +48,14 @@ export interface ExportVideo {
   creator?: VideoCreator
   year?: number
   lists?: string[]
+  /** A website or post programme's own public page. A recording's media address is never exported: it is read again. */
+  media?: string
+  summary?: string
+  image?: string
+  page?: string
+  web?: 'website' | 'post'
+  /** Loaded but held back from the schedule until the channel is rescanned or rebuilt. */
+  pending?: true
 }
 
 export interface ExportSource {
@@ -57,10 +69,14 @@ export interface ExportSource {
   info?: SourceInfo
   /** An imported list's YouTube channel, when TVN knows it. */
   uploaderChannelId?: string
-  /** An imported list's programmes (id, title, seconds), in list order, at most MAX_LIST_VIDEOS. */
+  /** Every programme the source holds, in its own order, at most MAX_LIST_VIDEOS. Absent in older files for YouTube and podcast sources: read again on restore. */
   videos?: ExportVideo[]
   /** Programmes left out of `videos` by the bound. */
   videosOmitted?: number
+  /** How many programmes the provider lists, whether all of them have been read, and whether LOAD read past the first batch. */
+  listed?: number
+  complete?: boolean
+  deep?: boolean
   /** Include and exclude rules (src/services/channel-curation.ts). Absent in older files: everything is eligible. */
   filter?: SourceFilter
   /** ARCHIVE or ALL. Absent in older files: recent. */
@@ -87,6 +103,10 @@ export interface ExportChannel {
   runningOrder?: string[]
   /** How many of the running order are scheduled, from the top. Absent: all of it. */
   scheduleSize?: number
+  /** How the running order was made. Absent in older files. */
+  orderKind?: OrderKind
+  /** A latest-first order's moment on air (ms since 1970). */
+  liveFromMs?: number
   /** The viewer's editorial notes: intent only, never what plays. Absent in older files. */
   editorial?: ChannelEditorial
   sources: ExportSource[]
@@ -137,7 +157,10 @@ function sourceTypeOf(source: ChannelSource): ExportSourceType {
   return source.kind
 }
 
-function exportVideo({ id, title, durationSec, published, creator, year, lists }: ExportVideo): ExportVideo {
+const address = (raw: string | undefined) => (raw ? shareableUrl(raw) : '')
+
+/** A programme as the file keeps it: never whether it was watched, nor a recording's media address. */
+export function exportVideo({ id, title, durationSec, published, creator, year, lists, media, summary, image, page, web, pending }: ImportedVideo): ExportVideo {
   return {
     id,
     title,
@@ -146,6 +169,25 @@ function exportVideo({ id, title, durationSec, published, creator, year, lists }
     ...(creator ? { creator: { ...creator } } : {}),
     ...(year ? { year } : {}),
     ...(lists?.length ? { lists: [...lists] } : {}),
+    ...(web && address(media) ? { media: address(media) } : {}),
+    ...(summary ? { summary } : {}),
+    ...(address(image) ? { image: address(image) } : {}),
+    ...(address(page) ? { page: address(page) } : {}),
+    ...(web ? { web } : {}),
+    ...(pending ? { pending } : {}),
+  }
+}
+
+/** A source's programmes, bounded, with how many the bound left out and how far it has been read. */
+function heldVideos(source: ChannelSource): Pick<ExportSource, 'videos' | 'videosOmitted' | 'listed' | 'complete' | 'deep'> {
+  const all = source.videos ?? []
+  const videos = all.slice(0, MAX_LIST_VIDEOS).map(exportVideo)
+  return {
+    videos,
+    ...(all.length > videos.length ? { videosOmitted: all.length - videos.length } : {}),
+    ...(typeof source.listed === 'number' ? { listed: source.listed } : {}),
+    ...(source.complete ? { complete: true } : {}),
+    ...(source.deep ? { deep: true } : {}),
   }
 }
 
@@ -164,22 +206,20 @@ export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): Exp
     ...(filter ? { filter } : {}),
     ...(mode !== 'recent' ? { mode } : {}),
   }
-  if (source.kind === 'youtube') return { ...base, url: shareableUrl(canonicalYouTubeUrl(source)) }
+  if (source.kind === 'youtube') return { ...base, url: shareableUrl(canonicalYouTubeUrl(source)), ...heldVideos(source) }
   if (source.kind === 'collection') {
     const uploader = source.ref ? uploaderOf(source.ref) : null
-    const all = source.videos ?? []
-    const videos = all.slice(0, MAX_LIST_VIDEOS).map(exportVideo)
     return {
       ...base,
       url: uploader ? `https://www.youtube.com/channel/${uploader}` : '',
       ...(uploader ? { uploaderChannelId: uploader } : {}),
-      videos,
-      ...(all.length > videos.length ? { videosOmitted: all.length - videos.length } : {}),
+      ...heldVideos(source),
     }
   }
   if (source.kind === 'tvn') return base
   const slot = source.kind === 'website' ? source.videos?.[0]?.durationSec : undefined
-  return { ...base, url: shareableUrl(source.url), ...(slot ? { slotSeconds: slot } : {}) }
+  const held = source.kind === 'podcast' || source.kind === 'website' ? heldVideos(source) : {}
+  return { ...base, url: shareableUrl(source.url), ...(slot ? { slotSeconds: slot } : {}), ...held }
 }
 
 export function exportChannel(record: StoredSource, uploaderOf: UploaderOf, users: readonly ExportUser[]): ExportChannel {
@@ -199,6 +239,8 @@ export function exportChannel(record: StoredSource, uploaderOf: UploaderOf, user
     ...(record.listName ? { listName: record.listName } : {}),
     ...(record.runningOrder?.length ? { runningOrder: [...record.runningOrder] } : {}),
     ...(record.runningOrder?.length && record.scheduleSize ? { scheduleSize: record.scheduleSize } : {}),
+    ...(record.runningOrder?.length && record.orderKind ? { orderKind: record.orderKind } : {}),
+    ...(record.runningOrder?.length && record.orderKind === 'latest' && record.liveFromMs ? { liveFromMs: record.liveFromMs } : {}),
     ...notes,
     sources: sourcesOf(record).map((source) => exportSource(source, uploaderOf)),
   }
@@ -367,6 +409,7 @@ export function checkChannel(channel: unknown, at: string, errors: string[]): vo
     errors.push(`${at}.runningOrder is not a list of video ids`)
   if (channel.scheduleSize !== undefined && (typeof channel.scheduleSize !== 'number' || !Number.isInteger(channel.scheduleSize) || channel.scheduleSize < 1))
     errors.push(`${at}.scheduleSize is not a number of programmes`)
+  checkOrderKind(channel, at, errors)
   checkEditorial(channel.editorial, `${at}.editorial`, errors)
   if (!Array.isArray(channel.sources)) {
     errors.push(`${at}.sources is not a list`)
@@ -374,6 +417,14 @@ export function checkChannel(channel: unknown, at: string, errors: string[]): vo
   }
   if (channel.state === 'empty' && channel.sources.length > 0) errors.push(`${at} is empty but has sources`)
   checkSources(channel.sources, at, errors)
+}
+
+export const ORDER_KINDS: readonly OrderKind[] = ['az', 'latest', 'random', 'rebuilt', 'manual']
+
+/** How a running order was made, and a latest-first order's moment on air. */
+export function checkOrderKind(item: Record<string, unknown>, at: string, errors: string[]): void {
+  if (item.orderKind !== undefined && !ORDER_KINDS.includes(item.orderKind as OrderKind)) errors.push(`${at}.orderKind must be ${ORDER_KINDS.join(', ')}`)
+  if (item.liveFromMs !== undefined && !(typeof item.liveFromMs === 'number' && Number.isFinite(item.liveFromMs) && item.liveFromMs > 0)) errors.push(`${at}.liveFromMs is not a time`)
 }
 
 /** Each exported source: a known type, a shareable address, plain rules. */
@@ -398,6 +449,8 @@ export function checkSources(sources: readonly unknown[], at: string, errors: st
         source.videos.every((video) => isRecord(video) && typeof video.id === 'string' && typeof video.title === 'string' && typeof video.durationSec === 'number')
       if (!ok) errors.push(`${where}.videos is not a bounded list of programmes`)
     }
+    if (source.listed !== undefined && !(typeof source.listed === 'number' && Number.isInteger(source.listed) && source.listed >= 0)) errors.push(`${where}.listed is not a count`)
+    for (const name of ['complete', 'deep'] as const) if (source[name] !== undefined && typeof source[name] !== 'boolean') errors.push(`${where}.${name} is not true or false`)
     checkFilter(source.filter, `${where}.filter`, errors)
     if (source.mode !== undefined && !SOURCE_MODES.includes(source.mode as SourceMode)) errors.push(`${where}.mode must be recent, archive or all`)
     if (source.slotSeconds !== undefined && !(typeof source.slotSeconds === 'number' && Number.isInteger(source.slotSeconds) && source.slotSeconds >= 60 && source.slotSeconds <= 6 * 3600)) {

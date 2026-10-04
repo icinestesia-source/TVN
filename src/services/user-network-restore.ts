@@ -5,7 +5,7 @@ import { canonicalYouTubeUrl, inventoryOf, type ChannelSource } from './channel-
 import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, videoCreator, type ImportedVideo, type StoredSource } from './channels-import.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 import { TVN_OWNER, type NetworkUser } from '../data/user-network/users.ts'
-import { CHANNEL_ID, storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
+import { CHANNEL_ID, shareableUrl, storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
 
 /**
  * RESTORE (OPTIONS → User Network file, or ADD's footer): a tvn-user-network-v1 file restores the viewer's
@@ -36,7 +36,7 @@ export function readUserNetworkFile(text: string): ReadResult {
 const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
   videos
     .filter((video) => video.id.trim() && video.durationSec >= 0)
-    .map(({ id, title, durationSec, published, creator, year, lists }) => ({
+    .map(({ id, title, durationSec, published, creator, year, lists, media, summary, image, page, web, pending }) => ({
       id,
       title,
       durationSec,
@@ -44,7 +44,20 @@ const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
       ...(videoCreator(creator) ? { creator: videoCreator(creator) } : {}),
       ...(typeof year === 'number' && Number.isInteger(year) ? { year } : {}),
       ...(Array.isArray(lists) && lists.length ? { lists: lists.filter((list) => typeof list === 'string') } : {}),
+      ...((web === 'website' || web === 'post') && typeof media === 'string' && shareableUrl(media) ? { media: shareableUrl(media) } : {}),
+      ...(typeof summary === 'string' && summary ? { summary } : {}),
+      ...(typeof image === 'string' && shareableUrl(image) ? { image: shareableUrl(image) } : {}),
+      ...(typeof page === 'string' && shareableUrl(page) ? { page: shareableUrl(page) } : {}),
+      ...(web === 'website' || web === 'post' ? { web } : {}),
+      ...(pending === true ? { pending } : {}),
     }))
+
+/** How far a source has been read, as the file kept it. */
+const readState = (source: ExportSource) => ({
+  ...(typeof source.listed === 'number' ? { listed: source.listed } : {}),
+  ...(source.complete === true ? { complete: true } : {}),
+  ...(source.deep === true ? { deep: true } : {}),
+})
 
 /** A YouTube channel or playlist id from its canonical address, when the file does not name it. */
 function youTubeRef(url: string): string | undefined {
@@ -64,14 +77,20 @@ export function channelSource(source: ExportSource, index: number): ChannelSourc
   if (source.sourceType === 'youtube-channel' || source.sourceType === 'youtube-playlist') {
     const ref = source.providerId || youTubeRef(source.url)
     const youtube = source.sourceType === 'youtube-playlist' ? ('playlist' as const) : ('channel' as const)
-    return { ...base, kind: 'youtube', url: ref ? canonicalYouTubeUrl({ ref, url: source.url, youtube }) : source.url, ...(ref ? { ref } : {}), youtube, videos: [] }
+    return { ...base, kind: 'youtube', url: ref ? canonicalYouTubeUrl({ ref, url: source.url, youtube }) : source.url, ...(ref ? { ref } : {}), youtube, videos: cleanVideos(source.videos), ...readState(source) }
   }
   if (source.sourceType === 'collection') {
-    return { ...base, kind: 'collection', url: '', ref: source.providerId || source.label, videos: cleanVideos(source.videos) }
+    return { ...base, kind: 'collection', url: '', ref: source.providerId || source.label, videos: cleanVideos(source.videos), ...readState(source) }
   }
   if (source.sourceType === 'tvn') return { ...base, kind: 'tvn', url: '', ...(source.providerId ? { ref: source.providerId } : {}) }
-  if (source.sourceType === 'website') return { ...base, kind: 'website', url: source.url, ...(source.slotSeconds ? { slotSeconds: source.slotSeconds } : {}) }
-  return { ...base, kind: storedKindOf(source.sourceType), url: source.url }
+  // A podcast's episodes need their media addresses, which the file never holds: they are read again. A website
+  // programme's address is its own public page, so it comes back as it was, and a read of the page refreshes it.
+  const ref = source.providerId ? { ref: source.providerId } : {}
+  if (source.sourceType === 'website') {
+    const pages = cleanVideos(source.videos).filter((video) => video.web && video.media)
+    return { ...base, kind: 'website', url: source.url, ...ref, ...(source.slotSeconds ? { slotSeconds: source.slotSeconds } : {}), ...(pages.length ? { videos: pages } : {}) }
+  }
+  return { ...base, kind: storedKindOf(source.sourceType), url: source.url, ...ref }
 }
 
 /** The record id TVN would have given this channel: an added YouTube source's id, or an imported list's. */
@@ -118,6 +137,8 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
         updatedAt: now,
         ...(channel.runningOrder?.length ? { runningOrder: [...channel.runningOrder] } : {}),
         ...(channel.runningOrder?.length && channel.scheduleSize ? { scheduleSize: channel.scheduleSize } : {}),
+        ...(channel.runningOrder?.length && channel.orderKind ? { orderKind: channel.orderKind } : {}),
+        ...(channel.runningOrder?.length && channel.orderKind === 'latest' && channel.liveFromMs ? { liveFromMs: channel.liveFromMs } : {}),
         ...owner,
         ...notes,
       }
@@ -218,7 +239,9 @@ export async function resolveRestored(
     failed += wanted.filter((source) => read(source) === null).length
     const order = (sources: readonly ChannelSource[]) => keptOrder(sources, record.runningOrder) ?? record.runningOrder
     if (!record.channelSources) {
-      const videos = cleanVideos(read(wanted[0]) ?? [])
+      // What the file held stays; a fresh read only adds to it and brings its dates.
+      const fresh = read(wanted[0])
+      const videos = fresh === null ? record.videos : rescanned(cleanVideos(fresh), record.videos, 'recent', record.videos.length > 0)
       const sources: ChannelSource[] = [{ ...wanted[0], videos }]
       const runningOrder = videos.length > 0 ? order(sources) : record.runningOrder
       return { ...record, videos, ...(runningOrder?.length ? { runningOrder } : {}) }
@@ -246,7 +269,7 @@ export async function resolveRestored(
         ? { ...source, status: { state: 'failed', playable: 0, checkedAt: now } }
         : {
             ...source,
-            videos: withPlaylistVideos(rescanned(cleanVideos(videos), [], sourceModeOf(source)), listed(source)),
+            videos: withPlaylistVideos(rescanned(cleanVideos(videos), source.videos ?? [], sourceModeOf(source), (source.videos?.length ?? 0) > 0), listed(source)),
             status: { state: 'ready', playable: videos.length, checkedAt: now },
           }
     })
