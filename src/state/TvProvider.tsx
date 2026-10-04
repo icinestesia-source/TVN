@@ -50,9 +50,9 @@ import {
   type ParsedExport,
   type StoredSource,
 } from '../services/channels-import.ts'
-import { lookUpChannel } from '../services/add-channel.ts'
+import { lookUpBatch, lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
-import { applyChannelEdit, editOf, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit } from '../services/channel-editor.ts'
+import { applyChannelEdit, editOf, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
@@ -184,7 +184,8 @@ import { confirmStart, soundHeld, viewerInteracted, type StartHold } from '../pl
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './history.ts'
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
 import { BUILD_INFO } from '../build-info.ts'
-import { addUser, checkUserName, loadUsers, releaseUserChannels, saveUsers, userFilter, type NetworkUser } from '../data/user-network/users.ts'
+import { addUser, checkUserName, filterUserId, loadUsers, releaseUserChannels, saveUsers, userFilter, userNetworkName, type NetworkUser } from '../data/user-network/users.ts'
+import { networkFilterOf, randomScoped } from '../view/info-shortcuts.ts'
 import {
   TvContext,
   type GuideCursor,
@@ -2658,6 +2659,20 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
+  const loadMoreChannelSource = useCallback(
+    (source: ChannelSource, options: LoadMoreOptions) =>
+      loadMoreSource(
+        source,
+        {
+          resolveYouTube: (url: string, more?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { ...more }),
+          resolveBatch: (cursor: string, signal?: AbortSignal) => lookUpBatch(cursor, fetch, signal),
+          resolveFeed: (url: string, more?: { mode?: SourceMode }) => lookUpFeed(url, fetch, { fresh: true, ...more }),
+        },
+        options,
+      ),
+    [],
+  )
+
   const exportChannelFile = useCallback(
     async (number: number, edit: ChannelEdit, as: ChannelExportKind) => {
       const { scope, shipped } = scopeOf(number)
@@ -2871,6 +2886,23 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (hasPicture(target.programme)) playFromGuide(here, target.programme, target)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // T surfs ALL, or one User Network: the one chosen, else the one it was last narrowed to, else the channel's own.
+  const [surfNetwork, setSurfNetwork] = useState<GuideFilter | null>(null)
+  const surfTarget: GuideFilter = randomScoped(guideFilter) ? guideFilter : (surfNetwork ?? networkFilterOf(channelByNumber(channelNumber)))
+  const surfScopeName = userNetworkName(filterUserId(surfTarget) ?? undefined, networkUsers)
+  /** T's right-click or hold: surf ALL, or only the selected network. The Guide's tab follows, as Random from does. */
+  const toggleSurfScope = useCallback(() => {
+    if (randomScoped(guideFilter)) {
+      setSurfNetwork(guideFilter)
+      setGuideFilter('all')
+      flash('SURF · ALL')
+    } else {
+      setGuideFilter(surfTarget)
+      flash(`SURF · ${surfScopeName.toUpperCase()} ONLY`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guideFilter, surfTarget, surfScopeName])
 
   /** CHOOSE ANOTHER on 000: a new choice now, played at once when 000 is on screen. */
   const chooseAnotherOnTvn = useCallback(() => {
@@ -3097,6 +3129,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       screenAction,
       screenStep,
       chooseAnotherTvn: chooseAnotherOnTvn,
+      toggleSurfScope,
+      surfScopeName,
       holdInfo,
       guideLibrary,
       guideRun,
@@ -3139,6 +3173,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
+      loadMoreChannelSource,
       exportChannelFile,
       importChannelFile,
       sourceArchive,
@@ -3155,6 +3190,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
+      loadMoreChannelSource,
       exportChannelFile,
       importChannelFile,
       playChannelProgramme,
@@ -3219,6 +3255,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       wake,
       surfing,
       toggleSurf,
+      toggleSurfScope,
+      surfScopeName,
       surfRange,
       setSurfRange,
       transition,

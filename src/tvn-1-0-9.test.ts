@@ -116,7 +116,7 @@ describe('+ Add channel after the last User Network channel', () => {
 describe('Guide terminology: NOW · ADD · MEDIA', () => {
   it('reads NOW, ADD, MEDIA in that order, each opening its own tool; IMPORT is not at the top', () => {
     const html = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect(labelsOf(html)).toEqual(['Network', 'Guide', 'My Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect(labelsOf(html)).toEqual(['Network', 'Guide', 'Options', 'Now', 'Add', 'Media'])
     expect(addSource).not.toContain("action('Import'")
     expect(addSource).toContain("action('Add', tool === 'add', () => onTool('add')")
     expect(addSource).toContain("action('Media', tool === 'media', () => onTool('media')")

@@ -119,15 +119,26 @@ describe('TVN 2.0 · R owns Random, Settings owns settings', () => {
     expect(options).toContain('{toggle(tv.surfing, [\'Stop\', \'Start\'], tv.toggleSurf)}')
   })
 
-  it('one Random implementation: R’s click, hold and menu reuse the existing commands and dialog', () => {
+  it('one Random implementation: T’s click surfs with the existing command; hold and right-click switch its scope, nothing else', () => {
     const sent: unknown[] = []
     let opened = 0
-    const context = { captionsAvailable: false, fullscreenAvailable: true, subtitles: false, remoteOpen: false, surfing: false, openRandomSettings: () => void opened++, dispatch: (command: unknown) => void sent.push(command) }
+    let toggled = 0
+    const context = {
+      captionsAvailable: false,
+      fullscreenAvailable: true,
+      subtitles: false,
+      remoteOpen: false,
+      surfing: false,
+      openRandomSettings: () => void opened++,
+      toggleSurfScope: () => void toggled++,
+      dispatch: (command: unknown) => void sent.push(command),
+    }
     SHORTCUTS.random.run(context)
     SHORTCUTS.random.hold?.(context)
     SHORTCUTS.random.menu?.(context)
-    expect(sent).toEqual([{ type: 'random-channel' }, { type: 'surf' }])
-    expect(opened).toBe(1)
+    expect(sent).toEqual([{ type: 'random-channel' }])
+    expect(toggled).toBe(2)
+    expect(opened).toBe(0)
     expect(provider.match(/case 'random-channel':/g)).toHaveLength(1)
     expect(provider.match(/case 'surf':/g)).toHaveLength(1)
   })

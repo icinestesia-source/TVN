@@ -2,6 +2,9 @@ import { isSessionProgramme } from '../session/session-channel.ts'
 import type { TvContextValue } from '../state/tv-context.ts'
 import type { TvCommand } from '../types/input.ts'
 import type { Programme } from '../types/programme.ts'
+import type { Channel } from '../types/channel.ts'
+import type { GuideFilter } from '../types/preferences.ts'
+import { TVN_OWNER, userFilter } from '../data/user-network/users.ts'
 import { openRandomSettings } from './tvn-settings-store.ts'
 
 /** The actions that may sit in the corners of the information overlay's control pad. */
@@ -40,6 +43,10 @@ export interface ShortcutContext {
   surfing: boolean
   /** Random draws from a User Network (the TVN tab or a named user's), not the whole network. */
   randomScoped?: boolean
+  /** The User Network T narrows to, by its own name. */
+  surfScopeName?: string
+  /** Surf every channel, or only that User Network. */
+  toggleSurfScope?: () => void
   /** Opens the Random settings: the Random Cycle's timing. */
   openRandomSettings: () => void
   dispatch: (command: TvCommand) => void
@@ -56,6 +63,8 @@ interface ShortcutBase {
   unavailable: string
   /** The tooltip, when it says more than the name. */
   title?: string
+  /** The tooltip and accessible name as things stand now, when they depend on the television's state. */
+  describe?: (context: ShortcutContext) => string
 }
 
 /** A corner runs a television command. */
@@ -105,19 +114,26 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
     run: (context) => context.dispatch({ type: 'subtitles' }),
     pressed: (context) => context.subtitles,
   },
+  /**
+   * T, the TV Surf control: a click or tap surfs to another channel; a right-click, or a hold on touch, switches
+   * what it surfs between ALL and one User Network. One gesture, one action: a hold never also surfs.
+   */
   random: {
     id: 'random',
-    label: 'TVN',
-    name: 'Random channel',
-    title: 'Random channel · hold to start or stop Random Cycle · right-click for Random settings',
-    unavailable: 'Random channel is not available',
+    label: 'T',
+    name: 'TV Surf',
+    unavailable: 'TV Surf is not available',
+    describe: (context) =>
+      context.randomScoped
+        ? `TV Surf · surfing ${context.surfScopeName ?? 'one network'} only · right-click or hold: surf all`
+        : `TV Surf · surfing all channels · right-click or hold: surf ${context.surfScopeName ?? 'one network'} only`,
     available: () => true,
     run: (context) => context.dispatch({ type: 'random-channel' }),
-    // Lit while the Random Cycle runs; underlined while Random draws from a User Network (Random from, in Options).
+    // Lit while the Random Cycle (in Options) runs; accent-marked while T surfs one User Network.
     pressed: (context) => context.surfing,
     scoped: (context) => context.randomScoped === true,
-    hold: (context) => context.dispatch({ type: 'surf' }),
-    menu: (context) => context.openRandomSettings(),
+    hold: (context) => context.toggleSurfScope?.(),
+    menu: (context) => context.toggleSurfScope?.(),
   },
 }
 
@@ -128,6 +144,8 @@ export type CornerActions = {
   remoteOpen: boolean
   surfing: boolean
   randomScoped?: boolean
+  surfScopeName?: string
+  toggleSurfScope?: () => void
   openRandomSettings: () => void
   dispatch: (command: TvCommand) => void
 }
@@ -137,14 +155,22 @@ export function randomScoped(filter: string): boolean {
   return filter === 'user' || filter.startsWith('user:')
 }
 
+/** The User Network tab a channel belongs to: its named user's, or TVN's for everything else. */
+export function networkFilterOf(channel: Pick<Channel, 'owner'> | undefined): GuideFilter {
+  return channel?.owner && channel.owner !== TVN_OWNER ? userFilter(channel.owner) : 'user'
+}
+
 export function cornerActions(
-  tv: Pick<TvContextValue, 'infoShortcuts' | 'subtitles' | 'remoteOpen' | 'surfing' | 'dispatch'> & Partial<Pick<TvContextValue, 'guideFilter'>>,
+  tv: Pick<TvContextValue, 'infoShortcuts' | 'subtitles' | 'remoteOpen' | 'surfing' | 'dispatch'> &
+    Partial<Pick<TvContextValue, 'guideFilter' | 'surfScopeName' | 'toggleSurfScope'>>,
 ): CornerActions {
   return {
     assignment: tv.infoShortcuts,
     subtitles: tv.subtitles,
     remoteOpen: tv.remoteOpen,
     randomScoped: randomScoped(tv.guideFilter ?? 'all'),
+    ...(tv.surfScopeName ? { surfScopeName: tv.surfScopeName } : {}),
+    ...(tv.toggleSurfScope ? { toggleSurfScope: tv.toggleSurfScope } : {}),
     surfing: tv.surfing,
     // The Random settings take the remote's place.
     openRandomSettings: () => {

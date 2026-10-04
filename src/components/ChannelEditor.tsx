@@ -3,7 +3,7 @@ import { loadRegister } from '../credits/load.ts'
 import { watchUrl, type SourceRegister } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
-import type { ChannelEdit } from '../services/channel-editor.ts'
+import { canLoadMore, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import type { ChannelExportKind } from '../services/channel-file.ts'
 import { reachesArchive, withSourceDrafts, type SourceDraft } from '../services/channel-curation.ts'
 import type { ImportedVideo } from '../services/channels-import.ts'
@@ -30,7 +30,10 @@ import { PlaylistDiscovery } from './PlaylistDiscovery.tsx'
 import { playlistUrl } from '../services/add-channel.ts'
 import { withOriginalOverride } from '../services/original-sources.ts'
 import { addedContributions, addedSourceLabels, channelOriginals, contributionsOf, contributionText, originalLineup } from '../view/channel-provenance.ts'
-import { alphabeticalVideos, latestVideos } from '../view/programme-order.ts'
+import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
+
+/** Rows drawn at once in a long list; the rest are a press away, so a deep source never slows the editor. */
+const ROW_LIMIT = 200
 
 /** Enter and Space press these controls; they must not also reach the Guide. */
 function keepKey(event: KeyboardEvent<HTMLElement>) {
@@ -119,6 +122,57 @@ function OriginalLink({ video }: { video: ListedVideo }) {
 }
 
 /**
+ * How much of a source TVN holds, and LOAD MORE / LOAD ALL to read further: the first batch arrives fast,
+ * the rest only when asked for. While loading, the count climbs and STOP keeps what has arrived.
+ */
+function SourceDepth({
+  source,
+  loading,
+  disabled,
+  canLoad,
+  onMore,
+  onAll,
+  onStop,
+}: {
+  source: ChannelSource
+  loading: { loaded: number; listed?: number; all: boolean } | null
+  disabled: boolean
+  canLoad: boolean
+  onMore: () => void
+  onAll: () => void
+  onStop: () => void
+}) {
+  const held = source.videos?.length ?? 0
+  const listed = loading?.listed ?? source.listed
+  const label = sourceTitle(source)
+  return (
+    <div className="editor-depth" role="group" aria-label={`How much of ${label} is loaded`}>
+      <span className="editor-depth-count" role={loading ? 'status' : undefined}>
+        {loading
+          ? `Loading · ${loading.loaded}${listed ? ` of ${listed}` : ''} loaded…`
+          : `${held} loaded${listed ? ` · ${listed} listed` : ''}${source.complete ? ' · whole source read' : ''}`}
+      </span>
+      {loading ? (
+        <button type="button" className="tab" onKeyDown={keepKey} onClick={onStop}>
+          Stop
+        </button>
+      ) : canLoad ? (
+        <>
+          {source.kind === 'youtube' ? (
+            <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={onMore} title="Read the next batch of this source">
+              Load more
+            </button>
+          ) : null}
+          <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={onAll} title="Read this source to the end of its public list">
+            Load all
+          </button>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+/**
  * The Channel Editor: one channel's name and sources, opened from the Guide by right-click, a long press
  * or E. It sits where the Guide's information bar is and closes back into it.
  */
@@ -128,6 +182,7 @@ export function ChannelEditor({
   onLoad,
   onSave,
   onRescan,
+  onLoadMore,
   onDelete,
   onClose,
   onExport,
@@ -140,6 +195,8 @@ export function ChannelEditor({
   onLoad: (channelNumber: number) => Promise<ChannelEdit | null>
   onSave: (channelNumber: number, edit: ChannelEdit) => Promise<string>
   onRescan: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
+  /** LOAD MORE / LOAD ALL: reads one source past its first batch; the editor saves what it brings. */
+  onLoadMore?: (source: ChannelSource, options: LoadMoreOptions) => Promise<ChannelSource>
   onDelete: (channelNumber: number) => Promise<string>
   onClose: () => void
   /**
@@ -167,6 +224,10 @@ export function ChannelEditor({
   const [notesOpen, setNotesOpen] = useState(false)
   // Filters set on a source but not applied yet: the editor's RESCAN uses them too.
   const [drafts, setDrafts] = useState<ReadonlyMap<string, SourceDraft>>(new Map())
+  // LOAD MORE / LOAD ALL in progress on one source, and how far it has got.
+  const [loading, setLoading] = useState<{ id: string; loaded: number; listed?: number; all: boolean } | null>(null)
+  const stopRef = useRef<AbortController | null>(null)
+  const [allRows, setAllRows] = useState<ReadonlySet<string>>(new Set())
   const now = useClock(30_000)
   const rootRef = useRef<HTMLElement>(null)
   const linkRef = useRef<HTMLInputElement>(null)
@@ -207,6 +268,8 @@ export function ChannelEditor({
   useEffect(() => {
     if (adding) linkRef.current?.focus()
   }, [adding])
+
+  useEffect(() => () => stopRef.current?.abort(), [])
 
   const change = (next: ChannelEdit) => {
     setEdit(next)
@@ -273,6 +336,77 @@ export function ChannelEditor({
     const ids = lineup.map((video) => video.id)
     ;[ids[index], ids[to]] = [ids[to], ids[index]]
     change({ ...edit, order: ids })
+  }
+
+  // SOURCES → AVAILABLE → FILTERS → ELIGIBLE → RUNNING ORDER → SCHEDULED: the counts the editor shows.
+  const kept = lineup.filter((video) => !left.has(video.id))
+  const available = edit
+    ? tvnLineup
+      ? lineup.length
+      : new Set([
+          ...edit.sources.filter((source) => source.enabled && !isStreamSource(source)).flatMap((source) => (source.videos ?? []).map((video) => video.id)),
+          ...(mixed ? shippedRows().map((video) => video.id) : []),
+        ]).size
+    : 0
+  const scheduleSize = ownOrder && edit?.scheduleSize && edit.scheduleSize < kept.length ? edit.scheduleSize : null
+  const scheduled = scheduleSize ?? kept.length
+  const keptAt = new Map(kept.map((video, index) => [video.id, index]))
+  const unscheduled = (id: string) => scheduleSize !== null && (keptAt.get(id) ?? -1) >= scheduleSize
+  /** The order with the viewer's kept programmes first and any left out after them. */
+  const withLeft = (ids: readonly string[]) => [...ids, ...lineup.filter((video) => left.has(video.id)).map((video) => video.id)]
+  const setScheduleSize = (size: number | undefined) => {
+    if (!edit) return
+    const whole = size === undefined || !Number.isFinite(size) ? undefined : Math.max(1, Math.floor(size))
+    change({ ...edit, order: edit.order?.length ? edit.order : lineup.map((video) => video.id), scheduleSize: whole && whole < kept.length ? whole : undefined })
+  }
+  /** RANDOMISE and REBUILD keep their result at once: the scheduler airs exactly the saved order. */
+  const keepOrder = (next: ChannelEdit, message: string) => {
+    setEdit(next)
+    setSorted(null)
+    void run('order', async () => {
+      await onSave(number, next)
+      return message
+    })
+  }
+  const randomise = () => {
+    if (!edit) return
+    const ids = kept.map((video) => video.id)
+    const head = shuffledVideos(ids.slice(0, scheduled))
+    keepOrder({ ...edit, order: withLeft([...head, ...ids.slice(scheduled)]) }, `RANDOMISED · ${scheduled} SCHEDULED PROGRAMMES IN A NEW ORDER · SAVED`)
+  }
+  const rebuild = () => {
+    if (!edit) return
+    const ids = rebuiltVideos(kept).map((video) => video.id)
+    keepOrder({ ...edit, order: withLeft(ids) }, `REBUILT FROM ${kept.length} ELIGIBLE · ${scheduled} SCHEDULED · SAVED`)
+  }
+  const loadMore = (source: ChannelSource, all: boolean) => {
+    if (!edit || !onLoadMore) return
+    const stop = new AbortController()
+    stopRef.current = stop
+    setLoading({ id: source.id, loaded: source.videos?.length ?? 0, listed: source.listed, all })
+    void run('load', async () => {
+      const found = await onLoadMore(source, {
+        all,
+        signal: stop.signal,
+        onProgress: (loaded, listed) => setLoading((current) => (current ? { ...current, loaded, listed } : current)),
+      })
+      const next = { ...edit, sources: edit.sources.map((item) => (item.id === source.id ? found : item)) }
+      setEdit(next)
+      await onSave(number, next)
+      const count = found.videos?.length ?? 0
+      const before = source.videos?.length ?? 0
+      return [
+        stop.signal.aborted ? 'STOPPED' : count > before ? `${count - before} MORE LOADED` : 'NOTHING NEW',
+        `${count}${found.listed ? ` OF ${found.listed}` : ''} IN THIS SOURCE`,
+        found.complete ? 'WHOLE SOURCE READ' : null,
+        'SAVED',
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    }).finally(() => {
+      stopRef.current = null
+      setLoading(null)
+    })
   }
 
   const noteDraft = (id: string, draft: SourceDraft | null) =>
@@ -485,6 +619,17 @@ export function ChannelEditor({
                       Remove
                     </button>
                   )}
+                  {(source.kind === 'youtube' || source.kind === 'podcast') && (source.videos?.length ?? 0) > 0 ? (
+                    <SourceDepth
+                      source={source}
+                      loading={loading?.id === source.id ? loading : null}
+                      disabled={busy !== null}
+                      canLoad={onLoadMore !== undefined && canLoadMore(source)}
+                      onMore={() => loadMore(source, false)}
+                      onAll={() => loadMore(source, true)}
+                      onStop={() => stopRef.current?.abort()}
+                    />
+                  ) : null}
                   {open ? (
                     <SourceDetails source={source} number={number} disabled={busy !== null} onInfo={(info) => setSource(source.id, { info })} />
                   ) : null}
@@ -526,15 +671,23 @@ export function ChannelEditor({
                         {source.kind === 'youtube' ? 'Nothing scanned yet · Rescan to fetch its programmes' : 'No programmes listed'}
                       </p>
                     ) : (
-                      <ol className="editor-videos" aria-label={`Programmes of ${sourceTitle(source)}`}>
-                        {held.map((video) => (
-                          <li key={video.id}>
-                            <span className="editor-video-title">{video.title}</span>
-                            <span className="editor-video-length">{formatDuration(video.durationSec)}</span>
-                            <OriginalLink video={video} />
-                          </li>
-                        ))}
-                      </ol>
+                      <>
+                        <ol className="editor-videos" aria-label={`Programmes of ${sourceTitle(source)}`}>
+                          {(allRows.has(source.id) ? held : held.slice(0, ROW_LIMIT)).map((video) => (
+                            <li key={video.id}>
+                              <span className="editor-video-title">{video.title}</span>
+                              {video.published ? <span className="editor-video-day">{video.published}</span> : null}
+                              <span className="editor-video-length">{formatDuration(video.durationSec)}</span>
+                              <OriginalLink video={video} />
+                            </li>
+                          ))}
+                        </ol>
+                        {held.length > ROW_LIMIT && !allRows.has(source.id) ? (
+                          <button type="button" className="tab editor-show-all" onKeyDown={keepKey} onClick={() => setAllRows((current) => new Set([...current, source.id]))}>
+                            Show all {held.length}
+                          </button>
+                        ) : null}
+                      </>
                     )
                   ) : null}
                 </li>
@@ -618,6 +771,26 @@ export function ChannelEditor({
                   <button type="button" className={sorted === 'latest' ? 'tab is-on' : 'tab'} disabled={busy !== null} onKeyDown={keepKey} onClick={() => sortBy('latest')} title="Newest upload first; programmes with no date follow">
                     Latest
                   </button>
+                  <button
+                    type="button"
+                    className="tab"
+                    disabled={busy !== null}
+                    onKeyDown={keepKey}
+                    onClick={randomise}
+                    title="Shuffle the scheduled programmes into a new order, and keep it"
+                  >
+                    Randomise
+                  </button>
+                  <button
+                    type="button"
+                    className="tab"
+                    disabled={busy !== null}
+                    onKeyDown={keepKey}
+                    onClick={rebuild}
+                    title="Draw a new running order from every eligible programme, taking each source in turn, and keep it"
+                  >
+                    Rebuild
+                  </button>
                   {latest && onPlay ? (
                     <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => setNote(onPlay(number, latest.id))} title={`Play ${latest.title}`}>
                       Play latest
@@ -632,7 +805,7 @@ export function ChannelEditor({
                   disabled={busy !== null}
                   onKeyDown={keepKey}
                   onClick={() => {
-                    change({ ...edit, order: undefined, excluded: undefined })
+                    change({ ...edit, order: undefined, excluded: undefined, scheduleSize: undefined })
                     setSorted(null)
                   }}
                 >
@@ -652,6 +825,36 @@ export function ChannelEditor({
               </p>
             ) : (
               <>
+                <div className="editor-pool" role="group" aria-label="Programmes">
+                  <p className="editor-pool-count" role="status" aria-label="Programme counts">
+                    <span>{available} available</span>
+                    <span>{kept.length} eligible</span>
+                    <span className="editor-pool-on">{scheduled} scheduled</span>
+                  </p>
+                  {kept.length > 1 ? (
+                    <label className="editor-pool-size">
+                      <span>Schedule</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={kept.length}
+                        step={1}
+                        inputMode="numeric"
+                        value={scheduleSize ?? kept.length}
+                        disabled={busy !== null}
+                        aria-label="Programmes scheduled"
+                        onKeyDown={keepKey}
+                        onChange={(event) => setScheduleSize(event.target.value === '' ? undefined : Number(event.target.value))}
+                      />
+                      <span>of {kept.length}</span>
+                      {scheduleSize ? (
+                        <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => setScheduleSize(undefined)}>
+                          All
+                        </button>
+                      ) : null}
+                    </label>
+                  ) : null}
+                </div>
                 <p className="guide-tool-note">
                   {tvnLineup
                     ? ownOrder
@@ -660,14 +863,23 @@ export function ChannelEditor({
                         ? "TVN's own programmes for this channel, from its original sources, scheduled by TVN. Disable or filter a source, move a programme or leave one out to arrange it yourself."
                         : "TVN's own programmes for this channel, scheduled by TVN. Move one or leave one out to arrange it yourself."
                     : ownOrder
-                    ? 'The channel plays these in this order, then starts again. Save to keep it.'
+                    ? scheduleSize
+                      ? `The channel plays the first ${scheduleSize} in this order, then starts again; the rest stay eligible, not scheduled. Save to keep it.`
+                      : 'The channel plays these in this order, then starts again. Save to keep it.'
                     : reachesArchive(edit.sources)
                       ? 'TVN plays these in turn, from across the archive. Move one to set your own order.'
                       : 'TVN plays these in turn, with repeats and earlier uploads between them. Move one to set your own order.'}
                 </p>
                 <ol className="editor-lineup" aria-label="Running order">
-                  {lineup.map((video, index) => (
-                    <li key={video.id} className={[video.id === onAir ? 'is-on-air' : '', left.has(video.id) ? 'is-off' : ''].filter(Boolean).join(' ') || undefined}>
+                  {(allRows.has('lineup') ? lineup : lineup.slice(0, ROW_LIMIT)).map((video, index) => (
+                    <li
+                      key={video.id}
+                      className={
+                        [video.id === onAir ? 'is-on-air' : '', left.has(video.id) ? 'is-off' : '', unscheduled(video.id) ? 'is-unscheduled' : '']
+                          .filter(Boolean)
+                          .join(' ') || undefined
+                      }
+                    >
                       {tvnLineup || (mixed && video.original) ? (
                         <input
                           type="checkbox"
@@ -687,6 +899,7 @@ export function ChannelEditor({
                         </span>
                       ) : null}
                       {video.id === onAir ? <span className="editor-lineup-now">On air</span> : null}
+                      {scheduleSize !== null && keptAt.get(video.id) === scheduleSize ? <span className="editor-lineup-off">Not scheduled from here</span> : null}
                       <span className="editor-video-length">{formatDuration(video.durationSec)}</span>
                       <OriginalLink video={{ ...video, href: (video as ListedVideo).href ?? watchUrl(video.id) }} />
                       <button
@@ -712,6 +925,11 @@ export function ChannelEditor({
                     </li>
                   ))}
                 </ol>
+                {lineup.length > ROW_LIMIT && !allRows.has('lineup') ? (
+                  <button type="button" className="tab editor-show-all" onKeyDown={keepKey} onClick={() => setAllRows((current) => new Set([...current, 'lineup']))}>
+                    Show all {lineup.length}
+                  </button>
+                ) : null}
               </>
             )}
           </>

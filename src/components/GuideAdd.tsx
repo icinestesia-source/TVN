@@ -26,11 +26,12 @@ function viewerMessage(caught: unknown, fallback: string): string {
 }
 
 /**
- * NETWORK · GUIDE · MY GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the
- * Guide itself. NETWORK is the Network Editor (curate the channels); GUIDE is the television listings (what is on);
- * MY GUIDE holds the viewer's own programme sequences and reads green only while one is being followed. OPTIONS holds the users and every viewer setting.
- * ADD opens the Add Channel row, MEDIA builds 1000 Local Media from local files. New users and channel-list
- * imports live behind the + tab (after TVN and the users, before FAV).
+ * NETWORK · GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the
+ * Guide itself. NETWORK is the Network Editor (curate the channels); GUIDE is the television listings (what is
+ * on), and a right-click or a hold on it opens the viewer's programmable Guide (saved Maps: create, edit, play,
+ * resume, duplicate, delete). GUIDE reads green while one of those Maps is being followed. OPTIONS holds the
+ * users and every viewer setting. ADD opens the Add Channel row, MEDIA builds 1000 Local Media from local files.
+ * New users and channel-list imports live behind the + tab (after TVN and the users, before FAV).
  */
 export function GuideActions({
   tool,
@@ -39,7 +40,6 @@ export function GuideActions({
   onNow,
   onClose,
   onTool,
-  onGuideSearch,
 }: {
   tool: GuideTool | null
   /** A programme chosen in the Guide is playing; NOW returns to air. */
@@ -50,19 +50,7 @@ export function GuideActions({
   /** GUIDE pressed while the listings are already showing: the same as CLOSE. */
   onClose?: () => void
   onTool: (tool: GuideTool) => void
-  /** CREATE GUIDE FROM…: a right-click or a hold on GUIDE. */
-  onGuideSearch?: () => void
 }) {
-  const open = tool === 'guides'
-  const openGuide = () => {
-    if (!open) onTool('guides')
-  }
-  // GUIDE is the television listings: from any panel standing in their place it brings them back; over the
-  // listings themselves it closes the Guide, as CLOSE does.
-  const listings = () => {
-    if (tool && tool !== 'edit') onTool(tool)
-    else onClose?.()
-  }
   const action = (label: string, on: boolean, run: () => void, title?: string, extra = '') => (
     <button type="button" className={`${on ? 'tab is-on' : 'tab'}${extra}`} aria-pressed={on} title={title} onKeyDown={keepKey} onClick={run}>
       {label}
@@ -71,17 +59,7 @@ export function GuideActions({
   return (
     <div className="guide-import guide-actions">
       {action('Network', tool === 'editor', () => onTool('editor'), 'Network Editor: arrange and edit the channels')}
-      <button
-        type="button"
-        className={`tab guide-section${tool !== 'options' && tool !== 'add' && tool !== 'media' && tool !== 'editor' && tool !== 'guides' ? ' is-on' : ''}`}
-        aria-current={tool !== 'options' && tool !== 'add' && tool !== 'media' && tool !== 'editor' && tool !== 'guides' ? 'page' : undefined}
-        title="The television listings"
-        onKeyDown={keepKey}
-        onClick={listings}
-      >
-        Guide
-      </button>
-      <ChannelGuideTab open={open} following={following} onOpen={open ? () => onTool('guides') : openGuide} onSearch={onGuideSearch ?? openGuide} />
+      <GuideTab tool={tool} following={following} onTool={onTool} onClose={onClose} />
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
       {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'The channel playing, now · press again for the picture')}
       {action('Add', tool === 'add', () => onTool('add'))}
@@ -91,23 +69,33 @@ export function GuideActions({
 }
 
 /**
- * MY GUIDE opens (and closes) the viewer's programmable viewing sequence. Green, My Guide choosing what plays,
- * colours its text. A right-click or a hold opens CREATE FROM… in it.
+ * GUIDE: a click or a tap is the television listings; a right-click or a touch held past the long-press
+ * threshold opens the programmable Guide (the Maps) instead, never both. Green while a Map is followed.
  */
-function ChannelGuideTab({ open, following, onOpen, onSearch }: { open: boolean; following: boolean; onOpen: () => void; onSearch: () => void }) {
+function GuideTab({ tool, following, onTool, onClose }: { tool: GuideTool | null; following: boolean; onTool: (tool: GuideTool) => void; onClose?: () => void }) {
   const [press] = useState(() => createGuidePress())
-  const actions = { open: onOpen, search: onSearch }
   useEffect(() => press.cancel, [press])
+  const maps = tool === 'guides'
+  const listingsShown = tool === null || tool === 'edit'
+  // From any panel standing in their place GUIDE brings the listings back; over the listings it closes the Guide, as CLOSE does.
+  const listings = () => {
+    if (tool && tool !== 'edit') onTool(tool)
+    else onClose?.()
+  }
+  const openMaps = () => {
+    if (!maps) onTool('guides')
+  }
+  const actions = { open: listings, search: openMaps }
   const point = (event: PointerEvent<HTMLButtonElement>) => ({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })
-  const label = following ? 'My Guide, TVN is following My Guide' : 'My Guide'
+  const label = following ? 'Guide, TVN is following a Map from your Guide' : 'Guide'
   return (
     <button
       type="button"
-      className={`tab guide-follow${open ? ' is-on is-open' : ''}${following ? ' is-following' : ''}`}
-      aria-pressed={open}
-      aria-expanded={open}
-      aria-label={`${label}. Right-click or hold to create one from words`}
-      title={following ? 'TVN is following My Guide · right-click or hold: Create from…' : 'My Guide · right-click or hold: Create from…'}
+      className={`tab guide-section guide-follow${listingsShown || maps ? ' is-on' : ''}${maps ? ' is-open' : ''}${following ? ' is-following' : ''}`}
+      aria-current={listingsShown ? 'page' : undefined}
+      aria-expanded={maps}
+      aria-label={`${label}. Right-click or hold for your saved Guides`}
+      title={following ? 'The television listings · TVN is following one of your Guides · right-click or hold: your Guides' : 'The television listings · right-click or hold: your Guides'}
       onKeyDown={keepKey}
       onClick={() => press.click(actions)}
       onContextMenu={(event) => {
@@ -120,7 +108,7 @@ function ChannelGuideTab({ open, following, onOpen, onSearch }: { open: boolean;
       onPointerCancel={press.cancel}
       onPointerLeave={press.cancel}
     >
-      My Guide
+      Guide
     </button>
   )
 }

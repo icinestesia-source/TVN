@@ -119,10 +119,11 @@ describe('TVN 2.0 final: GUIDE in the Guide header answers the first click', () 
     expect(add).toContain('onClick={() => press.click(actions)}')
     expect(add).toContain('useEffect(() => press.cancel, [press])')
     expect(add).toContain('onPointerCancel={press.cancel}')
-    expect(add).toMatch(/const openGuide = \(\) => \{\s+if \(!open\) onTool\('guides'\)/)
+    expect(add).toMatch(/const openMaps = \(\) => \{\s+if \(!maps\) onTool\('guides'\)/)
+    expect(add).toContain('const actions = { open: listings, search: openMaps }')
     const guide = readFileSync('src/components/Guide.tsx', 'utf8')
-    expect(guide).toMatch(/onGuideSearch=\{\(\) => \{\s+setSearchAsk\(\(asked\) => asked \+ 1\)\s+if \(tool !== 'guides'\)/)
-    expect(guide).toContain('<GuidePanel searchAsk={searchAsk} />')
+    expect(guide).not.toContain('onGuideSearch')
+    expect(guide).toContain('<GuidePanel />')
   })
 })
 
@@ -162,7 +163,7 @@ describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
 
   it('one section carries the gold underline: GUIDE while the listings show, OPTIONS, ADD or MEDIA while they are open', () => {
     expect(active(header(null))).toEqual(['Guide'])
-    expect(active(header('guides'))).toEqual(['My Guide'])
+    expect(active(header('guides'))).toEqual(['Guide'])
     expect(active(header('options'))).toEqual(['Options'])
     expect(active(header('add'))).toEqual(['Add'])
     expect(active(header('media'))).toEqual(['Media'])
@@ -170,9 +171,9 @@ describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
   })
 
   it('a Guide choosing what plays keeps GUIDE green, apart from which section is active', () => {
-    expect(header(null, true)).toContain('class="tab guide-follow is-following"')
-    expect(header('guides', true)).toContain('class="tab guide-follow is-on is-open is-following"')
-    expect(header('options', true)).toContain('class="tab guide-follow is-following"')
+    expect(header(null, true)).toContain('class="tab guide-section guide-follow is-on is-following"')
+    expect(header('guides', true)).toContain('class="tab guide-section guide-follow is-on is-open is-following"')
+    expect(header('options', true)).toContain('class="tab guide-section guide-follow is-following"')
     const css = readFileSync('src/styles/guide.css', 'utf8')
     expect(css).toContain('.tab.guide-follow.is-following { color: var(--follow); font-weight: 600; }')
     expect(css).not.toMatch(/\.tab\.guide-follow\.is-current/)

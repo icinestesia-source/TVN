@@ -54,6 +54,14 @@ export interface ChannelSource {
   filter?: SourceFilter
   /** How far back a scheduled source reaches. Absent: recent. */
   mode?: SourceMode
+  /** How many videos the provider says the source holds; what can be scheduled is often fewer. */
+  listed?: number
+  /** Where TVN's lookup picks the source up for its next batch (a YouTube listing position, never a credential). */
+  more?: string
+  /** Every batch the provider lists has been read. */
+  complete?: boolean
+  /** The viewer loaded past the first batch: a rescan adds new programmes and keeps the older ones loaded. */
+  deep?: boolean
 }
 
 interface SourceType {

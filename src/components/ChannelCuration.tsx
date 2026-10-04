@@ -128,6 +128,7 @@ export function SourceFilterPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [changed, filterKey, draft.mode])
   const id = `curation-${source.id}`
+  const dated = draft.yearFrom.trim() !== '' || draft.yearTo.trim() !== ''
   const field = (label: string, key: keyof Draft, props: { placeholder?: string; inputMode?: 'numeric' | 'decimal'; wide?: boolean } = {}) => (
     <label className={props.wide ? 'curation-field is-wide' : 'curation-field'}>
       <span>{label}</span>
@@ -171,21 +172,31 @@ export function SourceFilterPanel({
         </>
       )}
       <p className="curation-step">{shipped ? '1 · Filter · over TVN’s programmes from this source, in this browser only' : '2 · Filter'}</p>
-      <p className="curation-sub">Include</p>
+      <p className="curation-sub">Include words</p>
       <div className="curation-grid">
-        {field('Title contains any of', 'terms', { placeholder: 'comma separated', wide: true })}
+        {field('Title contains any of', 'terms', { placeholder: 'words or phrases, comma separated', wide: true })}
         {shipped ? null : field('From playlists', 'playlists', { placeholder: 'playlist links or ids', wide: true })}
         {field('Min minutes', 'minMinutes', { inputMode: 'decimal' })}
         {field('Max minutes', 'maxMinutes', { inputMode: 'decimal' })}
-        {field('Era from', 'yearFrom', { inputMode: 'numeric', placeholder: 'year' })}
-        {field('Era to', 'yearTo', { inputMode: 'numeric', placeholder: 'year' })}
+      </div>
+      <p className="curation-sub">Dates · {dated ? `${draft.yearFrom.trim() || 'any'} to ${draft.yearTo.trim() || 'now'}` : 'all dates'}</p>
+      <div className="curation-grid">
+        {field('From year', 'yearFrom', { inputMode: 'numeric', placeholder: 'year' })}
+        {field('To year', 'yearTo', { inputMode: 'numeric', placeholder: 'year' })}
       </div>
       <label className="editor-check curation-check">
         <input type="checkbox" checked={draft.dropUnknown} disabled={disabled} onKeyDown={keepKey} onChange={() => set({ dropUnknown: !draft.dropUnknown })} />
         <span>Leave out programmes whose year is unknown</span>
       </label>
-      <p className="curation-sub">Exclude</p>
-      <div className="curation-grid">{field('Title contains any of', 'excludeTerms', { placeholder: 'comma separated', wide: true })}</div>
+      {dated ? (
+        <p className="curation-note" role="note">
+          {draft.dropUnknown
+            ? 'Programmes with no known date are left out.'
+            : 'Programmes with no known date are kept. A year comes from the upload date, or from the title.'}
+        </p>
+      ) : null}
+      <p className="curation-sub">Exclude words</p>
+      <div className="curation-grid">{field('Title contains any of', 'excludeTerms', { placeholder: 'words or phrases, comma separated · case ignored', wide: true })}</div>
       <label className="editor-check curation-check">
         <input type="checkbox" checked={draft.shorts} disabled={disabled} onKeyDown={keepKey} onChange={() => set({ shorts: !draft.shorts })} />
         <span>Shorts</span>

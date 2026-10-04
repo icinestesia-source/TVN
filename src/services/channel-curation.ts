@@ -19,8 +19,8 @@ import type { ImportedVideo } from './channels-import.ts'
 export type SourceMode = 'recent' | 'archive' | 'all'
 export const SOURCE_MODES: readonly SourceMode[] = ['recent', 'archive', 'all']
 export const SOURCE_MODE_LABELS: Record<SourceMode, string> = { recent: 'Recent', archive: 'Archive', all: 'All matching' }
-/** A source never holds more than this many programmes, whatever its mode. */
-export const MAX_SOURCE_VIDEOS = 500
+/** A source never holds more than this many programmes, whatever its mode or however many batches are loaded. */
+export const MAX_SOURCE_VIDEOS = 2000
 
 /**
  * A small structured filter, not a language. Include rules narrow: a programme must match one of the
@@ -264,9 +264,9 @@ export function keepingDates(fresh: readonly ImportedVideo[], held: readonly Imp
   })
 }
 
-export function rescanned(fresh: readonly ImportedVideo[], held: readonly ImportedVideo[] = [], mode: SourceMode = 'recent'): ImportedVideo[] {
+export function rescanned(fresh: readonly ImportedVideo[], held: readonly ImportedVideo[] = [], mode: SourceMode = 'recent', deep = false): ImportedVideo[] {
   const out = keepingDates(fresh, held)
-  if (mode === 'all') {
+  if (mode === 'all' || deep) {
     const seen = new Set(out.map((video) => video.id))
     for (const video of held) if (!seen.has(video.id)) out.push({ ...video })
   }

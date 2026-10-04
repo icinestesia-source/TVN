@@ -41,7 +41,7 @@ const STATE_LABEL: Record<Exclude<ItemState, null>, string> = {
 }
 
 /**
- * MY GUIDE (in the Guide's header) is the viewer's collection of MAPS. A Map is one curated viewing schedule,
+ * The programmable Guide (a right-click or a hold on GUIDE in the Guide's header) is the viewer's collection of MAPS. A Map is one curated viewing schedule,
  * played one programme after another: built from channel sources, from a topic, from programmes added in the
  * Guide, or all three. The panel lists the Maps (PLAY, EDIT, DUPLICATE, DELETE, + NEW MAP); EDIT and NEW MAP open
  * one Map's editor, where its schedule is built, arranged and saved. A Map holds references only; schedules and
@@ -109,7 +109,7 @@ export function GuidePanel({ searchAsk = 0 }: { searchAsk?: number }) {
     })
 
   useEffect(() => {
-    // CREATE FROM… (a right-click or a hold on MY GUIDE) is a Map's topic box: the Map being edited, or a new one.
+    // CREATE FROM… asked for from outside the panel is a Map's topic box: the Map being edited, or a new one.
     if (!searchAsk || typeof window === 'undefined') return
     setView('editor')
     if (!guide) tv.editGuide({ type: 'new', name: NEW_MAP_NAME })

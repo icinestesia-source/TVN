@@ -115,6 +115,7 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
         automatic: channel.enabled,
         updatedAt: now,
         ...(channel.runningOrder?.length ? { runningOrder: [...channel.runningOrder] } : {}),
+        ...(channel.runningOrder?.length && channel.scheduleSize ? { scheduleSize: channel.scheduleSize } : {}),
         ...owner,
         ...notes,
       }

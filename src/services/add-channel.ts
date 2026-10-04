@@ -1,5 +1,5 @@
 import type { AddedChannel } from './user-network.ts'
-import { calendarDate } from './channels-import.ts'
+import { calendarDate, type ImportedVideo } from './channels-import.ts'
 
 /** TVN's own lookup (a Netlify Function in production, the Vite server locally). It needs no key. */
 export const CHANNEL_API = '/api/channel'
@@ -24,17 +24,11 @@ export async function lookUpChannel(link: string, read: typeof fetch = fetch, op
     throw new Error('TVN could not reach its channel lookup')
   }
   const body = (await response.json().catch(() => null)) as
-    | { error?: unknown; channelId?: unknown; sourceType?: unknown; title?: unknown; videos?: unknown }
+    | { error?: unknown; channelId?: unknown; sourceType?: unknown; title?: unknown; videos?: unknown; listed?: unknown; next?: unknown }
     | null
   if (!response.ok || !body) throw new Error(typeof body?.error === 'string' ? body.error : 'The channel could not be added')
   if (typeof body.channelId !== 'string' || !Array.isArray(body.videos)) throw new Error('The channel could not be added')
-  const videos = body.videos.flatMap((row) => {
-    const { id, title, durationSec, published } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown; published?: unknown }
-    const day = calendarDate(published)
-    return typeof id === 'string' && typeof title === 'string' && typeof durationSec === 'number' && durationSec > 0
-      ? [{ id, title, durationSec: Math.round(durationSec), ...(day ? { published: day } : {}) }]
-      : []
-  })
+  const videos = videosOf(body.videos)
   if (videos.length === 0) throw new Error('That channel has no videos TVN can schedule')
   const sourceType =
     body.sourceType === 'youtube-channel' || body.sourceType === 'youtube-playlist'
@@ -42,7 +36,50 @@ export async function lookUpChannel(link: string, read: typeof fetch = fetch, op
       : body.channelId.startsWith('UC')
         ? 'youtube-channel'
         : 'youtube-playlist'
-  return { channelId: body.channelId, sourceType, title: typeof body.title === 'string' && body.title ? body.title : body.channelId, videos }
+  return {
+    channelId: body.channelId,
+    sourceType,
+    title: typeof body.title === 'string' && body.title ? body.title : body.channelId,
+    videos,
+    ...pagingOf(body),
+  }
+}
+
+function videosOf(rows: readonly unknown[]): ImportedVideo[] {
+  return rows.flatMap((row) => {
+    const { id, title, durationSec, published } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown; published?: unknown }
+    const day = calendarDate(published)
+    return typeof id === 'string' && typeof title === 'string' && typeof durationSec === 'number' && durationSec > 0
+      ? [{ id, title, durationSec: Math.round(durationSec), ...(day ? { published: day } : {}) }]
+      : []
+  })
+}
+
+function pagingOf(body: { listed?: unknown; next?: unknown }): { listed?: number; next?: string } {
+  return {
+    ...(typeof body.listed === 'number' && Number.isInteger(body.listed) && body.listed >= 0 ? { listed: body.listed } : {}),
+    ...(typeof body.next === 'string' && body.next.length > 0 && body.next.length <= 3000 ? { next: body.next } : {}),
+  }
+}
+
+/** The next batch of a YouTube source past where its last read stopped. */
+export interface FoundBatch {
+  videos: ImportedVideo[]
+  listed?: number
+  next?: string
+}
+
+export async function lookUpBatch(cursor: string, read: typeof fetch = fetch, signal?: AbortSignal): Promise<FoundBatch> {
+  let response: Response
+  try {
+    response = await read(`${CHANNEL_API}?cursor=${encodeURIComponent(cursor)}`, signal ? { signal } : undefined)
+  } catch (error) {
+    if (signal?.aborted) throw error
+    throw new Error('TVN could not reach its channel lookup')
+  }
+  const body = (await response.json().catch(() => null)) as { error?: unknown; videos?: unknown; listed?: unknown; next?: unknown } | null
+  if (!response.ok || !body || !Array.isArray(body.videos)) throw new Error(typeof body?.error === 'string' ? body.error : 'The next programmes could not be read')
+  return { videos: videosOf(body.videos), ...pagingOf(body) }
 }
 
 export const playlistUrl = (id: string) => `https://www.youtube.com/playlist?list=${id}`

@@ -177,13 +177,14 @@ describe('EDITOR TABS and TERMINOLOGY', () => {
     expect(tabs).not.toMatch(/'TVN'|'User'|001–999|0–999|'tvn'/)
   })
 
-  it('the header reads NETWORK · GUIDE · MY GUIDE · OPTIONS · NOW · ADD · MEDIA, and no CH GUIDE remains', () => {
+  it('the header reads NETWORK · GUIDE · OPTIONS · NOW · ADD · MEDIA: no MY GUIDE and no CH GUIDE', () => {
     const html = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Guide', 'My Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Guide', 'Options', 'Now', 'Add', 'Media'])
     const editorOpen = renderToStaticMarkup(createElement(GuideActions, { tool: 'editor', picked: false, onNow: () => {}, onTool: () => {} }))
     expect(editorOpen).toMatch(/class="tab is-on"[^>]*>Network</)
     const following = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, following: true, onNow: () => {}, onTool: () => {} }))
-    expect(following).toMatch(/is-following[^>]*>My Guide</)
+    expect(following).toMatch(/is-following[^>]*>Guide</)
+    expect(html).not.toMatch(/>My Guide</)
     expect(following).toMatch(/aria-current="page"[^>]*>Guide</)
     for (const path of ['src/components/GuideAdd.tsx', 'src/components/GuidePanel.tsx', 'src/components/Guide.tsx', 'src/components/InfoActions.tsx', 'src/state/TvProvider.tsx']) {
       expect(read(path), path).not.toMatch(/\bch guide\b|channel guide/i)

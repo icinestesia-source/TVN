@@ -15,6 +15,9 @@ export interface AddedChannel {
   sourceType?: 'youtube-channel' | 'youtube-playlist'
   title: string
   videos: readonly ImportedVideo[]
+  /** How many videos the source says it holds, and where its next batch starts. */
+  listed?: number
+  next?: string
 }
 
 export type UploaderOf = (collectionName: string) => string | null

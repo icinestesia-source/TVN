@@ -21,6 +21,8 @@ export interface CentralOverride {
   /** Includes TVN's own programming as a `tvn` source, switched on or off. */
   sources: ExportSource[]
   runningOrder?: string[]
+  /** How many of the running order are scheduled, from the top. */
+  scheduleSize?: number
   excluded?: string[]
   editorial?: ChannelEditorial
   /** Decisions about TVN's original sources, by source id: never the sources' programmes themselves. */
@@ -47,6 +49,7 @@ export function buildCentralCuration(edits: readonly CuratedEdit[], uploaderOf: 
         ...(edit.description ? { description: edit.description } : {}),
         sources: edit.sources.map((source) => exportSource(source, uploaderOf)),
         ...(edit.order?.length ? { runningOrder: [...edit.order] } : {}),
+        ...(edit.order?.length && edit.scheduleSize ? { scheduleSize: edit.scheduleSize } : {}),
         ...(edit.excluded?.length ? { excluded: [...edit.excluded] } : {}),
         ...(editorial ? { editorial } : {}),
         ...(originals ? { originals } : {}),
@@ -59,7 +62,7 @@ export function buildCentralCuration(edits: readonly CuratedEdit[], uploaderOf: 
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const isTextList = (value: unknown) => Array.isArray(value) && value.every((item) => typeof item === 'string')
-const OVERRIDE_FIELDS = new Set(['number', 'name', 'description', 'sources', 'runningOrder', 'excluded', 'editorial', 'originals', 'baseline', 'savedAt'])
+const OVERRIDE_FIELDS = new Set(['number', 'name', 'description', 'sources', 'runningOrder', 'scheduleSize', 'excluded', 'editorial', 'originals', 'baseline', 'savedAt'])
 
 /** The whole section must be valid before any of it is restored. */
 export function checkCentralCuration(value: unknown, at: string, errors: string[]): void {
@@ -87,6 +90,8 @@ export function checkCentralCuration(value: unknown, at: string, errors: string[
     if (typeof item.name !== 'string' || !item.name.trim()) errors.push(`${where}.name is missing`)
     if (item.description !== undefined && typeof item.description !== 'string') errors.push(`${where}.description is not text`)
     if (item.runningOrder !== undefined && !isTextList(item.runningOrder)) errors.push(`${where}.runningOrder is not a list of programme ids`)
+    if (item.scheduleSize !== undefined && (typeof item.scheduleSize !== 'number' || !Number.isInteger(item.scheduleSize) || item.scheduleSize < 1))
+      errors.push(`${where}.scheduleSize is not a number of programmes`)
     if (item.excluded !== undefined && !isTextList(item.excluded)) errors.push(`${where}.excluded is not a list of programme ids`)
     if (typeof item.savedAt !== 'string' || Number.isNaN(Date.parse(item.savedAt))) errors.push(`${where}.savedAt is not a date`)
     checkEditorial(item.editorial, `${where}.editorial`, errors)
@@ -122,6 +127,7 @@ export function overridesFromExport(doc: CentralCuration): CuratedEdit[] {
       return made.kind === 'tvn' ? { ...made, id: TVN_SOURCE_ID, status: { state: 'ready' as const, checkedAt: 0 } } : made
     }),
     ...(override.runningOrder?.length ? { order: [...override.runningOrder] } : {}),
+    ...(override.runningOrder?.length && override.scheduleSize ? { scheduleSize: override.scheduleSize } : {}),
     ...(override.excluded?.length ? { excluded: [...override.excluded] } : {}),
     ...(override.description ? { description: override.description } : {}),
     ...(override.editorial ? { editorial: structuredClone(override.editorial) } : {}),

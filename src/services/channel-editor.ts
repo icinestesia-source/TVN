@@ -3,6 +3,7 @@ import {
   cleanEditorial,
   cleanFilter,
   keepingDates,
+  MAX_SOURCE_VIDEOS,
   rescanned,
   sourceModeOf,
   widenSource,
@@ -33,6 +34,8 @@ export interface ChannelEdit {
   sources: ChannelSource[]
   /** The viewer's running order (video ids); absent while TVN arranges the channel itself. */
   order?: string[]
+  /** With a running order: how many of its programmes are scheduled, from the top. Absent: all eligible programmes. */
+  scheduleSize?: number
   /** The channel's editorial notes, status and related channels. Never consulted by the scheduler. */
   editorial?: ChannelEditorial
   /** A TVN channel only: the viewer's own description over the shipped one. */
@@ -59,7 +62,7 @@ export interface RescanDeps {
   resolveYouTube(
     url: string,
     options?: { mode?: SourceMode },
-  ): Promise<{ channelId: string; sourceType?: 'youtube-channel' | 'youtube-playlist'; title: string; videos: readonly ImportedVideo[] }>
+  ): Promise<{ channelId: string; sourceType?: 'youtube-channel' | 'youtube-playlist'; title: string; videos: readonly ImportedVideo[]; listed?: number; next?: string }>
   /** Whether this browser can open the stream now. */
   probeStream(source: ChannelSource): Promise<'online' | 'unavailable' | 'unsupported'>
   /** The YouTube channel an imported list came from, when TVN knows it; such a list is refreshed from that channel. */
@@ -148,8 +151,16 @@ export function editOf(record: StoredSource): ChannelEdit {
     name: record.name,
     sources: sourcesOf(record),
     ...(record.runningOrder ? { order: [...record.runningOrder] } : {}),
+    ...(record.runningOrder && record.scheduleSize ? { scheduleSize: record.scheduleSize } : {}),
     ...(record.editorial ? { editorial: structuredClone(record.editorial) } : {}),
   }
+}
+
+/** A schedule size worth keeping: a whole number of programmes, only while it leaves some of a running order out. */
+export function keptScheduleSize(order: readonly string[] | undefined, size: number | undefined): number | undefined {
+  if (!order?.length || size === undefined || !Number.isFinite(size)) return undefined
+  const whole = Math.floor(size)
+  return whole >= 1 && whole < order.length ? whole : undefined
 }
 
 export function cleanName(name: string, fallback: string): string {
@@ -158,10 +169,11 @@ export function cleanName(name: string, fallback: string): string {
 
 function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredSource {
   const sources = edit.sources.map(curatedSource)
-  const { runningOrder: _previous, emptySlot: _empty, editorial: _notes, ...bare } = record
+  const { runningOrder: _previous, scheduleSize: _size, emptySlot: _empty, editorial: _notes, ...bare } = record
   const editorial = cleanEditorial(edit.editorial)
-  const rest = { ...bare, ...(editorial ? { editorial } : {}) }
   const order = keptOrder(sources, edit.order)
+  const scheduleSize = keptScheduleSize(order, edit.scheduleSize)
+  const rest = { ...bare, ...(editorial ? { editorial } : {}), ...(scheduleSize ? { scheduleSize } : {}) }
   if (record.emptySlot) {
     // A slot stays empty until it has a source; the first source's title names it unless the viewer typed a name.
     if (sources.length === 0) {
@@ -248,11 +260,12 @@ export async function rescanSources(sources: readonly ChannelSource[], deps: Res
           const mode = sourceModeOf(source)
           const found = await deps.resolveYouTube(canonicalYouTubeUrl(source), ...wider(mode))
           const youtube = found.sourceType === 'youtube-playlist' ? 'playlist' : found.sourceType === 'youtube-channel' ? 'channel' : source.youtube
-          const fresh = withPlaylistVideos(rescanned(found.videos, source.videos, mode), await playlistVideos(source, deps.resolveYouTube))
+          const fresh = withPlaylistVideos(rescanned(found.videos, source.videos, mode, source.deep), await playlistVideos(source, deps.resolveYouTube))
           const [widened] = widenSources([{ ...source, ref: found.channelId, ...(youtube ? { youtube } : {}), videos: fresh }], deps.archiveOf)
           const videos = widened.videos ?? []
           return {
             ...widened,
+            ...pagingAfterRescan(source, found),
             // What was typed (a handle, a video) gives way to the channel or playlist it resolved to.
             url: canonicalYouTubeUrl({ ref: found.channelId, url: source.url, ...(youtube ? { youtube } : {}) }),
             label: found.title || source.label,
@@ -267,14 +280,15 @@ export async function rescanSources(sources: readonly ChannelSource[], deps: Res
         try {
           const found = await deps.resolveFeed(source.url, ...wider(sourceModeOf(source)))
           const info = found.website ? { ...source.info, website: source.info?.website ?? found.website } : source.info
+          const videos = source.deep ? mergedFresh(found.episodes, source.videos).slice(0, MAX_SOURCE_VIDEOS) : found.episodes.map((video) => ({ ...video }))
           return {
             ...source,
             url: found.feedUrl,
             ref: found.feedUrl,
             label: found.title || source.label,
-            videos: found.episodes.map((video) => ({ ...video })),
+            videos,
             ...(info ? { info } : {}),
-            status: { state: 'ready', playable: found.episodes.length, checkedAt: now },
+            status: { state: 'ready', playable: videos.length, checkedAt: now },
           }
         } catch {
           return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
@@ -284,6 +298,99 @@ export async function rescanSources(sources: readonly ChannelSource[], deps: Res
       return { ...source, label: source.label || hostOf(source.url), status: { state: verdict, checkedAt: now } }
     }),
   )
+}
+
+/**
+ * Where a rescanned YouTube source's next batch starts. A source loaded deeper keeps its own position, so
+ * LOAD MORE carries on past what it holds rather than from the newest uploads again.
+ */
+function pagingAfterRescan(source: ChannelSource, found: { listed?: number; next?: string }): Pick<ChannelSource, 'listed' | 'more' | 'complete'> {
+  const listed = found.listed ?? source.listed
+  if (source.deep) return { ...(listed !== undefined ? { listed } : {}), ...(source.more ? { more: source.more } : {}), ...(source.complete ? { complete: true } : {}) }
+  return { ...(listed !== undefined ? { listed } : {}), ...(found.next ? { more: found.next } : { complete: true }) }
+}
+
+export interface LoadMoreDeps {
+  resolveYouTube: RescanDeps['resolveYouTube']
+  resolveBatch(cursor: string, signal?: AbortSignal): Promise<{ videos: readonly ImportedVideo[]; listed?: number; next?: string }>
+  /** A podcast or website feed read in full (its ALL mode). */
+  resolveFeed?: RescanDeps['resolveFeed']
+}
+
+export interface LoadMoreOptions {
+  /** LOAD ALL: keep reading batches until the source is exhausted or the safety ceiling is reached. */
+  all?: boolean
+  signal?: AbortSignal
+  onProgress?(loaded: number, listed: number | undefined): void
+}
+
+/** Whether a source can be read further than it has been. */
+export function canLoadMore(source: ChannelSource): boolean {
+  if (!source.enabled || source.complete || (source.videos?.length ?? 0) >= MAX_SOURCE_VIDEOS) return false
+  return source.kind === 'youtube' || (source.kind === 'podcast' && !source.deep)
+}
+
+/**
+ * Read a source past its first batch: LOAD MORE adds the next batch with anything new, LOAD ALL reads on
+ * until the provider's list ends, the ceiling is reached or the viewer cancels. Programmes already held
+ * are never duplicated and keep every date already found; new ones join after them, oldest last. Each
+ * batch is one listing page, read one after another, so TVN never floods the provider.
+ */
+export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, options: LoadMoreOptions = {}, now = Date.now()): Promise<ChannelSource> {
+  const held = (source.videos ?? []).map((video) => ({ ...video }))
+  const seen = new Set(held.map((video) => video.id))
+  const add = (fresh: readonly ImportedVideo[]) => {
+    let added = 0
+    for (const video of keepingDates(fresh, held)) {
+      if (seen.has(video.id) || held.length >= MAX_SOURCE_VIDEOS) continue
+      seen.add(video.id)
+      held.push(video)
+      added += 1
+    }
+    return added
+  }
+  const done = (extra: Pick<ChannelSource, 'listed' | 'more' | 'complete'>): ChannelSource => {
+    const { more: _more, complete: _complete, listed: _listed, ...rest } = source
+    return { ...rest, ...extra, deep: true, videos: held, status: { state: 'ready', playable: held.length, checkedAt: now } }
+  }
+  if (source.kind === 'podcast') {
+    if (!deps.resolveFeed) throw new Error('TVN cannot read this feed further')
+    const found = await deps.resolveFeed(source.url, { mode: 'all' })
+    add(found.episodes)
+    options.onProgress?.(held.length, undefined)
+    return done({ complete: true })
+  }
+  if (source.kind !== 'youtube') return source
+  let listed = source.listed
+  let cursor = source.more
+  let restarted = false
+  const restart = async () => {
+    restarted = true
+    const found = await deps.resolveYouTube(canonicalYouTubeUrl(source))
+    add(found.videos)
+    listed = found.listed ?? listed
+    cursor = found.next
+  }
+  if (!cursor) await restart()
+  options.onProgress?.(held.length, listed)
+  while (cursor && held.length < MAX_SOURCE_VIDEOS && !options.signal?.aborted) {
+    let batch
+    try {
+      batch = await deps.resolveBatch(cursor, options.signal)
+    } catch (error) {
+      if (options.signal?.aborted) break
+      // A remembered position YouTube no longer honours is found again from the start of the list, once.
+      if (restarted) throw error
+      await restart()
+      continue
+    }
+    const added = add(batch.videos)
+    listed = batch.listed ?? listed
+    cursor = batch.next
+    options.onProgress?.(held.length, listed)
+    if (!options.all && added > 0) break
+  }
+  return done({ ...(listed !== undefined ? { listed } : {}), ...(cursor ? { more: cursor } : held.length < MAX_SOURCE_VIDEOS ? { complete: true } : {}) })
 }
 
 /** A plain summary of one channel after a rescan. */

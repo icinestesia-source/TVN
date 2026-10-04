@@ -6,7 +6,8 @@ import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import type { GuideMode } from '../view/guide-mode.ts'
 import type { Corner, ShortcutAssignment, ShortcutId } from '../view/info-shortcuts.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
-import type { ChannelEdit } from '../services/channel-editor.ts'
+import type { ChannelEdit, LoadMoreOptions } from '../services/channel-editor.ts'
+import type { ChannelSource } from '../services/channel-sources.ts'
 import type { ChannelExportKind } from '../services/channel-file.ts'
 
 export interface GuideCursor {
@@ -124,6 +125,10 @@ export interface TvContextValue {
   screenStep: (direction: -1 | 1) => void
   /** 000 TVN: choose another programme now. */
   chooseAnotherTvn: () => void
+  /** T's right-click or hold: surf every channel, or only one User Network (the Guide's tab follows). */
+  toggleSurfScope: () => void
+  /** The User Network T surfs while restricted, by its own name. */
+  surfScopeName: string
   /** Keeps the information bar up while the pointer is on it. */
   holdInfo: (held: boolean) => void
   /** The Guide being edited and the saved Guides (viewing sequences). */
@@ -217,6 +222,8 @@ export interface TvContextValue {
   saveChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<string>
   /** Re-resolve this channel's enabled sources and rebuild its inventory and schedule; no other channel is touched. */
   rescanChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
+  /** LOAD MORE / LOAD ALL: one source read past its first batch. Reads only; the editor saves the result. */
+  loadMoreChannelSource: (source: ChannelSource, options: LoadMoreOptions) => Promise<ChannelSource>
   /**
    * EXPORT CHANNEL: download one user channel, as the editor shows it, as a tvn-channel-v1 file (`json`) or its
    * readable manifest (`md`). Reads only: nothing is saved.

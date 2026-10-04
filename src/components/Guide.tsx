@@ -195,7 +195,6 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const networkShown = tool === 'editor' || (fromEditor && tool === 'edit')
   const following = tv.guideRun?.state === 'active'
   // Each right-click or hold on GUIDE asks the Guide panel to make CREATE GUIDE FROM… ready.
-  const [searchAsk, setSearchAsk] = useState(0)
   const [addMenu, setAddMenu] = useState<AddMenu | null>(null)
   const [addNote, setAddNote] = useState<string | null>(null)
   useEffect(() => {
@@ -568,10 +567,6 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onNow={() => tv.dispatch({ type: 'guide-now' })}
           onClose={() => tv.dispatch({ type: 'cancel' })}
           onTool={(kind) => tv.dispatch({ type: 'guide-tool', tool: kind })}
-          onGuideSearch={() => {
-            setSearchAsk((asked) => asked + 1)
-            if (tool !== 'guides') tv.dispatch({ type: 'guide-tool', tool: 'guides' })
-          }}
         />
         <button type="button" className="tab guide-close" onClick={() => tv.dispatch({ type: 'cancel' })}>
           Close
@@ -754,7 +749,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         </p>
       ) : null}
       {tool === 'guides' ? (
-        <GuidePanel searchAsk={searchAsk} />
+        <GuidePanel />
       ) : tool === 'edit' && focusedChannel && editScope === 'tvn' ? (
         <TvnChannelPanel onChooseAnother={tv.chooseAnotherTvn} onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })} />
       ) : tool === 'edit' && focusedChannel && editScope ? (
@@ -765,6 +760,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onLoad={tv.openChannelEdit}
           onSave={tv.saveChannelEdit}
           onRescan={tv.rescanChannelEdit}
+          onLoadMore={tv.loadMoreChannelSource}
           onDelete={editScope === 'curated' ? tv.restoreCuratedChannel : tv.deleteUserChannel}
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
           onExport={tv.exportChannelFile}

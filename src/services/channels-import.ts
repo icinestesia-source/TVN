@@ -67,6 +67,8 @@ export interface StoredSource {
   listName?: string
   /** The viewer's own running order (video ids); without it TVN arranges the channel itself. */
   runningOrder?: string[]
+  /** With a running order: how many of its programmes go to air, from the top; absent, every eligible programme does. */
+  scheduleSize?: number
   /** How an added channel was named: one YouTube channel's uploads, or one playlist and nothing else. */
   sourceType?: 'youtube-channel' | 'youtube-playlist'
   /** A cleared user channel: the number is kept, nothing airs, and the next added channel fills it. */
@@ -489,7 +491,9 @@ export function channelsFromSources(
     const shippedDays = new Map(shipped.flatMap((video) => (video.published ? [[video.id, video.published] as const] : [])))
     // A collection none of whose videos can play embedded still lists them when the uploader has nothing
     // else playable, so the channel explains the refusal instead of vanishing.
-    const own = ownPlayable.length > 0 || archive.length === 0 ? (ownPlayable.length > 0 ? ownPlayable : pool) : []
+    const playing = ownPlayable.length > 0 || archive.length === 0 ? (ownPlayable.length > 0 ? ownPlayable : pool) : []
+    // A running order with a schedule size airs only its first programmes; the rest stay available, not scheduled.
+    const own = ordered && source.scheduleSize ? inOrder(playing, source.runningOrder).slice(0, source.scheduleSize) : playing
     const refusedCount = pool.length - ownPlayable.length
     const description = [
       `Imported collection. ${own.length} programmes`,

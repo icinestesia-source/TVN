@@ -73,9 +73,9 @@ describe('bottom controls', () => {
     expect(remoteLabels.slice(-4)).toEqual(['Close', 'Credits', 'Pause', 'Sleep 60'])
   })
 
-  it('R tunes at random on a click, runs the Random Cycle on a hold, and opens Random settings on a right-click, never both', () => {
+  it('T surfs at random on a click, and a hold or a right-click switches its scope, never both', () => {
     const shortcuts = readFileSync('src/view/info-shortcuts.ts', 'utf8')
-    expect(shortcuts).toMatch(/random: \{[^}]*run: \(context\) => context\.dispatch\(\{ type: 'random-channel' \}\),[\s\S]*?hold: \(context\) => context\.dispatch\(\{ type: 'surf' \}\),\s*menu: \(context\) => context\.openRandomSettings\(\),/)
+    expect(shortcuts).toMatch(/run: \(context\) => context\.dispatch\(\{ type: 'random-channel' \}\),[\s\S]*?hold: \(context\) => context\.toggleSurfScope\?\.\(\),\s*menu: \(context\) => context\.toggleSurfScope\?\.\(\),/)
     const pad = readFileSync('src/components/InfoActions.tsx', 'utf8')
     expect(pad).toContain('if (hold && cornerHold.swallowClick()) return')
     expect(pad).toMatch(/cornerHold\.cancel\(\)\s*menu\(context\)/)

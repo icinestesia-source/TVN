@@ -225,10 +225,9 @@ describe('CREATE GUIDE FROM… search', () => {
     expect(small.small).toBe(true)
   })
 
-  it('MY GUIDE turns green while a Map is watched, and the words it was built from stay inside the Map editor', () => {
+  it('GUIDE turns green while a Map is watched, and the words it was built from stay inside the Map editor', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, following: true, onNow: () => {}, onTool: () => {} }))
-    expect(markup).toContain('class="tab guide-follow is-following"')
-    expect(markup).toContain('class="tab guide-section is-on"')
+    expect(markup).toContain('class="tab guide-section guide-follow is-on is-following"')
     expect(markup).not.toContain('guide-query')
     expect(readFileSync('src/components/GuidePanel.tsx', 'utf8')).toContain('<p className="plan-note map-built">Built from “{search.query}”</p>')
   })

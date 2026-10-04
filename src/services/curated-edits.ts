@@ -2,7 +2,7 @@ import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import { isShippedEditorial, shippedEditorial } from '../data/central-editorial.ts'
 import { cleanEditorial } from './channel-curation.ts'
-import { cleanName, curatedSource, keptOrder, type ChannelEdit } from './channel-editor.ts'
+import { cleanName, curatedSource, keptOrder, keptScheduleSize, type ChannelEdit } from './channel-editor.ts'
 import { inOrder, inventoryOf, liveStreamOf, type ChannelSource } from './channel-sources.ts'
 import { channelsFromSources } from './channels-import.ts'
 import { activeOriginals, cleanOriginals, ORIGINAL_ID_PREFIX, originalChannelSources, type OriginalSource } from './original-sources.ts'
@@ -148,6 +148,7 @@ export function curatedEditOf(channel: Pick<Channel, 'number' | 'name'>, saved: 
     name: saved.name,
     sources: sources.map(curatedSource),
     ...(saved.order ? { order: [...saved.order] } : {}),
+    ...(saved.order && saved.scheduleSize ? { scheduleSize: saved.scheduleSize } : {}),
     ...(saved.excluded?.length ? { excluded: [...saved.excluded] } : {}),
     ...(saved.description ? { description: saved.description } : {}),
     ...(saved.editorial ? { editorial: structuredClone(saved.editorial) } : shippedNotes ? { editorial: shippedNotes } : {}),
@@ -196,6 +197,7 @@ export function canonicalEdit(
   const mixedOrder = mixedIds ? [...new Set(edit.order)].filter((id) => mixedIds.has(id)) : []
   const order = ownProgrammes ? (mixedIds ? (mixedOrder.length ? mixedOrder : undefined) : keptOrder(sources, edit.order)) : tvnOrder?.some((id, index) => id !== tvnIds[index]) ? tvnOrder : undefined
   const excluded = [...new Set(edit.excluded ?? [])].filter((id) => known.has(id))
+  const scheduleSize = keptScheduleSize(order, edit.scheduleSize)
   const description = cleanDescription(edit.description, shipped.description)
   const editorial = cleanEditorial(edit.editorial)
   const originals = cleanOriginals(edit.originals)
@@ -203,6 +205,7 @@ export function canonicalEdit(
     name: cleanName(edit.name, shipped.name),
     sources,
     ...(order ? { order } : {}),
+    ...(scheduleSize ? { scheduleSize } : {}),
     ...(excluded.length ? { excluded } : {}),
     ...(description ? { description } : {}),
     ...(editorial ? { editorial } : {}),
@@ -272,7 +275,8 @@ export function buildCuratedEdit(
     }
     const left = new Set(edit.excluded ?? [])
     if ((edit.order?.length || left.size) && shippedList.length) {
-      const kept = inOrder(shippedList, edit.order).filter((programme) => !left.has(programme.id))
+      const ordered = inOrder(shippedList, edit.order).filter((programme) => !left.has(programme.id))
+      const kept = edit.order?.length && edit.scheduleSize ? ordered.slice(0, edit.scheduleSize) : ordered
       if (kept.length) return { channel: { ...shipped, name, description, customLineup: true }, programmes: kept.map((programme) => ({ ...programme })) }
     }
     return { channel: { ...shipped, name, description }, programmes: null }
@@ -310,7 +314,7 @@ function fromSources(
   original = false,
 ): { channel: Channel; programmes: Programme[] } {
   const built = channelsFromSources(
-    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: [...own], runningOrder: edit.order }],
+    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: [...own], runningOrder: edit.order, ...(edit.order?.length && edit.scheduleSize ? { scheduleSize: edit.scheduleSize } : {}) }],
     { refused },
   )
   const made = built.channels[0]

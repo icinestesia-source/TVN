@@ -112,7 +112,7 @@ const DEFAULT_NAMES = [
   'Settings',
   'Next watched channel',
   'Channel down',
-  'Random channel',
+  'TV Surf',
 ]
 
 const block = (selector: string) => {
@@ -132,9 +132,9 @@ const context = (overrides: Partial<ShortcutContext> = {}): ShortcutContext => (
 })
 
 describe('information overlay: 3×3 control pad', () => {
-  it('1. the default layout is REMOTE ↑|CH+ ⛶ / ← GUIDE → / ⚙ ↓|CH− R, nine cells', () => {
+  it('1. the default layout is REMOTE ↑|CH+ ⛶ / ← GUIDE → / ⚙ ↓|CH− T, nine cells', () => {
     const { tree, list } = pad()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'TVN'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'T'])
     expect(cells(tree)).toHaveLength(9)
     expect((tree as ReactElement<{ className: string }>).props.className).toBe('info-actions info-pad has-history')
     expect((tree as ReactElement<{ role: string }>).props.role).toBe('group')
@@ -174,7 +174,7 @@ describe('information overlay: 3×3 control pad', () => {
   it('6. the corners default to Remote, Fullscreen, Settings and Random', () => {
     expect(DEFAULT_SHORTCUTS).toEqual({ topLeft: 'remote', topRight: 'fullscreen', bottomLeft: 'settings', bottomRight: 'random' })
     const grid = cells(pad().tree)
-    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Remote control', 'Fullscreen', 'Settings', 'Random channel'])
+    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Remote control', 'Fullscreen', 'Settings', 'TV Surf'])
   })
 
   it('7. ↑ goes back through the watched channels; CH+ beside it steps up the channel numbers', () => {
@@ -249,35 +249,38 @@ describe('information overlay: 3×3 control pad', () => {
     expect(settings).toEqual([])
   })
 
-  it('13. R: a click tunes one random channel, a hold starts or stops the Random Cycle, a right-click opens Random settings', () => {
+  it('13. T: a click surfs to a random channel; a right-click or a hold switches ALL and one network, never both', () => {
     const { sent, settings, press, find } = pad()
-    const r = find('Random channel')
-    expect(r.label).toBe('TVN')
-    expect(r.props.title).toBe('Random channel · hold to start or stop Random Cycle · right-click for Random settings')
-    expect(r.props['aria-haspopup']).toBe('dialog')
-    press('Random channel')
+    const t = find('TV Surf')
+    expect(t.label).toBe('T')
+    expect(t.props.title).toBe('TV Surf · surfing all channels · right-click or hold: surf one network only')
+    expect(t.props['aria-haspopup']).toBeUndefined()
+    press('TV Surf')
     expect(sent).toEqual([{ type: 'random-channel' }])
     expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
     expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
-    // Right-click (a mouse) opens the Random settings and never surfs.
+    // Right-click (a mouse) switches the scope and never surfs or opens settings.
+    const scoped = context({ randomScoped: true, surfScopeName: 'Ann' })
+    expect(SHORTCUTS.random.describe!(scoped)).toBe('TV Surf · surfing Ann only · right-click or hold: surf all')
     const opened = { prevented: false, stopped: false }
-    ;(r.props.onPointerDown as (event: unknown) => void)({ pointerType: 'mouse', button: 2, clientX: 0, clientY: 0, stopPropagation: () => {} })
-    ;(r.props.onContextMenu as (event: unknown) => void)({
+    ;(t.props.onPointerDown as (event: unknown) => void)({ pointerType: 'mouse', button: 2, clientX: 0, clientY: 0, stopPropagation: () => {} })
+    ;(t.props.onContextMenu as (event: unknown) => void)({
       preventDefault: () => void (opened.prevented = true),
       stopPropagation: () => void (opened.stopped = true),
     })
-    expect(settings).toEqual(['open'])
     expect(opened).toEqual({ prevented: true, stopped: true })
+    expect(settings).toEqual([])
     expect(sent).toEqual([{ type: 'random-channel' }])
-    // The hold is the existing Random Cycle command, not a second implementation.
-    expect(SHORTCUTS.random.hold).toBeDefined()
+    // The hold is the same switch; it dispatches no command of its own.
+    let toggled = 0
     const held: TvCommand[] = []
-    SHORTCUTS.random.hold!(context({ dispatch: (command) => void held.push(command) }))
-    expect(held).toEqual([{ type: 'surf' }])
-    expect(provider).toContain("case 'surf':")
-    // The click that ends a hold does not also tune.
+    SHORTCUTS.random.hold!(context({ toggleSurfScope: () => void toggled++, dispatch: (command) => void held.push(command) }))
+    SHORTCUTS.random.menu!(context({ toggleSurfScope: () => void toggled++, dispatch: (command) => void held.push(command) }))
+    expect(toggled).toBe(2)
+    expect(held).toEqual([])
+    // The click that ends a hold does not also surf.
     expect(actionsSource).toContain('if (hold && cornerHold.swallowClick()) return')
-    expect(pad({ surfing: true }).find('Random channel').props['aria-pressed']).toBe(true)
+    expect(pad({ surfing: true }).find('TV Surf').props['aria-pressed']).toBe(true)
   })
 
   it('14. the pad holds no links out of TVN: originals open from the Channel Editor programme lists', () => {
@@ -335,7 +338,7 @@ describe('information overlay: 3×3 control pad', () => {
   it('17. the corners follow the assignment', () => {
     const assignment: ShortcutAssignment = { topLeft: 'random', topRight: 'captions', bottomLeft: 'remote', bottomRight: 'fullscreen' }
     const grid = cells(pad({ assignment }).tree)
-    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['Random channel', 'Subtitles/captions', 'Remote control', 'Fullscreen'])
+    expect([0, 2, 6, 8].map((index) => grid[index].props['aria-label'])).toEqual(['TV Surf', 'Subtitles/captions', 'Remote control', 'Fullscreen'])
   })
 
   it('18. the assignment is saved with the other preferences and restored', () => {
@@ -383,8 +386,8 @@ describe('information overlay: 3×3 control pad', () => {
   it('21. every cell has an accessible name, and the names follow the assignment', () => {
     expect(pad().names).toEqual(DEFAULT_NAMES)
     const swapped = pad({ assignment: { topLeft: 'captions', topRight: 'random', bottomLeft: 'fullscreen', bottomRight: 'remote' } }).names
-    expect([swapped[0], swapped[3], swapped[7], swapped[10]]).toEqual(['Subtitles/captions', 'Random channel', 'Fullscreen', 'Remote control'])
-    expect(SHORTCUT_IDS.map((id) => SHORTCUTS[id].name)).toEqual(['Remote control', 'Fullscreen', 'Settings', 'Random channel', 'Subtitles/captions'])
+    expect([swapped[0], swapped[3], swapped[7], swapped[10]]).toEqual(['Subtitles/captions', 'TV Surf', 'Fullscreen', 'Remote control'])
+    expect(SHORTCUT_IDS.map((id) => SHORTCUTS[id].name)).toEqual(['Remote control', 'Fullscreen', 'Settings', 'TV Surf', 'Subtitles/captions'])
     expect(remote).toContain('{SHORTCUTS[id].name}')
   })
 

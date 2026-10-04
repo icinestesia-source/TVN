@@ -81,6 +81,8 @@ export interface ExportChannel {
   listName?: string
   /** The viewer's running order (video ids). Absent while TVN arranges the channel itself. */
   runningOrder?: string[]
+  /** How many of the running order are scheduled, from the top. Absent: all of it. */
+  scheduleSize?: number
   /** The viewer's editorial notes: intent only, never what plays. Absent in older files. */
   editorial?: ChannelEditorial
   sources: ExportSource[]
@@ -183,6 +185,7 @@ export function exportChannel(record: StoredSource, uploaderOf: UploaderOf, user
     edited: record.channelSources !== undefined,
     ...(record.listName ? { listName: record.listName } : {}),
     ...(record.runningOrder?.length ? { runningOrder: [...record.runningOrder] } : {}),
+    ...(record.runningOrder?.length && record.scheduleSize ? { scheduleSize: record.scheduleSize } : {}),
     ...notes,
     sources: sourcesOf(record).map((source) => exportSource(source, uploaderOf)),
   }
@@ -348,6 +351,8 @@ export function checkChannel(channel: unknown, at: string, errors: string[]): vo
   if (typeof channel.enabled !== 'boolean') errors.push(`${at}.enabled is not true or false`)
   if (channel.runningOrder !== undefined && (!Array.isArray(channel.runningOrder) || channel.runningOrder.some((id) => typeof id !== 'string')))
     errors.push(`${at}.runningOrder is not a list of video ids`)
+  if (channel.scheduleSize !== undefined && (typeof channel.scheduleSize !== 'number' || !Number.isInteger(channel.scheduleSize) || channel.scheduleSize < 1))
+    errors.push(`${at}.scheduleSize is not a number of programmes`)
   checkEditorial(channel.editorial, `${at}.editorial`, errors)
   if (!Array.isArray(channel.sources)) {
     errors.push(`${at}.sources is not a list`)

@@ -26,6 +26,18 @@ export interface ResolvedChannel {
   ownerId?: string
   /** Listing pages read: one for RECENT, more for ARCHIVE and ALL while the list continues. */
   pages?: number
+  /** Videos the list itself says it holds, from its header; embeddable and long enough ones are fewer. */
+  listed?: number
+  /** Where the next batch of the same list starts, when the list goes on past what was read. */
+  next?: string
+}
+
+/** One more batch of a list already read: the videos past where the last read stopped. */
+export interface ResolvedBatch {
+  videos: ResolvedVideo[]
+  refused: number
+  listed?: number
+  next?: string
 }
 
 /** A playlist a channel lists, and whether that channel itself owns it. */
@@ -208,6 +220,18 @@ export function continuationOf(data: unknown): string | null {
   return token
 }
 
+/** How many videos a playlist's header says it holds. */
+export function listedCountFrom(data: unknown): number | null {
+  let count: number | null = null
+  walk(data, (node) => {
+    if (count !== null) return
+    const header = node.playlistHeaderRenderer as { numVideosText?: unknown } | undefined
+    const match = header ? textOf(header.numVideosText).match(/^([\d,]+)\s+videos?$/) : null
+    if (match) count = Number(match[1].replace(/,/g, ''))
+  })
+  return count
+}
+
 /** The channel named in a playlist's header as its owner. */
 export function playlistOwnerFrom(data: unknown): string | null {
   let owner: string | null = null
@@ -269,27 +293,108 @@ async function continued(token: string, clientVersion: string, read: typeof fetc
 }
 
 /** A playlist's videos over up to `pages` listing pages, with its title and owner from the first. */
-async function readPlaylist(id: string, read: typeof fetch, pages: number): Promise<{ data: unknown; videos: ResolvedVideo[]; pages: number }> {
+interface ListingPage {
+  /** The continuation this page was read from; null for the playlist's own first page. */
+  token: string | null
+  videos: ResolvedVideo[]
+}
+
+interface Listing {
+  data: unknown
+  videos: ResolvedVideo[]
+  pages: number
+  parts: ListingPage[]
+  version: string
+  /** The continuation after the last page read, while the list goes on. */
+  end: string | null
+}
+
+/** A playlist's videos over up to `pages` listing pages, with its title and owner from the first. */
+async function readPlaylist(id: string, read: typeof fetch, pages: number): Promise<Listing> {
   const html = await page(`https://www.youtube.com/playlist?list=${id}`, read)
   const data = initialData(html)
   if (!data) throw new ChannelError(404, 'YouTube has no playlist at that link')
-  const videos = videosFromPlaylistPage(data)
+  const first = videosFromPlaylistPage(data)
+  const videos = [...first]
+  const parts: ListingPage[] = [{ token: null, videos: first }]
   const seen = new Set(videos.map((video) => video.id))
   const version = html.match(/"INNERTUBE_CLIENT_VERSION":"([^"]+)"/)?.[1] ?? '2.20260101.00.00'
   let token = continuationOf(data)
-  let read_ = 1
-  while (token && read_ < pages) {
+  while (token && parts.length < pages) {
     const next = await continued(token, version, read)
     if (!next) break
-    read_ += 1
-    for (const video of videosFromPlaylistPage(next)) {
-      if (seen.has(video.id)) continue
-      seen.add(video.id)
-      videos.push(video)
-    }
+    const fresh = videosFromPlaylistPage(next).filter((video) => !seen.has(video.id))
+    for (const video of fresh) seen.add(video.id)
+    videos.push(...fresh)
+    parts.push({ token, videos: fresh })
     token = continuationOf(next)
   }
-  return { data, videos, pages: read_ }
+  return { data, videos, pages: parts.length, parts, version, end: token }
+}
+
+/** Where a later batch picks a list up again: the page to read and how many of its schedulable videos were already taken. */
+interface Cursor {
+  list: string
+  version: string
+  token: string | null
+  skip: number
+}
+
+export function encodeCursor(cursor: Cursor): string {
+  return Buffer.from(JSON.stringify([cursor.list, cursor.version, cursor.token, cursor.skip])).toString('base64url')
+}
+
+export function decodeCursor(text: string): Cursor | null {
+  try {
+    const [list, version, token, skip] = JSON.parse(Buffer.from(text, 'base64url').toString('utf8')) as unknown[]
+    if (typeof list !== 'string' || !PLAYLIST_ID.test(list) || typeof version !== 'string' || !/^[\w.]{1,40}$/.test(version)) return null
+    if (token !== null && (typeof token !== 'string' || token.length > 2000)) return null
+    if (typeof skip !== 'number' || !Number.isInteger(skip) || skip < 0 || skip > 1000) return null
+    return { list, version, token, skip }
+  } catch {
+    return null
+  }
+}
+
+const schedulable = (videos: readonly ResolvedVideo[]) => videos.filter((video) => video.durationSec >= MIN_SECONDS)
+
+/** The cursor after the first `taken` schedulable videos of a listing, or none when the list is exhausted. */
+function cursorAfter(listId: string, listing: Pick<Listing, 'parts' | 'version' | 'end'>, taken: number): string | undefined {
+  let left = taken
+  for (const part of listing.parts) {
+    const count = schedulable(part.videos).length
+    if (left < count) return encodeCursor({ list: listId, version: listing.version, token: part.token, skip: left })
+    left -= count
+  }
+  return listing.end ? encodeCursor({ list: listId, version: listing.version, token: listing.end, skip: 0 }) : undefined
+}
+
+/**
+ * The next batch of a list: one listing page from where the cursor points, each video checked for embedded
+ * playback as the first read was. Pages are read one at a time, so a caller sets the pace.
+ */
+export async function resolveBatch(text: string, read: typeof fetch = fetch): Promise<ResolvedBatch> {
+  const cursor = decodeCursor(text)
+  if (!cursor) throw new ChannelError(400, 'That batch link is not one TVN made')
+  let data: unknown
+  let listed: number | null = null
+  if (cursor.token === null) {
+    const first = await readPlaylist(cursor.list, read, 1)
+    data = first.data
+    listed = listedCountFrom(first.data)
+  } else {
+    data = await continued(cursor.token, cursor.version, read)
+    if (!data) throw new ChannelError(502, 'YouTube did not answer')
+  }
+  const listing = schedulable(videosFromPlaylistPage(data)).slice(cursor.skip)
+  const { videos, refused } = await embeddableVideos(listing, read, Number.POSITIVE_INFINITY)
+  const token = continuationOf(data)
+  return {
+    videos,
+    refused,
+    ...(listed !== null ? { listed } : {}),
+    ...(token && token !== cursor.token ? { next: encodeCursor({ list: cursor.list, version: cursor.version, token, skip: 0 }) } : {}),
+  }
 }
 
 /**
@@ -403,11 +508,13 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   const pages = options.wide ? PAGE_LIMIT.wide : PAGE_LIMIT.recent
   if (input.kind === 'playlist') {
     const list = await readPlaylist(input.id, read, pages)
-    const listed = list.videos.filter((video) => video.durationSec >= MIN_SECONDS)
+    const listed = schedulable(list.videos)
     if (listed.length === 0) throw new ChannelError(404, 'That playlist has no videos TVN can schedule')
     const [kept, days] = await Promise.all([embeddableVideos(listed, read, keep), readFeedDates(`playlist_id=${input.id}`, read)])
     if (kept.videos.length === 0) throw new ChannelError(422, 'That playlist does not allow its videos to play outside YouTube')
     const ownerId = playlistOwnerFrom(list.data)
+    const count = listedCountFrom(list.data)
+    const next = cursorAfter(input.id, list, kept.taken)
     return {
       channelId: input.id,
       sourceType: 'youtube-playlist',
@@ -417,23 +524,38 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
       refused: kept.refused,
       ...(ownerId ? { ownerId } : {}),
       pages: list.pages,
+      ...(count !== null ? { listed: count } : {}),
+      ...(next ? { next } : {}),
     }
   }
   const named = await channelNamed(input, read)
   const channelId = named.channelId
   // A channel's uploads are its own uploads playlist: RECENT reads its first page, ARCHIVE and ALL read on.
-  const list = await readPlaylist(`UU${channelId.slice(2)}`, read, pages)
+  const uploads = `UU${channelId.slice(2)}`
+  const list = await readPlaylist(uploads, read, pages)
   const title = named.title ?? channelTitleFrom(list.data)
-  const listed = list.videos.filter((video) => video.durationSec >= MIN_SECONDS)
+  const listed = schedulable(list.videos)
   if (listed.length === 0) throw new ChannelError(404, 'That channel has no videos TVN can schedule')
 
-  const [{ videos, refused }, days, older] = await Promise.all([
+  const [{ videos, refused, taken }, days, older] = await Promise.all([
     embeddableVideos(listed, read, keep),
     readFeedDates(`channel_id=${channelId}`, read),
     readPlaylistDates(channelId, read),
   ])
   if (videos.length === 0) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
-  return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos: withDates(withDates(videos, days), older), scanned: listed.length, refused, pages: list.pages }
+  const count = listedCountFrom(list.data)
+  const next = cursorAfter(uploads, list, taken)
+  return {
+    channelId,
+    sourceType: 'youtube-channel',
+    title: title ?? channelId,
+    videos: withDates(withDates(videos, days), older),
+    scanned: listed.length,
+    refused,
+    pages: list.pages,
+    ...(count !== null ? { listed: count } : {}),
+    ...(next ? { next } : {}),
+  }
 }
 
 async function channelNamed(input: Exclude<ChannelInput, { kind: 'playlist' }>, read: typeof fetch): Promise<{ channelId: string; title: string | null }> {
@@ -455,7 +577,11 @@ async function channelIdOf(input: Exclude<ChannelInput, { kind: 'playlist' }>, r
 }
 
 /** The first `keep` listed videos whose publishers allow embedded playback. */
-async function embeddableVideos(listed: readonly ResolvedVideo[], read: typeof fetch, keep = KEEP): Promise<{ videos: ResolvedVideo[]; refused: number }> {
+async function embeddableVideos(
+  listed: readonly ResolvedVideo[],
+  read: typeof fetch,
+  keep = KEEP,
+): Promise<{ videos: ResolvedVideo[]; refused: number; taken: number }> {
   const verdicts = new Array<boolean | undefined>(listed.length)
   let next = 0
   const kept = () => verdicts.filter(Boolean).length
@@ -467,11 +593,31 @@ async function embeddableVideos(listed: readonly ResolvedVideo[], read: typeof f
       }
     }),
   )
-  return { videos: listed.filter((_, index) => verdicts[index]).slice(0, keep), refused: verdicts.filter((verdict) => verdict === false).length }
+  // Checks run in parallel, so some past the last kept video may be done; the next batch starts right after it.
+  let taken = listed.length
+  let count = 0
+  for (let index = 0; index < listed.length; index += 1) {
+    if (verdicts[index] && ++count === keep) {
+      taken = index + 1
+      break
+    }
+  }
+  const before = verdicts.slice(0, taken)
+  return { videos: listed.filter((_, index) => index < taken && verdicts[index]), refused: before.filter((verdict) => verdict === false).length, taken }
 }
 
 export async function handleChannelRequest(url: URL, read: typeof fetch = fetch): Promise<{ status: number; body: unknown }> {
   const link = url.searchParams.get('url') ?? ''
+  const cursor = url.searchParams.get('cursor')
+  if (cursor !== null) {
+    if (cursor.length > 3000) return { status: 400, body: { error: 'That batch link is not one TVN made' } }
+    try {
+      return { status: 200, body: await resolveBatch(cursor, read) }
+    } catch (error) {
+      if (error instanceof ChannelError) return { status: error.status, body: { error: error.message } }
+      return { status: 500, body: { error: 'The next programmes could not be read' } }
+    }
+  }
   if (!link.trim() || link.length > 500) return { status: 400, body: { error: 'Paste a YouTube channel or video link' } }
   try {
     const mode = url.searchParams.get('mode')

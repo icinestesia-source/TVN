@@ -187,14 +187,13 @@ describe('TVN 2.0 · playing a Guide', () => {
 
     const header = (following: boolean, tool: 'guides' | null) => renderToStaticMarkup(createElement(GuideActions, { tool, picked: true, following, onNow: () => {}, onTool: () => {} }))
     expect(header(false, 'guides')).not.toContain('is-following')
-    expect(header(true, null)).toContain('class="tab guide-follow is-following"')
-    expect(header(false, null)).toMatch(/class="tab guide-follow"[^>]*aria-expanded="false"/)
-    expect(header(false, null)).toMatch(/class="tab guide-section is-on"[^>]*aria-current="page"/)
-    expect(header(false, 'guides')).toContain('class="tab guide-follow is-on is-open"')
+    expect(header(true, null)).toContain('class="tab guide-section guide-follow is-on is-following"')
+    expect(header(false, null)).toMatch(/class="tab guide-section guide-follow is-on"[^>]*aria-current="page"[^>]*aria-expanded="false"/)
+    expect(header(false, 'guides')).toContain('class="tab guide-section guide-follow is-on is-open"')
     const add = readFileSync('src/components/GuideAdd.tsx', 'utf8')
     expect(add).toMatch(/onContextMenu=\{\(event\) => \{\s+event\.preventDefault\(\)\s+press\.contextMenu\(actions\)/)
     expect(add).toContain('onClick={() => press.click(actions)}')
-    expect(header(false, null)).toMatch(/>Guide<\/button><button[^>]*>My Guide<\/button><button[^>]*>Options<\/button><button[^>]*>Now<\/button><button[^>]*>Add<\/button><button[^>]*>Media</)
+    expect(header(false, null)).toMatch(/>Guide<\/button><button[^>]*>Options<\/button><button[^>]*>Now<\/button><button[^>]*>Add<\/button><button[^>]*>Media</)
     expect(guideView).toContain("const following = tv.guideRun?.state === 'active'")
   })
 

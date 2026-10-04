@@ -67,8 +67,8 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
       className={`${className}${pressed ? ' is-on' : ''}${scoped ? ' is-scoped' : ''}`}
       disabled={!available}
       aria-pressed={pressed}
-      aria-haspopup={action?.menu ? 'dialog' : undefined}
-      title={available ? (shortcut.title ?? shortcut.name) : shortcut.unavailable}
+      aria-haspopup={action?.menu && !action.describe ? 'dialog' : undefined}
+      title={available ? (action?.describe?.(context) ?? shortcut.title ?? shortcut.name) : shortcut.unavailable}
       aria-label={shortcut.name}
       onKeyDown={keepKey}
       onPointerDown={
@@ -119,12 +119,12 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
 /**
  * The information bar's controls, one 3×3 pad wherever the bar appears, in the Guide and over the picture.
  * The gold Guide key in the centre keeps the size of the Watch key it replaced, and its corners hold the
- * viewer's shortcuts. TVN (R on a keyboard) tunes at random on a click, starts or stops the Random Cycle on a hold, and opens the
- * Random settings on a right-click; ⚙ opens Settings:
+ * viewer's shortcuts. T, TV Surf (R on a keyboard), surfs to another channel on a click; a right-click or a hold
+ * switches it between surfing ALL and one User Network; ⚙ opens Settings:
  *
  *   REMOTE  ↑ CH+  ⛶
  *   ←      GUIDE   →
- *   ⚙       ↓ CH−  TVN
+ *   ⚙       ↓ CH−  T
  *
  * ↑ and ↓ move back and forward through the channels watched; until ↑ has been used there is nowhere
  * forward to go, so ↓'s place holds MULTI. CH+ and CH− share their cells and step along the channel numbers. ← and → step back and forth along the channel's programmes (in the Guide they move
@@ -165,6 +165,8 @@ export function InfoActions({
     remoteOpen: corners.remoteOpen,
     surfing: corners.surfing,
     randomScoped: corners.randomScoped,
+    surfScopeName: corners.surfScopeName,
+    toggleSurfScope: corners.toggleSurfScope,
     openRandomSettings: corners.openRandomSettings,
     dispatch: corners.dispatch,
   }
