@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TVN Harvester</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg: #0d0f12; --panel: #161a20; --line: #262c35; --ink: #e8ecf1; --dim: #8a94a3; --accent: #f5c84b; --good: #5fcf86; --warn: #f0a24b; --bad: #ef5d5d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  header { display: flex; align-items: baseline; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 15px; letter-spacing: 0.12em; color: var(--accent); }
+  header .sub { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  main { display: grid; grid-template-columns: minmax(420px, 1fr) minmax(420px, 1.2fr); gap: 16px; padding: 16px 20px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; }
+  h2 { margin: 0 0 10px; font-size: 11px; letter-spacing: 0.14em; color: var(--dim); font-weight: 600; }
+  button { font: inherit; letter-spacing: 0.08em; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--line); background: #1f252e; color: var(--ink); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 700; }
+  button.stop { background: var(--bad); color: #fff; border-color: var(--bad); font-weight: 700; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  input[type=text] { font: inherit; flex: 1; min-width: 240px; padding: 7px 9px; background: #0f1216; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 0; }
+  dt { color: var(--dim); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  .state { font-weight: 700; letter-spacing: 0.1em; }
+  .state.running { color: var(--good); } .state.stopping { color: var(--warn); } .state.idle { color: var(--dim); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { padding: 3px 8px; border-radius: 10px; border: 1px solid var(--line); }
+  .c-HEALTHY { color: var(--good); } .c-FAIR { color: #b8d36a; } .c-THIN { color: var(--warn); } .c-EMPTY, .c-BROKEN { color: var(--bad); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--dim); font-weight: 600; }
+  td.num { text-align: right; }
+  .scroll { max-height: 360px; overflow: auto; }
+  #log { max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 12px; }
+  #log .warn { color: var(--warn); } #log .error { color: var(--bad); }
+  .notice { color: var(--accent); margin-top: 6px; min-height: 1.4em; }
+  .wide { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<header><h1>TVN HARVESTER</h1><span class="sub" id="where">No workspace open</span></header>
+<main>
+  <section id="setup">
+    <h2>WORKSPACE</h2>
+    <div class="row"><input type="text" id="dir" placeholder="Workspace folder"></div>
+    <div class="row"><input type="text" id="master" placeholder="Complete Export to import (only for a new workspace)"></div>
+    <div class="row"><button id="open">OPEN / CREATE WORKSPACE</button></div>
+    <dl id="masterInfo"></dl>
+    <div class="notice" id="notice"></div>
+  </section>
+
+  <section>
+    <h2>AUTO</h2>
+    <div class="row">
+      <button class="primary" id="start">START AUTO</button>
+      <button class="stop" id="stop">STOP</button>
+      <button id="resume">RESUME AUTO</button>
+    </div>
+    <div class="row">
+      <button id="export">EXPORT CORPUS</button>
+      <button id="report">WRITE REPORTS</button>
+      <button id="folder">OPEN OUTPUT FOLDER</button>
+    </div>
+    <dl id="progress"></dl>
+  </section>
+
+  <section class="wide">
+    <h2>CHANNEL HEALTH · SOURCE DESK ORDER</h2>
+    <div class="chips" id="chips"></div>
+    <div class="scroll"><table id="health"></table></div>
+  </section>
+
+  <section class="wide">
+    <h2>ACTIVITY</h2>
+    <div id="log"></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id)
+const esc = (text) => String(text ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+const time = (ms) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 3600)}h ${String(Math.floor(s / 60) % 60).padStart(2, '0')}m ${String(s % 60).padStart(2, '0')}s` }
+let state = null
+let logLength = -1
+
+async function post(path, payload = {}) {
+  const response = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-harvester': '1' }, body: JSON.stringify(payload) })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) $('notice').textContent = body.error || 'That did not work'
+  refresh()
+}
+
+function dl(el, pairs) {
+  el.innerHTML = pairs.filter(Boolean).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')
+}
+
+function render() {
+  const s = state
+  $('notice').textContent = s.notice || ''
+  if (!s.workspace) {
+    if (!$('dir').value) $('dir').value = s.suggested || ''
+    for (const id of ['start', 'stop', 'resume', 'export', 'report', 'folder']) $(id).disabled = true
+    return
+  }
+  const p = s.progress
+  $('where').textContent = `${s.workspace.dir} · workspace ${s.workspace.id} · schema ${s.workspace.schema}`
+  if (!$('dir').value) $('dir').value = s.workspace.dir
+  const m = s.master
+  dl($('masterInfo'), [
+    ['Master', esc(m.filename)],
+    ['Format', `${esc(m.format)} v${m.version} · app ${esc(m.app_commit)} / ${esc(m.app_build)}`],
+    ['Imported', `${m.channels} user channels · ${m.central} overrides · ${m.sources} sources · ${m.programmes} programmes · ${m.dated} dated`],
+    ['Master copy', m.intact ? '<span class="c-HEALTHY">UNCHANGED</span> (sha256 matches)' : '<span class="c-EMPTY">CHANGED OR MISSING</span>'],
+  ])
+  const run = s.lastRun
+  const status = p.stopping ? 'stopping' : p.running ? 'running' : 'idle'
+  $('start').disabled = p.running
+  $('stop').disabled = !p.running || p.stopping
+  $('resume').disabled = p.running || !s.unfinished
+  $('resume').textContent = s.unfinished ? `RESUME AUTO (RUN ${s.unfinished.id})` : 'RESUME AUTO'
+  for (const id of ['export', 'report']) $(id).disabled = p.running
+  $('folder').disabled = false
+  const t = run ? run.totals : null
+  dl($('progress'), [
+    ['State', `<span class="state ${status}">${status === 'running' ? 'RUNNING' : status === 'stopping' ? 'STOPPING…' : run ? esc(run.status.toUpperCase()) : 'IDLE'}</span>${p.runId || run ? ` · run ${p.runId || run.id} (${esc((p.mode || run.mode) === 'audit' ? 'full audit and refresh' : 'incremental')})` : ''}`],
+    p.channel && ['Channel', `${p.channel.index} / ${p.channel.total} · ${String(p.channel.number).padStart(3, '0')} ${esc(p.channel.name)}`],
+    p.source && ['Source', `${p.source.index} / ${p.source.total} · ${esc(p.source.label)} (${esc(p.source.sourceType)}, ${esc(p.source.depth)})`],
+    p.source && ['URL', esc(p.source.url)],
+    p.running && ['Known programmes', p.known],
+    ['New programmes', t ? t.added : 0],
+    ['Dates added', t ? t.datesAdded : 0],
+    ['Enriched', t ? t.enriched : 0],
+    ['Rejected / unplayable', t ? t.refused : 0],
+    ['Sources', t ? `${t.sourcesDone} done · ${t.sourcesFailed} failed · ${t.sourcesSkipped} skipped · ${t.sourcesPending} to visit` : '—'],
+    ['Requests', t ? t.requests : 0],
+    ['Elapsed', time(p.running ? p.elapsedMs : run ? run.elapsed_ms : 0)],
+  ])
+  const summary = s.health.summary
+  $('chips').innerHTML = Object.entries(summary).map(([k, v]) => `<span class="chip c-${k.split(' ')[0]}">${esc(k)} ${v}</span>`).join('')
+  $('health').innerHTML = '<tr><th>CH</th><th>NAME</th><th>HEALTH</th><th>PLAYABLE</th><th>HOURS</th><th>DATED</th><th>HELD</th><th>NEW</th><th>SOURCES</th></tr>' +
+    s.health.channels.map((c) => `<tr><td>${String(c.number).padStart(3, '0')}</td><td>${esc(c.name)}</td><td class="c-${c.class.split(' ')[0]}">${esc(c.class)}</td><td class="num">${c.playable}</td><td class="num">${c.hours}</td><td class="num">${c.knownDatePct}%</td><td class="num">${c.held}</td><td class="num">${c.newLatestRun}</td><td class="num">${c.sourcesEnabled}/${c.sourcesConfigured}${c.brokenSources ? ` · ${c.brokenSources} broken` : ''}</td></tr>`).join('')
+  if (s.log.length !== logLength || (s.log.at(-1) && s.log.at(-1).at !== $('log').dataset.last)) {
+    const log = $('log')
+    const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 8
+    log.innerHTML = s.log.map((l) => `<div class="${l.level}">${esc(l.at.slice(11, 19))} ${esc(l.message)}</div>`).join('')
+    log.dataset.last = s.log.at(-1)?.at || ''
+    logLength = s.log.length
+    if (atBottom) log.scrollTop = log.scrollHeight
+  }
+}
+
+async function refresh() {
+  try {
+    state = await (await fetch('/api/state')).json()
+    render()
+  } catch {
+    $('notice').textContent = 'Harvester is not answering'
+  }
+}
+
+$('open').onclick = () => post('/api/workspace', { dir: $('dir').value.trim(), master: $('master').value.trim() })
+$('start').onclick = () => post('/api/start')
+$('stop').onclick = () => post('/api/stop')
+$('resume').onclick = () => post('/api/resume')
+$('export').onclick = () => post('/api/export')
+$('report').onclick = () => post('/api/report')
+$('folder').onclick = () => post('/api/open', { folder: '' })
+refresh()
+setInterval(refresh, 1000)
+</script>
+</body>
+</html>
