@@ -3,7 +3,7 @@ import type { Programme } from '../types/programme.ts'
 import { isShippedEditorial, shippedEditorial } from '../data/central-editorial.ts'
 import { cleanEditorial } from './channel-curation.ts'
 import { cleanName, curatedSource, keptOrder, keptScheduleSize, type ChannelEdit } from './channel-editor.ts'
-import { inOrder, inventoryOf, liveStreamOf, type ChannelSource } from './channel-sources.ts'
+import { airingSources, inOrder, inventoryOf, liveStreamOf, type ChannelSource } from './channel-sources.ts'
 import { channelsFromSources } from './channels-import.ts'
 import { activeOriginals, cleanOriginals, ORIGINAL_ID_PREFIX, originalChannelSources, type OriginalSource } from './original-sources.ts'
 
@@ -153,6 +153,8 @@ export function curatedEditOf(channel: Pick<Channel, 'number' | 'name'>, saved: 
     ...(saved.description ? { description: saved.description } : {}),
     ...(saved.editorial ? { editorial: structuredClone(saved.editorial) } : shippedNotes ? { editorial: shippedNotes } : {}),
     ...(saved.originals?.length ? { originals: structuredClone(saved.originals) } : {}),
+    ...(saved.order && saved.orderKind ? { orderKind: saved.orderKind } : {}),
+    ...(saved.compiled ? { compiled: saved.compiled } : {}),
   }
 }
 
@@ -210,6 +212,8 @@ export function canonicalEdit(
     ...(description ? { description } : {}),
     ...(editorial ? { editorial } : {}),
     ...(originals ? { originals } : {}),
+    ...((order || excluded.length) && edit.orderKind ? { orderKind: edit.orderKind } : {}),
+    ...(edit.compiled ? { compiled: edit.compiled } : {}),
   }
 }
 
@@ -265,7 +269,7 @@ export function buildCuratedEdit(
   const description = edit.description?.trim() ? edit.description.trim() : shipped.description
   const own = edit.sources.filter((source) => source.kind !== 'tvn')
   const tvnOn = edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
-  if (tvnOn && !liveStreamOf(own) && inventoryOf(own).length === 0) {
+  if (tvnOn && !liveStreamOf(own) && inventoryOf(airingSources(own)).length === 0) {
     const poolIds = new Set(originals.flatMap((source) => source.videos.map((video) => video.id)))
     const arranged = (edit.order ?? []).some((id) => poolIds.has(id)) || (edit.excluded ?? []).some((id) => poolIds.has(id))
     if (activeOriginals(edit.originals, originals).length > 0 || arranged) {

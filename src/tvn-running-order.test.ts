@@ -120,12 +120,12 @@ describe('the Channel Editor', () => {
 
   it('lists the running order with moves, and Reset once the viewer has set one', () => {
     const automatic = render(user, { name: 'Alpha', sources: [source] })
-    expect(automatic).toContain('Running order · automatic')
+    expect(automatic).toMatch(/Running order · <span class="editor-order-kind"[^>]*>Automatic<\/span>/)
     expect(automatic).not.toContain('Reset to automatic')
     expect(automatic).toMatch(/<ol class="editor-lineup"[^>]*><li[^>]*><span class="editor-lineup-pos">1<\/span><span class="editor-video-title">alpha 1<\/span>/)
     expect(automatic).toMatch(/aria-label="Move alpha 1 earlier" disabled=""/)
     const yours = render(user, { name: 'Alpha', sources: [source], order: [own[2].id] })
-    expect(yours).toContain('Running order · yours')
+    expect(yours).toMatch(/Running order · <span class="editor-order-kind"[^>]*>Yours<\/span>/)
     expect(yours).toContain('Reset to automatic')
     expect(yours).toMatch(/editor-lineup-pos">1<\/span><span class="editor-video-title">alpha 3</)
   })

@@ -265,7 +265,11 @@
   left: var(--dock);
   bottom: calc(var(--dock) + 56px);
   z-index: 55;
-  width: min(440px, calc(100vw - 2 * var(--dock)));
+  width: min(600px, calc(100vw - 2 * var(--dock)));
+  max-height: calc(100dvh - 2 * var(--dock) - 56px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 14px 16px;
   background: var(--osd);
   border: 1px solid var(--line);
@@ -300,6 +304,44 @@
 .first-run-actions button:disabled { opacity: 0.5; }
 .first-run-example { color: var(--ink); }
 .first-run-confirm { padding-top: 8px; border-top: 1px solid var(--line); }
+/* The keys at a glance: groups side by side on a wide screen, wrapping onto new rows on a narrow one. */
+.first-run-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 4px 0 10px;
+  padding: 8px 0 2px;
+  border-top: 1px solid var(--line);
+}
+.first-run-keygroup { flex: 1 1 120px; min-width: 0; }
+.first-run .first-run-keygroup-head {
+  margin: 0 0 4px;
+  color: var(--gold);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.first-run-keygroup ul { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.first-run-keygroup li { display: flex; align-items: center; gap: 7px; min-width: 0; font-family: var(--font-ui); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.first-run-keygroup li span { min-width: 0; overflow-wrap: anywhere; }
+.first-run-keygroup kbd {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-bottom-width: 2px;
+  background: rgba(8, 16, 28, 0.72);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.first-run-keygroup kbd.is-wide { font-size: 10px; }
 
 /* Channel Editor: a source's details and its optional public information. */
 .source-details { display: grid; gap: 6px; padding: 6px 0 2px; font-size: 13px; }

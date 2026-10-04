@@ -224,6 +224,8 @@ export interface TvContextValue {
   rescanChannelEdit: (channelNumber: number, edit: ChannelEdit) => Promise<{ edit: ChannelEdit; message: string }>
   /** LOAD MORE / LOAD ALL: one source read past its first batch. Reads only; the editor saves the result. */
   loadMoreChannelSource: (source: ChannelSource, options: LoadMoreOptions) => Promise<ChannelSource>
+  /** A newly added source read for its first programmes, as RESCAN would read it; nothing is saved. */
+  acquireChannelSource: (source: ChannelSource) => Promise<ChannelSource>
   /**
    * EXPORT CHANNEL: download one user channel, as the editor shows it, as a tvn-channel-v1 file (`json`) or its
    * readable manifest (`md`). Reads only: nothing is saved.

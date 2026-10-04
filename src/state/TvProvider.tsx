@@ -54,7 +54,7 @@ import {
 } from '../services/channels-import.ts'
 import { lookUpBatch, lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
-import { applyChannelEdit, editOf, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
+import { applyChannelEdit, editOf, eligibilityKey, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
@@ -2321,16 +2321,30 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
+  /** Whether two reads of the stored User Network hold the same channels, as last saved. */
+  const sameStoredSources = (a: readonly StoredSource[], b: readonly StoredSource[]) =>
+    a.length === b.length && a.every((record, index) => record.id === b[index].id && record.updatedAt === b[index].updatedAt && record.channelNumber === b[index].channelNumber)
+
   /** Add the starter network after the viewer's own channels; anything already present is left as it is. */
   const loadTestChannels = useCallback(
     async (automatic = false) => {
       if (automatic && (starterState() !== 'pending' || currentNetworkBase() === 'new')) return ''
       const now = Date.now()
       const starter = recordsFromExport(await readStarterNetwork(), now)
-      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
       await ingestParsed(starterCollections(starter), { filename: BUILT_IN_CATALOGUE_ID })
-      const plan = planStarterNetwork(existing, starter, now, uploaderIdFor)
-      if (plan.added.length > 0) await saveStoredSources(plan.sources)
+      // The viewer may add or change a channel while the starter is read: it is planned around what is stored
+      // now, and planned again if anything changed before it could be saved. The viewer's channels win.
+      let plan = planStarterNetwork([], starter, now, uploaderIdFor)
+      let settled = false
+      for (let attempt = 0; attempt < 4 && !settled; attempt += 1) {
+        const stored = await loadStoredSources()
+        plan = planStarterNetwork(migrateLegacyUserNumbers(stored).sources, starter, now, uploaderIdFor)
+        if (plan.added.length > 0 && !sameStoredSources(stored, await loadStoredSources())) continue
+        if (plan.added.length > 0) await saveStoredSources(plan.sources)
+        settled = true
+      }
+      // Still changing under it: the starter waits for the next start rather than overwrite the viewer.
+      if (!settled) return ''
       setStarterState('installed')
       if (plan.added.length === 0) return 'THE STARTER NETWORK IS ALREADY INSTALLED'
       installSources(plan.sources)
@@ -2700,20 +2714,28 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
+  const rescanDeps = useCallback(
+    () => ({
+      resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { fresh: true, ...options }),
+      resolveFeed: (url: string, options?: { mode?: SourceMode; as?: 'website' }) => lookUpFeed(url, fetch, { fresh: true, ...options }),
+      probeStream: (source: ChannelSource) => probeStream(source),
+      uploaderOf: uploaderIdFor,
+      archiveOf: sourceArchive,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+
+  const acquireChannelSource = useCallback(async (source: ChannelSource) => (await rescanSources([source], rescanDeps(), Date.now()))[0], [rescanDeps])
+
   const rescanChannelEdit = useCallback(
     async (number: number, edit: ChannelEdit) => {
       const { scope, shipped } = scopeOf(number)
-      const deps = {
-        resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { fresh: true, ...options }),
-        resolveFeed: (url: string, options?: { mode?: SourceMode; as?: 'website' }) => lookUpFeed(url, fetch, { fresh: true, ...options }),
-        probeStream: (source: ChannelSource) => probeStream(source),
-        uploaderOf: uploaderIdFor,
-        archiveOf: sourceArchive,
-      }
+      const deps = rescanDeps()
       const now = Date.now()
       if (scope === 'curated') {
         const sources = await rescanSources(edit.sources, deps, now)
-        const next = { ...edit, sources }
+        const next = { ...edit, sources, compiled: eligibilityKey({ ...edit, sources }) }
         saveCuratedEdit(shipped, next, now, undefined, shippedIds(shipped), poolIdsOf(number))
         installCurated()
         return { edit: next, message: rescanSummary(sources) }
@@ -2724,7 +2746,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return { edit: result.edit, message: result.message }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [installSources],
+    [installSources, rescanDeps],
   )
 
   const loadMoreChannelSource = useCallback(
@@ -3245,6 +3267,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       saveChannelEdit,
       rescanChannelEdit,
       loadMoreChannelSource,
+      acquireChannelSource,
       exportChannelFile,
       importChannelFile,
       sourceArchive,
@@ -3262,6 +3285,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       saveChannelEdit,
       rescanChannelEdit,
       loadMoreChannelSource,
+      acquireChannelSource,
       exportChannelFile,
       importChannelFile,
       playChannelProgramme,

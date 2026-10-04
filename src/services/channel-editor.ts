@@ -12,6 +12,7 @@ import {
 } from './channel-curation.ts'
 import type { ImportedVideo, StoredSource } from './channels-import.ts'
 import {
+  airingSources,
   canonicalYouTubeUrl,
   inOrder,
   inventoryOf,
@@ -22,6 +23,7 @@ import {
   SOURCE_TYPES,
   WEBSITE_SLOT_SECONDS,
   type ChannelSource,
+  type OrderKind,
 } from './channel-sources.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 import type { OriginalOverride } from './original-sources.ts'
@@ -49,12 +51,55 @@ export interface ChannelEdit {
   review?: string[]
   /** A TVN channel only: the viewer's decisions about TVN's original sources (src/services/original-sources.ts). */
   originals?: OriginalOverride[]
+  /** With a running order: how it was made. */
+  orderKind?: OrderKind
+  /** `eligibilityKey` as the last successful rescan compiled the channel. */
+  compiled?: string
 }
 
-/** The running order to keep: every enabled programme, the viewer's arrangement first. None while TVN arranges it. */
+/** The running order to keep: every enabled programme on air, the viewer's arrangement first. None while TVN arranges it. */
 export function keptOrder(sources: readonly ChannelSource[], order: readonly string[] | undefined): string[] | undefined {
   if (!order?.length) return undefined
-  return inOrder(inventoryOf(sources), order).map((video) => video.id)
+  return inOrder(inventoryOf(airingSources(sources)), order).map((video) => video.id)
+}
+
+/**
+ * A fingerprint of what decides the channel's eligible programmes: its sources (each enabled or not, with its
+ * mode and filter), the schedule size and the programmes left out. A running order's arrangement is not part
+ * of it: sorting or moving a programme changes the order, not what RESCAN would find.
+ */
+export function eligibilityKey(edit: Pick<ChannelEdit, 'sources'> & Partial<ChannelEdit>): string {
+  const key = JSON.stringify([
+    edit.sources.map((source) => [source.id, source.kind, source.url, source.enabled, sourceModeOf(source), cleanFilter(source.filter) ?? null]),
+    edit.order?.length ? (edit.scheduleSize ?? null) : null,
+    [...new Set(edit.excluded ?? [])].sort(),
+    (edit.originals ?? []).map((item) => JSON.stringify(item)).sort(),
+  ])
+  let hash = 0x811c9dc5
+  for (let index = 0; index < key.length; index += 1) {
+    hash ^= key.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+/** Programmes the channel holds but does not schedule yet: what LOAD or a new source brought in. */
+export function heldIds(sources: readonly ChannelSource[]): Set<string> {
+  return new Set(sources.flatMap((source) => (source.videos ?? []).filter((video) => video.pending).map((video) => video.id)))
+}
+
+/** A source read further: whatever it did not hold before is held back from the schedule until the next rescan. */
+export function holdNew(before: ChannelSource, after: ChannelSource): ChannelSource {
+  const known = new Set((before.videos ?? []).map((video) => video.id))
+  if (!after.videos?.some((video) => !known.has(video.id))) return after
+  return { ...after, videos: after.videos.map((video) => (known.has(video.id) || video.pending ? video : { ...video, pending: true })) }
+}
+
+/** Every held programme let onto the schedule, as a rescan or rebuild compiles the channel. */
+export function admitted(sources: readonly ChannelSource[]): ChannelSource[] {
+  return sources.map((source) =>
+    source.videos?.some((video) => video.pending) ? { ...source, videos: source.videos.map(({ pending: _pending, ...video }) => video) } : source,
+  )
 }
 
 export interface RescanDeps {
@@ -198,7 +243,9 @@ export function editOf(record: StoredSource): ChannelEdit {
     sources: sourcesOf(record),
     ...(record.runningOrder ? { order: [...record.runningOrder] } : {}),
     ...(record.runningOrder && record.scheduleSize ? { scheduleSize: record.scheduleSize } : {}),
+    ...(record.runningOrder && record.orderKind ? { orderKind: record.orderKind } : {}),
     ...(record.editorial ? { editorial: structuredClone(record.editorial) } : {}),
+    ...(record.compiled ? { compiled: record.compiled } : {}),
   }
 }
 
@@ -215,11 +262,17 @@ export function cleanName(name: string, fallback: string): string {
 
 function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredSource {
   const sources = edit.sources.map(curatedSource)
-  const { runningOrder: _previous, scheduleSize: _size, emptySlot: _empty, editorial: _notes, ...bare } = record
+  const { runningOrder: _previous, scheduleSize: _size, emptySlot: _empty, editorial: _notes, orderKind: _kind, compiled: _compiled, ...bare } = record
   const editorial = cleanEditorial(edit.editorial)
   const order = keptOrder(sources, edit.order)
   const scheduleSize = keptScheduleSize(order, edit.scheduleSize)
-  const rest = { ...bare, ...(editorial ? { editorial } : {}), ...(scheduleSize ? { scheduleSize } : {}) }
+  const rest = {
+    ...bare,
+    ...(editorial ? { editorial } : {}),
+    ...(scheduleSize ? { scheduleSize } : {}),
+    ...(order && edit.orderKind ? { orderKind: edit.orderKind } : {}),
+    ...(edit.compiled ? { compiled: edit.compiled } : {}),
+  }
   if (record.emptySlot) {
     // A slot stays empty until it has a source; the first source's title names it unless the viewer typed a name.
     if (sources.length === 0) {
@@ -231,7 +284,7 @@ function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredS
       ...rest,
       name: cleanName(named, record.name),
       channelSources: sources,
-      videos: inventoryOf(sources),
+      videos: inventoryOf(airingSources(sources)),
       ...(order ? { runningOrder: order } : {}),
       updatedAt: now,
     }
@@ -242,7 +295,7 @@ function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredS
     // An imported list keeps the name TVN knows it by, so renaming never loses its archive.
     ...(record.id.startsWith(ADDED_PREFIX) ? {} : { listName: record.listName ?? record.name }),
     channelSources: sources,
-    videos: inventoryOf(sources),
+    videos: inventoryOf(airingSources(sources)),
     ...(order ? { runningOrder: order } : {}),
     updatedAt: now,
   }
@@ -282,6 +335,10 @@ function hostOf(url: string): string {
  * the programmes it already had; an imported list with no known uploader has nothing to ask and stays.
  */
 export async function rescanSources(sources: readonly ChannelSource[], deps: RescanDeps, now: number): Promise<ChannelSource[]> {
+  return admitted(await rescanEach(sources, deps, now))
+}
+
+function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: number): Promise<ChannelSource[]> {
   return Promise.all(
     sources.map(async (original): Promise<ChannelSource> => {
       const source = copySource(original)
@@ -469,6 +526,7 @@ export async function rescanChannel(
   const sources = await rescanSources(edit.sources, deps, now)
   // A channel with no name of its own takes its publisher's, as the source names itself.
   const named = sources.find((source) => source.enabled && source.kind !== 'tvn' && source.label && source.status?.state === 'ready')?.label
-  const next = { ...edit, sources, ...(!edit.name.trim() && named ? { name: named } : {}) }
+  const renamed = { ...edit, sources, ...(!edit.name.trim() && named ? { name: named } : {}) }
+  const next = { ...renamed, compiled: eligibilityKey(renamed) }
   return { all: applyChannelEdit(all, channelNumber, next, now), edit: next, message: rescanSummary(sources) }
 }

@@ -20,6 +20,7 @@ import {
   anchorTime,
   anchoredScrollLeft,
   clampZoom,
+  keyZoomAnchor,
 } from '../epg/zoom.ts'
 import { bindTimelinePinch, type TimelinePinchHandlers } from '../input/timeline-pinch.ts'
 import { slotContaining } from '../scheduler/window.ts'
@@ -98,13 +99,13 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const zoomAim = useRef(tv.guideZoom)
   const zoomHeld = useRef(false)
 
-  /** Zoom to `next`, holding the time at `offsetPx` across the timeline (its centre when null). */
+  /** Zoom to `next`, holding the time at `offsetPx` across the timeline; null holds the picked programme or the NOW line. */
   const applyZoom = (next: number, offsetPx: number | null) => {
     const grid = gridRef.current
     const zoom = clampZoom(next)
     if (!grid || zoom === drawn.current.zoom) return
-    const offset = offsetPx ?? grid.clientWidth / 2
-    zoomAnchor.current = { timeMs: anchorTime(grid.scrollLeft, offset, drawn.current.startMs, drawn.current.px), offsetPx: offset }
+    zoomAnchor.current =
+      offsetPx === null ? null : { timeMs: anchorTime(grid.scrollLeft, offsetPx, drawn.current.startMs, drawn.current.px), offsetPx }
     zoomAim.current = zoom
     tv.setGuideZoom(zoom)
   }
@@ -146,6 +147,9 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     [endMs, focusedChannel, startMs, tv.visibleChannels],
   )
   const focused = slotContaining(focusedSlots, tv.guideCursor.timeMs)
+  // The cursor the Guide opened on, or NOW last put back: anything else is a programme the viewer picked.
+  const restingCursor = useRef(tv.guideCursor)
+  const chosenSlot = tv.guideCursor !== restingCursor.current ? focused : null
   // What follows the chosen programme on its channel, even when it starts past the listed window.
   const followingSlot =
     focused && focusedChannel
@@ -374,8 +378,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     zoomAnchor.current = null
     const grid = gridRef.current
     if (!grid) return
-    const offsetPx = anchor?.offsetPx ?? grid.clientWidth / 2
-    const timeMs = anchor?.timeMs ?? anchorTime(grid.scrollLeft, offsetPx, before.startMs, before.px)
+    const { timeMs, offsetPx } =
+      anchor ?? keyZoomAnchor({ scrollLeft: grid.scrollLeft, clientWidth: grid.clientWidth, windowStartMs: before.startMs, pxPerMinute: before.px }, Date.now(), chosenSlot)
     grid.scrollLeft = anchoredScrollLeft(timeMs, offsetPx, startMs, pxPerMinute)
     prevStart.current = startMs
     // A zoom, aimed by pinch or pressed as - / =, keeps the listings where the viewer had them: the time at the
@@ -384,6 +388,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
     setScrollLeft(grid.scrollLeft)
     setViewWidth(grid.clientWidth)
+    // Only a new scale moves the listings; the pick it holds is read as it stands then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pxPerMinute, startMs, tv.guideZoom])
 
   useLayoutEffect(() => {
@@ -438,6 +444,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   useLayoutEffect(() => {
     if (nowAsked.current === tv.guideNowAsk) return
     nowAsked.current = tv.guideNowAsk
+    restingCursor.current = tv.guideCursor
     const grid = gridRef.current
     if (!grid) return
     grid.scrollLeft = openScrollLeft(Date.now(), startMs, pxPerMinute, grid.clientWidth)
@@ -762,6 +769,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onSave={tv.saveChannelEdit}
           onRescan={tv.rescanChannelEdit}
           onLoadMore={tv.loadMoreChannelSource}
+          onAcquire={tv.acquireChannelSource}
           onDelete={editScope === 'curated' ? tv.restoreCuratedChannel : tv.deleteUserChannel}
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
           onExport={tv.exportChannelFile}

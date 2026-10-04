@@ -126,6 +126,14 @@ export function inventoryOf(sources: readonly ChannelSource[]): ImportedVideo[] 
   return videos
 }
 
+/** The sources as the scheduler sees them: programmes still held back for a rescan left out. */
+export function airingSources(sources: readonly ChannelSource[]): ChannelSource[] {
+  return sources.map((source) => (source.videos?.some((video) => video.pending) ? { ...source, videos: source.videos.filter((video) => !video.pending) } : source))
+}
+
+/** How a running order was made: sorted A–Z or newest first, shuffled, rebuilt from every eligible programme, or arranged by hand. */
+export type OrderKind = 'az' | 'latest' | 'random' | 'rebuilt' | 'manual'
+
 /** Programmes in the viewer's running order: the listed ones first, as listed, then any others as the sources give them. */
 export function inOrder<T extends { id: string }>(videos: readonly T[], order?: readonly string[]): T[] {
   if (!order?.length) return [...videos]

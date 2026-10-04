@@ -2,7 +2,7 @@ import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme, ProgrammeType } from '../types/programme.ts'
 import { reachesArchive, type ChannelEditorial } from './channel-curation.ts'
-import { inOrder, inventoryOf, liveStreamOf, refreshOrigin, type ChannelSource } from './channel-sources.ts'
+import { airingSources, inOrder, inventoryOf, liveStreamOf, refreshOrigin, type ChannelSource, type OrderKind } from './channel-sources.ts'
 import type { ArchiveLookup } from './user-archive.ts'
 import { planArchive, runningOrder } from './user-depth.ts'
 
@@ -32,6 +32,8 @@ export interface ImportedVideo {
    * through its provider's own embed. `media` is then that page's address and `durationSec` the slot it is given.
    */
   web?: 'website' | 'post'
+  /** Brought in by LOAD or a newly added source and held back from the schedule until the channel is rescanned or rebuilt. */
+  pending?: true
 }
 
 /** An uploader as a provider listed it: a name, with its channel id and @handle only where the listing gave them. */
@@ -99,6 +101,10 @@ export interface StoredSource {
   listName?: string
   /** The viewer's own running order (video ids); without it TVN arranges the channel itself. */
   runningOrder?: string[]
+  /** How that running order was made (src/services/channel-editor.ts). */
+  orderKind?: OrderKind
+  /** The channel's eligibility fingerprint as last compiled by a rescan; another one means RESCAN has work to do. */
+  compiled?: string
   /** With a running order: how many of its programmes go to air, from the top; absent, every eligible programme does. */
   scheduleSize?: number
   /** How an added channel was named: one YouTube channel's uploads, or one playlist and nothing else. */
@@ -506,7 +512,7 @@ export function channelsFromSources(
       continue
     }
 
-    const pool = source.channelSources ? inventoryOf(source.channelSources) : source.videos
+    const pool = source.channelSources ? inventoryOf(airingSources(source.channelSources)) : source.videos.filter((video) => !video.pending)
     if (pool.length === 0) {
       channels.push({ ...base, description: `${source.name}. No enabled source has programmes.` })
       programmes.set(id, [holdingProgramme(id, source.name)])

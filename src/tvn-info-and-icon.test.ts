@@ -82,12 +82,13 @@ describe('the time line', () => {
     expect(airing).toMatch(/<p class="info-time"><span class="info-kind">Video<\/span><span>[^<]+<\/span><span>[^<]+<\/span><span class="info-date">\([0-9-]{2}\/[0-9-]{2}\/[0-9-]{2}\)<\/span><span>[^<]+<\/span><\/p>/)
   })
 
-  it('still names the exceptions, and shows the creator once, after the channel name, never in the time line', () => {
+  it('still names the exceptions, and shows the creator once, leading the title line, never in the time line', () => {
     expect(line(start - 60_000)).toContain('>Later</span>')
     expect(line(start + 3_600_000)).toContain('>Already broadcast</span>')
     const credited = line(start + 60_000, { creator: 'Maker', programmeType: 'documentary', tags: ['Bulletin'] } as Partial<Programme>)
     expect(credited.match(/Maker/g)).toHaveLength(1)
-    expect(credited).toMatch(/<p class="info-kicker">.*<span class="info-creator">Maker<\/span><\/p>/)
+    expect(credited).toMatch(/<div class="info-headline"><span class="info-creator">Maker<\/span><h2 class="info-title">/)
+    expect(credited).not.toMatch(/<p class="info-kicker">(?:(?!<\/p>)[^])*info-creator/)
     expect(credited).not.toMatch(/documentary|info-meta/)
     expect(credited.match(/Bulletin/g)).toHaveLength(1)
     expect(readFileSync('src/styles/guide.css', 'utf8')).not.toMatch(/\.info-meta|\.info-sep/)

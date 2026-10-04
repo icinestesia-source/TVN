@@ -1,7 +1,28 @@
 import { useState } from 'react'
 import type { TvContextValue } from '../state/tv-context.ts'
 import { acknowledgeNotice, openAbout } from './about-store.ts'
+import { ENTRY_KEYS } from './entry-keys.ts'
 import { GOOGLE_PRIVACY, YOUTUBE_TERMS } from './legal-text.ts'
+
+function EntryKeys() {
+  return (
+    <div className="first-run-keys" role="group" aria-label="Keyboard shortcuts">
+      {ENTRY_KEYS.map(({ group, keys }) => (
+        <div key={group} className="first-run-keygroup">
+          <p className="first-run-keygroup-head">{group}</p>
+          <ul>
+            {keys.map(({ key, label, name }) => (
+              <li key={key} aria-label={`${name}: ${label}`}>
+                <kbd className={key.length > 1 ? 'is-wide' : undefined}>{key}</kbd>
+                <span>{label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /**
  * Shown once per browser; About · Sources · Legal stays in Settings afterwards. TVN carries on with the network as
@@ -56,6 +77,7 @@ export function FirstRunNotice({
         TVN includes an example network of channels to demonstrate the platform. TVN carries on with it; NEW clears the channels to start
         a network of your own.
       </p>
+      <EntryKeys />
       {confirming ? (
         <div className="first-run-confirm" role="alertdialog" aria-label="Start new network?">
           <p className="first-run-head">Start new network?</p>

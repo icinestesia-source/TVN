@@ -45,6 +45,32 @@ export function anchoredScrollLeft(timeMs: number, offsetPx: number, windowStart
   return Math.max(0, ((timeMs - windowStartMs) / 60_000) * pxPerMinute - offsetPx)
 }
 
+/**
+ * Where a - / = zoom holds the Guide still. A programme the viewer picked stays under its own centre (or the
+ * centre of what shows of it); with nothing picked, the NOW line keeps its place, so zooming in never walks it
+ * off the left edge. Only with neither on screen does the middle of the timeline hold.
+ */
+export function keyZoomAnchor(
+  view: { scrollLeft: number; clientWidth: number; windowStartMs: number; pxPerMinute: number },
+  nowMs: number,
+  picked: { startMs: number; endMs: number } | null,
+): { timeMs: number; offsetPx: number } {
+  const { scrollLeft, clientWidth, windowStartMs, pxPerMinute } = view
+  const at = (timeMs: number) => ((timeMs - windowStartMs) / 60_000) * pxPerMinute - scrollLeft
+  const shownFrom = anchorTime(scrollLeft, 0, windowStartMs, pxPerMinute)
+  const shownTo = anchorTime(scrollLeft, clientWidth, windowStartMs, pxPerMinute)
+  if (picked) {
+    const middle = (picked.startMs + picked.endMs) / 2
+    if (middle >= shownFrom && middle <= shownTo) return { timeMs: middle, offsetPx: at(middle) }
+    const from = Math.max(picked.startMs, shownFrom)
+    const to = Math.min(picked.endMs, shownTo)
+    if (to > from) return { timeMs: (from + to) / 2, offsetPx: at((from + to) / 2) }
+    return { timeMs: middle, offsetPx: clientWidth / 2 }
+  }
+  if (nowMs >= shownFrom && nowMs <= shownTo) return { timeMs: nowMs, offsetPx: at(nowMs) }
+  return { timeMs: anchorTime(scrollLeft, clientWidth / 2, windowStartMs, pxPerMinute), offsetPx: clientWidth / 2 }
+}
+
 /** The zooms the Guide may open at: the lowest that frames the listings usefully is chosen. */
 export const OPENING_ZOOMS = [1, 1.5, 2, 3, 4, 5, 6] as const
 /** The share of the listed time whose programmes must show their titles for a zoom to be useful. */
