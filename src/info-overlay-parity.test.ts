@@ -35,11 +35,11 @@ describe('one information bar, in the Guide and over the picture', () => {
   })
 
   it('renders the one 3×3 pad as one unwrapped group', () => {
-    const tv = { canGoBack: true, canGoForward: true, multiviewMode: '1' as const, dispatch: () => undefined }
+    const tv = { canGoBack: true, canGoForward: true, multiviewMode: '1' as const, surfScopeName: 'TVN', dispatch: () => undefined }
     const markup = render(historyActions(tv))
     expect(markup).toMatch(/^<div class="info-actions info-pad has-history" role="group" aria-label="Programme controls">/)
     const labels = [...markup.matchAll(/<(?:button|a)[^>]*>([^<]+)<\/(?:button|a)>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'T'])
+    expect(labels).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'TVN'])
   })
 
   it('has no Guide-only rule for the actions: the one-line rule and the narrow-width rule apply to both', () => {

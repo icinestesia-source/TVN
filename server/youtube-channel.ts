@@ -30,6 +30,11 @@ export interface ResolvedChannel {
   listed?: number
   /** Where the next batch of the same list starts, when the list goes on past what was read. */
   next?: string
+  /**
+   * The link was a YouTube Mix (RD…): a list YouTube generates for each viewer, which no public interface
+   * lists for keeps. Its seed video leads, and the rest is the seed's uploader, as for a single video.
+   */
+  mix?: { list: string; seed: string }
 }
 
 /** One more batch of a list already read: the videos past where the last read stopped. */
@@ -54,8 +59,10 @@ export type ChannelInput =
   | { kind: 'channel'; id: string }
   | { kind: 'handle'; handle: string }
   | { kind: 'path'; path: string }
-  | { kind: 'video'; id: string }
+  | { kind: 'video'; id: string; mix?: string }
   | { kind: 'playlist'; id: string }
+  /** A Mix with no seed video in the link: nothing public names what it would play. */
+  | { kind: 'mix'; id: string }
 
 export class ChannelError extends Error {
   readonly status: number
@@ -69,6 +76,8 @@ const CHANNEL_ID = /^UC[0-9A-Za-z_-]{22}$/
 const VIDEO_ID = /^[0-9A-Za-z_-]{11}$/
 /** A listed playlist. Mixes and personal lists (RD…, LL, WL) are not public programme sources. */
 const PLAYLIST_ID = /^(?:PL|OL|UU|FL)[0-9A-Za-z_-]{10,64}$/
+/** A YouTube Mix or radio: generated per viewer, so it is recognised but never read as a durable playlist. */
+const MIX_ID = /^RD[0-9A-Za-z_-]{2,64}$/
 const MIN_SECONDS = 61
 const KEEP = 60
 /** ARCHIVE and ALL follow the list's own continuation, a bounded number of pages, and keep up to this many embeddable videos. */
@@ -98,16 +107,23 @@ export function parseChannelInput(raw: string): ChannelInput | null {
   const parts = url.pathname.split('/').filter(Boolean)
   const list = url.searchParams.get('list')
   const playlist = list && PLAYLIST_ID.test(list) ? list : null
+  const mix = list && MIX_ID.test(list) ? list : null
   if (host === 'youtu.be') {
     if (!parts[0] || !VIDEO_ID.test(parts[0])) return null
-    return playlist ? { kind: 'playlist', id: playlist } : { kind: 'video', id: parts[0] }
+    if (playlist) return { kind: 'playlist', id: playlist }
+    return mix ? { kind: 'video', id: parts[0], mix } : { kind: 'video', id: parts[0] }
   }
   if (host !== 'youtube.com') return null
   const v = url.searchParams.get('v')
   if (parts[0] === 'playlist' && playlist) return { kind: 'playlist', id: playlist }
-  // A watch link that carries a real playlist means the playlist; mixes (RD…) and Watch Later fall back to the video.
+  // A Mix's own page: its seed is the video id after RD, when the id is that plain form.
+  if (parts[0] === 'playlist' && mix) {
+    const seed = mix.slice(2)
+    return VIDEO_ID.test(seed) ? { kind: 'video', id: seed, mix } : { kind: 'mix', id: mix }
+  }
+  // A watch link that carries a real playlist means the playlist; a Mix keeps its seed video; Watch Later falls back to the video.
   if (parts[0] === 'watch' && playlist) return { kind: 'playlist', id: playlist }
-  if (parts[0] === 'watch' && v && VIDEO_ID.test(v)) return { kind: 'video', id: v }
+  if (parts[0] === 'watch' && v && VIDEO_ID.test(v)) return mix ? { kind: 'video', id: v, mix } : { kind: 'video', id: v }
   if (['shorts', 'live', 'embed', 'v'].includes(parts[0] ?? '') && parts[1] && VIDEO_ID.test(parts[1])) return { kind: 'video', id: parts[1] }
   if (parts[0] === 'channel' && parts[1] && CHANNEL_ID.test(parts[1])) return { kind: 'channel', id: parts[1] }
   if (parts[0]?.startsWith('@') && parts[0].length > 1) return { kind: 'handle', handle: decodeURIComponent(parts[0].slice(1)) }
@@ -228,6 +244,18 @@ export function listedCountFrom(data: unknown): number | null {
     const header = node.playlistHeaderRenderer as { numVideosText?: unknown } | undefined
     const match = header ? textOf(header.numVideosText).match(/^([\d,]+)\s+videos?$/) : null
     if (match) count = Number(match[1].replace(/,/g, ''))
+  })
+  if (count !== null) return count
+  // Newer playlist pages carry it as one of the header's metadata parts ("Playlist · 54 videos · …").
+  walk(data, (node) => {
+    if (count !== null || !Array.isArray(node.metadataParts)) return
+    for (const part of node.metadataParts as { text?: unknown }[]) {
+      const match = textOf(part?.text).match(/^([\d,]+)\s+videos?$/)
+      if (match) {
+        count = Number(match[1].replace(/,/g, ''))
+        return
+      }
+    }
   })
   return count
 }
@@ -403,7 +431,7 @@ export async function resolveBatch(text: string, read: typeof fetch = fetch): Pr
  */
 export async function discoverPlaylists(raw: string, read: typeof fetch = fetch): Promise<{ channelId: string; title: string; playlists: DiscoveredPlaylist[] }> {
   const input = parseChannelInput(raw)
-  if (!input || input.kind === 'playlist') throw new ChannelError(400, 'Discovery starts from a YouTube channel or @handle')
+  if (!input || input.kind === 'playlist' || input.kind === 'mix') throw new ChannelError(400, 'Discovery starts from a YouTube channel or @handle')
   const channelId = await channelIdOf(input, read)
   const html = await page(`https://www.youtube.com/channel/${channelId}/playlists`, read)
   const data = initialData(html)
@@ -506,6 +534,7 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   const input = parseChannelInput(raw)
   if (!input) throw new ChannelError(400, 'That is not a YouTube channel or video link')
   const pages = options.wide ? PAGE_LIMIT.wide : PAGE_LIMIT.recent
+  if (input.kind === 'mix') throw new ChannelError(422, MIX_UNLISTED)
   if (input.kind === 'playlist') {
     const list = await readPlaylist(input.id, read, pages)
     const listed = schedulable(list.videos)
@@ -542,14 +571,17 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
     readFeedDates(`channel_id=${channelId}`, read),
     readPlaylistDates(channelId, read),
   ])
-  if (videos.length === 0) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
+  const seed = input.kind === 'video' && input.mix && named.seed && (await embeddable(named.seed.id, read)) ? named.seed : null
+  if (videos.length === 0 && !seed) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
   const count = listedCountFrom(list.data)
   const next = cursorAfter(uploads, list, taken)
+  const dated = withDates(withDates(videos, days), older)
   return {
     channelId,
     sourceType: 'youtube-channel',
     title: title ?? channelId,
-    videos: withDates(withDates(videos, days), older),
+    videos: seed ? [seed, ...dated.filter((video) => video.id !== seed.id)] : dated,
+    ...(input.kind === 'video' && input.mix ? { mix: { list: input.mix, seed: input.id } } : {}),
     scanned: listed.length,
     refused,
     pages: list.pages,
@@ -558,21 +590,46 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   }
 }
 
-async function channelNamed(input: Exclude<ChannelInput, { kind: 'playlist' }>, read: typeof fetch): Promise<{ channelId: string; title: string | null }> {
+/** What a Mix link holds when its own list cannot be read. */
+const MIX_UNLISTED = 'A YouTube Mix is made fresh for each viewer and cannot be listed; paste one of its videos instead'
+
+/** The video a watch page is for, as its own player details give it. */
+export function seedFromPage(html: string, id: string): ResolvedVideo | null {
+  const details = html.match(/"videoDetails":\{"videoId":"([\w-]{11})","title":"((?:[^"\\]|\\.)*)","lengthSeconds":"(\d+)"/)
+  if (!details || details[1] !== id) return null
+  let title: string
+  try {
+    title = JSON.parse(`"${details[2]}"`) as string
+  } catch {
+    return null
+  }
+  const durationSec = Number(details[3])
+  if (!title || durationSec < MIN_SECONDS) return null
+  const published = html.match(/"publishDate":"(\d{4}-\d{2}-\d{2})/)?.[1]
+  return { id, title, durationSec, ...(published ? { published } : {}) }
+}
+
+async function channelNamed(
+  input: Exclude<ChannelInput, { kind: 'playlist' } | { kind: 'mix' }>,
+  read: typeof fetch,
+): Promise<{ channelId: string; title: string | null; seed?: ResolvedVideo }> {
   let channelId: string | null = input.kind === 'channel' ? input.id : null
   let title: string | null = null
+  let seed: ResolvedVideo | null = null
   if (input.kind === 'video') {
-    channelId = channelIdFromPage(await page(`https://www.youtube.com/watch?v=${input.id}`, read), 'video')
+    const html = await page(`https://www.youtube.com/watch?v=${input.id}`, read)
+    channelId = channelIdFromPage(html, 'video')
+    if (input.mix) seed = seedFromPage(html, input.id)
   } else if (input.kind !== 'channel') {
     const html = await page(`https://www.youtube.com${input.kind === 'handle' ? `/@${encodeURIComponent(input.handle)}` : input.path}`, read)
     channelId = channelIdFromPage(html, 'channel')
     title = channelTitleFrom(initialData(html))
   }
   if (!channelId) throw new ChannelError(404, 'No YouTube channel was found at that link')
-  return { channelId, title }
+  return { channelId, title, ...(seed ? { seed } : {}) }
 }
 
-async function channelIdOf(input: Exclude<ChannelInput, { kind: 'playlist' }>, read: typeof fetch): Promise<string> {
+async function channelIdOf(input: Exclude<ChannelInput, { kind: 'playlist' } | { kind: 'mix' }>, read: typeof fetch): Promise<string> {
   return (await channelNamed(input, read)).channelId
 }
 

@@ -30,6 +30,7 @@ export type ExportSourceType =
   | 'collection'
   | 'tvn'
   | 'podcast'
+  | 'website'
   | 'audio'
   | 'audio-hls'
   | 'video'
@@ -63,6 +64,8 @@ export interface ExportSource {
   filter?: SourceFilter
   /** ARCHIVE or ALL. Absent in older files: recent. */
   mode?: SourceMode
+  /** A website or post: the slot (seconds) the viewer gave it, since the page has no length of its own. */
+  slotSeconds?: number
 }
 
 export interface ExportChannel {
@@ -166,7 +169,8 @@ export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): Exp
     }
   }
   if (source.kind === 'tvn') return base
-  return { ...base, url: shareableUrl(source.url) }
+  const slot = source.kind === 'website' ? source.videos?.[0]?.durationSec : undefined
+  return { ...base, url: shareableUrl(source.url), ...(slot ? { slotSeconds: slot } : {}) }
 }
 
 export function exportChannel(record: StoredSource, uploaderOf: UploaderOf, users: readonly ExportUser[]): ExportChannel {
@@ -227,13 +231,14 @@ export function serialiseUserNetworkExport(document: UserNetworkExport): string 
   return `${JSON.stringify(document, null, 2)}\n`
 }
 
-const SOURCE_TYPES: readonly ExportSourceType[] = ['youtube-channel', 'youtube-playlist', 'collection', 'tvn', 'podcast', 'audio', 'audio-hls', 'video', 'video-hls']
+const SOURCE_TYPES: readonly ExportSourceType[] = ['youtube-channel', 'youtube-playlist', 'collection', 'tvn', 'podcast', 'website', 'audio', 'audio-hls', 'video', 'video-hls']
 const STORED_KINDS: Record<ExportSourceType, SourceKind> = {
   'youtube-channel': 'youtube',
   'youtube-playlist': 'youtube',
   collection: 'collection',
   tvn: 'tvn',
   podcast: 'podcast',
+  website: 'website',
   audio: 'audio',
   'audio-hls': 'audio-hls',
   video: 'video',
@@ -386,6 +391,9 @@ export function checkSources(sources: readonly unknown[], at: string, errors: st
     }
     checkFilter(source.filter, `${where}.filter`, errors)
     if (source.mode !== undefined && !SOURCE_MODES.includes(source.mode as SourceMode)) errors.push(`${where}.mode must be recent, archive or all`)
+    if (source.slotSeconds !== undefined && !(typeof source.slotSeconds === 'number' && Number.isInteger(source.slotSeconds) && source.slotSeconds >= 60 && source.slotSeconds <= 6 * 3600)) {
+      errors.push(`${where}.slotSeconds is not a slot length`)
+    }
   })
 }
 

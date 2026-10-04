@@ -25,6 +25,11 @@ export interface ImportedVideo {
   summary?: string
   image?: string
   page?: string
+  /**
+   * A web page rather than a recording, shown in a sandboxed frame: an interactive website, or a public post
+   * through its provider's own embed. `media` is then that page's address and `durationSec` the slot it is given.
+   */
+  web?: 'website' | 'post'
 }
 
 /** A source's upload date as the canonical YYYY-MM-DD calendar day, or nothing when it is not a real one. */
@@ -501,7 +506,7 @@ export function channelsFromSources(
       ordered ? ' in your running order on a clock schedule.' : wide ? ' from across the archive on a clock schedule.' : ' on a clock schedule.',
       refusedCount > 0 ? ` ${refusedCount} of its videos cannot play outside YouTube.` : '',
     ].join('')
-    channels.push({ ...base, description, ...(own.length > 0 && own.every((video) => video.media && video.mediaKind !== 'video') ? { mediaKind: 'audio' as const } : {}) })
+    channels.push({ ...base, description, ...(own.length > 0 && own.every((video) => video.media && !video.web && video.mediaKind !== 'video') ? { mediaKind: 'audio' as const } : {}) })
 
     const ownIndex = new Map(pool.map((video, index) => [video.id, index + 1]))
     const entry = (video: ImportedVideo) => ({ key: video.id, item: { video, earlier: false, programmeId: `${id}-p${ownIndex.get(video.id)}` }, repeat: false })
@@ -542,6 +547,7 @@ export function channelsFromSources(
 
 /** A podcast or archive episode: its own public audio or video file, played by the browser's media element, never by YouTube. */
 function episodeProgramme(video: ImportedVideo, id: string, channelId: string, name: string): Programme {
+  if (video.web) return webProgramme(video, id, channelId, name)
   const picture = video.mediaKind === 'video'
   return {
     id,
@@ -559,6 +565,33 @@ function episodeProgramme(video: ImportedVideo, id: string, channelId: string, n
     programmeType: picture ? programmeTypeFor(video.durationSec) : 'radio',
     mediaKind: picture ? 'video' : 'audio',
     sourceRef: `podcast:${video.id}`,
+    ...(video.published ? { publishedAt: video.published } : {}),
+    creator: name,
+    playbackMode: 'linear',
+  }
+}
+
+/**
+ * A website or public post: the page itself, shown in a sandboxed frame for the slot the viewer gave it. It has
+ * no media TVN controls; the viewer chooses INTERACT to use it, and the schedule moves on when the slot ends.
+ */
+function webProgramme(video: ImportedVideo, id: string, channelId: string, name: string): Programme {
+  const post = video.web === 'post'
+  return {
+    id,
+    title: video.title,
+    description: video.summary ?? `${video.title} on ${name}, ${post ? 'a public post' : 'an interactive website'}. Press INTERACT to use it.`,
+    ...(video.image ? { thumbnail: video.image } : {}),
+    videoId: null,
+    mediaUrl: video.media,
+    durationSeconds: video.durationSec,
+    channelId,
+    category: 'User',
+    source: 'imported',
+    kind: 'programme',
+    programmeType: post ? 'social-post' : 'website',
+    mediaKind: 'video',
+    sourceRef: `${post ? 'post' : 'website'}:${video.id}`,
     ...(video.published ? { publishedAt: video.published } : {}),
     creator: name,
     playbackMode: 'linear',

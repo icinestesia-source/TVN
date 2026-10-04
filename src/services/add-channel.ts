@@ -24,7 +24,7 @@ export async function lookUpChannel(link: string, read: typeof fetch = fetch, op
     throw new Error('TVN could not reach its channel lookup')
   }
   const body = (await response.json().catch(() => null)) as
-    | { error?: unknown; channelId?: unknown; sourceType?: unknown; title?: unknown; videos?: unknown; listed?: unknown; next?: unknown }
+    | { error?: unknown; channelId?: unknown; sourceType?: unknown; title?: unknown; videos?: unknown; listed?: unknown; next?: unknown; mix?: unknown }
     | null
   if (!response.ok || !body) throw new Error(typeof body?.error === 'string' ? body.error : 'The channel could not be added')
   if (typeof body.channelId !== 'string' || !Array.isArray(body.videos)) throw new Error('The channel could not be added')
@@ -42,7 +42,15 @@ export async function lookUpChannel(link: string, read: typeof fetch = fetch, op
     title: typeof body.title === 'string' && body.title ? body.title : body.channelId,
     videos,
     ...pagingOf(body),
+    ...mixOf(body.mix),
   }
+}
+
+const YOUTUBE_ID = /^[0-9A-Za-z_-]{11}$/
+
+function mixOf(raw: unknown): { mix?: { list: string; seed: string } } {
+  const { list, seed } = (raw ?? {}) as { list?: unknown; seed?: unknown }
+  return typeof list === 'string' && /^RD[0-9A-Za-z_-]{2,64}$/.test(list) && typeof seed === 'string' && YOUTUBE_ID.test(seed) ? { mix: { list, seed } } : {}
 }
 
 function videosOf(rows: readonly unknown[]): ImportedVideo[] {

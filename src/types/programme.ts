@@ -33,6 +33,10 @@ export type ProgrammeType =
   | 'radio'
   | 'live'
   | 'webcam'
+  /** An interactive website shown in a sandboxed frame for its slot. */
+  | 'website'
+  /** A public social post (an X post) shown through its provider's own embed. */
+  | 'social-post'
   | 'generated'
   | 'unclassified'
 

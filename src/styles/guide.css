@@ -1457,8 +1457,15 @@ span.editor-expand { border-color: transparent; }
 .info-pad > .is-random {
   -webkit-touch-callout: none;
   user-select: none;
-  font-size: 17px;
-  letter-spacing: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-pad > .is-random.is-long {
+  font-size: 10px;
+  letter-spacing: 0.02em;
 }
 
 .info-pad > .info-corner.is-on {
@@ -1934,4 +1941,29 @@ span.editor-expand { border-color: transparent; }
   .network-row { grid-template-columns: 3.4em minmax(0, 1fr) 2.2em auto 4.4em; }
   .network-status { display: none; }
   .network-move-to { display: none; }
+}
+
+.editor-slot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  grid-column: 1 / -1;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.editor-slot-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-slot-custom input {
+  width: 4.5em;
+}
+
+.editor-slot-custom.is-on {
+  color: var(--gold);
 }

@@ -57,6 +57,7 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
   const pressed = action?.pressed?.(context)
   const scoped = action?.scoped?.(context) ?? false
   const hold = action?.hold
+  const label = shortcut.labelOf?.(context) ?? shortcut.label
   // A right-click opens the key's menu; a key without one treats it as its hold.
   const menu = action?.menu ?? hold
   if (hold) holdAction = () => hold(context)
@@ -64,7 +65,7 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
     <button
       key={at}
       type="button"
-      className={`${className}${pressed ? ' is-on' : ''}${scoped ? ' is-scoped' : ''}`}
+      className={`${className}${pressed ? ' is-on' : ''}${scoped ? ' is-scoped' : ''}${label.length > 4 ? ' is-long' : ''}`}
       disabled={!available}
       aria-pressed={pressed}
       aria-haspopup={action?.menu && !action.describe ? 'dialog' : undefined}
@@ -111,7 +112,7 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
           : undefined
       }
     >
-      {shortcut.label}
+      {label}
     </button>
   )
 }
@@ -119,12 +120,12 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
 /**
  * The information bar's controls, one 3×3 pad wherever the bar appears, in the Guide and over the picture.
  * The gold Guide key in the centre keeps the size of the Watch key it replaced, and its corners hold the
- * viewer's shortcuts. T, TV Surf (R on a keyboard), surfs to another channel on a click; a right-click or a hold
- * switches it between surfing ALL and one User Network; ⚙ opens Settings:
+ * viewer's shortcuts. TV Surf (R on a keyboard), labelled with the active User Network's name, surfs to another
+ * channel on a click; a right-click or a hold switches it between surfing ALL and that network; ⚙ opens Settings:
  *
  *   REMOTE  ↑ CH+  ⛶
  *   ←      GUIDE   →
- *   ⚙       ↓ CH−  T
+ *   ⚙       ↓ CH−  TVN
  *
  * ↑ and ↓ move back and forward through the channels watched; until ↑ has been used there is nowhere
  * forward to go, so ↓'s place holds MULTI. CH+ and CH− share their cells and step along the channel numbers. ← and → step back and forth along the channel's programmes (in the Guide they move

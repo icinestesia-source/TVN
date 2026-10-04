@@ -1,6 +1,7 @@
 import { measureMedia } from './media-probe.ts'
 import { attr, dayOf, FeedError, fetchText, field, fnv, publicFeedUrl, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 import type { FeedEpisode, ResolvedFeed } from './podcast-feed.ts'
+import { isXHost, resolveXPost } from './web-programmes.ts'
 
 /**
  * Public video sources beyond podcasts and websites, each read the way its publisher offers it to anyone:
@@ -10,7 +11,7 @@ import type { FeedEpisode, ResolvedFeed } from './podcast-feed.ts'
  * address and read again from it.
  */
 
-export type SourceProvider = 'vimeo' | 'odysee' | 'bitchute' | 'rss' | 'archive' | 'hls' | 'direct'
+export type SourceProvider = 'vimeo' | 'odysee' | 'bitchute' | 'rss' | 'archive' | 'hls' | 'direct' | 'website' | 'x'
 export type SourceForm = 'video' | 'collection' | 'live'
 
 export interface LiveSource {
@@ -415,5 +416,6 @@ export async function resolveUrlSource(start: URL, read: typeof fetch, keep: num
   if (VIMEO_HOST.test(host)) return vimeo(start, read, keep)
   if (ODYSEE_HOST.test(host)) return odysee(start, read, keep, parse)
   if (BITCHUTE_HOST.test(host)) return bitchute(start, read, keep)
+  if (isXHost(host)) return resolveXPost(start, read)
   return mediaSource(start, read)
 }

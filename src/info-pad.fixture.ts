@@ -30,6 +30,7 @@ export function padProps({
     subtitles,
     remoteOpen,
     surfing,
+    surfScopeName: 'TVN',
     openRandomSettings: () => void settings.push('open'),
     dispatch,
   }

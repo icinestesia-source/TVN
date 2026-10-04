@@ -164,9 +164,11 @@ describe('REMOTE SMART', () => {
   const remote = read('src/components/TouchRemote.tsx')
   const provider = read('src/state/TvProvider.tsx')
 
-  it('the row reads USER · SMART · FAV', () => {
+  it('the row reads USER · SMART · FAV, SMART a round on/off key named Smart', () => {
     const user = remote.search(/>\s*User\s*</)
-    const smart = remote.search(/>\s*Smart\s*</)
+    const smart = remote.indexOf('aria-label="Smart"')
+    expect(remote.slice(smart, smart + 600)).toContain('className="smart-mark"')
+    expect(read('src/styles/stage2.css')).toMatch(/\.remote-row \.smart-key \{[^}]*border-radius: 50%/)
     const fav = remote.search(/>\s*Fav\s*</)
     expect(user).toBeGreaterThan(0)
     expect(smart).toBeGreaterThan(user)

@@ -163,8 +163,23 @@ import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAcce
 /** RESTORE and channel-file IMPORT read YouTube sources at their own modes and add TVN's shipped back catalogue to ARCHIVE and ALL. */
 const restoreDeps = {
   resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { ...options }),
-  resolveFeed: (url: string, options?: { mode?: SourceMode }) => lookUpFeed(url, fetch, { ...options }),
+  resolveFeed: (url: string, options?: { mode?: SourceMode; as?: 'website' }) => lookUpFeed(url, fetch, { ...options }),
   archiveOf: sourceArchive,
+}
+
+/** What ADD reads at an address: its feed, archive, video or stream; a page with none of those is offered as a website programme. */
+async function readerFeed(link: string, onProgress?: (text: string) => void): Promise<FoundFeed> {
+  try {
+    return await lookUpFeed(link, fetch, { fresh: true, mode: 'all', onProgress })
+  } catch (error) {
+    if (!/^https:\/\//i.test(link.trim())) throw error
+    try {
+      return await lookUpFeed(link, fetch, { fresh: true, as: 'website' })
+    } catch (page) {
+      // The page's own refusal to be shown is the clearer answer; otherwise the reader's stands.
+      throw page instanceof Error && /CANNOT BE EMBEDDED/i.test(page.message) ? page : error
+    }
+  }
 }
 import { loadYouTubeApi } from '../player/load-api.ts'
 import { clampGuideSplit, guideTuneDecision, type GuideMode } from '../view/guide-mode.ts'
@@ -2171,7 +2186,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const previewSource = useCallback(async (link: string, onProgress?: (text: string) => void): Promise<FoundFeed | null> => {
     if (addRoute(link) !== 'reader') return null
-    const feed = await lookUpFeed(link, fetch, { fresh: true, mode: 'all', onProgress })
+    const feed = await readerFeed(link, onProgress)
     previewedRef.current = { link: link.trim(), feed }
     return feed
   }, [])
@@ -2182,7 +2197,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         // A website, feed, video provider, file or stream: what the source reader found becomes a channel named after it.
         const previewed = previewedRef.current?.link === link.trim() ? previewedRef.current.feed : null
         previewedRef.current = null
-        const feed = previewed ?? (await lookUpFeed(link, fetch, { fresh: true, mode: 'all' }))
+        const feed = previewed ?? (await readerFeed(link))
         const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
         const live = feed.live
         const result = live
@@ -2194,7 +2209,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
         await saveStoredSources(result.sources)
         installSources(result.sources)
         const count = feed.episodes.length
-        const what = live ? 'LIVE' : feed.provider === 'rss' || feed.provider === 'archive' ? `${count} EPISODES` : `${count} PROGRAMME${count === 1 ? '' : 'S'}`
+        const slot = feed.episodes[0]?.web ? `${Math.round(feed.episodes[0].durationSec / 60)} MIN SLOT` : null
+        const what = live ? 'LIVE' : slot ? (feed.provider === 'x' ? `X POST · ${slot}` : `WEBSITE · ${slot}`) : feed.provider === 'rss' || feed.provider === 'archive' ? `${count} EPISODES` : `${count} PROGRAMME${count === 1 ? '' : 'S'}`
         return { number: result.number, message: `${feed.title} ADDED ON ${result.number} · ${what}` }
       }
       const found = await lookUpChannel(link)
@@ -2208,7 +2224,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       await saveStoredSources(result.sources)
       installSources(result.sources)
       const verb = result.status === 'updated' ? 'UPDATED' : 'ADDED'
-      return { number: result.number, message: `${found.title} ${verb} ON ${result.number} · ${found.videos.length} VIDEOS` }
+      const mix = found.mix ? ' · YOUTUBE MIX: SEED VIDEO KEPT, THEN ITS CHANNEL · THE MIX ITSELF CANNOT BE LISTED' : ''
+      return { number: result.number, message: `${found.title} ${verb} ON ${result.number} · ${found.videos.length} VIDEOS${mix}` }
     },
     [installSources],
   )
@@ -2637,7 +2654,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const { scope, shipped } = scopeOf(number)
       const deps = {
         resolveYouTube: (url: string, options?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { fresh: true, ...options }),
-        resolveFeed: (url: string, options?: { mode?: SourceMode }) => lookUpFeed(url, fetch, { fresh: true, ...options }),
+        resolveFeed: (url: string, options?: { mode?: SourceMode; as?: 'website' }) => lookUpFeed(url, fetch, { fresh: true, ...options }),
         probeStream: (source: ChannelSource) => probeStream(source),
         uploaderOf: uploaderIdFor,
         archiveOf: sourceArchive,
@@ -2666,7 +2683,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         {
           resolveYouTube: (url: string, more?: { mode?: SourceMode }) => lookUpChannel(url, fetch, { ...more }),
           resolveBatch: (cursor: string, signal?: AbortSignal) => lookUpBatch(cursor, fetch, signal),
-          resolveFeed: (url: string, more?: { mode?: SourceMode }) => lookUpFeed(url, fetch, { fresh: true, ...more }),
+          resolveFeed: (url: string, more?: { mode?: SourceMode; as?: 'website' }) => lookUpFeed(url, fetch, { fresh: true, ...more }),
         },
         options,
       ),
@@ -2887,11 +2904,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // T surfs ALL, or one User Network: the one chosen, else the one it was last narrowed to, else the channel's own.
+  // TV Surf covers ALL, or one User Network: the one chosen, else the one it was last narrowed to, else the channel's own.
   const [surfNetwork, setSurfNetwork] = useState<GuideFilter | null>(null)
   const surfTarget: GuideFilter = randomScoped(guideFilter) ? guideFilter : (surfNetwork ?? networkFilterOf(channelByNumber(channelNumber)))
   const surfScopeName = userNetworkName(filterUserId(surfTarget) ?? undefined, networkUsers)
-  /** T's right-click or hold: surf ALL, or only the selected network. The Guide's tab follows, as Random from does. */
+  /** TV Surf's right-click or hold: surf ALL, or only the selected network. The Guide's tab follows, as Random from does. */
   const toggleSurfScope = useCallback(() => {
     if (randomScoped(guideFilter)) {
       setSurfNetwork(guideFilter)

@@ -32,6 +32,18 @@ export function playbackCommand(programme: Programme, scheduleSeekSeconds: numbe
       kind: 'real',
     }
   }
+  if ((programme.programmeType === 'website' || programme.programmeType === 'social-post') && programme.mediaUrl) {
+    return {
+      videoId: null,
+      webUrl: programme.mediaUrl,
+      startSeconds: Math.max(0, scheduleSeekSeconds),
+      loop: false,
+      programmeId: programme.id,
+      programmeTitle: programme.title,
+      mediaId: programme.sourceRef ?? null,
+      kind: 'real',
+    }
+  }
   const localUrl = sessionUrlFor(programme) ?? programme.mediaUrl
   if (localUrl) {
     return {

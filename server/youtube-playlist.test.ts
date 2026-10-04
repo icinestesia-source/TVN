@@ -36,7 +36,7 @@ describe('TVN 1.0.8: a YouTube playlist as a User Channel source', () => {
     expect(parseChannelInput('https://www.youtube.com/channel/UCy8m1xxZpj6V8xtm-vtvzpg')).toEqual({ kind: 'channel', id: 'UCy8m1xxZpj6V8xtm-vtvzpg' })
     expect(parseChannelInput('https://www.youtube.com/@manjulaskitchen')).toEqual({ kind: 'handle', handle: 'manjulaskitchen' })
     expect(parseChannelInput('https://www.youtube.com/playlist?list=bogus')).toBeNull()
-    expect(parseChannelInput('https://www.youtube.com/watch?v=V_H9_5dYT08&list=RDV_H9_5dYT08')).toEqual({ kind: 'video', id: 'V_H9_5dYT08' })
+    expect(parseChannelInput('https://www.youtube.com/watch?v=V_H9_5dYT08&list=RDV_H9_5dYT08')).toEqual({ kind: 'video', id: 'V_H9_5dYT08', mix: 'RDV_H9_5dYT08' })
     expect(parseChannelInput('https://www.youtube.com/watch?v=V_H9_5dYT08&list=bogus')).toEqual({ kind: 'video', id: 'V_H9_5dYT08' })
   })
 

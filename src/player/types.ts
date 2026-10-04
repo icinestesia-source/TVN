@@ -20,6 +20,8 @@ export interface PlayerLoadRequest {
   /** A direct or HLS live stream, also played by the local media element; always joined live. */
   streamUrl?: string
   hls?: boolean
+  /** A website or public post: the page shown in a sandboxed frame for its slot, never played as media. */
+  webUrl?: string
 }
 
 export interface PlayerHandle {

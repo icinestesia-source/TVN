@@ -64,7 +64,7 @@ function bar(overrides: Partial<Parameters<typeof InfoActions>[0]> = {}) {
 describe('information controls: the 3×3 pad round GUIDE', () => {
   it('1. renders REMOTE ↑|CH+ ⛶ / ← GUIDE → / TVN ↓|CH− R with the accessible names', () => {
     const { list } = bar()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'T'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'TVN'])
     const named = Object.fromEntries(list.map((control) => [control.label, control.props['aria-label']]))
     expect(named['↑']).toBe('Previous watched channel')
     expect(named['CH+']).toBe('Channel up')

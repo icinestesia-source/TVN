@@ -18,6 +18,8 @@ export interface AddedChannel {
   /** How many videos the source says it holds, and where its next batch starts. */
   listed?: number
   next?: string
+  /** The link was a YouTube Mix: its seed video leads, then the seed's channel. The Mix itself cannot be listed. */
+  mix?: { list: string; seed: string }
 }
 
 export type UploaderOf = (collectionName: string) => string | null
@@ -92,11 +94,13 @@ export function addPodcastChannel(
 ): { sources: StoredSource[]; number: number | null; status: 'added' | 'duplicate' | 'full' } {
   const id = `${PODCAST_PREFIX}${feed.feedUrl}`
   const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
-  const same = sources.find((source) => source.id === id || source.channelSources?.some((item) => item.kind === 'podcast' && item.url === feed.feedUrl))
+  const same = sources.find((source) => source.id === id || source.channelSources?.some((item) => (item.kind === 'podcast' || item.kind === 'website') && item.url === feed.feedUrl))
   if (same?.channelNumber) return { sources, number: same.channelNumber, status: 'duplicate' }
   const number = claimUserNumber(sources)
   if (number === null) return { sources, number: null, status: 'full' }
   const videos = feed.episodes.map((video) => ({ ...video }))
+  // A website or public post is a page TVN shows, not a feed: its source is rescanned as one.
+  const page = videos.length > 0 && videos.every((video) => video.web !== undefined)
   sources.push({
     id,
     name: feed.title,
@@ -108,7 +112,7 @@ export function addPodcastChannel(
     channelSources: [
       {
         id: 's1',
-        kind: 'podcast',
+        kind: page ? 'website' : 'podcast',
         url: feed.feedUrl,
         ref: feed.feedUrl,
         label: feed.title,

@@ -359,7 +359,29 @@
 }
 
 .remote-pad:focus { outline: none; }
-.remote-row .smart-key.is-on { color: var(--gold); border-color: var(--gold); }
+/* SMART is a round mode key, lit while armed, rather than a word among the keys. */
+.remote-row .smart-key {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.smart-mark {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.remote-row .smart-key.is-on {
+  color: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(240, 192, 20, 0.25), 0 0 12px rgba(240, 192, 20, 0.45);
+}
 .remote-pad.is-smart button { border-color: var(--gold); }
 
 .remote-close { width: 100%; margin-top: 8px; }

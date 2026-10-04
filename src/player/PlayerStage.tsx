@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from
 import { EmbedStage } from './EmbedStage.tsx'
 import { handoffPlayer, type HandoffPlayer, type Slot } from './handoff.ts'
 import { LocalStage } from './LocalStage.tsx'
+import { WebStage } from './WebStage.tsx'
 import { routedPlayer, routeFor, type LocalPlayerHandle, type PlayerRoute } from './routed.ts'
 import type { PlayerHandle, PlayerStatus } from './types.ts'
 import { YoutubeStage } from './YoutubeStage.tsx'
@@ -29,6 +30,7 @@ export function PlayerStage({
   const youtubeRefs = [useRef<PlayerHandle | null>(null), useRef<PlayerHandle | null>(null)] as const
   const localRefs = [useRef<LocalPlayerHandle | null>(null), useRef<LocalPlayerHandle | null>(null)] as const
   const embedRefs = [useRef<LocalPlayerHandle | null>(null), useRef<LocalPlayerHandle | null>(null)] as const
+  const webRefs = [useRef<LocalPlayerHandle | null>(null), useRef<LocalPlayerHandle | null>(null)] as const
   const routeRefs = useRef<[PlayerRoute, PlayerRoute]>(['youtube', 'youtube'])
   const [routes, setRoutes] = useState<[PlayerRoute, PlayerRoute]>(['youtube', 'youtube'])
   const [primary, setPrimary] = useState<Slot>(0)
@@ -59,6 +61,7 @@ export function PlayerStage({
             setRoutes((current) => (current[index] === next ? current : index === 0 ? [next, current[1]] : [current[0], next]))
           },
           () => embedRefs[index].current,
+          () => webRefs[index].current,
         ),
       )
       const player = handoffPlayer({
@@ -66,6 +69,7 @@ export function PlayerStage({
         prebuffer: () => prebufferRef.current,
         ready: (index, request) => {
           const route = routeFor(request)
+          if (route === 'web') return webRefs[index].current !== null
           return route === 'local' ? localRefs[index].current !== null : route === 'embed' ? embedRefs[index].current !== null : ready.current[index]
         },
         onPrimary: setPrimary,
@@ -93,6 +97,7 @@ export function PlayerStage({
       <YoutubeStage playerRef={youtubeRefs[index]} onReady={readied(index)} onStatus={from(index, 'youtube')} captions={captions} />
       <LocalStage handleRef={localRefs[index]} onStatus={from(index, 'local')} shown={routes[index] === 'local'} />
       <EmbedStage handleRef={embedRefs[index]} onStatus={from(index, 'embed')} shown={routes[index] === 'embed'} />
+      <WebStage handleRef={webRefs[index]} onStatus={from(index, 'web')} shown={routes[index] === 'web'} primary={primary === index} />
     </div>
   )
 

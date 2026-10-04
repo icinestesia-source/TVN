@@ -125,9 +125,9 @@ export interface TvContextValue {
   screenStep: (direction: -1 | 1) => void
   /** 000 TVN: choose another programme now. */
   chooseAnotherTvn: () => void
-  /** T's right-click or hold: surf every channel, or only one User Network (the Guide's tab follows). */
+  /** TV Surf's right-click or hold: surf every channel, or only one User Network (the Guide's tab follows). */
   toggleSurfScope: () => void
-  /** The User Network T surfs while restricted, by its own name. */
+  /** The User Network TV Surf surfs while restricted, by its own name. */
   surfScopeName: string
   /** Keeps the information bar up while the pointer is on it. */
   holdInfo: (held: boolean) => void

@@ -33,6 +33,8 @@ export const REPEAT_RULES: Record<'default' | ProgrammeType, RepeatRule> = {
   radio: { minimumGapDays: 0, preferredGapDays: 1, maxBroadcasts7d: 8, maxBroadcasts30d: 24 },
   live: { minimumGapDays: 0, preferredGapDays: 0, maxBroadcasts7d: 20, maxBroadcasts30d: 60 },
   webcam: { minimumGapDays: 0, preferredGapDays: 0, maxBroadcasts7d: 20, maxBroadcasts30d: 60 },
+  website: { minimumGapDays: 0, preferredGapDays: 1, maxBroadcasts7d: 8, maxBroadcasts30d: 24 },
+  'social-post': { minimumGapDays: 0, preferredGapDays: 1, maxBroadcasts7d: 8, maxBroadcasts30d: 24 },
   generated: { minimumGapDays: 0, preferredGapDays: 0, maxBroadcasts7d: 48, maxBroadcasts30d: 200 },
   unclassified: { minimumGapDays: 1, preferredGapDays: 4, maxBroadcasts7d: 4, maxBroadcasts30d: 12 },
 }

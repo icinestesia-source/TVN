@@ -6,7 +6,7 @@ import { classifySourceUrl, webAddress } from '../services/channel-sources.ts'
  * what the address actually serves. Unsafe schemes and broadcast ingest addresses never leave the browser.
  */
 
-export type ProviderId = 'youtube' | 'vimeo' | 'odysee' | 'bitchute' | 'rss' | 'archive' | 'hls' | 'dash' | 'direct' | 'unknown'
+export type ProviderId = 'youtube' | 'vimeo' | 'odysee' | 'bitchute' | 'rss' | 'archive' | 'hls' | 'dash' | 'direct' | 'website' | 'x' | 'unknown'
 export type SourceForm = 'video' | 'collection' | 'live'
 
 export interface Capabilities {
@@ -73,6 +73,10 @@ export const PROVIDERS: Readonly<Record<ProviderId, Provider>> = {
   hls: { id: 'hls', label: 'HLS', forms: ['video', 'live'], capabilities: { ...ELEMENT, canDetectLive: true } },
   dash: { id: 'dash', label: 'DASH', forms: [], capabilities: { ...NONE, canResolve: true } },
   direct: { id: 'direct', label: 'Direct media', forms: ['video', 'live'], capabilities: { ...ELEMENT, canDetectLive: true } },
+  // A website is shown, not played: no length, position, seek or sound of its own for TVN to control.
+  website: { id: 'website', label: 'Website', forms: ['video'], capabilities: { ...NONE, canResolve: true, canEmbed: true, canReadMetadata: true } },
+  // X's own embed: TVN can show a public post and read its date, but cannot play, seek or time its video.
+  x: { id: 'x', label: 'X / Twitter', forms: ['video'], capabilities: { ...NONE, canResolve: true, canEmbed: true, canReadMetadata: true, canReadPublishedDate: true } },
   unknown: { id: 'unknown', label: 'Unknown', forms: [], capabilities: NONE },
 }
 
@@ -93,6 +97,7 @@ const HOSTS: readonly [RegExp, ProviderId][] = [
   [/^(?:www\.|player\.)?vimeo\.com$/i, 'vimeo'],
   [/^(?:www\.)?odysee\.com$/i, 'odysee'],
   [/^(?:www\.|api\.|old\.)?bitchute\.com$/i, 'bitchute'],
+  [/^(?:www\.|mobile\.)?(?:x|twitter)\.com$/i, 'x'],
 ]
 
 export interface Identified {

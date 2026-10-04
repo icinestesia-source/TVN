@@ -38,7 +38,7 @@ export interface FoundFeed {
   live?: { url: string; media: 'video' | 'audio'; format: 'hls' | 'direct' }
 }
 
-const READER_PROVIDERS: readonly ProviderId[] = ['vimeo', 'odysee', 'bitchute', 'hls', 'direct']
+const READER_PROVIDERS: readonly ProviderId[] = ['vimeo', 'odysee', 'bitchute', 'hls', 'direct', 'website', 'x']
 
 const httpsUrl = (raw: unknown): string | null => {
   if (typeof raw !== 'string') return null
@@ -66,10 +66,11 @@ interface Row {
   summary?: string
   image?: string
   page?: string
+  web?: 'website' | 'post'
 }
 
 function rowOf(raw: unknown): Row | null {
-  const { id, title, durationSec, published, media, type, youtube, summary, image, page } = (raw ?? {}) as Record<string, unknown>
+  const { id, title, durationSec, published, media, type, youtube, summary, image, page, web } = (raw ?? {}) as Record<string, unknown>
   if (typeof id !== 'string' || typeof title !== 'string' || typeof durationSec !== 'number' || !(durationSec >= 0)) return null
   const file = httpsUrl(media)
   const art = httpsUrl(image)
@@ -87,6 +88,7 @@ function rowOf(raw: unknown): Row | null {
     ...(typeof summary === 'string' && summary.trim() ? { summary: summary.trim().slice(0, 300) } : {}),
     ...(art ? { image: art } : {}),
     ...(link ? { page: link } : {}),
+    ...(file && (web === 'website' || web === 'post') ? { web } : {}),
   }
 }
 
@@ -95,7 +97,8 @@ const programmeOf = (row: Row): ImportedVideo => ({
   title: row.title,
   durationSec: row.durationSec,
   ...(row.media ? { media: row.media } : {}),
-  ...(row.media && row.type.startsWith('video/') ? { mediaKind: 'video' as const } : {}),
+  ...(row.media && (row.type.startsWith('video/') || row.web) ? { mediaKind: 'video' as const } : {}),
+  ...(row.web ? { web: row.web } : {}),
   ...(row.published ? { published: row.published } : {}),
   ...(row.summary ? { summary: row.summary } : {}),
   ...(row.image ? { image: row.image } : {}),
@@ -122,10 +125,11 @@ async function readJson(read: typeof fetch, url: string, fresh: boolean): Promis
 export async function lookUpFeed(
   link: string,
   read: typeof fetch = fetch,
-  options: { fresh?: boolean; mode?: 'recent' | 'archive' | 'all'; now?: () => number; onProgress?: (text: string) => void } = {},
+  options: { fresh?: boolean; mode?: 'recent' | 'archive' | 'all'; now?: () => number; onProgress?: (text: string) => void; as?: 'website' } = {},
 ): Promise<FoundFeed> {
   const wide = options.mode === 'archive' || options.mode === 'all' ? `&mode=${options.mode}` : ''
-  const base = `${FEED_API}?url=${encodeURIComponent(link.trim())}${wide}`
+  const as = options.as === 'website' ? '&as=website' : ''
+  const base = `${FEED_API}?url=${encodeURIComponent(link.trim())}${wide}${as}`
   const refresh = options.fresh ? `&refresh=${(options.now ?? Date.now)()}` : ''
   const rows = new Map<string, Row>()
   let first: Record<string, unknown> | null = null
@@ -252,7 +256,12 @@ export function sourcePreviewLines(feed: FoundFeed): { label: string; value: str
     const count = feed.episodes.length
     const lines = [
       { label: 'Source', value: feed.title },
-      { label: 'Type', value: describeSource(feed.provider, feed.form, feed.episodes.every((episode) => episode.mediaKind !== 'video')) },
+      {
+        label: 'Type',
+        value: feed.episodes.length > 0 && feed.episodes.every((episode) => episode.web)
+          ? `${feed.provider === 'x' ? 'X post · public embed' : 'Website · interactive page'} · ${Math.round(feed.episodes[0].durationSec / 60)} min slot`
+          : describeSource(feed.provider, feed.form, feed.episodes.every((episode) => episode.mediaKind !== 'video')),
+      },
       { label: 'Found', value: `${count} programme${count === 1 ? '' : 's'}${summary.listed > count ? ` of ${summary.listed} listed` : ''}` },
     ]
     const left = summary.excluded.members + summary.excluded.unsupported + summary.excluded.unmeasured

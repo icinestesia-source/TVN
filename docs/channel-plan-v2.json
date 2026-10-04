@@ -1,0 +1,944 @@
+{
+ "format": "tvn-channel-plan-v2",
+ "generatedFrom": "docs/channel-manifest.json (2026-09-30)",
+ "runtime": "Not read by the app. A proposal only: nothing is renumbered or rebuilt by this file.",
+ "flagship_001_010": [
+  {
+   "number": 1,
+   "name": "TVN One",
+   "from": [
+    1
+   ],
+   "why": "Flagship mix; current 001 One kept in place, so 001 favourites still mean the flagship."
+  },
+  {
+   "number": 2,
+   "name": "Documentary",
+   "from": [
+    20,
+    914
+   ],
+   "why": "020 Documentary (324 programmes, 154 h) fed by 914 News Documentary (730)."
+  },
+  {
+   "number": 3,
+   "name": "Film",
+   "from": [
+    100,
+    103
+   ],
+   "why": "100 Film (583, 320 h) with 103 Classic Film (471, 620 h)."
+  },
+  {
+   "number": 4,
+   "name": "Wildlife",
+   "from": [
+    66,
+    23
+   ],
+   "why": "066 Wildlife (600, 502 h) with 023 Nature (300, 286 h)."
+  },
+  {
+   "number": 5,
+   "name": "Travel",
+   "from": [
+    57,
+    775
+   ],
+   "why": "057 Travel (593, 263 h) with 775 Walking Travel (899, 1171 h)."
+  },
+  {
+   "number": 6,
+   "name": "History",
+   "from": [
+    60,
+    400
+   ],
+   "why": "060 History Mix fed by 400 History (1343, 954 h)."
+  },
+  {
+   "number": 7,
+   "name": "Comedy",
+   "from": [
+    30,
+    207
+   ],
+   "why": "030 Comedy (182) with 207 Sitcom (900, 415 h)."
+  },
+  {
+   "number": 8,
+   "name": "Culture",
+   "from": [
+    24,
+    25
+   ],
+   "why": "024 Culture (392, 151 h) with 025 Arts (253)."
+  },
+  {
+   "number": 9,
+   "name": "Sport",
+   "from": [
+    52,
+    300
+   ],
+   "why": "052 Sport Mix (371, 141 h) with 300 Sport (1105, 448 h)."
+  },
+  {
+   "number": 10,
+   "name": "Talk",
+   "from": [
+    76
+   ],
+   "why": "076 Talk (500, 180 h)."
+  }
+ ],
+ "generic_mixes_to_merge": {
+  "numbers": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   79,
+   80,
+   81,
+   82
+  ],
+  "why": "Each is ~200 programmes drawn from the same ~23 sources (One-Nine, Prime, Select, Plus, Variety, Encore, Choice, Mix, Late, Night, After Hours, Midnight): they duplicate one another and 001."
+ },
+ "specialist_011_100": [
+  {
+   "number": 97,
+   "name": "TWITTER / X",
+   "replaces": "097 Test Lab (DELIBERATELY_UNAVAILABLE, 0)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Editorially supplied public X post URLs, shown through X's own public embed (publish.x.com oEmbed + platform.twitter.com embed frame). No API, no syndication endpoint, no media URLs.",
+   "limits": "Video plays inside X's embed only after INTERACT; TVN cannot seek, time or mute it. Each post holds a fixed slot (3 min default)."
+  },
+  {
+   "number": 73,
+   "name": "VERITAS",
+   "replaces": "073 Business Today (0)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "https://veritas7.com/vs.rss only (public, audio/mpeg enclosures on public.manticore.com, Part 1 programmes). Never the member feed.",
+   "limits": "Audio: shown with the radio face. Available today as a User Network channel via ADD."
+  },
+  {
+   "number": 48,
+   "name": "AVANT GARDE",
+   "replaces": "048 Screen (PLAYABLE_THIN, 3)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Candidates to verify (embeddable, UK-available): NFB experimental films (McLaren, Lambart, Lipsett - already feeding 116), Internet Archive public-domain avant-garde (Deren, Richter, Léger), Light Cone / Re:Voir official uploads where embeddable.",
+   "distinct_from": "116 Experimental Film (64) is the specialist feeder; 884 Experimental and 885 Video Art are empty."
+  },
+  {
+   "number": 87,
+   "name": "3D PRINTING",
+   "replaces": "087 Public Domain (NEEDS_CONTENT, 0)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Candidates: CNC Kitchen, Maker's Muse, Thomas Sanladerer, Prusa Research, Uncle Jessy.",
+   "distinct_from": "687 Makers (Red Green Show) and 816 Electronics."
+  },
+  {
+   "number": 98,
+   "name": "MASK MAKING",
+   "replaces": "098 Showcase (NEEDS_CONTENT, 0)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Candidates: Punished Props Academy, Evil Ted Smith, Kamui Cosplay, free Stan Winston School uploads only (no paid courses).",
+   "distinct_from": "757 Craft (quilting) and 687 Makers."
+  },
+  {
+   "number": 35,
+   "name": "GAME WALKTHROUGHS",
+   "replaces": "035 Adventure (PLAYABLE_THIN, 5)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Candidates: World of Longplays, no-commentary longplay channels that allow embedding.",
+   "distinct_from": "240 Gaming / 241 Retro Gaming / 246 Game History are commentary and history, not full playthroughs."
+  },
+  {
+   "number": 37,
+   "name": "FORTNITE STW",
+   "replaces": "037 Fantasy (PLAYABLE, 6)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Save the World (PvE) creators only, per docs/FORTNITE_ACQUISITION_PLAN.md vetting.",
+   "distinct_from": "812 Fortnite (NEEDS_CONTENT, 0) is general / Battle Royale. STW takes only PvE Save the World content, so the two cannot share programmes."
+  },
+  {
+   "number": 64,
+   "name": "AI 2",
+   "replaces": "064 Space (EXCLUDED, 0; space stays a policy exclusion, only the empty slot is reused)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Candidates: AI Explained, Google DeepMind, Royal Institution AI lectures, Computerphile AI episodes.",
+   "distinct_from": "640 AI is research papers (Two Minute Papers, 300); 641 Machine Learning is tutorials (StatQuest). AI 2 is AI in society, interviews and lectures and excludes both anchors."
+  },
+  {
+   "number": 74,
+   "name": "ARTISTS",
+   "replaces": "074 Weather (0)",
+   "status": "BLOCKED_CENTRAL_BUILD",
+   "sources": "Candidates: Louisiana Channel, Art21, Tate, Royal Academy of Arts - visual artists in their own words.",
+   "distinct_from": "563 'Artists' is MUSIC (Rick Beato, 85). Recommend renaming 563 to 'Musicians' when the build runs, so the Guide never shows two 'Artists'. 845 Art History (The Art Assignment) is history, not artist profiles."
+  },
+  {
+   "number": 79,
+   "name": "BRISTOL",
+   "replaces": "079 Late (generic mix, overlaps 001-018)",
+   "status": "BLOCKED_CENTRAL_BUILD_AND_RENUMBER",
+   "sources": "Candidates: Bristol Museums, Bristol Archive Records / film archive uploads, Bristol Old Vic."
+  },
+  {
+   "number": 80,
+   "name": "DEVON",
+   "replaces": "080 Night (generic mix)",
+   "status": "BLOCKED_CENTRAL_BUILD_AND_RENUMBER",
+   "sources": "Candidates: Dartmoor National Park, Devon Wildlife Trust, South West Coast Path."
+  },
+  {
+   "number": 81,
+   "name": "CORNWALL",
+   "replaces": "081 After Hours (generic mix)",
+   "status": "BLOCKED_CENTRAL_BUILD_AND_RENUMBER",
+   "sources": "Candidates: Cornwall Wildlife Trust, Eden Project, Minack Theatre."
+  },
+  {
+   "number": 82,
+   "name": "PLYMOUTH",
+   "replaces": "082 Midnight (generic mix)",
+   "status": "BLOCKED_CENTRAL_BUILD_AND_RENUMBER",
+   "sources": "Candidates: The Box Plymouth, National Marine Aquarium, Theatre Royal Plymouth."
+  }
+ ],
+ "chill_510": {
+  "number": 510,
+  "current": {
+   "name": "Shoegaze",
+   "status": "PLAYABLE",
+   "programmes": 136,
+   "hours": 13.9,
+   "anchor": [
+    "Ride"
+   ]
+  },
+  "proposed": {
+   "name": "CHILL",
+   "identity": "Balearic, Café del Mar-style downtempo, sunset and lounge sets.",
+   "sources": "Candidates (verify embeddable + UK-available): Café del Mar official channel, Seven Beats Music, Cercle sunset sets (also feeds 521 - take only downtempo/sunset sets), Blue Marlin Ibiza, Hotel Costes official, Chillhop Music (Balearic/downtempo playlists only).",
+   "target": "200+ programmes, 60+ h, no two consecutive from one source"
+  },
+  "status": "PREPARED_NOT_APPLIED",
+  "blocker": "510 is a PLAYABLE channel (Shoegaze, 136 programmes). Replacing it in place changes the identity behind number 510, so favourites, history and lastChannelNumber pointing at 510 would silently become CHILL. Central programmes also come only from the build pipeline (originals_build.py), which this pass must not run.",
+  "safe_path": "Move Shoegaze to an empty music slot first (548 Oldies, 549 Retro Hits, 579 Rare Tracks, 588 Disco 79, 589 Synth 84 and 594 VEVO Classics all have 0 programmes; 579 'Rare Tracks' is the closest neutral name) with a 510 to 579 favourites/history migration, then build CHILL at 510."
+ },
+ "audit_001_100": [
+  {
+   "number": 1,
+   "name": "One",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 210,
+   "hours": 71
+  },
+  {
+   "number": 2,
+   "name": "Two",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 202,
+   "hours": 70
+  },
+  {
+   "number": 3,
+   "name": "Three",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 197,
+   "hours": 62
+  },
+  {
+   "number": 4,
+   "name": "Four",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 193,
+   "hours": 61
+  },
+  {
+   "number": 5,
+   "name": "Five",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 191,
+   "hours": 57
+  },
+  {
+   "number": 6,
+   "name": "Six",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 194,
+   "hours": 69
+  },
+  {
+   "number": 7,
+   "name": "Seven",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 210,
+   "hours": 66
+  },
+  {
+   "number": 8,
+   "name": "Eight",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 222,
+   "hours": 79
+  },
+  {
+   "number": 9,
+   "name": "Nine",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 200,
+   "hours": 61
+  },
+  {
+   "number": 10,
+   "name": "Prime",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 213,
+   "hours": 69
+  },
+  {
+   "number": 11,
+   "name": "Select",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 176,
+   "hours": 61
+  },
+  {
+   "number": 12,
+   "name": "Plus",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 210,
+   "hours": 71
+  },
+  {
+   "number": 13,
+   "name": "Variety",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 235,
+   "hours": 73
+  },
+  {
+   "number": 14,
+   "name": "Encore",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 225,
+   "hours": 77
+  },
+  {
+   "number": 15,
+   "name": "Choice",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 224,
+   "hours": 80
+  },
+  {
+   "number": 16,
+   "name": "Mix",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 211,
+   "hours": 83
+  },
+  {
+   "number": 17,
+   "name": "Classic",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 206,
+   "hours": 66
+  },
+  {
+   "number": 18,
+   "name": "Retro",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 235,
+   "hours": 86
+  },
+  {
+   "number": 19,
+   "name": "Archive",
+   "status": "PLAYABLE",
+   "programmes": 26,
+   "hours": 13
+  },
+  {
+   "number": 20,
+   "name": "Documentary",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 324,
+   "hours": 154
+  },
+  {
+   "number": 21,
+   "name": "World",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 191,
+   "hours": 108
+  },
+  {
+   "number": 22,
+   "name": "Science",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 133,
+   "hours": 84
+  },
+  {
+   "number": 23,
+   "name": "Nature",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 300,
+   "hours": 286
+  },
+  {
+   "number": 24,
+   "name": "Culture",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 392,
+   "hours": 151
+  },
+  {
+   "number": 25,
+   "name": "Arts",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 253,
+   "hours": 114
+  },
+  {
+   "number": 26,
+   "name": "Ideas",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 143,
+   "hours": 89
+  },
+  {
+   "number": 27,
+   "name": "People",
+   "status": "PLAYABLE",
+   "programmes": 23,
+   "hours": 22
+  },
+  {
+   "number": 28,
+   "name": "Places",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 314,
+   "hours": 118
+  },
+  {
+   "number": 29,
+   "name": "Life",
+   "status": "PLAYABLE",
+   "programmes": 48,
+   "hours": 15
+  },
+  {
+   "number": 30,
+   "name": "Comedy",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 182,
+   "hours": 60
+  },
+  {
+   "number": 31,
+   "name": "Drama",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 58,
+   "hours": 25
+  },
+  {
+   "number": 32,
+   "name": "Crime",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 67,
+   "hours": 30
+  },
+  {
+   "number": 33,
+   "name": "Mystery",
+   "status": "PLAYABLE",
+   "programmes": 26,
+   "hours": 12
+  },
+  {
+   "number": 34,
+   "name": "Action",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 50,
+   "hours": 75
+  },
+  {
+   "number": 35,
+   "name": "Adventure",
+   "status": "PLAYABLE_THIN",
+   "programmes": 5,
+   "hours": 1
+  },
+  {
+   "number": 36,
+   "name": "Sci-Fi",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 87,
+   "hours": 30
+  },
+  {
+   "number": 37,
+   "name": "Fantasy",
+   "status": "PLAYABLE",
+   "programmes": 6,
+   "hours": 11
+  },
+  {
+   "number": 38,
+   "name": "Horror",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 68,
+   "hours": 38
+  },
+  {
+   "number": 39,
+   "name": "Cult",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 79,
+   "hours": 28
+  },
+  {
+   "number": 40,
+   "name": "Animation",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 253,
+   "hours": 68
+  },
+  {
+   "number": 41,
+   "name": "Cartoons",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 265,
+   "hours": 73
+  },
+  {
+   "number": 42,
+   "name": "Anime",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 126,
+   "hours": 42
+  },
+  {
+   "number": 43,
+   "name": "Family",
+   "status": "PLAYABLE",
+   "programmes": 77,
+   "hours": 20
+  },
+  {
+   "number": 44,
+   "name": "Kids",
+   "status": "PLAYABLE",
+   "programmes": 72,
+   "hours": 18
+  },
+  {
+   "number": 45,
+   "name": "Teen",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 131,
+   "hours": 45
+  },
+  {
+   "number": 46,
+   "name": "Games",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 56,
+   "hours": 37
+  },
+  {
+   "number": 47,
+   "name": "Geek",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 290,
+   "hours": 122
+  },
+  {
+   "number": 48,
+   "name": "Screen",
+   "status": "PLAYABLE_THIN",
+   "programmes": 3,
+   "hours": 0
+  },
+  {
+   "number": 49,
+   "name": "Stage",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 161,
+   "hours": 121
+  },
+  {
+   "number": 50,
+   "name": "Music TV",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 229,
+   "hours": 29
+  },
+  {
+   "number": 51,
+   "name": "Live Music",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 238,
+   "hours": 28
+  },
+  {
+   "number": 52,
+   "name": "Sport Mix",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 371,
+   "hours": 141
+  },
+  {
+   "number": 53,
+   "name": "Football Mix",
+   "status": "PLAYABLE",
+   "programmes": 90,
+   "hours": 18
+  },
+  {
+   "number": 54,
+   "name": "Motor Mix",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 109,
+   "hours": 37
+  },
+  {
+   "number": 55,
+   "name": "Fight Mix",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 141,
+   "hours": 69
+  },
+  {
+   "number": 56,
+   "name": "Outdoor",
+   "status": "PLAYABLE",
+   "programmes": 29,
+   "hours": 12
+  },
+  {
+   "number": 57,
+   "name": "Travel",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 593,
+   "hours": 263
+  },
+  {
+   "number": 58,
+   "name": "Food",
+   "status": "PLAYABLE",
+   "programmes": 77,
+   "hours": 14
+  },
+  {
+   "number": 59,
+   "name": "Home",
+   "status": "PLAYABLE",
+   "programmes": 50,
+   "hours": 18
+  },
+  {
+   "number": 60,
+   "name": "History Mix",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 297,
+   "hours": 144
+  },
+  {
+   "number": 61,
+   "name": "Geography Mix",
+   "status": "PLAYABLE",
+   "programmes": 23,
+   "hours": 9
+  },
+  {
+   "number": 62,
+   "name": "Knowledge",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 113,
+   "hours": 111
+  },
+  {
+   "number": 63,
+   "name": "Discovery",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 58,
+   "hours": 100
+  },
+  {
+   "number": 64,
+   "name": "Space",
+   "status": "EXCLUDED",
+   "programmes": 0,
+   "hours": 0
+  },
+  {
+   "number": 65,
+   "name": "Earth",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 300,
+   "hours": 533
+  },
+  {
+   "number": 66,
+   "name": "Wildlife",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 600,
+   "hours": 502
+  },
+  {
+   "number": 67,
+   "name": "Engineering",
+   "status": "PLAYABLE",
+   "programmes": 84,
+   "hours": 16
+  },
+  {
+   "number": 68,
+   "name": "Technology",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 95,
+   "hours": 68
+  },
+  {
+   "number": 69,
+   "name": "Future",
+   "status": "PLAYABLE",
+   "programmes": 13,
+   "hours": 8
+  },
+  {
+   "number": 70,
+   "name": "News Mix",
+   "status": "PLAYABLE",
+   "programmes": 59,
+   "hours": 15
+  },
+  {
+   "number": 71,
+   "name": "World Report",
+   "status": "PLAYABLE",
+   "programmes": 50,
+   "hours": 12
+  },
+  {
+   "number": 72,
+   "name": "Current Affairs",
+   "status": "PLAYABLE",
+   "programmes": 86,
+   "hours": 23
+  },
+  {
+   "number": 73,
+   "name": "Business Today",
+   "status": "PLAYABLE",
+   "programmes": 0,
+   "hours": 0
+  },
+  {
+   "number": 74,
+   "name": "Weather",
+   "status": "PLAYABLE",
+   "programmes": 0,
+   "hours": 0
+  },
+  {
+   "number": 75,
+   "name": "Interviews",
+   "status": "PLAYABLE",
+   "programmes": 36,
+   "hours": 12
+  },
+  {
+   "number": 76,
+   "name": "Talk",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 500,
+   "hours": 180
+  },
+  {
+   "number": 77,
+   "name": "Debate",
+   "status": "PLAYABLE",
+   "programmes": 37,
+   "hours": 13
+  },
+  {
+   "number": 78,
+   "name": "Magazine",
+   "status": "PLAYABLE",
+   "programmes": 22,
+   "hours": 9
+  },
+  {
+   "number": 79,
+   "name": "Late",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 203,
+   "hours": 70
+  },
+  {
+   "number": 80,
+   "name": "Night",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 199,
+   "hours": 62
+  },
+  {
+   "number": 81,
+   "name": "After Hours",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 202,
+   "hours": 73
+  },
+  {
+   "number": 82,
+   "name": "Midnight",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 206,
+   "hours": 71
+  },
+  {
+   "number": 83,
+   "name": "Shorts",
+   "status": "PLAYABLE_THIN",
+   "programmes": 18,
+   "hours": 2
+  },
+  {
+   "number": 84,
+   "name": "Indie Screen",
+   "status": "PLAYABLE",
+   "programmes": 50,
+   "hours": 21
+  },
+  {
+   "number": 85,
+   "name": "Festival",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 228,
+   "hours": 293
+  },
+  {
+   "number": 86,
+   "name": "Classics",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 215,
+   "hours": 74
+  },
+  {
+   "number": 87,
+   "name": "Public Domain",
+   "status": "NEEDS_CONTENT",
+   "programmes": 0,
+   "hours": 0
+  },
+  {
+   "number": 88,
+   "name": "Community",
+   "status": "PLAYABLE",
+   "programmes": 29,
+   "hours": 17
+  },
+  {
+   "number": 89,
+   "name": "Local",
+   "status": "PLAYABLE",
+   "programmes": 25,
+   "hours": 7
+  },
+  {
+   "number": 90,
+   "name": "Learning",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 52,
+   "hours": 54
+  },
+  {
+   "number": 91,
+   "name": "Lectures",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 51,
+   "hours": 49
+  },
+  {
+   "number": 92,
+   "name": "Books",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 120,
+   "hours": 96
+  },
+  {
+   "number": 93,
+   "name": "Radio Visual",
+   "status": "PLAYABLE",
+   "programmes": 135,
+   "hours": 22
+  },
+  {
+   "number": 94,
+   "name": "Ambient TV",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 142,
+   "hours": 179
+  },
+  {
+   "number": 95,
+   "name": "Slow TV",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 465,
+   "hours": 721
+  },
+  {
+   "number": 96,
+   "name": "Oddities",
+   "status": "PLAYABLE",
+   "programmes": 75,
+   "hours": 11
+  },
+  {
+   "number": 97,
+   "name": "Test Lab",
+   "status": "DELIBERATELY_UNAVAILABLE",
+   "programmes": 0,
+   "hours": 0
+  },
+  {
+   "number": 98,
+   "name": "Showcase",
+   "status": "NEEDS_CONTENT",
+   "programmes": 0,
+   "hours": 0
+  },
+  {
+   "number": 99,
+   "name": "Preview",
+   "status": "GENERATED",
+   "programmes": 0,
+   "hours": 0
+  },
+  {
+   "number": 100,
+   "name": "Film",
+   "status": "PLAYABLE_STRONG",
+   "programmes": 583,
+   "hours": 320
+  }
+ ]
+}

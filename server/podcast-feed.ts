@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { decodeCursor, encodeCursor, readArchive, type ArchiveEpisode, type Cursor } from './media-archive.ts'
 import { measureMedia } from './media-probe.ts'
 import { INGEST_MESSAGE, INGEST_SCHEME, resolveUrlSource, type LiveSource, type SourceForm, type SourceProvider } from './url-sources.ts'
+import { isXHost, resolveWebsite, resolveXPost } from './web-programmes.ts'
 import { attr, dayOf, FeedError, fetchText, field, fnv, parseDuration, publicFeedUrl, sameSite, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 
 export { decodeText, FeedError, parseDuration, publicFeedUrl } from './web-read.ts'
@@ -38,6 +39,8 @@ export interface FeedEpisode {
   image?: string
   /** The publisher's own few lines about the episode, as plain text. */
   summary?: string
+  /** A web page rather than a recording: an interactive website, or a public post through its provider's embed. */
+  web?: 'website' | 'post'
 }
 
 export type SourceShape = 'feed' | 'archive'
@@ -281,12 +284,16 @@ export async function directoryFeed(html: string, pageUrl: string, read: typeof 
 }
 
 /**
- * Public feeds verified by hand for sites that announce none, so a busy or reordered directory never sends TVN
- * to the site's archive pages instead. Each is still read and checked like any other feed.
+ * Public feeds verified by hand, so a busy or reordered directory never sends TVN to the site's archive pages
+ * or to a members' feed instead. Each is still read and checked like any other feed, and a site listed here is
+ * read from this feed only. VERITAS: vs.rss carries the free first segments ("Part 1 of 2") on public files;
+ * the complete archive is a members' feed TVN never reads.
  */
 export const VERIFIED_PUBLIC_FEEDS: Readonly<Record<string, string>> = {
   'veritas7.com': 'https://veritas7.com/vs.rss',
 }
+
+export const VERIFIED_FEED_DOWN = "This site's verified public feed could not be read just now; TVN does not fall back to its other feeds"
 
 export function verifiedPublicFeed(pageUrl: string): string | null {
   const host = new URL(pageUrl).hostname.toLowerCase().replace(/^www\./, '')
@@ -330,7 +337,7 @@ const archiveEpisode = (episode: ArchiveEpisode): FeedEpisode => ({
 export async function resolveFeed(
   raw: string,
   read: typeof fetch = fetch,
-  options: { wide?: boolean; cursor?: string | null; clock?: () => number } = {},
+  options: { wide?: boolean; cursor?: string | null; clock?: () => number; as?: 'website' } = {},
 ): Promise<ResolvedFeed> {
   const clock = options.clock ?? Date.now
   const deadline = clock() + CALL_BUDGET_MS
@@ -341,6 +348,8 @@ export async function resolveFeed(
   const cursor = decodeCursor(options.cursor ?? null)
   if (cursor && !sameSite(new URL(cursor.u).hostname, start.hostname)) throw new FeedError(400, 'That cursor belongs to another site')
   if (cursor?.f) return feedRest(cursor, read, keep, deadline)
+  // Chosen as a Website: the page itself is the programme, never a feed it may announce.
+  if (options.as === 'website' && !cursor) return isXHost(start.hostname) ? resolveXPost(start, read) : resolveWebsite(start, read)
   if (!cursor) {
     const source = await resolveUrlSource(start, read, keep, parseFeed)
     if (source) return source
@@ -363,7 +372,14 @@ export async function resolveFeed(
       }
       return null
     }
-    const first = await tryFeeds(rankFeedCandidates([...(verified ? [{ url: verified, rank: -1 }] : []), ...announced.map((url, rank) => ({ url, rank }))]), 'announced')
+    // A site with a feed verified by hand as its public one is read from that feed alone: if it fails, that is
+    // reported, never answered from the site's other feeds (a members' feed among them).
+    if (verified) {
+      const found = await tryFeeds([verified], 'announced')
+      if (found) return found
+      throw new FeedError(502, VERIFIED_FEED_DOWN)
+    }
+    const first = await tryFeeds(rankFeedCandidates(announced.map((url, rank) => ({ url, rank }))), 'announced')
     if (first) return first
     const listed = rankFeedCandidates((await directoryFeeds(page.text, page.url, read)).map((url, rank) => ({ url, rank }))).slice(0, 3)
     const found = await tryFeeds(listed, 'directory')
@@ -413,7 +429,8 @@ export async function handleFeedRequest(url: URL, read: typeof fetch = fetch): P
   if (!link.trim() || link.length > 500) return { status: 400, body: { error: 'Paste a podcast feed or website address' } }
   try {
     const mode = url.searchParams.get('mode')
-    return { status: 200, body: await resolveFeed(link, read, { wide: mode === 'archive' || mode === 'all', cursor: url.searchParams.get('cursor') }) }
+    const as = url.searchParams.get('as') === 'website' ? ({ as: 'website' } as const) : {}
+    return { status: 200, body: await resolveFeed(link, read, { wide: mode === 'archive' || mode === 'all', cursor: url.searchParams.get('cursor'), ...as }) }
   } catch (error) {
     if (error instanceof FeedError) return { status: error.status, body: { error: error.message } }
     return { status: 500, body: { error: 'The feed could not be read' } }

@@ -12,9 +12,10 @@ export function shieldProviderFrame(frame: Element | null | undefined): void {
 
 const PICTURE = '.stage, .tile'
 
-/** A provider frame inside the picture, if that is where focus is. */
+/** A provider frame inside the picture, if that is where focus is. A website the viewer chose INTERACT on is theirs to use. */
 export function focusedProviderFrame(doc: Document): HTMLElement | null {
   const active = doc.activeElement
+  if (active?.classList?.contains('web-host') && active.classList.contains('is-interacting')) return null
   return active?.tagName === 'IFRAME' && active.closest(PICTURE) ? (active as HTMLElement) : null
 }
 

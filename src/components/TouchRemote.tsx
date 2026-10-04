@@ -131,14 +131,18 @@ export function TouchRemote() {
               type="button"
               className={tv.smart ? 'smart-key is-on' : 'smart-key'}
               aria-pressed={tv.smart}
-              title="SMART: type a channel number; it tunes and the remote closes"
+              aria-label="Smart"
+              title={tv.smart ? 'SMART is on: type a channel number; it tunes and the remote closes' : 'SMART: type a channel number; it tunes and the remote closes'}
               onClick={() => {
                 tv.dispatch({ type: 'smart' })
                 // Keys typed now feed the channel number, and no remote button holds focus to take Enter or Space.
                 padRef.current?.focus()
               }}
             >
-              Smart
+              <svg className="smart-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M7.05 6.05a7 7 0 1 0 9.9 0" />
+                <path d="M12 3v8" />
+              </svg>
             </button>
             <button type="button" onClick={() => tv.dispatch({ type: 'favourite' })}>
               Fav

@@ -3,6 +3,7 @@ import { createWheelStepper, swipeStep } from '../input/gestures.ts'
 import { PlayerStage } from '../player/PlayerStage.tsx'
 import { pictureOwner } from '../player/picture.ts'
 import { guardProviderFocus } from '../player/picture-shield.ts'
+import { startWebInteraction, stopWebInteraction, useWebInteraction } from '../player/web-interaction.ts'
 import { SessionCard } from '../components/SessionCard.tsx'
 import { TvnChannelPanel } from '../components/TvnChannelPanel.tsx'
 import { screenFace } from './screen-face.ts'
@@ -74,6 +75,7 @@ export function TvScreen() {
   const [held, setHeld] = useState(false)
   const holding = held && single
   useEffect(() => guardProviderFocus(), [])
+  const web = useWebInteraction()
   // INSTANT holds the old picture while the destination loads unseen: nothing is drawn over it until the cut.
   const face = holding ? 'picture' : screenFace(tv.channel, programme, tv.playerStatus)
   const owner = holding ? 'picture' : pictureOwner({ face, live: tv.pictureLive, paused: tv.paused })
@@ -119,7 +121,7 @@ export function TvScreen() {
     >
       <div className={tv.credits ? 'watch is-credits' : 'watch'}>
         {single ? (
-          <div className={face === 'picture' ? 'stage' : 'stage is-card'}>
+          <div className={`${face === 'picture' ? 'stage' : 'stage is-card'}${web.interacting ? ' is-interacting' : ''}`}>
             <PlayerStage playerRef={tv.playerRef} onReady={tv.onPlayerReady} onStatus={tv.onPlayerStatus} captions={tv.subtitles} prebuffer={tv.transition.id === 'instant'} onHold={setHeld} />
             {/* Static belongs to changing channel; the next clip on the same channel comes in on a plain cut. */}
             {owner === 'cover' ? (
@@ -130,7 +132,9 @@ export function TvScreen() {
             {audio ? <RadioFace channel={tv.channel} /> : null}
             {showCard ? <TestCard /> : null}
             {face === 'session-empty' ? <SessionCard /> : null}
-            <PictureCatch />
+            {/* TVN's glass: lifted only while the viewer uses a website they chose INTERACT on. */}
+            {web.interacting ? null : <PictureCatch />}
+            <WebControls />
           </div>
         ) : (
           <MultiviewGrid width={width} />
@@ -156,6 +160,59 @@ export function TvScreen() {
       {import.meta.env.DEV && tv.debugOpen ? <DebugPanel /> : null}
     </div>
   )
+}
+
+/**
+ * A website programme on screen: INTERACT hands it the pointer and keyboard; EXIT, or Esc while TVN has the
+ * keyboard, gives them back. When its slot ends mid-use the schedule moves on and says so briefly.
+ */
+function WebControls() {
+  const web = useWebInteraction()
+  useEffect(() => {
+    if (!web.interacting) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      stopWebInteraction()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [web.interacting])
+  if (web.interacting) {
+    return (
+      <div className="web-bar" role="status">
+        <span>Using the website · TVN controls paused</span>
+        <button
+          type="button"
+          className="web-exit"
+          onClick={() => {
+            stopWebInteraction()
+            window.focus()
+          }}
+        >
+          Exit · Esc
+        </button>
+      </div>
+    )
+  }
+  if (web.shown) {
+    return (
+      <button type="button" className="web-interact" title="Use this website: pointer and keyboard go to it until EXIT or Esc"
+        onClick={() => {
+          startWebInteraction()
+          window.requestAnimationFrame(() => document.querySelector<HTMLIFrameElement>('.web-host.is-interacting')?.focus())
+        }}
+      >
+        Interact
+      </button>
+    )
+  }
+  return web.endedAt > 0 ? (
+    <div className="web-bar is-ended" role="status">
+      Website slot ended
+    </div>
+  ) : null
 }
 
 /**

@@ -134,7 +134,7 @@ const context = (overrides: Partial<ShortcutContext> = {}): ShortcutContext => (
 describe('information overlay: 3×3 control pad', () => {
   it('1. the default layout is REMOTE ↑|CH+ ⛶ / ← GUIDE → / ⚙ ↓|CH− T, nine cells', () => {
     const { tree, list } = pad()
-    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'T'])
+    expect(list.map((control) => control.label)).toEqual(['Remote', '↑', 'CH+', '⛶', '←', 'Guide', '→', '⚙', '↓', 'CH−', 'TVN'])
     expect(cells(tree)).toHaveLength(9)
     expect((tree as ReactElement<{ className: string }>).props.className).toBe('info-actions info-pad has-history')
     expect((tree as ReactElement<{ role: string }>).props.role).toBe('group')
@@ -249,11 +249,11 @@ describe('information overlay: 3×3 control pad', () => {
     expect(settings).toEqual([])
   })
 
-  it('13. T: a click surfs to a random channel; a right-click or a hold switches ALL and one network, never both', () => {
+  it('13. TV Surf shows the active User Network name: a click surfs to a random channel; a right-click or a hold switches ALL and one network, never both', () => {
     const { sent, settings, press, find } = pad()
     const t = find('TV Surf')
-    expect(t.label).toBe('T')
-    expect(t.props.title).toBe('TV Surf · surfing all channels · right-click or hold: surf one network only')
+    expect(t.label).toBe('TVN')
+    expect(t.props.title).toBe('Surf: ALL · right-click or hold: surf TVN only')
     expect(t.props['aria-haspopup']).toBeUndefined()
     press('TV Surf')
     expect(sent).toEqual([{ type: 'random-channel' }])
@@ -261,7 +261,10 @@ describe('information overlay: 3×3 control pad', () => {
     expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
     // Right-click (a mouse) switches the scope and never surfs or opens settings.
     const scoped = context({ randomScoped: true, surfScopeName: 'Ann' })
-    expect(SHORTCUTS.random.describe!(scoped)).toBe('TV Surf · surfing Ann only · right-click or hold: surf all')
+    expect(SHORTCUTS.random.describe!(scoped)).toBe('Surf: ANN only · right-click or hold: surf all')
+    expect(SHORTCUTS.random.labelOf!(scoped)).toBe('ANN')
+    expect(SHORTCUTS.random.labelOf!(context())).toBe('USER')
+    expect(SHORTCUTS.random.labelOf!(context({ surfScopeName: '  my   network ' }))).toBe('MY NETWORK')
     const opened = { prevented: false, stopped: false }
     ;(t.props.onPointerDown as (event: unknown) => void)({ pointerType: 'mouse', button: 2, clientX: 0, clientY: 0, stopPropagation: () => {} })
     ;(t.props.onContextMenu as (event: unknown) => void)({

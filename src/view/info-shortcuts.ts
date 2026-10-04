@@ -4,7 +4,7 @@ import type { TvCommand } from '../types/input.ts'
 import type { Programme } from '../types/programme.ts'
 import type { Channel } from '../types/channel.ts'
 import type { GuideFilter } from '../types/preferences.ts'
-import { TVN_OWNER, userFilter } from '../data/user-network/users.ts'
+import { TVN_OWNER, USER_NETWORK_FALLBACK, userFilter } from '../data/user-network/users.ts'
 import { openRandomSettings } from './tvn-settings-store.ts'
 
 /** The actions that may sit in the corners of the information overlay's control pad. */
@@ -43,7 +43,7 @@ export interface ShortcutContext {
   surfing: boolean
   /** Random draws from a User Network (the TVN tab or a named user's), not the whole network. */
   randomScoped?: boolean
-  /** The User Network T narrows to, by its own name. */
+  /** The User Network TV Surf narrows to, by its own name. */
   surfScopeName?: string
   /** Surf every channel, or only that User Network. */
   toggleSurfScope?: () => void
@@ -65,6 +65,13 @@ interface ShortcutBase {
   title?: string
   /** The tooltip and accessible name as things stand now, when they depend on the television's state. */
   describe?: (context: ShortcutContext) => string
+  /** The mark shown, when it depends on the television's state. */
+  labelOf?: (context: ShortcutContext) => string
+}
+
+/** TV Surf's mark: the active User Network's name, or USER when it has none to show. */
+export function surfLabel(name: string | undefined): string {
+  return (name?.replace(/\s+/g, ' ').trim() || USER_NETWORK_FALLBACK).toUpperCase()
 }
 
 /** A corner runs a television command. */
@@ -115,21 +122,23 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
     pressed: (context) => context.subtitles,
   },
   /**
-   * T, the TV Surf control: a click or tap surfs to another channel; a right-click, or a hold on touch, switches
-   * what it surfs between ALL and one User Network. One gesture, one action: a hold never also surfs.
+   * TV Surf, labelled with the active User Network's own name: a click or tap surfs to another channel; a
+   * right-click, or a hold on touch, switches what it surfs between ALL and that network. One gesture, one
+   * action: a hold never also surfs.
    */
   random: {
     id: 'random',
-    label: 'T',
+    label: USER_NETWORK_FALLBACK.toUpperCase(),
+    labelOf: (context) => surfLabel(context.surfScopeName),
     name: 'TV Surf',
     unavailable: 'TV Surf is not available',
     describe: (context) =>
       context.randomScoped
-        ? `TV Surf · surfing ${context.surfScopeName ?? 'one network'} only · right-click or hold: surf all`
-        : `TV Surf · surfing all channels · right-click or hold: surf ${context.surfScopeName ?? 'one network'} only`,
+        ? `Surf: ${surfLabel(context.surfScopeName)} only · right-click or hold: surf all`
+        : `Surf: ALL · right-click or hold: surf ${surfLabel(context.surfScopeName)} only`,
     available: () => true,
     run: (context) => context.dispatch({ type: 'random-channel' }),
-    // Lit while the Random Cycle (in Options) runs; accent-marked while T surfs one User Network.
+    // Lit while the Random Cycle (in Options) runs; accent-marked while it surfs one User Network.
     pressed: (context) => context.surfing,
     scoped: (context) => context.randomScoped === true,
     hold: (context) => context.toggleSurfScope?.(),

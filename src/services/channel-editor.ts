@@ -15,9 +15,12 @@ import {
   canonicalYouTubeUrl,
   inOrder,
   inventoryOf,
+  isLocalDevelopment,
   isStreamSource,
   liveStreamOf,
+  localWebsiteId,
   SOURCE_TYPES,
+  WEBSITE_SLOT_SECONDS,
   type ChannelSource,
 } from './channel-sources.ts'
 import { ADDED_PREFIX } from './user-network.ts'
@@ -69,8 +72,46 @@ export interface RescanDeps {
   uploaderOf?(listName: string): string | null
   /** TVN's shipped back catalogue for a source, which ARCHIVE and ALL add to it. */
   archiveOf?(source: ChannelSource): readonly ImportedVideo[]
-  /** TVN's keyless feed reader: a podcast feed, or a website that announces one. */
-  resolveFeed?(url: string, options?: { mode?: SourceMode }): Promise<FoundFeed>
+  /** TVN's keyless feed reader: a podcast feed, or a website that announces one; `as: 'website'` reads the page itself as a programme. */
+  resolveFeed?(url: string, options?: { mode?: SourceMode; as?: 'website' }): Promise<FoundFeed>
+}
+
+/** The reader's answer when a page cannot be a programme at all, rather than merely could not be reached. */
+const REFUSED_PAGE = /cannot be embedded|https:\/\/ address|sign-in|not the address of one x post|private, removed|no video or picture/i
+
+/**
+ * A website or post source read again: still allowed to be framed, its title and artwork current, and each
+ * programme keeping the slot the viewer gave it. A page that now refuses framing schedules nothing.
+ */
+async function rescanWebsite(source: ChannelSource, deps: RescanDeps, now: number): Promise<ChannelSource> {
+  const held = new Map((source.videos ?? []).map((video) => [video.id, video.durationSec]))
+  let url: URL | null = null
+  try {
+    url = new URL(source.url)
+  } catch {
+    url = null
+  }
+  if (url && isLocalDevelopment(url)) {
+    const id = localWebsiteId(url.toString())
+    const videos: ImportedVideo[] = [{ id, title: source.label || url.host, durationSec: held.get(id) ?? WEBSITE_SLOT_SECONDS, media: url.toString(), web: 'website' }]
+    return { ...source, label: source.label || url.host, videos, status: { state: 'ready', playable: 1, checkedAt: now } }
+  }
+  if (!deps.resolveFeed) return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
+  try {
+    const found = await deps.resolveFeed(source.url, { as: 'website' })
+    const videos = found.episodes.filter((video) => video.web).map((video) => ({ ...video, durationSec: held.get(video.id) ?? video.durationSec }))
+    return { ...source, url: found.feedUrl, ref: found.feedUrl, label: source.label || found.title, videos, status: { state: 'ready', playable: videos.length, checkedAt: now } }
+  } catch (error) {
+    if (error instanceof Error && REFUSED_PAGE.test(error.message)) return { ...source, videos: [], status: { state: 'unavailable', playable: 0, checkedAt: now } }
+    return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
+  }
+}
+
+/** A website or post given a new slot: every programme of that source plays for `seconds`. */
+export function withWebsiteSlot(source: ChannelSource, seconds: number): ChannelSource {
+  const slot = Math.round(seconds)
+  if (source.kind !== 'website' || !Number.isFinite(slot) || slot < 60 || slot > 6 * 3600) return source
+  return { ...source, videos: (source.videos ?? []).map((video) => ({ ...video, durationSec: slot })) }
 }
 
 /** The programmes of the playlists a source's filter names, each marked with its playlist. A playlist that cannot be read adds nothing. */
@@ -294,6 +335,7 @@ export async function rescanSources(sources: readonly ChannelSource[], deps: Res
           return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
         }
       }
+      if (source.kind === 'website') return rescanWebsite(source, deps, now)
       const verdict = await deps.probeStream(source).catch(() => 'unavailable' as const)
       return { ...source, label: source.label || hostOf(source.url), status: { state: verdict, checkedAt: now } }
     }),

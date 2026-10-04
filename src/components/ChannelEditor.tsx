@@ -3,21 +3,21 @@ import { loadRegister } from '../credits/load.ts'
 import { watchUrl, type SourceRegister } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
-import { canLoadMore, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
+import { canLoadMore, withWebsiteSlot, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import type { ChannelExportKind } from '../services/channel-file.ts'
 import { reachesArchive, withSourceDrafts, type SourceDraft } from '../services/channel-curation.ts'
 import type { ImportedVideo } from '../services/channels-import.ts'
 import {
-  ADDABLE_KINDS,
   inOrder,
   inventoryOf,
   isStreamSource,
   liveStreamOf,
   newSource,
+  SLOT_CHOICES,
   sourceStatusText,
-  SOURCE_TYPES,
+  SOURCE_CHOICES,
   type ChannelSource,
-  type SourceKind,
+  type SourceChoice,
 } from '../services/channel-sources.ts'
 import type { Channel } from '../types/channel.ts'
 import { formatDuration, padChannel } from '../utils/time.ts'
@@ -45,10 +45,45 @@ function viewerMessage(caught: unknown, fallback: string): string {
   return message && message.length <= 90 && !/[<>{}]/.test(message) ? message.toUpperCase() : fallback
 }
 
-const KIND_CHOICES: readonly { value: SourceKind | 'auto'; label: string }[] = [
-  { value: 'auto', label: 'Detect' },
-  ...ADDABLE_KINDS.map((kind) => ({ value: kind, label: kind === 'youtube' ? 'YouTube' : SOURCE_TYPES[kind].label })),
-]
+/**
+ * How long each page of a website or post source holds the screen: 5, 10, 15 or 30 minutes, or any length
+ * from 1 minute to 6 hours. A page has no length of its own, so the schedule's slot is the viewer's choice.
+ */
+function WebsiteSlot({ source, disabled, onChange }: { source: ChannelSource; disabled: boolean; onChange: (next: ChannelSource) => void }) {
+  const current = source.videos?.[0]?.durationSec ?? 0
+  const preset = SLOT_CHOICES.includes(current)
+  const [custom, setCustom] = useState(preset ? '' : String(Math.round(current / 60)))
+  const choose = (seconds: number) => onChange(withWebsiteSlot(source, seconds))
+  return (
+    <div className="editor-slot" role="group" aria-label="Slot length">
+      <span>Slot</span>
+      {SLOT_CHOICES.map((seconds) => (
+        <button key={seconds} type="button" className={current === seconds ? 'tab is-on' : 'tab'} aria-pressed={current === seconds} disabled={disabled} onKeyDown={keepKey} onClick={() => choose(seconds)}>
+          {seconds / 60} min
+        </button>
+      ))}
+      <label className={preset ? 'editor-slot-custom' : 'editor-slot-custom is-on'}>
+        Custom
+        <input
+          type="number"
+          min={1}
+          max={360}
+          inputMode="numeric"
+          value={custom}
+          disabled={disabled}
+          aria-label="Custom slot length in minutes"
+          onChange={(event) => {
+            setCustom(event.target.value)
+            const minutes = Number(event.target.value)
+            if (Number.isInteger(minutes) && minutes >= 1 && minutes <= 360) choose(minutes * 60)
+          }}
+          onKeyDown={(event) => event.stopPropagation()}
+        />
+        min
+      </label>
+    </div>
+  )
+}
 
 function sourceTitle(source: ChannelSource): string {
   if (source.kind === 'tvn') return 'TVN programming'
@@ -218,7 +253,7 @@ export function ChannelEditor({
   const [note, setNote] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [link, setLink] = useState('')
-  const [kind, setKind] = useState<SourceKind | 'auto'>('auto')
+  const [kind, setKind] = useState<SourceChoice>('auto')
   const [confirming, setConfirming] = useState(false)
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set())
   const [notesOpen, setNotesOpen] = useState(false)
@@ -457,7 +492,9 @@ export function ChannelEditor({
           ? `SOURCE ADDED · ${source.url.replace(/^https:\/\/www\./, '').toUpperCase()} · RESCAN TO FETCH ITS PROGRAMMES`
           : source.kind === 'podcast'
             ? 'PODCAST ADDED · RESCAN TO FIND ITS FEED AND EPISODES'
-            : 'SOURCE ADDED · SAVE OR RESCAN TO USE IT',
+            : source.kind === 'website'
+              ? 'WEBSITE ADDED · RESCAN TO CHECK IT CAN BE SHOWN'
+              : 'SOURCE ADDED · SAVE OR RESCAN TO USE IT',
       )
     } catch (caught) {
       setNote(viewerMessage(caught, 'THAT SOURCE COULD NOT BE ADDED'))
@@ -630,6 +667,9 @@ export function ChannelEditor({
                       onStop={() => stopRef.current?.abort()}
                     />
                   ) : null}
+                  {source.kind === 'website' && (source.videos?.length ?? 0) > 0 ? (
+                    <WebsiteSlot source={source} disabled={busy !== null} onChange={(next) => setSource(source.id, { videos: next.videos })} />
+                  ) : null}
                   {open ? (
                     <SourceDetails source={source} number={number} disabled={busy !== null} onInfo={(info) => setSource(source.id, { info })} />
                   ) : null}
@@ -712,8 +752,8 @@ export function ChannelEditor({
                     if (event.key === 'Enter') addSource(event)
                   }}
                 />
-                <select value={kind} aria-label="Source type" onChange={(event) => setKind(event.target.value as SourceKind | 'auto')}>
-                  {KIND_CHOICES.map((choice) => (
+                <select value={kind} aria-label="Source type" onChange={(event) => setKind(event.target.value as SourceChoice)}>
+                  {SOURCE_CHOICES.map((choice) => (
                     <option key={choice.value} value={choice.value}>
                       {choice.label}
                     </option>

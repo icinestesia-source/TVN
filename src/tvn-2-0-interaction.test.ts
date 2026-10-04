@@ -67,8 +67,9 @@ describe('PLAYER INTERACTION SHIELD', () => {
   })
 
   it('the provider stays shielded with the overlay hidden: the shield is not part of the overlay', () => {
-    const stage = screen.slice(screen.indexOf("<div className={face === 'picture' ? 'stage' : 'stage is-card'}>"), screen.indexOf('<MultiviewGrid'))
-    expect(stage).toMatch(/\n\s+<PictureCatch \/>\n/)
+    const stage = screen.slice(screen.indexOf("<div className={`${face === 'picture' ? 'stage' : 'stage is-card'}"), screen.indexOf('<MultiviewGrid'))
+    // Lifted only while the viewer uses a website they chose INTERACT on, never for the information bar.
+    expect(stage).toMatch(/\n\s+\{web\.interacting \? null : <PictureCatch \/>\}\n/)
     expect(stage).not.toMatch(/info \? <PictureCatch|\{info[^}]*PictureCatch/)
     expect(rule(shell, '.stage iframe,\n.yt-host')).not.toMatch(/is-info|info-open/)
   })

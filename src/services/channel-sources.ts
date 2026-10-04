@@ -8,7 +8,7 @@ import type { ImportedVideo } from './channels-import.ts'
  * continuous live feed the browser plays itself. `tvn` stands for a curated channel's own shipped
  * programming, which TVN schedules itself. Another resolver joins by adding a kind here.
  */
-export type SourceKind = 'tvn' | 'youtube' | 'collection' | 'podcast' | 'audio' | 'audio-hls' | 'video' | 'video-hls'
+export type SourceKind = 'tvn' | 'youtube' | 'collection' | 'podcast' | 'website' | 'audio' | 'audio-hls' | 'video' | 'video-hls'
 
 export type SourceState = 'unchecked' | 'ready' | 'online' | 'unavailable' | 'unsupported' | 'failed'
 
@@ -33,6 +33,18 @@ export interface SourceStatus {
 }
 
 export type YouTubeSourceType = 'channel' | 'playlist'
+
+/** A website's slot when it is first added: it has no length of its own. */
+export const WEBSITE_SLOT_SECONDS = 600
+/** The slots the editor offers a website or post, beside a custom number of minutes. */
+export const SLOT_CHOICES: readonly number[] = [300, 600, 900, 1800]
+
+/** A stable id for a website TVN shows without asking its reader (one on this computer, while developing). */
+export function localWebsiteId(url: string): string {
+  let hash = 0x811c9dc5
+  for (let index = 0; index < url.length; index += 1) hash = Math.imul(hash ^ url.charCodeAt(index), 0x01000193)
+  return `web-${(hash >>> 0).toString(36)}`
+}
 
 export interface ChannelSource {
   /** Stable within its channel. */
@@ -77,6 +89,7 @@ export const SOURCE_TYPES: Record<SourceKind, SourceType> = {
   youtube: { label: 'YouTube', live: false, media: 'video' },
   collection: { label: 'Imported list', live: false, media: 'video' },
   podcast: { label: 'Podcast', live: false, media: 'audio' },
+  website: { label: 'Website', live: false, media: 'video' },
   audio: { label: 'Live audio', live: true, media: 'audio', format: 'direct' },
   'audio-hls': { label: 'HLS audio', live: true, media: 'audio', format: 'hls' },
   video: { label: 'Live video', live: true, media: 'video', format: 'direct' },
@@ -84,7 +97,7 @@ export const SOURCE_TYPES: Record<SourceKind, SourceType> = {
 }
 
 /** The kinds a viewer can add by address; an imported list only arrives with its channel. */
-export const ADDABLE_KINDS: readonly SourceKind[] = ['youtube', 'podcast', 'audio', 'audio-hls', 'video', 'video-hls']
+export const ADDABLE_KINDS: readonly SourceKind[] = ['youtube', 'podcast', 'website', 'audio', 'audio-hls', 'video', 'video-hls']
 
 export function isStreamSource(source: Pick<ChannelSource, 'kind'>): boolean {
   return SOURCE_TYPES[source.kind].live
@@ -149,6 +162,14 @@ export function sourceStatusText(source: ChannelSource, siblings: readonly Chann
     return inventoryOf(siblings).length > 0 ? 'TVN programming · with your added sources' : 'TVN programming · on air'
   }
   const state = source.status?.state ?? 'unchecked'
+  if (source.kind === 'website') {
+    const what = isXPostUrl(source.url) ? 'X post' : 'Website'
+    if (state === 'unavailable') return `${what} · SITE CANNOT BE EMBEDDED`
+    if (state === 'failed') return `${what} · could not be checked just now`
+    if (state === 'unchecked') return `${what} · not checked yet · Rescan to check it can be shown`
+    const slot = source.videos?.[0]?.durationSec
+    return `${what} · interactive · ${slot ? `${Math.round(slot / 60)} min slot` : 'no slot yet'}`
+  }
   if (state === 'failed') return 'Resolution failed'
   if (state === 'unavailable') return 'Unavailable'
   if (state === 'unsupported') return 'This browser cannot play this stream'
@@ -202,6 +223,11 @@ export function classifySourceUrl(raw: string, hint: SourceKind | 'auto' = 'auto
   if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Only web addresses can be added')
   const youtube = YOUTUBE_HOST.test(url.hostname)
   if (hint === 'collection' || hint === 'tvn') throw new Error('That kind of source cannot be added by address')
+  // A website is the page itself, shown in a sandboxed frame: https only, or this computer while developing TVN.
+  if (hint === 'website' || (hint === 'auto' && isXPostUrl(url.toString()))) {
+    if (url.protocol !== 'https:' && !isLocalDevelopment(url)) throw new Error('A Website programme needs an https:// address')
+    return { kind: 'website', url: url.toString() }
+  }
   if (youtube || hint === 'youtube') {
     if (!youtube) throw new Error('That is not a YouTube address')
     const handle = url.pathname.split('/').filter(Boolean)
@@ -215,6 +241,115 @@ export function classifySourceUrl(raw: string, hint: SourceKind | 'auto' = 'auto
   if (VIDEO_FILE.test(url.pathname)) return { kind: 'video', url: url.toString() }
   if (AUDIO_FILE.test(url.pathname)) return { kind: 'audio', url: url.toString() }
   return { kind: 'audio', url: url.toString() }
+}
+
+const X_POST = /^https:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/[A-Za-z0-9_]{1,15}\/status(?:es)?\/\d{5,25}(?:\/(?:video|photo)\/\d+)?\/?(?:[?#]|$)/i
+
+/** The address of one public X (Twitter) post, including its …/video/1 form. */
+export function isXPostUrl(raw: string): boolean {
+  return X_POST.test(raw.trim())
+}
+
+/** This computer, for trying a website while developing TVN: only when TVN itself runs here too. */
+export function isLocalDevelopment(url: URL, page: string | undefined = typeof location === 'undefined' ? undefined : location.hostname): boolean {
+  const local = (host: string) => host === 'localhost' || host === '127.0.0.1'
+  return (url.protocol === 'http:' || url.protocol === 'https:') && local(url.hostname) && page !== undefined && local(page)
+}
+
+/**
+ * The source types the editor offers beside DETECT, each one the runtime actually supports. A choice corrects
+ * or confirms what detection would find; it never makes TVN treat an address as something it cannot read.
+ */
+export type SourceChoice =
+  | 'auto'
+  | 'youtube-video'
+  | 'youtube-channel'
+  | 'youtube-playlist'
+  | 'youtube-mix'
+  | 'podcast'
+  | 'website'
+  | 'x-post'
+  | 'vimeo'
+  | 'odysee'
+  | 'bitchute'
+  | 'video-hls'
+  | 'audio-hls'
+  | 'video'
+  | 'audio'
+  | 'media-file'
+
+export const SOURCE_CHOICES: readonly { value: SourceChoice; label: string }[] = [
+  { value: 'auto', label: 'Detect' },
+  { value: 'youtube-video', label: 'YouTube video (its channel)' },
+  { value: 'youtube-channel', label: 'YouTube channel' },
+  { value: 'youtube-playlist', label: 'YouTube playlist' },
+  { value: 'youtube-mix', label: 'YouTube Mix (seed video + its channel)' },
+  { value: 'podcast', label: 'Podcast / RSS' },
+  { value: 'website', label: 'Website' },
+  { value: 'x-post', label: 'X / Twitter post' },
+  { value: 'vimeo', label: 'Vimeo' },
+  { value: 'odysee', label: 'Odysee' },
+  { value: 'bitchute', label: 'BitChute' },
+  { value: 'video-hls', label: 'HLS live video' },
+  { value: 'audio-hls', label: 'HLS live audio' },
+  { value: 'video', label: 'Live video stream' },
+  { value: 'audio', label: 'Live audio stream' },
+  { value: 'media-file', label: 'Direct media file' },
+]
+
+const PROVIDER_HOSTS: Partial<Record<SourceChoice, [RegExp, string]>> = {
+  vimeo: [/^(?:www\.|player\.)?vimeo\.com$/i, 'Vimeo'],
+  odysee: [/^(?:www\.)?odysee\.com$/i, 'Odysee'],
+  bitchute: [/^(?:www\.|api\.|old\.)?bitchute\.com$/i, 'BitChute'],
+}
+
+/** What a YouTube address names, as far as the address alone says. */
+export function youTubeLinkType(raw: string): 'video' | 'channel' | 'playlist' | 'mix' | null {
+  let url: URL
+  try {
+    url = webAddress(raw)
+  } catch {
+    return /^@[\w.-]{3,100}$/.test(raw.trim()) || /^UC[0-9A-Za-z_-]{22}$/.test(raw.trim()) ? 'channel' : null
+  }
+  if (!YOUTUBE_HOST.test(url.hostname)) return null
+  const list = url.searchParams.get('list') ?? ''
+  if (/^RD[0-9A-Za-z_-]{2,64}$/.test(list)) return 'mix'
+  if (/^(?:PL|OL|UU|FL)[0-9A-Za-z_-]{10,64}$/.test(list)) return 'playlist'
+  const first = url.pathname.split('/').filter(Boolean)[0] ?? ''
+  if (url.hostname.toLowerCase() === 'youtu.be' || ['watch', 'shorts', 'live', 'embed', 'v'].includes(first)) return 'video'
+  return 'channel'
+}
+
+/** A pasted address as the source kind the chosen type reads it with, or the reason it is not that type. */
+export function classifyChoice(raw: string, choice: SourceChoice): { kind: SourceKind; url: string } {
+  if (choice === 'auto') return classifySourceUrl(raw)
+  if (choice.startsWith('youtube-')) {
+    const found = classifySourceUrl(raw, 'youtube')
+    const named = youTubeLinkType(raw)
+    const wanted = choice.slice('youtube-'.length)
+    if (named !== wanted) {
+      const said = { video: 'a video', channel: 'a channel', playlist: 'a playlist', mix: 'a Mix' }
+      throw new Error(named ? `That YouTube address is ${said[named]}, not ${said[wanted as keyof typeof said]}` : 'That is not a YouTube address')
+    }
+    return found
+  }
+  if (choice === 'x-post') {
+    if (!isXPostUrl(raw)) throw new Error('Paste the address of one public X post (x.com/…/status/…)')
+    return classifySourceUrl(raw, 'website')
+  }
+  if (choice === 'website') return classifySourceUrl(raw, 'website')
+  const host = PROVIDER_HOSTS[choice]
+  if (host) {
+    const url = webAddress(raw)
+    if (!host[0].test(url.hostname)) throw new Error(`That is not a ${host[1]} address`)
+    return { kind: 'podcast', url: url.toString() }
+  }
+  if (choice === 'media-file') {
+    const url = webAddress(raw)
+    if (!VIDEO_FILE.test(url.pathname) && !AUDIO_FILE.test(url.pathname)) throw new Error('That address does not name a media file (.mp4, .mp3 …)')
+    return { kind: 'podcast', url: url.toString() }
+  }
+  return classifySourceUrl(raw, choice as SourceKind)
 }
 
 /** A web page or feed rather than a stream or media file: ADD reads it for a feed or a public episode archive. */
@@ -252,8 +387,8 @@ export function nextSourceId(sources: readonly ChannelSource[]): string {
   return `s${last + 1}`
 }
 
-export function newSource(sources: readonly ChannelSource[], raw: string, hint: SourceKind | 'auto' = 'auto'): ChannelSource {
-  const { kind, url } = classifySourceUrl(raw, hint)
+export function newSource(sources: readonly ChannelSource[], raw: string, hint: SourceKind | 'auto' | SourceChoice = 'auto'): ChannelSource {
+  const { kind, url } = (SOURCE_CHOICES.some((choice) => choice.value === hint) ? classifyChoice(raw, hint as SourceChoice) : classifySourceUrl(raw, hint as SourceKind))
   if (sources.some((source) => source.url === url)) throw new Error('That source is already on this channel')
   return { id: nextSourceId(sources), kind, url, label: '', enabled: true, status: { state: 'unchecked', checkedAt: 0 } }
 }
