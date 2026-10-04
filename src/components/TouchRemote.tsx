@@ -137,7 +137,7 @@ export function TouchRemote() {
               className={tv.smart ? 'smart-key is-on' : 'smart-key'}
               aria-pressed={tv.smart}
               aria-label="Smart"
-              title={tv.smart ? 'SMART is on: type a channel number; it tunes and the remote closes' : 'SMART: type a channel number; it tunes and the remote closes'}
+              title={tv.smart ? 'SMART is on: the remote stays up after each channel number' : 'SMART: keep the remote up after a channel number (it closes by default)'}
               onClick={() => {
                 tv.dispatch({ type: 'smart' })
                 // Keys typed now feed the channel number, and no remote button holds focus to take Enter or Space.

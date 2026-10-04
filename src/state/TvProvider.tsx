@@ -917,16 +917,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!raw) return
     const number = Number(raw)
     if (!channelByNumber(number)) {
-      // SMART stays armed with the remote open, for the number to be typed again.
+      // The remote stays open for the number to be typed again.
       flash('NO CHANNEL')
       return
     }
     closeGuide()
     requestTune(number)
-    if (smartRef.current) {
-      setSmart(false)
+    // A channel number tunes and puts the remote away; SMART keeps it up for the next number.
+    if (!smartRef.current) {
       setRemoteOpen(false)
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+      const focused = document.activeElement
+      if (focused instanceof HTMLElement && focused.closest('.remote-panel')) focused.blur()
     }
   }
 

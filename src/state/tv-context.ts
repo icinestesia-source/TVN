@@ -43,7 +43,7 @@ export interface TvContextValue {
   canGoForward: boolean
   /** What the browser held back at startup until the viewer's first key or tap. */
   startHold: StartHold
-  /** SMART is armed on the remote: the next channel number tunes and closes it. */
+  /** SMART is on: the remote stays up after a channel number tunes; otherwise it closes. */
   smart: boolean
   visibleChannels: readonly Channel[]
   /** The channel being watched, shown in the Guide although the selected tab does not list it; null when it does. */

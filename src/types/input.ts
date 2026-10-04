@@ -42,7 +42,7 @@ export type TvCommand =
   | { type: 'media' }
   | { type: 'guide-tool'; tool: GuideTool; channelNumber?: number }
   | { type: 'remote' }
-  /** SMART on the remote: the next channel number typed tunes and closes the remote. An action, not a tab. */
+  /** SMART on the remote: the remote stays up after a channel number tunes, instead of closing. An action, not a tab. */
   | { type: 'smart' }
   /** CREDITS on the remote: the credit roll over the picture, on and off. */
   | { type: 'credits' }

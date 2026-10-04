@@ -177,13 +177,14 @@ describe('REMOTE SMART', () => {
     expect(remote).toContain('padRef.current?.focus()')
   })
 
-  it('a channel that tunes closes the remote and clears SMART; NO CHANNEL keeps it open for another go', () => {
+  it('a channel that tunes closes the remote unless SMART is on, which keeps it up; NO CHANNEL keeps it open for another go', () => {
     const commit = provider.slice(provider.indexOf('commitNumericRef.current = '), provider.indexOf('commitNumericRef.current = ') + 1500)
     expect(commit).toContain('NO CHANNEL')
     const tune = commit.indexOf('requestTune(')
-    const close = commit.indexOf('if (smartRef.current)')
+    const close = commit.indexOf('if (!smartRef.current) {')
     expect(close).toBeGreaterThan(tune)
-    expect(commit.slice(close, close + 200)).toMatch(/setSmart\(false\)[\s\S]*setRemoteOpen\(false\)/)
+    expect(commit.slice(close, close + 200)).toContain('setRemoteOpen(false)')
+    expect(commit).not.toContain('setSmart(false)')
     expect(commit.slice(0, tune)).not.toContain('setRemoteOpen(false)')
     expect(provider).toMatch(/case 'smart':[\s\S]{0,120}setRemoteOpen\(true\)/)
   })
