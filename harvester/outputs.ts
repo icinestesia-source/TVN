@@ -4,13 +4,14 @@ import { checkedCorpus } from './corpus.ts'
 import { getMeta, type Db } from './db.ts'
 import { stamp, writeAtomic } from './files.ts'
 import type { ChannelHealth } from './health.ts'
-import { crossChannelDuplicates, healthSummary } from './health.ts'
+import { crossChannelDuplicates, gapSummary, healthSummary } from './health.ts'
 import type { Workspace } from './workspace.ts'
 
 export const ADDITIONS_FORMAT = 'tvn-harvester-additions-v1'
 
 interface ChangeRow {
-  kind: 'added' | 'date' | 'metadata' | 'unavailable' | 'status'
+  kind: 'added' | 'date' | 'metadata' | 'unavailable' | 'status' | 'source'
+  provenance: string
   video_id: string | null
   detail: string | null
   at: string
@@ -18,7 +19,10 @@ interface ChangeRow {
   scope: string
   number: number
   channel_name: string
+  stable_id: string | null
+  layer: string
   source_key: string
+  source_provenance: string
   source_type: string
   url: string
   provider_id: string | null
@@ -73,11 +77,11 @@ export function runTotals(db: Db, runId: number): RunTotals {
  * New programmes carry everything the corpus now holds for them; enrichments carry only the fields added.
  */
 export function additionsDocument(db: Db, runId: number, now: Date): object {
-  const run = db.prepare('SELECT id, mode, status, started_at, ended_at FROM runs WHERE id = ?').get(runId) as Record<string, unknown>
+  const run = db.prepare('SELECT id, kind, mode, status, range_from, range_to, started_at, ended_at FROM runs WHERE id = ?').get(runId) as Record<string, unknown>
   const rows = db
     .prepare(
-      `SELECT c.kind, c.video_id, c.detail, c.at, ch.key AS channel_key, ch.scope, ch.number, ch.name AS channel_name,
-        s.key AS source_key, s.source_type, s.url, s.provider_id, s.label
+      `SELECT c.kind, c.provenance, c.video_id, c.detail, c.at, ch.key AS channel_key, ch.scope, ch.number, ch.name AS channel_name, ch.stable_id, ch.layer,
+        s.key AS source_key, s.provenance AS source_provenance, s.source_type, s.url, s.provider_id, s.label
        FROM changes c JOIN channels ch ON ch.id = c.channel_id JOIN sources s ON s.id = c.source_id
        WHERE c.run_id = ? ORDER BY ch.number, s.position, c.id`,
     )
@@ -86,21 +90,23 @@ export function additionsDocument(db: Db, runId: number, now: Date): object {
   for (const row of rows) {
     let channel = channels.get(row.channel_key)
     if (!channel) {
-      channel = { channel: { key: row.channel_key, scope: row.scope, number: row.number, name: row.channel_name }, sources: new Map() }
+      channel = { channel: { key: row.channel_key, ...(row.stable_id ? { stableId: row.stable_id } : {}), scope: row.scope, layer: row.layer, number: row.number, name: row.channel_name }, sources: new Map() }
       channels.set(row.channel_key, channel)
     }
     let source = channel.sources.get(row.source_key)
     if (!source) {
-      source = { key: row.source_key, sourceType: row.source_type, url: row.url, ...(row.provider_id ? { providerId: row.provider_id } : {}), label: row.label, added: [], dates: [], metadata: [], unavailable: [], status: [] }
+      source = { key: row.source_key, provenance: row.source_provenance, sourceType: row.source_type, url: row.url, ...(row.provider_id ? { providerId: row.provider_id } : {}), label: row.label, sourceAdded: [], added: [], dates: [], metadata: [], unavailable: [], status: [] }
       channel.sources.set(row.source_key, source)
     }
     const detail = row.detail ? (JSON.parse(row.detail) as Record<string, unknown>) : {}
+    const by = { provenance: row.provenance, at: row.at }
     const list = {
-      added: () => (source.added as unknown[]).push({ ...detail, at: row.at }),
-      date: () => (source.dates as unknown[]).push({ id: row.video_id, published: detail.published, at: row.at }),
-      metadata: () => (source.metadata as unknown[]).push({ id: row.video_id, fields: detail, at: row.at }),
-      unavailable: () => (source.unavailable as unknown[]).push({ id: row.video_id, at: row.at }),
-      status: () => (source.status as unknown[]).push({ ...detail, at: row.at }),
+      added: () => (source.added as unknown[]).push({ ...detail, ...by }),
+      date: () => (source.dates as unknown[]).push({ id: row.video_id, published: detail.published, ...by }),
+      metadata: () => (source.metadata as unknown[]).push({ id: row.video_id, fields: detail, ...by }),
+      unavailable: () => (source.unavailable as unknown[]).push({ id: row.video_id, ...by }),
+      status: () => (source.status as unknown[]).push({ ...detail, ...by }),
+      source: () => (source.sourceAdded as unknown[]).push({ ...detail, ...by }),
     }
     list[row.kind]()
   }
@@ -124,8 +130,8 @@ export function writeAdditions(workspace: Workspace, runId: number, now: Date = 
 }
 
 const CSV_COLUMNS: (keyof ChannelHealth)[] = [
-  'number', 'name', 'scope', 'class', 'sourcesConfigured', 'sourcesEnabled', 'available', 'eligible', 'filteredOut', 'scheduled', 'playable', 'hours',
-  'knownDates', 'knownDatePct', 'unknownDates', 'held', 'excluded', 'deadRefused', 'duplicates', 'newLatestRun', 'brokenSources', 'tvnProgrammes', 'lastSuccess', 'lastAttempt', 'key',
+  'number', 'name', 'scope', 'layer', 'class', 'gap', 'sourcesConfigured', 'sourcesEnabled', 'sourcesRefreshable', 'creators', 'available', 'eligible', 'filteredOut', 'editorialExcluded', 'scheduled', 'playable', 'hours',
+  'knownDates', 'knownDatePct', 'unknownDates', 'held', 'excluded', 'deadRefused', 'duplicates', 'newLatestRun', 'brokenSources', 'shipped', 'fromMaster', 'fromAuto', 'fromDesk', 'lastSuccess', 'lastAttempt', 'stableId', 'key',
 ]
 
 const cell = (value: unknown): string => {
@@ -140,18 +146,26 @@ export function healthCsv(health: readonly ChannelHealth[]): string {
 export function writeReports(workspace: Workspace, health: readonly ChannelHealth[], runId: number | null, now: Date = new Date()): string[] {
   const csv = workspace.path('reports', 'channel_health.csv')
   writeAtomic(csv, healthCsv(health))
+  const written = [csv]
+  if (runId) {
+    const kept = workspace.path('reports', `RUN_${runId}_channel_health.csv`)
+    writeAtomic(kept, healthCsv(health))
+    written.push(kept)
+  }
   const summary = {
     generatedAt: now.toISOString(),
     workspaceId: getMeta(workspace.db, 'workspace_id'),
-    run: runId ? { ...(workspace.db.prepare('SELECT id, mode, status, started_at, ended_at, elapsed_ms FROM runs WHERE id = ?').get(runId) as object), totals: runTotals(workspace.db, runId) } : null,
+    run: runId ? { ...(workspace.db.prepare('SELECT id, kind, mode, status, range_from, range_to, started_at, ended_at, elapsed_ms FROM runs WHERE id = ?').get(runId) as object), totals: runTotals(workspace.db, runId) } : null,
     channels: health.length,
+    centralChannels: health.filter((item) => item.scope === 'central').length,
+    userChannels: health.filter((item) => item.scope === 'user').length,
     health: healthSummary(health),
+    gaps: gapSummary(health),
     programmes: health.reduce((sum, item) => sum + item.available, 0),
     knownDates: health.reduce((sum, item) => sum + item.knownDates, 0),
     crossChannelDuplicates: crossChannelDuplicates(workspace.db),
     sourceOutcomes: Object.fromEntries((workspace.db.prepare('SELECT COALESCE(status, \'NOT YET VISITED\') AS status, COUNT(*) AS n FROM sources GROUP BY 1 ORDER BY 1').all() as { status: string; n: number }[]).map((row) => [row.status, row.n])),
   }
-  const written = [csv]
   const named = runId ? workspace.path('reports', `RUN_${runId}_summary.json`) : workspace.path('reports', 'summary.json')
   writeAtomic(named, `${JSON.stringify(summary, null, 2)}\n`)
   written.push(named)

@@ -4,14 +4,8 @@ import { curatedChannelManifest, userChannelManifest } from '../src/services/edi
 import { validateTvnExport, type TvnExport } from '../src/services/tvn-export.ts'
 import type { ExportChannel, ExportSource, ExportVideo, UserNetworkExport } from '../src/services/user-network-export.ts'
 import { recordsFromExport } from '../src/services/user-network-restore.ts'
-import { channelOriginals } from '../src/view/channel-provenance.ts'
-import { readRegister, type SourceRegister } from '../src/credits/provenance.ts'
-import { defaultNetworkItems } from '../src/data/network/catalog.ts'
-import { setMediaLibrary } from '../src/director/library.ts'
-import { expandPlayableCatalogue } from '../src/library/playable-catalogue.ts'
-import { programmeForDirector } from '../src/library/source-editorial.ts'
 import type { ImportedVideo, StoredSource } from '../src/services/channels-import.ts'
-import { readFileSync } from 'node:fs'
+import { originalsOf } from './baseline.ts'
 import { getMeta, SCHEMA_VERSION, type Db } from './db.ts'
 
 interface ChannelRow {
@@ -19,6 +13,7 @@ interface ChannelRow {
   scope: 'user' | 'central'
   number: number
   body: string
+  layer: 'master' | 'shipped'
 }
 
 interface SourceRow {
@@ -26,26 +21,38 @@ interface SourceRow {
   channel_id: number
   body: string
   has_videos: number
+  provenance: string
 }
 
-/** A source's programmes in its own order. */
-export function programmesOf(db: Db, sourceId: number): ExportVideo[] {
-  return (db.prepare('SELECT body FROM programmes WHERE source_id = ? ORDER BY ord').all(sourceId) as { body: string }[]).map((row) => JSON.parse(row.body) as ExportVideo)
+/**
+ * Which of a channel's sources a view includes. `export`: what the Complete Export carries (a 001–999 override
+ * exactly as the master had it, a user channel with its Source Desk additions). `effective`: everything,
+ * shipped originals and candidate enrichment included, as the Source Desk and health see the channel.
+ */
+export type ChannelView = 'export' | 'effective'
+
+/** A source's programmes in its own order, optionally only those of some provenances. */
+export function programmesOf(db: Db, sourceId: number, provenances?: readonly string[]): ExportVideo[] {
+  const rows = provenances
+    ? (db.prepare(`SELECT body FROM programmes WHERE source_id = ? AND provenance IN (${provenances.map(() => '?').join(', ')}) ORDER BY ord`).all(sourceId, ...provenances) as { body: string }[])
+    : (db.prepare('SELECT body FROM programmes WHERE source_id = ? ORDER BY ord').all(sourceId) as { body: string }[])
+  return rows.map((row) => JSON.parse(row.body) as ExportVideo)
 }
 
-function sourcesOf(db: Db, channelId: number): ExportSource[] {
-  const rows = db.prepare('SELECT id, channel_id, body, has_videos FROM sources WHERE channel_id = ? ORDER BY position').all(channelId) as unknown as SourceRow[]
-  return rows.map((row) => {
+function sourcesOf(db: Db, channel: ChannelRow, view: ChannelView): ExportSource[] {
+  const rows = db.prepare('SELECT id, channel_id, body, has_videos, provenance FROM sources WHERE channel_id = ? ORDER BY position').all(channel.id) as unknown as SourceRow[]
+  const kept = view === 'effective' ? rows : rows.filter((row) => row.provenance === 'master' || (channel.scope === 'user' && row.provenance === 'desk'))
+  return kept.map((row) => {
     const videos = programmesOf(db, row.id)
     const body = JSON.parse(row.body) as ExportSource
     return row.has_videos || videos.length > 0 ? { ...body, videos } : body
   })
 }
 
-/** One channel exactly as the export carries it, with its pool as the database holds it now. */
-export function channelExport(db: Db, channelId: number): ExportChannel | CentralOverride {
-  const row = db.prepare('SELECT id, scope, number, body FROM channels WHERE id = ?').get(channelId) as unknown as ChannelRow
-  return { ...(JSON.parse(row.body) as object), sources: sourcesOf(db, row.id) } as ExportChannel | CentralOverride
+/** One channel as the export carries it (or, `effective`, with every layer), with its pool as the database holds it now. */
+export function channelExport(db: Db, channelId: number, view: ChannelView = 'export'): ExportChannel | CentralOverride {
+  const row = db.prepare('SELECT id, scope, number, body, layer FROM channels WHERE id = ?').get(channelId) as unknown as ChannelRow
+  return { ...(JSON.parse(row.body) as object), sources: sourcesOf(db, row, view) } as ExportChannel | CentralOverride
 }
 
 /** What the master carried outside its channels, as imported. */
@@ -63,14 +70,56 @@ export interface HarvestStamp {
   harvestedAt: string
 }
 
+export const CENTRAL_ENRICHMENT_FORMAT = 'tvn-harvester-central-enrichment-v1'
+
+export interface EnrichmentSource extends ExportSource {
+  provenance: 'shipped' | 'desk'
+}
+
+/**
+ * Candidate enrichment of the 001–999 network, kept apart from the overrides so that restoring the corpus in
+ * TVN changes no central channel: Source Desk sources with everything they hold, and shipped originals with
+ * only what Harvester found beyond TVN's own programmes. Publish Corpus decides what becomes shipped.
+ */
+export interface CentralEnrichment {
+  format: typeof CENTRAL_ENRICHMENT_FORMAT
+  baseline: { appCommit: string; appBuild: string | null; catalogueSha256: string } | null
+  channels: { stableId: string | null; number: number; name: string; sources: EnrichmentSource[] }[]
+}
+
+export function centralEnrichment(db: Db): CentralEnrichment {
+  const baseline = db.prepare('SELECT app_commit, app_build, catalogue_sha256 FROM baseline WHERE id = 1').get() as { app_commit: string; app_build: string | null; catalogue_sha256: string } | undefined
+  const channels = db
+    .prepare(
+      `SELECT DISTINCT c.id, c.stable_id, c.number, c.name FROM channels c JOIN sources s ON s.channel_id = c.id
+       WHERE c.scope = 'central' AND (s.provenance = 'desk' OR (s.provenance = 'shipped' AND EXISTS (SELECT 1 FROM programmes p WHERE p.source_id = s.id AND p.provenance IN ('auto', 'desk'))))
+       ORDER BY c.number`,
+    )
+    .all() as { id: number; stable_id: string | null; number: number; name: string }[]
+  const sources = db.prepare("SELECT id, body, provenance FROM sources WHERE channel_id = ? AND provenance IN ('shipped', 'desk') ORDER BY position")
+  return {
+    format: CENTRAL_ENRICHMENT_FORMAT,
+    baseline: baseline ? { appCommit: baseline.app_commit, appBuild: baseline.app_build, catalogueSha256: baseline.catalogue_sha256 } : null,
+    channels: channels.map((channel) => ({
+      stableId: channel.stable_id,
+      number: channel.number,
+      name: channel.name,
+      sources: (sources.all(channel.id) as { id: number; body: string; provenance: 'shipped' | 'desk' }[]).flatMap((row) => {
+        const videos = programmesOf(db, row.id, row.provenance === 'desk' ? undefined : ['auto', 'desk'])
+        return row.provenance === 'desk' || videos.length > 0 ? [{ ...(JSON.parse(row.body) as ExportSource), provenance: row.provenance, videos }] : []
+      }),
+    })),
+  }
+}
+
 /**
  * The working corpus as a Complete Export: the master's channels, settings, favourites, users and Guides,
- * every source with its pool as harvested, and manifests written by TVN's own code. A `harvest` stamp says
- * where it came from; TVN's restore reads past it.
+ * every exported source with its pool as harvested, manifests written by TVN's own code, and the central
+ * enrichment beside them. A `harvest` stamp says where it came from; TVN's restore reads past both.
  */
-export function assembleCorpus(db: Db, now: Date, runId: number | null = null): TvnExport & { harvest: HarvestStamp } {
+export function assembleCorpus(db: Db, now: Date, runId: number | null = null): TvnExport & { harvest: HarvestStamp; centralEnrichment?: CentralEnrichment } {
   const rest = masterRest(db)
-  const channels = db.prepare('SELECT id, scope, number, body FROM channels ORDER BY scope, position').all() as unknown as ChannelRow[]
+  const channels = db.prepare("SELECT id, scope, number, body, layer FROM channels WHERE layer = 'master' ORDER BY scope, position").all() as unknown as ChannelRow[]
   const central = channels.filter((row) => row.scope === 'central').map((row) => channelExport(db, row.id) as CentralOverride)
   const user = channels.filter((row) => row.scope === 'user').map((row) => channelExport(db, row.id) as ExportChannel)
   const network = rest.userNetwork as Omit<UserNetworkExport, 'channels'>
@@ -83,6 +132,7 @@ export function assembleCorpus(db: Db, now: Date, runId: number | null = null): 
     runId,
     harvestedAt: now.toISOString(),
   }
+  const enrichment = centralEnrichment(db)
   const { format, version, app, favourites, settings, guides, userNetwork: _network, central: _central, exportedAt: _exportedAt, ...others } = rest as unknown as TvnExport & Record<string, unknown>
   return {
     ...others,
@@ -97,7 +147,8 @@ export function assembleCorpus(db: Db, now: Date, runId: number | null = null): 
     ...(centralDoc ? { central: centralDoc } : {}),
     ...(guides ? { guides } : {}),
     manifests: manifestsOf(userNetwork, centralDoc?.overrides ?? [], now),
-  } as TvnExport & { harvest: HarvestStamp }
+    ...(enrichment.channels.length > 0 ? { centralEnrichment: enrichment } : {}),
+  } as TvnExport & { harvest: HarvestStamp; centralEnrichment?: CentralEnrichment }
 }
 
 /**
@@ -112,18 +163,6 @@ export function userRecords(userNetwork: UserNetworkExport, now: Date): StoredSo
     )
     return sources ? { ...record, channelSources: sources } : record
   })
-}
-
-let shippedRegister: SourceRegister | null = null
-
-/** TVN's shipped library and source register, as the viewer loads them, for a 001–999 channel's original sources. */
-function originalsOf(number: number) {
-  if (!shippedRegister) {
-    const shipped = (name: string) => JSON.parse(readFileSync(new URL(`../public/independent/${name}`, import.meta.url), 'utf8')) as unknown
-    setMediaLibrary([...defaultNetworkItems(), ...expandPlayableCatalogue(shipped('playable.json')).map(programmeForDirector)])
-    shippedRegister = readRegister(shipped('sources.json'))
-  }
-  return channelOriginals(number, shippedRegister)
 }
 
 /** Manifests exactly as TVN's Export All writes them, against the shipped catalogue this checkout carries. */
@@ -146,7 +185,7 @@ export function manifestsOf(userNetwork: UserNetworkExport, overrides: readonly 
 }
 
 /** The corpus, checked by TVN's own validator before anything is written. */
-export function checkedCorpus(db: Db, now: Date, runId: number | null = null): TvnExport & { harvest: HarvestStamp } {
+export function checkedCorpus(db: Db, now: Date, runId: number | null = null): ReturnType<typeof assembleCorpus> {
   const doc = assembleCorpus(db, now, runId)
   const checked = validateTvnExport(JSON.parse(JSON.stringify(doc)))
   if (!checked.ok) throw new Error(`The harvested corpus would not restore: ${checked.errors.slice(0, 5).join('; ')}`)

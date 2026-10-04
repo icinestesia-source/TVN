@@ -2,13 +2,15 @@ import { handleChannelRequest } from '../server/youtube-channel.ts'
 import { handleFeedRequest } from '../server/podcast-feed.ts'
 import { USER_AGENT } from '../server/web-read.ts'
 import { lookUpBatch, lookUpChannel, playlistUrl } from '../src/services/add-channel.ts'
+import { canonicalYouTubeUrl } from '../src/services/channel-sources.ts'
 import { lookUpFeed } from '../src/services/podcast-source.ts'
 import type { Pacing } from './config.ts'
 import type { Reader } from './importer.ts'
 import type { FreshProgramme } from './merge.ts'
+import type { ExportSourceType } from '../src/services/user-network-export.ts'
 
 /** How a source's last visit went. Never a reason to delete it. */
-export const SOURCE_OUTCOMES = ['OK', 'NO CHANGE', 'NEW CONTENT', 'TEMPORARY FAILURE', 'NOT FOUND', 'PRIVATE/RESTRICTED', 'EMBED REFUSED', 'UNSUPPORTED', 'DISABLED'] as const
+export const SOURCE_OUTCOMES = ['OK', 'NO CHANGE', 'NEW CONTENT', 'PARTIAL', 'TEMPORARY FAILURE', 'NOT FOUND', 'PRIVATE/RESTRICTED', 'EMBED REFUSED', 'UNSUPPORTED', 'DISABLED'] as const
 export type SourceOutcome = (typeof SOURCE_OUTCOMES)[number]
 export type FailureOutcome = Extract<SourceOutcome, 'TEMPORARY FAILURE' | 'NOT FOUND' | 'PRIVATE/RESTRICTED' | 'EMBED REFUSED' | 'UNSUPPORTED'>
 
@@ -150,7 +152,14 @@ export interface ReadResult {
   requests: number
   /** A source that can only be checked, not listed: it answered. */
   checked?: boolean
+  /** TVN's own cursor past this read, when the provider lists more. */
+  next?: string
+  /** What the provider says the address is, from a first (Source Desk) read. */
+  identity?: { sourceType: ExportSourceType; url: string; providerId?: string; label: string }
 }
+
+/** How far a read goes: incremental (newest page, catching up), audit (TVN's ALL), deep (ALL, then batch by batch to the end). */
+export type ReadDepth = 'audit' | 'incremental' | 'deep'
 
 /** Where a YouTube source is read again: its canonical channel or playlist address, as TVN's rescan does. */
 export function youTubeAddress(source: ReadSource): string {
@@ -181,7 +190,7 @@ const refusedIn = (calls: readonly { status: number; body: unknown }[]) =>
  * incremental read takes the newest page and, only while everything on it is new, follows the list on
  * until it meets a programme already held.
  */
-export async function readSource(source: ReadSource, depth: 'audit' | 'incremental', known: ReadonlySet<string>, pacer: Pacer, catchUp: number, signal: AbortSignal): Promise<ReadResult> {
+export async function readSource(source: ReadSource, depth: ReadDepth, known: ReadonlySet<string>, pacer: Pacer, catchUp: number, signal: AbortSignal): Promise<ReadResult> {
   const before = pacer.requests
   const api = localApi(pacer.fetch)
   const done = (result: Omit<ReadResult, 'requests'>): ReadResult => {
@@ -192,7 +201,7 @@ export async function readSource(source: ReadSource, depth: 'audit' | 'increment
     if (source.reader === 'youtube' || source.reader === 'collection') {
       let found
       try {
-        found = await lookUpChannel(youTubeAddress(source), api.fetch, depth === 'audit' ? { mode: 'all' } : {})
+        found = await lookUpChannel(youTubeAddress(source), api.fetch, depth === 'incremental' ? {} : { mode: 'all' })
       } catch (error) {
         if (signal.aborted) throw new Stopped()
         // A list that answers but holds nothing TVN can schedule is an empty read, not a failure.
@@ -208,12 +217,28 @@ export async function readSource(source: ReadSource, depth: 'audit' | 'increment
         programmes.push(...more.videos)
         next = more.next
       }
-      return done({ programmes, refused: refusedIn(api.calls), ...(found.listed !== undefined ? { listed: found.listed } : {}) })
+      const sourceType: ExportSourceType = found.sourceType === 'youtube-playlist' || (!found.sourceType && !found.channelId.startsWith('UC')) ? 'youtube-playlist' : 'youtube-channel'
+      const identity = { sourceType, url: canonicalYouTubeUrl({ ref: found.channelId, url: youTubeAddress(source), youtube: sourceType === 'youtube-playlist' ? 'playlist' : 'channel' }), providerId: found.channelId, label: found.title }
+      return done({ programmes, refused: refusedIn(api.calls), ...(found.listed !== undefined ? { listed: found.listed } : {}), ...(depth === 'deep' && next ? { next } : {}), identity })
+    }
+    if (source.reader === 'website' && depth === 'deep') {
+      let feed
+      try {
+        feed = await lookUpFeed(source.url, api.fetch, { as: 'website' })
+      } catch (error) {
+        if (signal.aborted) throw new Stopped()
+        throw failureOf(api.calls, error)
+      }
+      // A website programme's address is its own public page, which TVN keeps.
+      const programmes = feed.episodes.flatMap(({ id, title, durationSec, published, summary, image, page, media, web }) =>
+        web && media ? [{ id, title, durationSec, media, web, ...(published ? { published } : {}), ...(summary ? { summary } : {}), ...(image ? { image } : {}), ...(page ? { page } : {}) }] : [],
+      )
+      return done({ programmes, refused: 0, identity: { sourceType: 'website', url: feed.feedUrl || source.url, label: feed.title || source.url } })
     }
     if (source.reader === 'podcast') {
       let feed
       try {
-        feed = await lookUpFeed(source.url, api.fetch, depth === 'audit' ? { mode: 'all' } : {})
+        feed = await lookUpFeed(source.url, api.fetch, depth === 'incremental' ? {} : { mode: 'all' })
       } catch (error) {
         if (signal.aborted) throw new Stopped()
         throw failureOf(api.calls, error)
@@ -228,7 +253,10 @@ export async function readSource(source: ReadSource, depth: 'audit' | 'increment
         ...(image ? { image } : {}),
         ...(page ? { page } : {}),
       }))
-      return done({ programmes, refused: 0 })
+      const identity = feed.live
+        ? { sourceType: (feed.live.media === 'audio' ? (feed.live.format === 'hls' ? 'audio-hls' : 'audio') : feed.live.format === 'hls' ? 'video-hls' : 'video') as ExportSourceType, url: feed.live.url, label: feed.title || feed.live.url }
+        : { sourceType: 'podcast' as const, url: feed.feedUrl || source.url, label: feed.title || source.url }
+      return done({ programmes, refused: 0, identity })
     }
     if (source.reader === 'website' || source.reader === 'stream') return done(await checkAddress(source, pacer))
     throw new ReadFailure('UNSUPPORTED', 'Nothing to read')
@@ -236,6 +264,20 @@ export async function readSource(source: ReadSource, depth: 'audit' | 'increment
     if (error instanceof Stopped || signal.aborted) throw new Stopped()
     if (error instanceof ReadFailure) throw error
     throw new ReadFailure('TEMPORARY FAILURE', error instanceof Error ? error.message : 'The source could not be read')
+  }
+}
+
+/** The next batch of a deep enumeration, from TVN's own cursor. */
+export async function readBatch(cursor: string, pacer: Pacer, signal: AbortSignal): Promise<ReadResult> {
+  const before = pacer.requests
+  const api = localApi(pacer.fetch)
+  try {
+    const batch = await lookUpBatch(cursor, api.fetch, signal)
+    if (signal.aborted) throw new Stopped()
+    return { programmes: batch.videos, refused: refusedIn(api.calls), requests: pacer.requests - before, ...(batch.listed !== undefined ? { listed: batch.listed } : {}), ...(batch.next ? { next: batch.next } : {}) }
+  } catch (error) {
+    if (error instanceof Stopped || signal.aborted) throw new Stopped()
+    throw failureOf(api.calls, error)
   }
 }
 

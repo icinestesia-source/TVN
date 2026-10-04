@@ -12,6 +12,9 @@ export interface FreshProgramme {
   summary?: string
   image?: string
   page?: string
+  /** A website or post programme's own public page (TVN frames it); a recording's media address never comes here. */
+  media?: string
+  web?: 'website' | 'post'
 }
 
 export interface Enrichment {
@@ -57,7 +60,7 @@ export function mergeFresh(held: readonly ExportVideo[], fresh: readonly FreshPr
   const taken = new Set<string>()
   let overflow = 0
   for (const raw of fresh) {
-    const item = { ...raw, image: publicLink(raw.image), page: publicLink(raw.page) }
+    const item = { ...raw, image: publicLink(raw.image), page: publicLink(raw.page), media: raw.web ? publicLink(raw.media) : undefined }
     if (taken.has(item.id)) continue
     taken.add(item.id)
     const published = item.published && DAY.test(item.published) ? item.published : undefined
@@ -74,7 +77,7 @@ export function mergeFresh(held: readonly ExportVideo[], fresh: readonly FreshPr
       if (Object.keys(fields).length > 0) enriched.push({ id: item.id, fields })
       continue
     }
-    if (!(item.durationSec > 0) || !item.title) continue
+    if (!(item.durationSec > 0) || !item.title || (item.web && !item.media)) continue
     if (held.length + added.length >= options.limit) {
       overflow += 1
       continue
@@ -88,6 +91,7 @@ export function mergeFresh(held: readonly ExportVideo[], fresh: readonly FreshPr
       ...(item.summary ? { summary: item.summary } : {}),
       ...(item.image ? { image: item.image } : {}),
       ...(item.page ? { page: item.page } : {}),
+      ...(item.web && item.media ? { media: item.media, web: item.web } : {}),
       ...(options.hold ? { pending: true as const } : {}),
     })
   }

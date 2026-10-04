@@ -38,6 +38,8 @@ export interface HarvesterConfig {
   staleHours: number
   /** An incremental read follows the list past its newest page at most this many batches, until it meets a known programme. */
   catchUpBatches: number
+  /** A deep enumeration (a Source Desk source, or a PARTIAL one carried on) reads at most this many batches per visit; past that it stays PARTIAL. */
+  deepBatches: number
   /** A source missing at its address this many runs in a row has its programmes marked unavailable (never deleted). */
   unavailableAfterNotFound: number
   /** New programmes are held back from the schedule, as LOAD holds them, until the curator rescans or rebuilds. */
@@ -55,6 +57,7 @@ export const DEFAULT_CONFIG: HarvesterConfig = {
   backoffMs: [5_000, 20_000],
   staleHours: 12,
   catchUpBatches: 10,
+  deepBatches: 400,
   unavailableAfterNotFound: 2,
   holdNew: true,
   snapshotMinutes: 30,

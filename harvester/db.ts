@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 
 /** The working database's own schema version, separate from the export's. */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /**
  * Each migration takes the schema from the version before it to its own. A newer Harvester adds one at
@@ -138,6 +138,85 @@ export const MIGRATIONS: readonly { version: number; sql: string }[] = [
         state TEXT NOT NULL DEFAULT 'queued',
         note TEXT,
         updated_at TEXT
+      );
+    `,
+  },
+  {
+    // Phase 2: the shipped 001–999 network as a baseline layer, provenance on every source and programme,
+    // channel-range and Source Desk runs, deep (resumable) enumeration, and the Source Desk's own state.
+    version: 2,
+    sql: `
+      -- 'master': from the Complete Export (exported as it was). 'shipped': a 001–999 channel TVN ships, read as baseline.
+      ALTER TABLE channels ADD COLUMN layer TEXT NOT NULL DEFAULT 'master';
+      -- Identity independent of number: the export's channel id, or the shipped catalogue's channel id.
+      ALTER TABLE channels ADD COLUMN stable_id TEXT;
+      UPDATE channels SET stable_id = json_extract(body, '$.id') WHERE scope = 'user';
+
+      -- master (the export), shipped (TVN's catalogue), desk (added at the Source Desk).
+      ALTER TABLE sources ADD COLUMN provenance TEXT NOT NULL DEFAULT 'master';
+      ALTER TABLE sources ADD COLUMN added_run INTEGER;
+      ALTER TABLE sources ADD COLUMN added_at TEXT;
+      -- Where a deep enumeration stopped (TVN's own batch cursor), and whether the provider's list has been read to its end.
+      ALTER TABLE sources ADD COLUMN continuation TEXT;
+      ALTER TABLE sources ADD COLUMN complete INTEGER NOT NULL DEFAULT 0;
+
+      -- master, shipped, auto (Harvester AUTO) or desk (a Source Desk scan).
+      ALTER TABLE programmes ADD COLUMN provenance TEXT NOT NULL DEFAULT 'master';
+      UPDATE programmes SET provenance = 'auto' WHERE origin = 'harvest';
+
+      -- auto (AUTO runs, resumable), channel (AUTO REFRESH CHANNEL) or desk (SCAN SOURCES); a channel range for AUTO.
+      ALTER TABLE runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'auto';
+      ALTER TABLE runs ADD COLUMN range_from INTEGER;
+      ALTER TABLE runs ADD COLUMN range_to INTEGER;
+
+      CREATE TABLE changes_v2 (
+        id INTEGER PRIMARY KEY,
+        run_id INTEGER NOT NULL,
+        channel_id INTEGER NOT NULL,
+        source_id INTEGER NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('added', 'date', 'metadata', 'unavailable', 'status', 'source')),
+        video_id TEXT,
+        detail TEXT,
+        at TEXT NOT NULL,
+        provenance TEXT NOT NULL DEFAULT 'auto'
+      );
+      INSERT INTO changes_v2 (id, run_id, channel_id, source_id, kind, video_id, detail, at) SELECT id, run_id, channel_id, source_id, kind, video_id, detail, at FROM changes;
+      DROP TABLE changes;
+      ALTER TABLE changes_v2 RENAME TO changes;
+      CREATE INDEX changes_run ON changes (run_id);
+
+      ALTER TABLE desk ADD COLUMN reviewed_at TEXT;
+      ALTER TABLE desk ADD COLUMN skipped_at TEXT;
+      ALTER TABLE desk ADD COLUMN enriched_at TEXT;
+      ALTER TABLE desk ADD COLUMN sources_added INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE desk ADD COLUMN programmes_added INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE desk ADD COLUMN seconds_added INTEGER NOT NULL DEFAULT 0;
+
+      -- Addresses pasted at the Source Desk and not yet scanned (or scanned, with their result).
+      CREATE TABLE desk_pending (
+        id INTEGER PRIMARY KEY,
+        channel_id INTEGER NOT NULL REFERENCES channels (id),
+        url TEXT NOT NULL,
+        kind TEXT,
+        type_label TEXT NOT NULL,
+        status TEXT NOT NULL,
+        note TEXT,
+        result TEXT,
+        source_id INTEGER,
+        added_at TEXT NOT NULL
+      );
+
+      -- The shipped catalogue read as the 001–999 baseline, and the build it must match.
+      CREATE TABLE baseline (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        app_commit TEXT NOT NULL,
+        app_build TEXT,
+        checked_head TEXT,
+        catalogue_sha256 TEXT NOT NULL,
+        imported_at TEXT NOT NULL,
+        channels INTEGER NOT NULL,
+        sources INTEGER NOT NULL,
+        programmes INTEGER NOT NULL
       );
     `,
   },
