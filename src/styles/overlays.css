@@ -613,12 +613,20 @@
   top: 18%;
   transform: translateX(-50%);
   z-index: 46;
+  pointer-events: none;
+  animation: notice-in 160ms ease-out;
   padding: 8px 14px;
   background: rgba(0, 0, 0, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.2);
   font-family: var(--font-ui);
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+@keyframes notice-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .paused-bug {

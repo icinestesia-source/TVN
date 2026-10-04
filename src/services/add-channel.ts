@@ -1,5 +1,5 @@
 import type { AddedChannel } from './user-network.ts'
-import { calendarDate, type ImportedVideo } from './channels-import.ts'
+import { calendarDate, videoCreator, type ImportedVideo } from './channels-import.ts'
 
 /** TVN's own lookup (a Netlify Function in production, the Vite server locally). It needs no key. */
 export const CHANNEL_API = '/api/channel'
@@ -55,10 +55,11 @@ function mixOf(raw: unknown): { mix?: { list: string; seed: string } } {
 
 function videosOf(rows: readonly unknown[]): ImportedVideo[] {
   return rows.flatMap((row) => {
-    const { id, title, durationSec, published } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown; published?: unknown }
+    const { id, title, durationSec, published, creator } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown; published?: unknown; creator?: unknown }
     const day = calendarDate(published)
+    const by = videoCreator(creator)
     return typeof id === 'string' && typeof title === 'string' && typeof durationSec === 'number' && durationSec > 0
-      ? [{ id, title, durationSec: Math.round(durationSec), ...(day ? { published: day } : {}) }]
+      ? [{ id, title, durationSec: Math.round(durationSec), ...(day ? { published: day } : {}), ...(by ? { creator: by } : {}) }]
       : []
   })
 }

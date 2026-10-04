@@ -378,8 +378,9 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     const timeMs = anchor?.timeMs ?? anchorTime(grid.scrollLeft, offsetPx, before.startMs, before.px)
     grid.scrollLeft = anchoredScrollLeft(timeMs, offsetPx, startMs, pxPerMinute)
     prevStart.current = startMs
-    // A zoom the viewer aimed stays where they aimed it; NOW still brings the current programme into view.
-    zoomHeld.current = anchor !== null
+    // A zoom, aimed by pinch or pressed as - / =, keeps the listings where the viewer had them: the time at the
+    // anchor stays put and the rows do not move. Only NOW (its own effect below) brings the playing channel back.
+    zoomHeld.current = true
     if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
     setScrollLeft(grid.scrollLeft)
     setViewWidth(grid.clientWidth)

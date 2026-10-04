@@ -90,6 +90,10 @@ export interface Programme {
   sourceRef?: string
   /** Collection or publisher, when the schedule recorded one. */
   creator?: string
+  /** That creator's own @handle (without the @), only when the provider's listing linked one. */
+  creatorHandle?: string
+  /** The creator's channel page, only when the provider's listing named it. */
+  creatorUrl?: string
   /** Presentation caption shown on the card when the programme has no picture. */
   caption?: string
   /** Parent programme block when this item is a child of a compiled running order. */

@@ -12,6 +12,32 @@ export interface ResolvedVideo {
   durationSec: number
   /** Upload day (YYYY-MM-DD), where the source's public feed, or the feed of a playlist it lists, gave one. */
   published?: string
+  /** The channel that uploaded it, as the listing links it: its name, id and @handle where the link carries one. */
+  creator?: VideoCreator
+}
+
+export interface VideoCreator {
+  name: string
+  channelId?: string
+  handle?: string
+}
+
+/** The uploader a listing entry links to: only a real channel link counts, and a handle only from its own address. */
+function creatorFrom(name: unknown, endpoint: unknown): VideoCreator | undefined {
+  const { browseId, canonicalBaseUrl } = (endpoint ?? {}) as { browseId?: unknown; canonicalBaseUrl?: unknown }
+  if (typeof name !== 'string' || !name.trim() || typeof browseId !== 'string' || !/^UC[0-9A-Za-z_-]{22}$/.test(browseId)) return undefined
+  const handle = typeof canonicalBaseUrl === 'string' ? canonicalBaseUrl.match(/^\/@([\w.-]{3,30})$/)?.[1] : undefined
+  return { name: name.trim(), channelId: browseId, ...(handle ? { handle } : {}) }
+}
+
+function lockupCreator(metadata: unknown): VideoCreator | undefined {
+  let found: VideoCreator | undefined
+  walk(metadata, (node) => {
+    if (found) return
+    const text = node.text as { content?: unknown; commandRuns?: { onTap?: { innertubeCommand?: { browseEndpoint?: unknown } } }[] } | undefined
+    if (text && Array.isArray(text.commandRuns)) found = creatorFrom(text.content, text.commandRuns[0]?.onTap?.innertubeCommand?.browseEndpoint)
+  })
+  return found
 }
 
 export interface ResolvedChannel {
@@ -182,10 +208,10 @@ function textOf(value: unknown): string {
 export function videosFromPlaylistPage(data: unknown): ResolvedVideo[] {
   const videos: ResolvedVideo[] = []
   const seen = new Set<string>()
-  const push = (id: unknown, title: string, durationSec: number) => {
+  const push = (id: unknown, title: string, durationSec: number, creator?: VideoCreator) => {
     if (typeof id !== 'string' || !VIDEO_ID.test(id) || seen.has(id) || !title) return
     seen.add(id)
-    videos.push({ id, title, durationSec })
+    videos.push({ id, title, durationSec, ...(creator ? { creator } : {}) })
   }
   walk(data, (node) => {
     const lockup = node.lockupViewModel as Record<string, unknown> | undefined
@@ -195,11 +221,16 @@ export function videosFromPlaylistPage(data: unknown): ResolvedVideo[] {
         const badge = inner.thumbnailBadgeViewModel as { text?: unknown } | undefined
         if (!durationSec && typeof badge?.text === 'string') durationSec = parseClock(badge.text)
       })
-      const metadata = (lockup.metadata as { lockupMetadataViewModel?: { title?: unknown } } | undefined)?.lockupMetadataViewModel
-      push(lockup.contentId, textOf(metadata?.title), durationSec)
+      const metadata = (lockup.metadata as { lockupMetadataViewModel?: { title?: unknown; metadata?: unknown } } | undefined)?.lockupMetadataViewModel
+      push(lockup.contentId, textOf(metadata?.title), durationSec, lockupCreator(metadata?.metadata))
     }
-    const legacy = node.playlistVideoRenderer as { videoId?: unknown; title?: unknown; lengthSeconds?: unknown } | undefined
-    if (legacy) push(legacy.videoId, textOf(legacy.title), Number(legacy.lengthSeconds) || 0)
+    const legacy = node.playlistVideoRenderer as
+      | { videoId?: unknown; title?: unknown; lengthSeconds?: unknown; shortBylineText?: { runs?: { text?: unknown; navigationEndpoint?: { browseEndpoint?: unknown } }[] } }
+      | undefined
+    if (legacy) {
+      const run = legacy.shortBylineText?.runs?.[0]
+      push(legacy.videoId, textOf(legacy.title), Number(legacy.lengthSeconds) || 0, creatorFrom(run?.text, run?.navigationEndpoint?.browseEndpoint))
+    }
   })
   return videos
 }
@@ -418,7 +449,7 @@ export async function resolveBatch(text: string, read: typeof fetch = fetch): Pr
   const { videos, refused } = await embeddableVideos(listing, read, Number.POSITIVE_INFINITY)
   const token = continuationOf(data)
   return {
-    videos,
+    videos: withDates(videos, await watchPageDates(videos, read)),
     refused,
     ...(listed !== null ? { listed } : {}),
     ...(token && token !== cursor.token ? { next: encodeCursor({ list: cursor.list, version: cursor.version, token, skip: 0 }) } : {}),
@@ -523,6 +554,92 @@ async function readPlaylistDates(channelId: string, read: typeof fetch): Promise
   return days
 }
 
+/** Watch pages read for upload days the feeds did not give: at most this many per answer, inside this long. */
+export const WATCH_DATE_LIMIT = 120
+export const WATCH_DATE_BUDGET_MS = 4_000
+
+/** Upload days already read from watch pages: a video's day never changes, so it is not read twice. */
+const watchDays = new Map<string, string>()
+const WATCH_DAYS_KEPT = 50_000
+
+function shuffled<T>(items: readonly T[]): T[] {
+  const out = [...items]
+  for (let index = out.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(Math.random() * (index + 1))
+    ;[out[index], out[other]] = [out[other], out[index]]
+  }
+  return out
+}
+
+/** A video's upload day as its own public watch page states it (its schema.org metadata, else its player details). */
+export function watchPageDate(html: string): string | null {
+  return (
+    html.match(/<meta itemprop="(?:datePublished|uploadDate)" content="(\d{4}-\d{2}-\d{2})/)?.[1] ??
+    html.match(/"(?:publishDate|uploadDate)":"(\d{4}-\d{2}-\d{2})/)?.[1] ??
+    null
+  )
+}
+
+/** One watch page, read only as far as its upload day; the rest of the page is never downloaded. */
+async function readWatchDate(id: string, read: typeof fetch, ms: number): Promise<string | null> {
+  try {
+    const response = await read(`https://www.youtube.com/watch?v=${id}`, { headers: HEADERS, signal: AbortSignal.timeout(Math.max(1, ms)) })
+    if (!response.ok) return null
+    if (!response.body) return watchPageDate(await response.text())
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let text = ''
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const from = Math.max(0, text.length - 200)
+      text += decoder.decode(value, { stream: true })
+      const day = watchPageDate(text.slice(from))
+      if (day) {
+        await reader.cancel().catch(() => undefined)
+        return day
+      }
+    }
+    return watchPageDate(text)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Upload days for the videos the public feeds left undated, from each video's own watch page: a few at a time,
+ * inside a time budget, so an answer is never held up for long. What is not reached stays undated (never guessed)
+ * and a later RESCAN or LOAD MORE dates it.
+ */
+export async function watchPageDates(videos: readonly ResolvedVideo[], read: typeof fetch, now: () => number = Date.now): Promise<Map<string, string>> {
+  const days = new Map<string, string>()
+  const unknown: ResolvedVideo[] = []
+  for (const video of videos) {
+    if (video.published) continue
+    const known = watchDays.get(video.id)
+    if (known) days.set(video.id, known)
+    else unknown.push(video)
+  }
+  // Taken in no fixed order, so a RESCAN reaches the ones an earlier answer ran out of time for.
+  const missing = shuffled(unknown).slice(0, WATCH_DATE_LIMIT)
+  const deadline = now() + WATCH_DATE_BUDGET_MS
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, missing.length) }, async () => {
+      while (next < missing.length && now() < deadline) {
+        const video = missing[next++]
+        const day = await readWatchDate(video.id, read, deadline - now())
+        if (day) {
+          days.set(video.id, day)
+          if (watchDays.size >= WATCH_DAYS_KEPT) watchDays.delete(watchDays.keys().next().value as string)
+          watchDays.set(video.id, day)
+        }
+      }
+    }),
+  )
+  return days
+}
+
 const withDates = (videos: readonly ResolvedVideo[], days: ReadonlyMap<string, string>): ResolvedVideo[] =>
   videos.map((video) => {
     const published = video.published ?? days.get(video.id)
@@ -544,11 +661,12 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
     const ownerId = playlistOwnerFrom(list.data)
     const count = listedCountFrom(list.data)
     const next = cursorAfter(input.id, list, kept.taken)
+    const fed = withDates(kept.videos, days)
     return {
       channelId: input.id,
       sourceType: 'youtube-playlist',
       title: playlistTitleFrom(list.data) ?? input.id,
-      videos: withDates(kept.videos, days),
+      videos: withDates(fed, await watchPageDates(fed, read)),
       scanned: listed.length,
       refused: kept.refused,
       ...(ownerId ? { ownerId } : {}),
@@ -575,7 +693,8 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   if (videos.length === 0 && !seed) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
   const count = listedCountFrom(list.data)
   const next = cursorAfter(uploads, list, taken)
-  const dated = withDates(withDates(videos, days), older)
+  const fed = withDates(withDates(videos, days), older)
+  const dated = withDates(fed, await watchPageDates(fed, read))
   return {
     channelId,
     sourceType: 'youtube-channel',
@@ -606,7 +725,23 @@ export function seedFromPage(html: string, id: string): ResolvedVideo | null {
   const durationSec = Number(details[3])
   if (!title || durationSec < MIN_SECONDS) return null
   const published = html.match(/"publishDate":"(\d{4}-\d{2}-\d{2})/)?.[1]
-  return { id, title, durationSec, ...(published ? { published } : {}) }
+  const creator = watchPageCreator(html)
+  return { id, title, durationSec, ...(published ? { published } : {}), ...(creator ? { creator } : {}) }
+}
+
+/** The uploader a watch page names in its player details; the handle only from the owner's own profile address. */
+export function watchPageCreator(html: string): VideoCreator | undefined {
+  const raw = html.match(/"ownerChannelName":"((?:[^"\\]|\\.)*)"/)?.[1]
+  const channelId = html.match(/"externalChannelId":"(UC[0-9A-Za-z_-]{22})"/)?.[1]
+  if (raw === undefined || !channelId) return undefined
+  let name: string
+  try {
+    name = JSON.parse(`"${raw}"`) as string
+  } catch {
+    return undefined
+  }
+  const handle = html.match(/"ownerProfileUrl":"https?:\/\/www\.youtube\.com\/@([\w.-]{3,30})"/)?.[1]
+  return creatorFrom(name, { browseId: channelId, ...(handle ? { canonicalBaseUrl: `/@${handle}` } : {}) })
 }
 
 async function channelNamed(

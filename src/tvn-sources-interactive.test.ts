@@ -137,7 +137,7 @@ describe('Website programmes', () => {
     expect(stage).not.toMatch(/srcdoc|dangerouslySetInnerHTML|contentWindow|contentDocument/)
     expect(screen).toContain('{web.interacting ? null : <PictureCatch />}')
     expect(screen).toMatch(/event\.key !== 'Escape'[\s\S]*stopWebInteraction\(\)/)
-    expect(screen).toContain('Exit · Esc')
+    expect(screen).toContain('Interacting · Esc to TVN')
     expect(css).toMatch(/\.stage iframe\.web-host\.is-interacting\s*\{\s*pointer-events: auto;/)
   })
 

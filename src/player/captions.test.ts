@@ -187,8 +187,10 @@ describe('subtitles toggle', () => {
     expect(restored).toBeUndefined()
   })
 
-  it('K: Space still pauses and plays', () => {
-    expect(commandFromKey(' ', plain, false)).toEqual({ type: 'play-pause' })
-    expect(key(' ')).toEqual({ type: 'play-pause' })
+  it('K: P pauses and plays; Space is TV Surf', () => {
+    expect(commandFromKey('p', plain, false)).toEqual({ type: 'play-pause' })
+    expect(key('P')).toEqual({ type: 'play-pause' })
+    expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
+    expect(key(' ')).toEqual({ type: 'random-channel' })
   })
 })

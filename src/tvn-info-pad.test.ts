@@ -253,7 +253,7 @@ describe('information overlay: 3×3 control pad', () => {
     const { sent, settings, press, find } = pad()
     const t = find('TV Surf')
     expect(t.label).toBe('TVN')
-    expect(t.props.title).toBe('Surf: ALL · right-click or hold: surf TVN only')
+    expect(t.props.title).toBe('Surf: ALL (Space) · right-click, hold or hold Space: surf TVN only')
     expect(t.props['aria-haspopup']).toBeUndefined()
     press('TV Surf')
     expect(sent).toEqual([{ type: 'random-channel' }])
@@ -261,7 +261,7 @@ describe('information overlay: 3×3 control pad', () => {
     expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
     // Right-click (a mouse) switches the scope and never surfs or opens settings.
     const scoped = context({ randomScoped: true, surfScopeName: 'Ann' })
-    expect(SHORTCUTS.random.describe!(scoped)).toBe('Surf: ANN only · right-click or hold: surf all')
+    expect(SHORTCUTS.random.describe!(scoped)).toBe('Surf: ANN only (Space) · right-click, hold or hold Space: surf all')
     expect(SHORTCUTS.random.labelOf!(scoped)).toBe('ANN')
     expect(SHORTCUTS.random.labelOf!(context())).toBe('USER')
     expect(SHORTCUTS.random.labelOf!(context({ surfScopeName: '  my   network ' }))).toBe('MY NETWORK')

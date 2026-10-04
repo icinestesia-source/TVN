@@ -30,6 +30,24 @@ export function selectProgramme(
   return selected
 }
 
+/**
+ * A website or post picked up again after a pause: it has no position of its own, so TVN holds its place in
+ * the slot. It carries on from where the pause held it, for what was left of its slot; then the broadcast.
+ */
+export function resumeProgramme(
+  channelNumber: number,
+  programme: Programme,
+  elapsedSeconds: number,
+  nowMs: number,
+  slot?: { startMs: number; endMs: number },
+): ManualAiring | null {
+  const elapsedMs = Math.max(0, elapsedSeconds * 1000)
+  if (elapsedMs >= programme.durationSeconds * 1000) return null
+  const startMs = nowMs - elapsedMs
+  selected = { channelNumber, programme, startMs, endMs: startMs + programme.durationSeconds * 1000, slot }
+  return selected
+}
+
 /** How many slots with nothing to show (the schedule's holding cards) Prev and Next look past. */
 export const STEP_REACH = 24
 

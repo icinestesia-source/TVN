@@ -23,6 +23,8 @@ from pathlib import Path
 API = "https://www.googleapis.com/youtube/v3/"
 CATALOGUE = Path("public/independent/playable.json")
 DESCRIPTIONS = Path("/tmp/retrotv-descriptions.json")
+# videoId -> upload day (YYYY-MM-DD) as the Data API reports it; written to the catalogue's `uploaded` map.
+UPLOADED: dict[str, str] = {}
 sys.path.insert(0, str(Path(__file__).parent))
 from validate_youtube_catalogue import BLOCKED  # noqa: E402
 from source_registry import assert_registry  # noqa: E402
@@ -1100,6 +1102,8 @@ def acquire(target: dict, scan: int, taken: set[str]) -> tuple[str, list]:
                 continue
             snippet = video["snippet"]
             descriptions[video["id"]] = {"d": snippet.get("description", ""), "p": snippet.get("publishedAt", ""), "c": snippet.get("channelTitle", "")}
+            if re.match(r"\d{4}-\d{2}-\d{2}", snippet.get("publishedAt", "")):
+                UPLOADED[video["id"]] = snippet["publishedAt"][:10]
             rows.append([video["id"], snippet["title"], seconds(video["contentDetails"]["duration"]), target["id"], list(target["channels"]), "api"])
     DESCRIPTIONS.write_text(json.dumps(descriptions))
     save_cache()
@@ -1153,6 +1157,7 @@ def main() -> None:
         previous = {row[0]: row[4] for row in doc["items"] if row[3] == target["id"] and row[0] in routed}
         rows = [row[:4] + [previous[row[0]]] + row[5:] if row[0] in previous else row for row in rows]
         doc["items"] = [row for row in doc["items"] if row[3] != target["id"]] + rows
+        doc.setdefault("uploaded", {}).update({row[0]: UPLOADED[row[0]] for row in rows if row[0] in UPLOADED})
         doc["generatedAt"] = int(time.time() * 1000)
         CATALOGUE.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")))
     from source_register import write_register  # noqa: E402

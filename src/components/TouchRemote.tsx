@@ -113,7 +113,7 @@ export function TouchRemote() {
             <button type="button" onClick={() => tv.dispatch({ type: 'last-channel' })}>
               Last
             </button>
-            <button type="button" onClick={() => tv.dispatch({ type: 'random-channel' })}>
+            <button type="button" title="Surf (Space)" onClick={() => tv.dispatch({ type: 'random-channel' })}>
               Random
             </button>
             <button type="button" onClick={() => tv.dispatch({ type: 'multiview' })}>
@@ -144,7 +144,7 @@ export function TouchRemote() {
                 <path d="M12 3v8" />
               </svg>
             </button>
-            <button type="button" onClick={() => tv.dispatch({ type: 'favourite' })}>
+            <button type="button" title="Favourite (S)" onClick={() => tv.dispatch({ type: 'favourite' })}>
               Fav
             </button>
             <button type="button" onClick={() => tv.dispatch({ type: 'mute' })}>
@@ -177,7 +177,7 @@ export function TouchRemote() {
             >
               Credits
             </button>
-            <button type="button" aria-pressed={tv.paused} onClick={() => tv.dispatch({ type: 'play-pause' })}>
+            <button type="button" title={tv.paused ? 'Resume (P)' : 'Pause (P)'} aria-pressed={tv.paused} onClick={() => tv.dispatch({ type: 'play-pause' })}>
               {tv.paused ? 'Play' : 'Pause'}
             </button>
             <button

@@ -1,3 +1,4 @@
+import { programmeAttribution, useSourceRegister } from '../credits/attribution.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import { playbackLabel } from '../view/playback-label.ts'
@@ -55,6 +56,8 @@ export function ProgrammeInfo({
   const kind = playbackLabel(channel, programme)
   // Airing now, or picked from the Guide and playing, goes unsaid; a Guide slot at another time says when it is.
   const status = picked || following || stream || live ? null : later ? 'Later' : 'Already broadcast'
+  const register = useSourceRegister()
+  const by = programmeAttribution(programme, register)
 
   return (
     <div className="info-main">
@@ -62,6 +65,15 @@ export function ProgrammeInfo({
         {label ? <span className="info-net">{label}</span> : null}
         <span>{padChannel(channel.number)}</span>
         <span>{channel.name}</span>
+        {by ? (
+          by.url ? (
+            <a className="info-creator" href={by.url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
+              {by.text}
+            </a>
+          ) : (
+            <span className="info-creator">{by.text}</span>
+          )
+        ) : null}
       </p>
       <h2 className="info-title">{programme.title}</h2>
       {programme.relay ? (

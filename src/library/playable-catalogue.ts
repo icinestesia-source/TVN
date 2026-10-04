@@ -21,6 +21,8 @@ export interface PlayableCatalogueV2 {
   trailerGenres?: Record<string, [string, string[]]>
   /** videoId -> upload time (ISO) for rolling-channel programmes, from scripts/dynamic_refresh.py. */
   published?: Record<string, string>
+  /** videoId -> upload day (YYYY-MM-DD) as the Data API reported it, from scripts/add_targeted_sources.py. */
+  uploaded?: Record<string, string>
 }
 
 const DURATION_REASON = {
@@ -150,7 +152,7 @@ export function expandPlayableCatalogue(raw: unknown): LibraryMedia[] {
       original,
       eras.filter((channel) => viable.has(channel) && !dropped.get(channel)?.has(index)),
       genreChannels.filter((channel) => viableGenres.has(channel)),
-      doc.published?.[row[0]],
+      doc.published?.[row[0]] ?? doc.uploaded?.[row[0]],
     )
     if (item) out.push(item)
   }

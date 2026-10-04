@@ -134,8 +134,8 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDefinition> = {
     unavailable: 'TV Surf is not available',
     describe: (context) =>
       context.randomScoped
-        ? `Surf: ${surfLabel(context.surfScopeName)} only · right-click or hold: surf all`
-        : `Surf: ALL · right-click or hold: surf ${surfLabel(context.surfScopeName)} only`,
+        ? `Surf: ${surfLabel(context.surfScopeName)} only (Space) · right-click, hold or hold Space: surf all`
+        : `Surf: ALL (Space) · right-click, hold or hold Space: surf ${surfLabel(context.surfScopeName)} only`,
     available: () => true,
     run: (context) => context.dispatch({ type: 'random-channel' }),
     // Lit while the Random Cycle (in Options) runs; accent-marked while it surfs one User Network.

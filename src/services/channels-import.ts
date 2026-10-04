@@ -13,6 +13,8 @@ export interface ImportedVideo {
   watched?: boolean
   /** Upload date (YYYY-MM-DD), when the source listed one. */
   published?: string
+  /** The channel that uploaded it, as the provider's listing linked it. */
+  creator?: VideoCreator
   /** The year the programme belongs to, when stated. */
   year?: number
   /** YouTube playlists this programme was found in, for a filter's playlist rule. */
@@ -30,6 +32,31 @@ export interface ImportedVideo {
    * through its provider's own embed. `media` is then that page's address and `durationSec` the slot it is given.
    */
   web?: 'website' | 'post'
+}
+
+/** An uploader as a provider listed it: a name, with its channel id and @handle only where the listing gave them. */
+export interface VideoCreator {
+  name: string
+  channelId?: string
+  handle?: string
+}
+
+/** A stored or received uploader, kept only when it is well formed; a handle is never made from the name. */
+export function videoCreator(raw: unknown): VideoCreator | undefined {
+  const { name, channelId, handle } = (raw ?? {}) as { name?: unknown; channelId?: unknown; handle?: unknown }
+  if (typeof name !== 'string' || !name.trim() || name.length > 200) return undefined
+  return {
+    name: name.trim(),
+    ...(typeof channelId === 'string' && /^UC[0-9A-Za-z_-]{22}$/.test(channelId) ? { channelId } : {}),
+    ...(typeof handle === 'string' && /^[\w.-]{3,30}$/.test(handle) ? { handle } : {}),
+  }
+}
+
+/** A YouTube programme's creator fields: the name, its @handle when known, and its channel page when known. */
+export function creatorFields(creator: VideoCreator | undefined): Pick<Programme, 'creator' | 'creatorHandle' | 'creatorUrl'> {
+  if (!creator) return {}
+  const url = creator.handle ? `https://www.youtube.com/@${creator.handle}` : creator.channelId ? `https://www.youtube.com/channel/${creator.channelId}` : undefined
+  return { creator: creator.name, ...(creator.handle ? { creatorHandle: creator.handle } : {}), ...(url ? { creatorUrl: url } : {}) }
 }
 
 /** A source's upload date as the canonical YYYY-MM-DD calendar day, or nothing when it is not a real one. */
@@ -163,7 +190,7 @@ export function parseChannelsExport(text: string): ParsedExport {
     const seenVideos = new Set<string>()
     for (const item of raw.videos) {
       if (!item || typeof item !== 'object') continue
-      const video = item as { id?: unknown; title?: unknown; durationSec?: unknown; watched?: unknown; published?: unknown }
+      const video = item as { id?: unknown; title?: unknown; durationSec?: unknown; watched?: unknown; published?: unknown; creator?: unknown }
       const id = typeof video.id === 'string' ? video.id.trim() : ''
       const title = typeof video.title === 'string' ? video.title.trim() : ''
       const durationSec = typeof video.durationSec === 'number' ? video.durationSec : Number.NaN
@@ -174,12 +201,14 @@ export function parseChannelsExport(text: string): ParsedExport {
       if (seenVideos.has(id)) continue
       seenVideos.add(id)
       const published = calendarDate(video.published)
+      const creator = videoCreator(video.creator)
       videos.push({
         id,
         title,
         durationSec: Math.round(durationSec),
         watched: video.watched === true ? true : undefined,
         ...(published ? { published } : {}),
+        ...(creator ? { creator } : {}),
       })
       videoCount += 1
       totalSeconds += Math.round(durationSec)
@@ -302,6 +331,7 @@ export function mergeParsedExports(parts: readonly ParsedExport[]): ParsedExport
           if (video.watched) existing.watched = true
           if (video.durationSec > existing.durationSec) existing.durationSec = video.durationSec
           if (!existing.published && video.published) existing.published = video.published
+          if (!existing.creator && video.creator) existing.creator = video.creator
           continue
         }
         const copy = { ...video }
@@ -538,6 +568,7 @@ export function channelsFromSources(
       sourceRef: `youtube:${video.id}`,
       playbackMode: 'linear' as const,
       ...(video.published || shippedDays.has(video.id) ? { publishedAt: video.published ?? shippedDays.get(video.id) } : {}),
+      ...creatorFields(video.creator),
     }))
     programmes.set(id, list)
   }

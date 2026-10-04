@@ -197,9 +197,10 @@ describe('Guide timeline zoom', () => {
     expect(now).toContain('const nextCursor = { channelNumber: channelRef.current, timeMs: now }')
     expect(now).toContain('setGuideCursor(nextCursor)')
     expect(now).toContain('const nextWindow = windowAround(now)')
-    // NOW carries no aimed anchor, so the reveal still scrolls the current programme into view.
-    expect(guide).toContain('zoomHeld.current = anchor !== null')
+    // Every zoom holds the view; NOW brings the playing channel and the current time back through its own effect.
+    expect(guide).toContain('zoomHeld.current = true')
     expect(guide).toMatch(/if \(zoomHeld\.current\) \{\s*zoomHeld\.current = false\s*return\s*\}/)
+    expect(guide).toContain('grid.scrollLeft = openScrollLeft(Date.now(), startMs, pxPerMinute, grid.clientWidth)')
   })
 
   it('15. anchored zoom holds the time under the pointer or between the fingers', () => {

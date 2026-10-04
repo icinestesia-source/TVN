@@ -1252,6 +1252,25 @@ span.editor-expand { border-color: transparent; }
   font-size: 16px;
 }
 
+.info-creator {
+  color: var(--ink);
+  opacity: 0.72;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.8em;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+a.info-creator:hover,
+a.info-creator:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .info-title {
   margin-top: 2px;
   font-family: var(--font-ui);

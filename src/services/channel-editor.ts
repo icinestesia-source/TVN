@@ -140,7 +140,12 @@ export function withPlaylistVideos(videos: readonly ImportedVideo[], listed: rea
       continue
     }
     const lists = [...new Set([...(out[index].lists ?? []), ...(video.lists ?? [])])]
-    out[index] = { ...out[index], lists, ...(!out[index].published && video.published ? { published: video.published } : {}) }
+    out[index] = {
+      ...out[index],
+      lists,
+      ...(!out[index].published && video.published ? { published: video.published } : {}),
+      ...(!out[index].creator && video.creator ? { creator: video.creator } : {}),
+    }
   }
   return out
 }

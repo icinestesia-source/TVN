@@ -1,5 +1,5 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
-import type { StoredSource } from './channels-import.ts'
+import type { StoredSource, VideoCreator } from './channels-import.ts'
 import {
   cleanArtwork,
   cleanEditorial,
@@ -41,6 +41,7 @@ export interface ExportVideo {
   title: string
   durationSec: number
   published?: string
+  creator?: VideoCreator
   year?: number
   lists?: string[]
 }
@@ -136,8 +137,16 @@ function sourceTypeOf(source: ChannelSource): ExportSourceType {
   return source.kind
 }
 
-function exportVideo({ id, title, durationSec, published, year, lists }: ExportVideo): ExportVideo {
-  return { id, title, durationSec, ...(published ? { published } : {}), ...(year ? { year } : {}), ...(lists?.length ? { lists: [...lists] } : {}) }
+function exportVideo({ id, title, durationSec, published, creator, year, lists }: ExportVideo): ExportVideo {
+  return {
+    id,
+    title,
+    durationSec,
+    ...(published ? { published } : {}),
+    ...(creator ? { creator: { ...creator } } : {}),
+    ...(year ? { year } : {}),
+    ...(lists?.length ? { lists: [...lists] } : {}),
+  }
 }
 
 export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): ExportSource {

@@ -66,6 +66,8 @@ describe('upload dates read without a key', () => {
     expect(channel.videos.map((video) => [video.id, video.published])).toEqual([['bbbbbbbbbb1', '2026-09-30'], ['bbbbbbbbbb2', '2018-04-02'], ['bbbbbbbbbb3', undefined]])
     expect(urls.filter((url) => url.includes('videos.xml?playlist_id='))).toHaveLength(DATE_PLAYLISTS + 2)
     expect(urls.some((url) => url.includes(`playlist_id=UULF${'0'.repeat(21)}2`))).toBe(true)
-    expect(urls.some((url) => /\/watch\?|\/youtubei\/v1\/player/.test(url))).toBe(false)
+    // Only the video no feed dated has its own watch page read, once; the player API is never asked.
+    expect(urls.filter((url) => url.includes('/watch?'))).toEqual(['https://www.youtube.com/watch?v=bbbbbbbbbb3'])
+    expect(urls.some((url) => url.includes('/youtubei/v1/player'))).toBe(false)
   })
 })

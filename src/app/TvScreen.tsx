@@ -182,7 +182,7 @@ function WebControls() {
   if (web.interacting) {
     return (
       <div className="web-bar" role="status">
-        <span>Using the website · TVN controls paused</span>
+        <span>Interacting · Esc to TVN</span>
         <button
           type="button"
           className="web-exit"
@@ -191,7 +191,7 @@ function WebControls() {
             window.focus()
           }}
         >
-          Exit · Esc
+          Exit
         </button>
       </div>
     )

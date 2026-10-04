@@ -2,7 +2,7 @@ import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { cleanEditorial, cleanFilter, rescanned, SOURCE_MODES, sourceModeOf, type SourceMode } from './channel-curation.ts'
 import { cleanName, keptOrder, widenSources, withPlaylistVideos } from './channel-editor.ts'
 import { canonicalYouTubeUrl, inventoryOf, type ChannelSource } from './channel-sources.ts'
-import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, type ImportedVideo, type StoredSource } from './channels-import.ts'
+import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, videoCreator, type ImportedVideo, type StoredSource } from './channels-import.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 import { TVN_OWNER, type NetworkUser } from '../data/user-network/users.ts'
 import { CHANNEL_ID, storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
@@ -36,11 +36,12 @@ export function readUserNetworkFile(text: string): ReadResult {
 const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
   videos
     .filter((video) => video.id.trim() && video.durationSec >= 0)
-    .map(({ id, title, durationSec, published, year, lists }) => ({
+    .map(({ id, title, durationSec, published, creator, year, lists }) => ({
       id,
       title,
       durationSec,
       ...(typeof published === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(published) ? { published } : {}),
+      ...(videoCreator(creator) ? { creator: videoCreator(creator) } : {}),
       ...(typeof year === 'number' && Number.isInteger(year) ? { year } : {}),
       ...(Array.isArray(lists) && lists.length ? { lists: lists.filter((list) => typeof list === 'string') } : {}),
     }))

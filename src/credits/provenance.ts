@@ -142,6 +142,8 @@ function fromRegister(sourceId: string | undefined, register: SourceRegister) {
 function userSourceFor(record: StoredSource | undefined, videoId: string): { creator: string; sourceUrl?: string } | null {
   if (!record) return null
   const holder = record.channelSources?.find((source) => source.videos?.some((video) => video.id === videoId))
+  const by = holder?.videos?.find((video) => video.id === videoId)?.creator
+  if (by) return { creator: by.name, sourceUrl: youtubeChannelUrl(by.handle ? `@${by.handle}` : by.channelId) }
   if (holder) return { creator: holder.label || record.name, sourceUrl: channelSourceUrl(holder) }
   return { creator: record.name, sourceUrl: youtubeChannelUrl(record.id) }
 }

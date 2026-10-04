@@ -1,4 +1,4 @@
-import type { ImportedVideo } from './channels-import.ts'
+import { videoCreator, type ImportedVideo } from './channels-import.ts'
 
 /**
  * Each User Network collection is one YouTube uploader. The shipped archive names that uploader and
@@ -32,12 +32,13 @@ export function setShippedArchive(value: unknown): void {
       const { title, videos } = (entry ?? {}) as { title?: unknown; videos?: unknown }
       if (!Array.isArray(videos)) continue
       const list: ImportedVideo[] = []
+      const creator = videoCreator({ name: title, channelId: uploader })
       for (const row of videos) {
         if (!Array.isArray(row)) continue
         const [id, name, durationSec, published] = row as unknown[]
         if (typeof id === 'string' && typeof name === 'string' && typeof durationSec === 'number' && durationSec > 0) {
           const dated = typeof published === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(published) ? { published } : {}
-          list.push({ id, title: name, durationSec: Math.round(durationSec), ...dated })
+          list.push({ id, title: name, durationSec: Math.round(durationSec), ...dated, ...(creator?.channelId ? { creator } : {}) })
         }
       }
       archives.set(uploader, { uploader, title: typeof title === 'string' ? title : '', videos: list })

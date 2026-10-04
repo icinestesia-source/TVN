@@ -11,7 +11,9 @@ import { searchGuideChannels, stepGuideChannel } from '../epg/navigation.ts'
 import { clampZoom } from '../epg/zoom.ts'
 import { guideOpeningZoom } from '../epg/opening-zoom.ts'
 import { commandFromGamepad } from '../input/gamepad.ts'
-import { commandFromKeyEvent } from '../input/keyboard.ts'
+import { commandFromKeyEvent, isEditableTarget } from '../input/keyboard.ts'
+import { createSpaceHold } from '../input/space-hold.ts'
+import { webInteraction } from '../player/web-interaction.ts'
 import { tunerStep } from '../input/tuner.ts'
 import { deliver, playbackCommand, type PlaybackCommand } from '../player/command.ts'
 import { subtitlesNotice } from '../player/captions.ts'
@@ -19,7 +21,7 @@ import { notePlayback } from '../player/trace.ts'
 import { notePhase, notePress } from '../player/tune-timing.ts'
 import { commitTune } from './tune-commit.ts'
 import { liveAiring, pauseViewing } from '../player/viewing.ts'
-import { clearManual, manualAiring, onScreen, pickTunes, selectProgramme, stepFrom } from '../player/manual.ts'
+import { clearManual, manualAiring, onScreen, pickTunes, resumeProgramme, selectProgramme, stepFrom } from '../player/manual.ts'
 import { afterRefusal, arrive, fallbackProgramme, giveUp, type Recovery } from '../player/refusal-fallback.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
 import { liveKey } from '../scheduler/calculate.ts'
@@ -440,6 +442,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const noticeTimer = useRef(0)
   const bufferRef = useRef('')
   const dispatchRef = useRef<(command: TvCommand) => void>(() => {})
+  const toggleSurfScopeRef = useRef<() => void>(() => {})
+  /** The website or post on screen when TVN paused, and how far into its slot. */
+  const pausedWebRef = useRef<{ channelNumber: number; programme: Programme; elapsedSeconds: number; slot: { startMs: number; endMs: number } } | null>(null)
   const commitTuneRef = useRef<(generation: number, number: number, origin: number) => Promise<void>>(
     async () => {},
   )
@@ -654,6 +659,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
     pausedRef.current = false
     setPaused(false)
     const current = channelByNumber(channelRef.current)
+    // A website's schedule truly stood still while paused: it carries on from there, not from the wall clock.
+    const held = pausedWebRef.current
+    pausedWebRef.current = null
+    if (held && current?.number === held.channelNumber) resumeProgramme(held.channelNumber, held.programme, held.elapsedSeconds, Date.now(), held.slot)
     const player = playerRef.current
     loadedKey.current = ''
     if (!current || !player || multiviewRef.current !== '1' || tuningRef.current || !playerReadyRef.current) return
@@ -1806,6 +1815,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
       case 'play-pause':
         if (pausedRef.current) resumeViewing()
         else {
+          const here = channelByNumber(channelRef.current)
+          const airing = here ? onScreen(here, Date.now()).current : null
+          pausedWebRef.current =
+            here && airing && (airing.programme.programmeType === 'website' || airing.programme.programmeType === 'social-post')
+              ? { channelNumber: here.number, programme: airing.programme, elapsedSeconds: airing.elapsedSeconds, slot: { startMs: airing.startMs, endMs: airing.endMs } }
+              : null
           pausedRef.current = true
           setPaused(true)
           pauseViewing(playerRef.current)
@@ -1856,9 +1871,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
           command.channelNumber ??
           (guideOpenRef.current ? cursorRef.current.channelNumber : channelRef.current)
         // Favourites keep the viewer's order: a new one joins the end.
+        const adding = !favouritesRef.current.includes(number)
+        favouritesRef.current = adding ? [...favouritesRef.current, number] : favouritesRef.current.filter((item) => item !== number)
         setFavourites((current) =>
           current.includes(number) ? current.filter((item) => item !== number) : [...current, number],
         )
+        // S (or the remote) says what it did; a star pressed in the Guide shows it in place.
+        if (command.channelNumber === undefined) flash(adding ? `★ FAVOURITE · ${padChannel(number)}` : `☆ FAVOURITE REMOVED · ${padChannel(number)}`, 1400)
         break
       }
       case 'debug':
@@ -1967,14 +1986,45 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    const space = createSpaceHold({
+      surf: () => dispatchRef.current({ type: 'random-channel' }),
+      toggle: () => toggleSurfScopeRef.current(),
+    })
+    // Space alone, over the picture, outside a text field: the keyboard's TV Surf button.
+    const surfKey = (event: KeyboardEvent) =>
+      event.key === ' ' && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && !guideOpenRef.current && !isEditableTarget(event.target)
     const onKey = (event: KeyboardEvent) => {
+      // A website the viewer is using owns the keyboard; only Esc (taken before this) comes back to TVN.
+      if (webInteraction().interacting) return
+      if (surfKey(event)) {
+        event.preventDefault()
+        space.down(event.repeat)
+        return
+      }
       const command = commandFromKeyEvent(event, guideOpenRef.current, multiviewRef.current !== '1')
       if (!command) return
       event.preventDefault()
       dispatchRef.current(command)
     }
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key !== ' ') return
+      if (webInteraction().interacting) {
+        space.cancel()
+        return
+      }
+      if (surfKey(event)) event.preventDefault()
+      space.up()
+    }
+    const onBlur = () => space.cancel()
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      space.cancel()
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
+    }
   }, [])
 
   // A curation built from TVN's original sources follows the library: it may load after the start, and a refusal changes it.
@@ -2070,6 +2120,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         reached(2)
         const network = await bootstrapUserNetwork().catch(() => null)
         reached(3)
+        void loadRegister()
         if (cancel) return false
         republishLibrary()
         loadOverrides()
@@ -2920,6 +2971,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guideFilter, surfTarget, surfScopeName])
+  useEffect(() => {
+    toggleSurfScopeRef.current = toggleSurfScope
+  }, [toggleSurfScope])
 
   /** CHOOSE ANOTHER on 000: a new choice now, played at once when 000 is on screen. */
   const chooseAnotherOnTvn = useCallback(() => {

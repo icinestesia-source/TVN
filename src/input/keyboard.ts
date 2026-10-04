@@ -47,7 +47,11 @@ export function commandFromKey(
       return { type: 'cancel' }
     case 'Backspace':
       return { type: 'digit-back' }
+    // Space is TV Surf (a hold switches its scope: see space-hold.ts); P pauses and resumes.
     case ' ':
+      return guideOpen ? null : { type: 'random-channel' }
+    case 'p':
+    case 'P':
       return { type: 'play-pause' }
     case 'g':
     case 'G':

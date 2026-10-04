@@ -33,15 +33,18 @@ npm run build
 | ← → | Volume | Move between programmes |
 | 0–9, Enter | Tune by number | Tune by number |
 | G | Dock the guide beside the picture | Close the guide |
-| M | Cycle multiview (1, dual, 2×2, 3×3) | Cycle multiview |
-| K | Mute | Mute |
+| M | Mute | Mute |
 | Enter | Programme information, or expand the focused tile | Tune if that programme is on now |
 | I | Programme information | Programme information |
-| Esc | Hide overlays | Close the guide |
+| Esc | Hide overlays; leave a website's INTERACT and give the keys back to TVN | Close the guide |
 | Backspace | Previous channel | Previous channel |
-| Space | Pause, then return to live | Pause |
+| Space | Surf to another channel; hold to switch Surf between ALL and your User Network | — |
+| P | Pause; again to resume (a website then carries on where it was) | Pause |
 | F | Full screen | Full screen |
-| S | Favourite the current channel | Favourite the highlighted channel |
+| S | Favourite the current channel (a brief ★ notice confirms) | Favourite the highlighted channel |
+| − = | Volume | Zoom the timeline out / in, keeping the view where it is (Home returns to now) |
+| , . | Previous / next channel watched | Previous / next channel watched |
+| / | Cycle multiview (1, dual, 2×2, 3×3) | Cycle multiview |
 | V | All / favourites | All / favourites |
 | U | Import a channels file | Import a channels file |
 | D | Schedule debug (development only) | Schedule debug |
