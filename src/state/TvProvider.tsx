@@ -2762,19 +2762,19 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * LATEST FIRST in the Guide: the channel's newest programme goes to air now, from its start, and the rest
-   * follow newest to oldest, so the channel feels live. Pressed again, TVN arranges the channel itself.
+   * LATEST FIRST in the Guide: the sources are read again for anything new, then the channel's newest
+   * programme goes to air now, from its start, and the rest follow newest to oldest, so the channel feels
+   * live. Every press does this afresh; another order in the Channel Editor ends it.
    */
   const latestFirst = useCallback(
     async (number: number) => {
       const edit = await openChannelEdit(number)
       if (!edit) throw new Error('This channel cannot be arranged here')
-      const { review: _review, ...current } = edit
-      if (current.orderKind === 'latest' && current.liveFromMs) {
-        await saveChannelEdit(number, { ...current, order: undefined, orderKind: undefined, liveFromMs: undefined, scheduleSize: undefined })
-        if (channelRef.current === number) replayIfWatching(number)
-        return 'LATEST FIRST OFF · TVN ARRANGES THE CHANNEL AGAIN'
-      }
+      const { review: _review, ...opened } = edit
+      const current = await rescanChannelEdit(number, opened).then(
+        (result) => result.edit,
+        () => opened,
+      )
       const pool = inventoryOf(airingSources(current.sources))
       if (pool.length === 0) throw new Error("TVN schedules this channel's own programming: add a source to play it newest first")
       const order = latestVideos(pool).map((video) => video.id)
@@ -2784,7 +2784,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return `LATEST FIRST · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [openChannelEdit, saveChannelEdit],
+    [openChannelEdit, rescanChannelEdit, saveChannelEdit],
   )
 
   /** RELOAD in the Guide: the channel rescanned, then put back in the kind of order it keeps, and replayed if watched. */

@@ -203,13 +203,16 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const [addNote, setAddNote] = useState<string | null>(null)
   // A channel's own action (LATEST FIRST, RELOAD, DELETE) in progress, and what it said.
   const [channelBusy, setChannelBusy] = useState<number | null>(null)
-  const channelAction = (number: number, action: (channelNumber: number) => Promise<string>) => {
+  const channelAction = (number: number, action: (channelNumber: number) => Promise<string>, then?: () => void) => {
     if (channelBusy !== null) return
     setChannelBusy(number)
     setAddNote(`${padChannel(number)} · WORKING…`)
     action(number)
       .then(
-        (message) => setAddNote(message),
+        (message) => {
+          setAddNote(message)
+          then?.()
+        },
         (caught: unknown) => setAddNote(caught instanceof Error && caught.message ? caught.message.toUpperCase().slice(0, 110) : 'THAT DID NOT WORK'),
       )
       .finally(() => setChannelBusy(null))
@@ -679,7 +682,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       }
                       live={channel.liveFromMs !== undefined}
                       busy={channelBusy === channel.number}
-                      onLatest={editorScope(channel) ? () => channelAction(channel.number, tv.latestFirst) : undefined}
+                      onLatest={editorScope(channel) ? () => channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' })) : undefined}
                       onReload={editorScope(channel) ? () => channelAction(channel.number, tv.reloadChannel) : undefined}
                       onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}
                     />
@@ -935,7 +938,7 @@ function ChannelCell({
           disabled={busy || !selected}
           onClick={act(onLatest)}
           aria-pressed={live}
-          title={live ? 'Latest first is on: press to let TVN arrange the channel again' : 'Latest first: play the newest programme now, then newest to oldest'}
+          title={live ? 'Latest first is on: press to catch up with the newest programme again' : 'Latest first: play the newest programme now, then newest to oldest'}
         >
           <span aria-hidden="true">◉</span>
           <span className="sr">

@@ -161,10 +161,15 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(read('src/styles/guide.css')).toContain('@media (max-width: 900px) {\n  :root { --channel-col: 210px; --safe: 12px; }\n  .channel-cell .ch-extra { display: none; }')
   })
 
-  it('the provider plays the newest now, turns off on a second press, and RELOAD keeps the kind of order', () => {
+  it('the provider reads the sources again and plays the newest now on every press, and RELOAD keeps the kind of order', () => {
     const provider = read('src/state/TvProvider.tsx')
-    expect(provider).toContain("await saveChannelEdit(number, { ...current, order, orderKind: 'latest', liveFromMs: Date.now(), scheduleSize: undefined })")
-    expect(provider).toContain("return 'LATEST FIRST OFF · TVN ARRANGES THE CHANNEL AGAIN'")
+    const latest = provider.slice(provider.indexOf('const latestFirst = useCallback('), provider.indexOf('const reloadChannel = useCallback('))
+    expect(latest).toContain('const current = await rescanChannelEdit(number, opened).then(')
+    expect(latest).toContain('() => opened,')
+    expect(latest).toContain("await saveChannelEdit(number, { ...current, order, orderKind: 'latest', liveFromMs: Date.now(), scheduleSize: undefined })")
+    expect(latest).toContain('replayIfWatching(number)')
+    expect(latest).not.toContain('LATEST FIRST OFF')
+    expect(read('src/components/Guide.tsx')).toContain("channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' }))")
     expect(provider).toContain('const result = await rescanChannelEdit(number, current)')
     expect(provider).toContain("kind === 'latest' ? latestVideos(pool) : kind === 'az' ? alphabeticalVideos(pool)")
   })
