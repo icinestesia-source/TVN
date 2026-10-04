@@ -11,6 +11,7 @@ import type { ChannelSource } from './services/channel-sources.ts'
 import { channelsFromSources, livePhase, type ImportedVideo, type StoredSource } from './services/channels-import.ts'
 import { loadSurfUntilEnd, saveSurfUntilEnd, SURF_END_LIMIT_MS, surfUntilEndMs } from './state/surf.ts'
 import type { Channel } from './types/channel.ts'
+import { loadGuideActionsAll, saveGuideActionsAll } from './view/guide-actions-store.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const dated = (count: number, from = 0): ImportedVideo[] =>
@@ -147,18 +148,36 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     const guide = read('src/components/Guide.tsx')
     const cell = guide.slice(guide.indexOf('function ChannelCell('), guide.indexOf('/** The slot the watched channel is playing'))
     const at = (marker: string) => cell.indexOf(marker)
+    expect(at("'ch-act ch-more")).toBeGreaterThan(0)
+    expect(at("'ch-act ch-more")).toBeLessThan(at("'ch-act ch-latest"))
     expect(at("'ch-act ch-latest")).toBeGreaterThan(0)
     expect(at("'ch-act ch-latest")).toBeLessThan(at('title="Edit channel"'))
     expect(at('title="Edit channel"')).toBeLessThan(at('title="Reload: rescan'))
     expect(at('title="Reload: rescan')).toBeLessThan(at("'ch-act ch-extra ch-delete"))
     expect(at("'ch-act ch-extra ch-delete")).toBeLessThan(at("className={favourite ? 'star is-on' : 'star'}"))
-    expect(cell).toContain('{onLatest && (selected || live) ? (')
-    expect(cell).toContain('{selected && onDelete ? (')
-    expect(cell).toContain('{selected || favourite ? (')
+    expect(cell).toContain('const all = selected && expanded')
+    expect(cell).toContain('const showLatest = onLatest !== undefined && (selected ? all || !favourite : live)')
+    expect(cell).toContain('const showStar = selected ? all || favourite || onLatest === undefined : favourite')
+    expect(cell).toContain('{all && onEdit ? (')
+    expect(cell).toContain('{all && onReload ? (')
+    expect(cell).toContain('{all && onDelete ? (')
+    expect(cell).toContain('{showStar ? (')
+    expect(cell).toContain("title={all ? 'Show one button' : 'Show all buttons'}")
+    expect(guide).toContain('expanded={actionsAll}')
+    expect(guide).toContain('onExpand={toggleActions}')
     expect(read('src/styles/guide.css')).toContain('  .channel-cell.is-selected .star,\n  .channel-cell .star.is-on { display: block; }')
     expect(cell).toContain('if (!confirming) return setConfirming(true)')
     expect(guide).toContain("onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}")
-    expect(read('src/styles/guide.css')).toContain('@media (max-width: 900px) {\n  :root { --channel-col: 210px; --safe: 12px; }\n  .channel-cell .ch-extra { display: none; }')
+    expect(read('src/styles/guide.css')).toContain('  .channel-cell .star { display: none; }\n  .channel-cell .ch-extra { display: none; }')
+  })
+
+  it('folds to one button by default and remembers showing all', () => {
+    const store = memory()
+    expect(loadGuideActionsAll(store)).toBe(false)
+    saveGuideActionsAll(true, store)
+    expect(loadGuideActionsAll(store)).toBe(true)
+    saveGuideActionsAll(false, store)
+    expect(loadGuideActionsAll(store)).toBe(false)
   })
 
   it('the provider reads the sources again and plays the newest now on every press, and RELOAD keeps the kind of order', () => {

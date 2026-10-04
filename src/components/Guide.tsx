@@ -37,6 +37,7 @@ import { channelActions, cornerActions, type ChannelActions, type CornerActions 
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { GuideOptions } from './GuideOptions.tsx'
+import { loadGuideActionsAll, saveGuideActionsAll } from '../view/guide-actions-store.ts'
 import { NetworkEditor } from './NetworkEditor.tsx'
 import { GuidePanel } from './GuidePanel.tsx'
 import { AddChannelForm, GuideActions, NewUserTools, SessionImportTools, UserNetworkImportTools, UserNetworkTools } from './GuideAdd.tsx'
@@ -203,6 +204,12 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const [addNote, setAddNote] = useState<string | null>(null)
   // A channel's own action (LATEST FIRST, RELOAD, DELETE) in progress, and what it said.
   const [channelBusy, setChannelBusy] = useState<number | null>(null)
+  const [actionsAll, setActionsAll] = useState(loadGuideActionsAll)
+  const toggleActions = () =>
+    setActionsAll((all) => {
+      saveGuideActionsAll(!all)
+      return !all
+    })
   const channelAction = (number: number, action: (channelNumber: number) => Promise<string>, then?: () => void) => {
     if (channelBusy !== null) return
     setChannelBusy(number)
@@ -685,6 +692,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       onLatest={editorScope(channel) ? () => channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' })) : undefined}
                       onReload={editorScope(channel) ? () => channelAction(channel.number, tv.reloadChannel) : undefined}
                       onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}
+                      expanded={actionsAll}
+                      onExpand={toggleActions}
                     />
                   ))}
                 </div>
@@ -867,6 +876,8 @@ function ChannelCell({
   onLatest,
   onReload,
   onDelete,
+  expanded = false,
+  onExpand,
 }: {
   channel: Channel
   watching: boolean
@@ -887,8 +898,16 @@ function ChannelCell({
   onLatest?: () => void
   onReload?: () => void
   onDelete?: () => void
+  /** The selected channel shows all of its actions, not just one. */
+  expanded?: boolean
+  onExpand?: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
+  // Selected and folded: one action, the star of a favourite or else LATEST FIRST; the arrow shows the rest.
+  const all = selected && expanded
+  const showLatest = onLatest !== undefined && (selected ? all || !favourite : live)
+  const showStar = selected ? all || favourite || onLatest === undefined : favourite
+  const canExpand = selected && onExpand !== undefined && (onLatest ?? onEdit ?? onReload ?? onDelete) !== undefined
   useEffect(() => {
     if (!confirming) return
     const id = window.setTimeout(() => setConfirming(false), 4000)
@@ -931,7 +950,19 @@ function ChannelCell({
         <span className="ch-number">{padChannel(channel.number)}</span>
         <span className="ch-name">{channel.name}</span>
       </button>
-      {onLatest && (selected || live) ? (
+      {canExpand ? (
+        <button
+          type="button"
+          className={all ? 'ch-act ch-more is-open' : 'ch-act ch-more'}
+          onClick={act(onExpand)}
+          aria-expanded={all}
+          title={all ? 'Show one button' : 'Show all buttons'}
+        >
+          <span aria-hidden="true">{all ? '›' : '‹'}</span>
+          <span className="sr">{all ? 'Show one button' : 'Show all buttons'}</span>
+        </button>
+      ) : null}
+      {showLatest ? (
         <button
           type="button"
           className={live ? 'ch-act ch-latest is-on' : 'ch-act ch-latest'}
@@ -946,19 +977,19 @@ function ChannelCell({
           </span>
         </button>
       ) : null}
-      {selected && onEdit ? (
+      {all && onEdit ? (
         <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onEdit)} title="Edit channel">
           <span aria-hidden="true">✎</span>
           <span className="sr">Edit channel {padChannel(channel.number)}</span>
         </button>
       ) : null}
-      {selected && onReload ? (
+      {all && onReload ? (
         <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onReload)} title="Reload: rescan the channel and put it back in its order">
           <span aria-hidden="true">↻</span>
           <span className="sr">Reload channel {padChannel(channel.number)}</span>
         </button>
       ) : null}
-      {selected && onDelete ? (
+      {all && onDelete ? (
         <button
           type="button"
           className={confirming ? 'ch-act ch-extra ch-delete is-confirm' : 'ch-act ch-extra ch-delete'}
@@ -974,7 +1005,7 @@ function ChannelCell({
           <span className="sr">{confirming ? `Confirm deleting ${padChannel(channel.number)}` : `Delete channel ${padChannel(channel.number)}`}</span>
         </button>
       ) : null}
-      {selected || favourite ? (
+      {showStar ? (
       <button
         type="button"
         className={favourite ? 'star is-on' : 'star'}

@@ -1062,6 +1062,9 @@ span.editor-expand { border-color: transparent; }
 .ch-latest.is-on,
 .ch-latest.is-on:disabled { color: var(--gold); opacity: 1; }
 .ch-delete.is-confirm { color: var(--danger); font-weight: 700; }
+/* The narrow arrow that unfolds the selected channel's actions from one button to all of them. */
+.ch-more { width: 12px; font-size: 16px; }
+.ch-more.is-open { color: var(--ink); }
 
 .guide-grid {
   flex: 1;
@@ -1617,7 +1620,6 @@ a.info-creator:focus-visible {
 
 @media (max-width: 900px) {
   :root { --channel-col: 210px; --safe: 12px; }
-  .channel-cell .ch-extra { display: none; }
   .ch-number { font-size: 18px; }
 }
 
@@ -1628,6 +1630,7 @@ a.info-creator:focus-visible {
   .tab { padding: 0 8px; }
   .channel-cell { gap: 4px; padding: 0 6px 0 8px; }
   .channel-cell .star { display: none; }
+  .channel-cell .ch-extra { display: none; }
   .channel-cell.is-selected .star,
   .channel-cell .star.is-on { display: block; }
   .ch-tune { gap: 6px; }
