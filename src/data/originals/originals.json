@@ -414,14 +414,6 @@
    "redirect": 700,
    "reason": "Overflow slot of the food family; 700 Food carries the identity."
   },
-  "799": {
-   "class": "INTENTIONALLY_UNAVAILABLE",
-   "subtype": "DUPLICATE_FRONT_DOOR",
-   "title": "See 700 Food",
-   "caption": "THIS SERVICE IS NOW ON 700",
-   "redirect": 700,
-   "reason": "Overflow slot of the lifestyle block (700-790); its 51 eligible programmes are 687 Makers' identity."
-  },
   "802": {
    "class": "RIGHTS_BLOCKED",
    "subtype": "RIGHTS_BLOCKED",

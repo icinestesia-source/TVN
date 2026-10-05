@@ -12,7 +12,7 @@ const HOMES: Record<string, number> = {
   src_gresham_law: 451, src_gresham_crime: 462, src_gresham_medicine: 746, src_gresham_politics: 423, src_rai: 494,
   src_lse_sociology: 495, src_sag_foundation: 163, src_ace_editors: 166, src_patrick_willems: 196, src_thomas_flight: 196,
   src_comicstorian: 253, src_trash_theory: 560, src_linux_foundation: 635, src_brick_immortar: 653, src_mellow: 384,
-  src_indigo_traveller: 776, src_eva_zu_beck: 776, src_brad_stanfield: 744, src_clutterbug: 768, src_cannes_lions: 611,
+  src_indigo_traveller: 799, src_eva_zu_beck: 799, src_brad_stanfield: 744, src_clutterbug: 768, src_cannes_lions: 611,
   src_patrick_boyle: 694, src_92ny_books: 840,
 }
 const EXCLUDED = /\b(space|nasa|rockets?|satellites?|astronom\w*|astrophysic\w*|aircraft|aviation|airplanes?|helicopters?|airports?|church|christianity|mosque|prayer|bible|theolog\w*|protestant|papal)\b/i

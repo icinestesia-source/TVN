@@ -7,14 +7,15 @@
   },
   "channels": 1000,
   "totals": {
-    "DELIBERATELY_UNAVAILABLE": 62,
-    "PLAYABLE_STRONG": 492,
+    "DELIBERATELY_UNAVAILABLE": 61,
+    "PLAYABLE_STRONG": 491,
     "PLAYABLE": 249,
     "PLAYABLE_THIN": 53,
     "EXCLUDED": 21,
     "NEEDS_CONTENT": 38,
     "GENERATED": 6,
     "NEEDS_LIVE_PROVIDER": 29,
+    "CENTRAL_PODCAST": 2,
     "RETROTV_ORIGINAL": 1,
     "NEEDS_AUDIO_PROVIDER": 49
   },
@@ -37674,19 +37675,17 @@
     {
       "number": 776,
       "displayNumber": "776",
-      "name": "Adventure Travel",
+      "name": "VERITAS",
       "category": "lifestyle",
-      "identity": "Adventure Travel: the lifestyle channel for adventure travel programming.",
-      "scope": "Home publishers: National Rail Scenic Railway Journeys, Lonely Planet, Indigo Traveller, Eva zu Beck (single-subject; they air only on their home channels). Programmes about travel, tour, journey, visit, holiday, trip, guide to; native publishers Rick Steves' Europe, National Rail Scenic Railway Journeys, Lonely Planet air without a title match.",
-      "distinction": "specialist channel. No material programme overlap with neighbouring channels.",
+      "identity": "VERITAS: long-form interviews, the free first hour of each.",
+      "scope": "Free episodes from its public podcast feed only (https://veritas7.com/vs.rss); never a paid or members feed. Random order.",
+      "distinction": "specialist channel. Programmes come from a public podcast feed, not the YouTube catalogue.",
       "sourceStrategy": "SOURCE_ROUTED",
       "anchorSources": [
-        "Indigo Traveller"
+        "VERITAS"
       ],
-      "secondarySources": [
-        "Eva zu Beck"
-      ],
-      "eligibility": "Home publishers: National Rail Scenic Railway Journeys, Lonely Planet, Indigo Traveller, Eva zu Beck (single-subject; they air only on their home channels). Programmes about travel, tour, journey, visit, holiday, trip, guide to; native publishers Rick Steves' Europe, National Rail Scenic Railway Journeys, Lonely Planet air without a title match.",
+      "secondarySources": [],
+      "eligibility": "Free episodes from its public podcast feed only (https://veritas7.com/vs.rss); never a paid or members feed. Random order.",
       "exclusions": [
         "religious programming, preaching and worship (major musical, artistic and historical works are not excluded for their terminology)",
         "space programming",
@@ -37697,43 +37696,29 @@
         "home-only publishers of other channels",
         "British Pathé (805), KOFA (114) and Orbital Bacon (225) owned catalogues"
       ],
-      "programmes": 484,
-      "hours": 156.8,
-      "sources": {
-        "src_indigo_traveller": {
-          "programmes": 273,
-          "hours": 83.4
-        },
-        "src_eva_zu_beck": {
-          "programmes": 211,
-          "hours": 73.4
-        }
-      },
-      "status": "PLAYABLE_STRONG",
-      "reason": "484 distinct programmes, 156.8 h.",
-      "nextStep": "None required; keep differentiated.",
+      "programmes": 497,
+      "hours": 565.6,
+      "sources": {},
+      "status": "CENTRAL_PODCAST",
+      "reason": "497 free episodes from public podcast feeds (src/data/central-edits.json), in random order; built with node scripts/central-edits.ts 776.",
+      "nextStep": "Refresh with node scripts/central-edits.ts 776 to add the publisher's newest free episodes.",
       "inGuide": true,
       "tier": "Specialist"
     },
     {
       "number": 777,
       "displayNumber": "777",
-      "name": "Budget Travel",
+      "name": "CRROW777",
       "category": "lifestyle",
-      "identity": "Budget Travel: the lifestyle channel for budget travel programming.",
-      "scope": "Home publishers: National Rail Scenic Railway Journeys, Lonely Planet, Travel Big with a Tiny Budget, OlderBackpacker, Holiday Expert, Hopscotch the Globe, Nomadic Matt (single-subject; they air only on their home channels). Programmes about travel, tour, journey, visit, holiday, trip, guide to; native publishers Rick Steves' Europe, National Rail Scenic Railway Journeys, Lonely Planet air without a title match.",
-      "distinction": "specialist channel. No material programme overlap with neighbouring channels.",
+      "identity": "CRROW777: Crrow777 Radio, the free first hour of each episode.",
+      "scope": "Free episodes from its public podcast feed only (https://www.crrow777radio.com/feed/podcast/); never a paid or members feed. Random order.",
+      "distinction": "specialist channel. Programmes come from a public podcast feed, not the YouTube catalogue.",
       "sourceStrategy": "SOURCE_ROUTED",
       "anchorSources": [
-        "OlderBackpacker"
+        "CRROW777"
       ],
-      "secondarySources": [
-        "Holiday Expert",
-        "Hopscotch the Globe",
-        "Nomadic Matt",
-        "Travel Big with a Tiny Budget"
-      ],
-      "eligibility": "Home publishers: National Rail Scenic Railway Journeys, Lonely Planet, Travel Big with a Tiny Budget, OlderBackpacker, Holiday Expert, Hopscotch the Globe, Nomadic Matt (single-subject; they air only on their home channels). Programmes about travel, tour, journey, visit, holiday, trip, guide to; native publishers Rick Steves' Europe, National Rail Scenic Railway Journeys, Lonely Planet air without a title match.",
+      "secondarySources": [],
+      "eligibility": "Free episodes from its public podcast feed only (https://www.crrow777radio.com/feed/podcast/); never a paid or members feed. Random order.",
       "exclusions": [
         "religious programming, preaching and worship (major musical, artistic and historical works are not excluded for their terminology)",
         "space programming",
@@ -37744,33 +37729,12 @@
         "home-only publishers of other channels",
         "British Pathé (805), KOFA (114) and Orbital Bacon (225) owned catalogues"
       ],
-      "programmes": 101,
-      "hours": 24.7,
-      "sources": {
-        "src_older_backpacker": {
-          "programmes": 58,
-          "hours": 14.9
-        },
-        "src_holiday_expert": {
-          "programmes": 21,
-          "hours": 5.2
-        },
-        "src_hopscotch": {
-          "programmes": 15,
-          "hours": 2.5
-        },
-        "src_nomadic_matt": {
-          "programmes": 3,
-          "hours": 1.1
-        },
-        "src_travel_tiny_budget": {
-          "programmes": 4,
-          "hours": 1
-        }
-      },
-      "status": "PLAYABLE_STRONG",
-      "reason": "101 distinct programmes, 24.7 h.",
-      "nextStep": "None required; keep differentiated.",
+      "programmes": 500,
+      "hours": 441.8,
+      "sources": {},
+      "status": "CENTRAL_PODCAST",
+      "reason": "500 free episodes from public podcast feeds (src/data/central-edits.json), in random order; built with node scripts/central-edits.ts 777.",
+      "nextStep": "Refresh with node scripts/central-edits.ts 777 to add the publisher's newest free episodes.",
       "inGuide": true,
       "tier": "Specialist"
     },
@@ -38753,15 +38717,24 @@
     {
       "number": 799,
       "displayNumber": "799",
-      "name": "Lifestyle Extra",
+      "name": "Adventure & Budget Travel",
       "category": "lifestyle",
-      "identity": "Lifestyle Extra: the lifestyle channel for lifestyle extra programming.",
-      "scope": "Home publishers: HASfit, Yoga With Adriene (single-subject; they air only on their home channels).",
-      "distinction": "specialist channel. No programming to overlap.",
+      "identity": "Adventure & Budget Travel: the lifestyle channel for adventure and budget travel programming.",
+      "scope": "Home publishers: Indigo Traveller, Eva zu Beck, Travel Big with a Tiny Budget, OlderBackpacker, Holiday Expert, Hopscotch the Globe, Nomadic Matt (single-subject; they air only here). Formerly 776 Adventure Travel and 777 Budget Travel.",
+      "distinction": "specialist channel. No material programme overlap with neighbouring channels.",
       "sourceStrategy": "SOURCE_ROUTED",
-      "anchorSources": [],
-      "secondarySources": [],
-      "eligibility": "Home publishers: HASfit, Yoga With Adriene (single-subject; they air only on their home channels).",
+      "anchorSources": [
+        "Indigo Traveller",
+        "OlderBackpacker"
+      ],
+      "secondarySources": [
+        "Eva zu Beck",
+        "Holiday Expert",
+        "Hopscotch the Globe",
+        "Nomadic Matt",
+        "Travel Big with a Tiny Budget"
+      ],
+      "eligibility": "Home publishers: Indigo Traveller, Eva zu Beck, Travel Big with a Tiny Budget, OlderBackpacker, Holiday Expert, Hopscotch the Globe, Nomadic Matt (single-subject; they air only here). Formerly 776 Adventure Travel and 777 Budget Travel.",
       "exclusions": [
         "religious programming, preaching and worship (major musical, artistic and historical works are not excluded for their terminology)",
         "space programming",
@@ -38772,19 +38745,43 @@
         "home-only publishers of other channels",
         "British Pathé (805), KOFA (114) and Orbital Bacon (225) owned catalogues"
       ],
-      "programmes": 0,
-      "hours": 0,
-      "sources": {},
-      "status": "DELIBERATELY_UNAVAILABLE",
-      "reason": "Overflow slot of the lifestyle block (700-790); its 51 eligible programmes are 687 Makers' identity. Redundant slot; viewers are pointed to 700.",
-      "nextStep": "None; redundant slot, off air by policy.",
+      "programmes": 585,
+      "hours": 181.5,
+      "sources": {
+        "src_indigo_traveller": {
+          "programmes": 273,
+          "hours": 83.4
+        },
+        "src_eva_zu_beck": {
+          "programmes": 211,
+          "hours": 73.4
+        },
+        "src_older_backpacker": {
+          "programmes": 58,
+          "hours": 14.9
+        },
+        "src_holiday_expert": {
+          "programmes": 21,
+          "hours": 5.2
+        },
+        "src_hopscotch": {
+          "programmes": 15,
+          "hours": 2.5
+        },
+        "src_nomadic_matt": {
+          "programmes": 3,
+          "hours": 1.1
+        },
+        "src_travel_tiny_budget": {
+          "programmes": 4,
+          "hours": 1
+        }
+      },
+      "status": "PLAYABLE_STRONG",
+      "reason": "585 distinct programmes, 181.5 h.",
+      "nextStep": "None required; keep differentiated.",
       "inGuide": true,
-      "tier": "Specialist",
-      "blocker": {
-        "class": "INTENTIONALLY_UNAVAILABLE",
-        "subtype": "DUPLICATE_FRONT_DOOR",
-        "redirect": 700
-      }
+      "tier": "Specialist"
     },
     {
       "number": 800,

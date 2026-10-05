@@ -4,9 +4,9 @@
  "pass": "23",
  "channels": 39,
  "outcomes": {
-  "ACTIVATED": 8,
+  "ACTIVATED": 9,
   "RIGHTS_BLOCKED": 10,
-  "INTENTIONALLY_UNAVAILABLE": 17,
+  "INTENTIONALLY_UNAVAILABLE": 16,
   "UNRESOLVED": 29,
   "GENERATED_PRESENTATION": 6,
   "RETROTV_ORIGINAL": 1
@@ -711,16 +711,17 @@
   },
   {
    "number": 799,
-   "name": "Lifestyle Extra",
+   "name": "Adventure & Budget Travel",
    "category": "lifestyle",
-   "decidedIn": "22",
-   "outcome": "INTENTIONALLY_UNAVAILABLE",
+   "decidedIn": "2.0",
+   "outcome": "ACTIVATED",
    "subtype": "DUPLICATE_FRONT_DOOR",
-   "reason": "Overflow slot of the lifestyle block (700-790); its 51 eligible programmes are 687 Makers' identity.",
-   "statusAfter": "DELIBERATELY_UNAVAILABLE",
-   "programmesAfter": 0,
-   "hoursAfter": 0,
-   "redirect": 700
+   "reason": "Adventure & Budget Travel: the redundant Lifestyle Extra slot re-purposed; 776 Adventure Travel and 777 Budget Travel moved here whole (585 programmes), freeing 776 for VERITAS and 777 for CRROW777.",
+   "statusAfter": "PLAYABLE_STRONG",
+   "programmesAfter": 585,
+   "hoursAfter": 181.5,
+   "statusBefore": "DELIBERATELY_UNAVAILABLE",
+   "mechanism": "dedicated home publishers (src/director/fit.ts)"
   },
   {
    "number": 800,

@@ -10,6 +10,7 @@ import {
 import { searchGuideChannels, stepGuideChannel } from '../epg/navigation.ts'
 import { clampZoom } from '../epg/zoom.ts'
 import { guideOpeningZoom } from '../epg/opening-zoom.ts'
+import { centralEdit, installCentralEdits, withCentralEdits } from '../data/central-edits.ts'
 import { commandFromGamepad } from '../input/gamepad.ts'
 import { commandFromKeyEvent, isEditableTarget } from '../input/keyboard.ts'
 import { createSpaceHold } from '../input/space-hold.ts'
@@ -243,7 +244,7 @@ function installCurated() {
   const programmes = new Map<string, Programme[]>()
   const { edits, moved } = followMovedChannels(loadCuratedEdits(), channels, (shipped) => shippedBaseline(shipped, shippedIds(shipped)))
   if (moved.length) replaceCuratedEdits(Object.values(edits))
-  for (const edit of Object.values(edits)) {
+  for (const edit of Object.values(withCentralEdits(edits))) {
     const shipped = shippedChannel(edit.channelNumber)
     if (!shipped || madeForAnother(edit, shipped)) continue
     const made = buildCuratedEdit(shipped, edit, refusedVideos(), shippedProgrammes(shipped.id), readsOriginals(edit) ? originalsOf(shipped.number) : [])
@@ -1350,7 +1351,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
    */
   /** The programmes every channel can lend a Guide now, after edits, filters and refusals. */
   const guideIndex = () => {
-    const edits = appliedCuratedEdits(shippedChannel)
+    const edits = withCentralEdits(appliedCuratedEdits(shippedChannel))
     const editorialFor = (number: number) => (number <= 999 ? (edits[String(number)]?.editorial ?? shippedEditorial(number)) : userEditorialRef.current.get(number))
     const stamp = JSON.stringify([Object.values(edits).map((edit) => [edit.channelNumber, edit.editorial ?? null]), [...userEditorialRef.current]])
     return searchIndex(editorialFor, refusedVideos(), stamp)
@@ -2132,6 +2133,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (cancel) return false
         republishLibrary()
         loadOverrides()
+        installCentralEdits(await import('../data/central-edits.json').then((module) => module.default as unknown, () => null))
         installCurated()
         if (network) {
           const migrated = migrateLegacyUserNumbers(network.sources)
@@ -2689,7 +2691,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const openChannelEdit = useCallback(async (number: number): Promise<ChannelEdit | null> => {
     const { scope, shipped } = scopeOf(number)
     if (scope === 'curated') {
-      const saved = loadCuratedEdit(number)
+      const saved = loadCuratedEdit(number) ?? centralEdit(number)
       if (saved && madeForAnother(saved, shipped)) {
         const label = String(number).padStart(3, '0')
         return { ...curatedEditOf(shipped, null), review: [`Your curation of ${saved.baseline?.name} is set aside, not applied: TVN now has ${shipped.name} at ${label} · saving here replaces it`] }

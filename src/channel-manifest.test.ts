@@ -11,7 +11,7 @@ const manifest = JSON.parse(readFileSync('docs/channel-manifest.json', 'utf8')) 
 
 const STATUSES = new Set([
   'PLAYABLE_STRONG', 'PLAYABLE', 'PLAYABLE_THIN', 'NEEDS_CONTENT', 'NEEDS_LIVE_PROVIDER', 'NEEDS_AUDIO_PROVIDER',
-  'RETROTV_ORIGINAL', 'GENERATED', 'DELIBERATELY_UNAVAILABLE', 'EXCLUDED',
+  'RETROTV_ORIGINAL', 'GENERATED', 'CENTRAL_PODCAST', 'DELIBERATELY_UNAVAILABLE', 'EXCLUDED',
 ])
 
 describe('000–999 channel manifest', () => {

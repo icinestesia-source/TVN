@@ -1,4 +1,5 @@
 import { shippedChannel } from '../data/catalogue.ts'
+import { withCentralEdits } from '../data/central-edits.ts'
 import { appliedCuratedEdits, loadCuratedEdits } from '../services/curated-edits.ts'
 import type { StoredSource } from '../services/channels-import.ts'
 import { loadStoredSources } from '../services/user-db.ts'
@@ -35,5 +36,5 @@ export interface ViewerRecords {
 /** The viewer's own channels and edits, read from this browser only. Nothing here is sent anywhere. */
 export async function loadViewerRecords(): Promise<ViewerRecords> {
   const stored = await loadStoredSources().catch(() => [] as StoredSource[])
-  return { stored, curated: appliedCuratedEdits(shippedChannel) }
+  return { stored, curated: withCentralEdits(appliedCuratedEdits(shippedChannel)) }
 }
