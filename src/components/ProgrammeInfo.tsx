@@ -6,6 +6,7 @@ import { programmeDate } from '../view/programme-date.ts'
 import { formatDuration, formatElapsed, formatRange, padChannel } from '../utils/time.ts'
 
 export function shownDescription(programme: Programme): string | null {
+  if (programme.mediaKind === 'audio' && programme.mediaUrl) return null
   const text = programme.description?.trim()
   if (!text || text === programme.title) return null
   if (text === 'No programming available') return null

@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { LOGOS, pickLogo, SESSION_LOGO } from '../components/logos.ts'
 import { STARTUP_COPY, StartupScreen } from '../components/StartupScreen.tsx'
 import { adjacentChannel, channelByNumber, listChannels, randomChannel } from '../data/catalogue.ts'
 import { installUserCatalogue } from '../data/user-overlay.ts'
@@ -135,16 +136,31 @@ describe('startup loading presentation', () => {
     expect(markup).not.toMatch(/error|exception|undefined|null|fetch|IndexedDB|stack/i)
   })
 
-  it('L: tvn-logo.png ships as a bundled 640x640 PNG asset referenced by the startup screen', () => {
-    const png = readFileSync('src/assets/tvn-logo.png')
-    const header = new DataView(png.buffer, png.byteOffset, png.byteLength)
-    expect(String.fromCharCode(...png.subarray(1, 4))).toBe('PNG')
-    expect(header.getUint32(16)).toBe(640)
-    expect(header.getUint32(20)).toBe(640)
-    expect(readFileSync('src/components/StartupScreen.tsx', 'utf8')).toContain("from '../assets/tvn-logo.png'")
-    expect(screen('loading')).toMatch(/<img[^>]*class="startup-logo"[^>]*alt="TVN"/)
-    expect(png.length).toBeGreaterThan(4096)
+  it('L: the logos folder ships 1 to 10 bundled square PNGs, and the startup screen shows one of them', () => {
+    const files = readdirSync('src/assets/logos').filter((file) => file.endsWith('.png'))
+    expect(files.length).toBeGreaterThanOrEqual(1)
+    expect(files.length).toBeLessThanOrEqual(10)
+    expect(LOGOS).toHaveLength(files.length)
+    for (const file of files) {
+      const png = readFileSync(`src/assets/logos/${file}`)
+      const header = new DataView(png.buffer, png.byteOffset, png.byteLength)
+      expect(String.fromCharCode(...png.subarray(1, 4)), file).toBe('PNG')
+      expect(header.getUint32(16), file).toBe(header.getUint32(20))
+      expect(png.length, file).toBeGreaterThan(4096)
+    }
+    expect(LOGOS).toContain(SESSION_LOGO)
+    const markup = screen('loading')
+    expect(markup).toMatch(/<img[^>]*class="startup-logo"[^>]*alt="TVN"/)
+    expect(markup).toContain(`src="${SESSION_LOGO}"`)
     expect(readFileSync('vite.config.ts', 'utf8')).not.toContain('assetsInlineLimit')
+  })
+
+  it('L: picks every logo in the folder, at random', () => {
+    const logos = ['a.png', 'b.png', 'c.png']
+    expect(pickLogo(logos, () => 0)).toBe('a.png')
+    expect(pickLogo(logos, () => 0.5)).toBe('b.png')
+    expect(pickLogo(logos, () => 0.999999)).toBe('c.png')
+    expect(pickLogo(['only.png'], () => 0.7)).toBe('only.png')
   })
 })
 

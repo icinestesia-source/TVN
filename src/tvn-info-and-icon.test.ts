@@ -21,6 +21,24 @@ describe('the Guide information bar', () => {
   })
 })
 
+describe('an audio episode on the information bar', () => {
+  const channel = { number: 776, name: 'VERITAS', origin: 'default' } as Channel
+  const info = (programme: Programme) =>
+    renderToStaticMarkup(createElement(ProgrammeInfo, { channel, programme, startMs: 0, endMs: 3_600_000, now: 60_000 }))
+  const episode = { id: 'p', title: 'Episode', videoId: null, mediaUrl: 'https://example.com/e.mp3', durationSeconds: 3600, description: 'Guest talks about the book.' } as Programme
+
+  it('leaves out the episode description after the duration', () => {
+    const markup = info({ ...episode, mediaKind: 'audio' })
+    expect(markup).toContain('Episode')
+    expect(markup).not.toContain('info-desc')
+    expect(markup).not.toContain('Guest talks about the book.')
+  })
+
+  it('keeps the description of a video episode', () => {
+    expect(info({ ...episode, mediaKind: 'video' })).toContain('Guest talks about the book.')
+  })
+})
+
 describe('Next on the information bar', () => {
   const channel = { number: 12, name: 'Twelve', origin: 'default' } as Channel
   const programme = { id: 'p', title: 'Film', videoId: 'abcdefghijk', durationSeconds: 1800, playback: 'seekable-recorded' } as Programme

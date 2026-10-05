@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import logoImage from '../assets/tvn-logo.png'
+import { SESSION_LOGO } from './logos.ts'
 import type { StartupPhase } from '../state/startup.ts'
 import { ringColour } from './ring-colour.ts'
 
@@ -137,7 +137,7 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
       <StartupNoise />
       <div className="startup-ident">
         <div className="startup-emblem">
-          <img className="startup-logo" src={logoImage} alt={BRAND} width={640} height={640} />
+          <img className="startup-logo" src={SESSION_LOGO} alt={BRAND} width={640} height={640} />
           {failed ? null : <LoadingRing percent={percent} />}
         </div>
         {failed ? (

@@ -1,4 +1,4 @@
-import logo from '../assets/tvn-logo.png'
+import { SESSION_LOGO } from './logos.ts'
 import { BRAND } from './StartupScreen.tsx'
 
 export const SLEEP_COPY = {
@@ -11,7 +11,7 @@ export function SleepScreen({ onWake }: { onWake: () => void }) {
   return (
     <div className="startup sleep" role="status" aria-live="polite" onClick={onWake}>
       <div className="startup-ident">
-        <img className="startup-logo" src={logo} alt={BRAND} width={640} height={640} />
+        <img className="startup-logo" src={SESSION_LOGO} alt={BRAND} width={640} height={640} />
         <p className="startup-message">{SLEEP_COPY.title}</p>
         <p className="startup-note">{SLEEP_COPY.note}</p>
       </div>
