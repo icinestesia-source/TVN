@@ -4,9 +4,9 @@
  "pass": "23",
  "channels": 39,
  "outcomes": {
-  "ACTIVATED": 9,
+  "ACTIVATED": 10,
   "RIGHTS_BLOCKED": 10,
-  "INTENTIONALLY_UNAVAILABLE": 16,
+  "INTENTIONALLY_UNAVAILABLE": 15,
   "UNRESOLVED": 29,
   "GENERATED_PRESENTATION": 6,
   "RETROTV_ORIGINAL": 1
@@ -684,16 +684,17 @@
   },
   {
    "number": 729,
-   "name": "Food Extra",
+   "name": "FOR THE LOVE OF TRUTH",
    "category": "lifestyle",
-   "decidedIn": "22",
-   "outcome": "INTENTIONALLY_UNAVAILABLE",
+   "decidedIn": "2.0",
+   "outcome": "ACTIVATED",
    "subtype": "DUPLICATE_FRONT_DOOR",
-   "reason": "Overflow slot of the food family; 700 Food carries the identity.",
-   "statusAfter": "DELIBERATELY_UNAVAILABLE",
-   "programmesAfter": 0,
-   "hoursAfter": 0,
-   "redirect": 700
+   "reason": "FOR THE LOVE OF TRUTH: the redundant Food Extra slot re-purposed; 126 free episodes of For The Love Of Truth Podcast from its public feed, in random order.",
+   "statusAfter": "CENTRAL_PODCAST",
+   "programmesAfter": 126,
+   "hoursAfter": 99.2,
+   "statusBefore": "DELIBERATELY_UNAVAILABLE",
+   "mechanism": "central podcast channel (node scripts/central-edits.ts 729)"
   },
   {
    "number": 769,

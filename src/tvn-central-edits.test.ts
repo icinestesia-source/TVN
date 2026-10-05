@@ -10,14 +10,18 @@ const read = (path: string) => readFileSync(path, 'utf8')
 
 afterEach(() => installCentralEdits(null))
 
-describe('776 VERITAS and 777 CRROW777: central channels from public podcast feeds', () => {
+describe('729, 776 VERITAS and 777 CRROW777: central channels from public podcast feeds', () => {
   it('ships each from its public feed only, never a paid or members feed, in a random order', () => {
     const feeds = Object.fromEntries(Object.entries(doc.channels as Record<string, { sources: { url: string }[] }>).map(([number, channel]) => [number, channel.sources.map((source) => source.url)]))
-    expect(feeds).toEqual({ '776': ['https://veritas7.com/vs.rss'], '777': ['https://www.crrow777radio.com/feed/podcast/'] })
+    expect(feeds).toEqual({
+      '729': ['https://rss.buzzsprout.com/1650910.rss'],
+      '776': ['https://veritas7.com/vs.rss'],
+      '777': ['https://www.crrow777radio.com/feed/podcast/'],
+    })
     for (const url of Object.values(feeds).flat()) expect(url).not.toMatch(/paid|member|private|premium|token|key=/i)
     expect(read('src/data/central-edits.json')).not.toMatch(/token=|signature=|X-Amz|AIza/)
     const edits = centralEditsFrom(doc)
-    for (const number of ['776', '777']) {
+    for (const number of ['729', '776', '777']) {
       const edit = edits[number]
       expect(edit.orderKind).toBe('random')
       expect(edit.sources[0]).toMatchObject({ kind: 'tvn', enabled: false })
@@ -31,7 +35,7 @@ describe('776 VERITAS and 777 CRROW777: central channels from public podcast fee
 
   it('airs the episodes as audio programmes on the shipped channels, in the shipped order', () => {
     installCentralEdits(doc)
-    for (const [number, name] of [[776, 'VERITAS'], [777, 'CRROW777']] as const) {
+    for (const [number, name] of [[729, 'FOR THE LOVE OF TRUTH'], [776, 'VERITAS'], [777, 'CRROW777']] as const) {
       const shipped = shippedChannel(number)!
       expect(shipped.name).toBe(name)
       const edit = centralEdit(number)!

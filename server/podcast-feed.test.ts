@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { discoverFeeds, FeedError, isPrivateFeed, parseFeed, rankFeedCandidates, resolveFeed, verifiedPublicFeed } from './podcast-feed.ts'
+import { discoverFeeds, FeedError, isFeed, isPrivateFeed, SPOTIFY_MESSAGE, parseFeed, rankFeedCandidates, resolveFeed, verifiedPublicFeed } from './podcast-feed.ts'
 import { parseChannelInput } from './youtube-channel.ts'
 
 const page = (body: string, status = 200, type = 'text/html') => new Response(body, { status, headers: { 'content-type': type } })
@@ -130,5 +130,43 @@ describe('a website resolves to its public feed, never a members feed', () => {
       expect(feed.feedUrl).toBe('https://radio-example.org/public.rss')
       expect(feed.via).toBe('directory')
     }
+  })
+})
+
+describe('what counts as a feed', () => {
+  it('reads a feed that names a stylesheet before its rss element, as Buzzsprout feeds do', () => {
+    const styled = FEED.replace('<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8" ?>\n<?xml-stylesheet href="https://rss.buzzsprout.com/styles.xsl" type="text/xsl"?>\n')
+    expect(isFeed(styled)).toBe(true)
+    expect(parseFeed(styled, 'https://rss.buzzsprout.com/1.rss').episodes.length).toBeGreaterThan(0)
+    expect(isFeed('<?xml version="1.0"?><!-- note --><feed xmlns="http://www.w3.org/2005/Atom"></feed>')).toBe(true)
+    expect(isFeed('<!doctype html><html><rss></rss></html>')).toBe(false)
+  })
+})
+
+describe('a Spotify show link', () => {
+  const show = 'https://open.spotify.com/show/56eYCpte7jWOuj9ChtWv7S'
+  const spotifyPage = `<html><head><meta property="og:title" content="Example Radio"/><meta property="og:description" content="Podcast · Example People · Talk &amp; music"/></head>
+<body><audio src="https://p.scdn.co/mp3-preview/abc.mp3"></audio></body></html>`
+  const reader = (results: { collectionName: string; artistName: string; feedUrl: string }[]) =>
+    (async (input: string | URL) => {
+      const url = String(input)
+      if (url.startsWith('https://open.spotify.com/')) return page(spotifyPage)
+      if (url.startsWith('https://itunes.apple.com/search')) return page(JSON.stringify({ results }), 200, 'application/json')
+      if (url === 'https://feeds.example-host.com/radio.rss') return page(FEED, 200, 'application/rss+xml')
+      return page('', 404)
+    }) as typeof fetch
+
+  it("reads the show's own public feed, never Spotify's 30-second previews", async () => {
+    const found = await resolveFeed(show, reader([
+      { collectionName: 'Example Radio Extra', artistName: 'Example People', feedUrl: 'https://feeds.example-host.com/other.rss' },
+      { collectionName: 'Example Radio', artistName: 'Example People', feedUrl: 'https://feeds.example-host.com/radio.rss' },
+    ]))
+    expect(found.feedUrl).toBe('https://feeds.example-host.com/radio.rss')
+    expect(found.episodes.every((episode) => !episode.media?.includes('scdn.co'))).toBe(true)
+    expect(found.episodes[0].media).toBe('https://cdn.radio-example.org/ep2.mp3')
+  })
+
+  it('says so plainly when no public feed matches both the title and the publisher', async () => {
+    await expect(resolveFeed(show, reader([{ collectionName: 'Example Radio', artistName: 'Someone Else', feedUrl: 'https://feeds.example-host.com/radio.rss' }]))).rejects.toThrow(SPOTIFY_MESSAGE)
   })
 })

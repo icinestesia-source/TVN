@@ -7,7 +7,7 @@
   },
   "channels": 1000,
   "totals": {
-    "DELIBERATELY_UNAVAILABLE": 61,
+    "DELIBERATELY_UNAVAILABLE": 60,
     "PLAYABLE_STRONG": 491,
     "PLAYABLE": 249,
     "PLAYABLE_THIN": 53,
@@ -15,7 +15,7 @@
     "NEEDS_CONTENT": 38,
     "GENERATED": 6,
     "NEEDS_LIVE_PROVIDER": 29,
-    "CENTRAL_PODCAST": 2,
+    "CENTRAL_PODCAST": 3,
     "RETROTV_ORIGINAL": 1,
     "NEEDS_AUDIO_PROVIDER": 49
   },
@@ -35630,15 +35630,17 @@
     {
       "number": 729,
       "displayNumber": "729",
-      "name": "Food Extra",
+      "name": "FOR THE LOVE OF TRUTH",
       "category": "lifestyle",
-      "identity": "Food Extra: the lifestyle channel for food extra programming.",
-      "scope": "Programmes about food, cook, recipe, kitchen, bak e, ed, ing, bread, …; native publishers America's Test Kitchen air without a title match.",
-      "distinction": "specialist channel. No programming to overlap.",
+      "identity": "FOR THE LOVE OF TRUTH: :adrian's For The Love Of Truth Podcast, long-form conversations that question everything.",
+      "scope": "Free episodes from its public podcast feed only (https://rss.buzzsprout.com/1650910.rss); never a paid or members feed. Random order.",
+      "distinction": "specialist channel. Programmes come from a public podcast feed, not the YouTube catalogue.",
       "sourceStrategy": "SOURCE_ROUTED",
-      "anchorSources": [],
+      "anchorSources": [
+        "For The Love Of Truth Podcast"
+      ],
       "secondarySources": [],
-      "eligibility": "Programmes about food, cook, recipe, kitchen, bak e, ed, ing, bread, …; native publishers America's Test Kitchen air without a title match.",
+      "eligibility": "Free episodes from its public podcast feed only (https://rss.buzzsprout.com/1650910.rss); never a paid or members feed. Random order.",
       "exclusions": [
         "religious programming, preaching and worship (major musical, artistic and historical works are not excluded for their terminology)",
         "space programming",
@@ -35648,12 +35650,12 @@
         "user media (1001+) never feeds 000–999",
         "British Pathé (805), KOFA (114) and Orbital Bacon (225) owned catalogues"
       ],
-      "programmes": 0,
-      "hours": 0,
+      "programmes": 126,
+      "hours": 99.2,
       "sources": {},
-      "status": "DELIBERATELY_UNAVAILABLE",
-      "reason": "Overflow slot of the food family; 700 Food carries the identity. Redundant slot; viewers are pointed to 700.",
-      "nextStep": "None; redundant slot, off air by policy.",
+      "status": "CENTRAL_PODCAST",
+      "reason": "126 free episodes from public podcast feeds (src/data/central-edits.json), in random order; built with node scripts/central-edits.ts 729.",
+      "nextStep": "Refresh with node scripts/central-edits.ts 729 to add the publisher's newest free episodes.",
       "inGuide": true,
       "tier": "Specialist",
       "blocker": {

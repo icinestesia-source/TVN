@@ -166,7 +166,7 @@ function episodeFrom(block: string, atom: boolean, feedUrl: string): FeedEpisode
 
 export function isFeed(text: string): boolean {
   const head = text.slice(0, 2000).replace(/^\uFEFF/, '').trimStart()
-  return /^(?:<\?xml[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<(?:rss|feed|rdf:RDF)\b/i.test(head)
+  return /^(?:<\?xml[^>]*>\s*|<!--[\s\S]*?-->\s*)*<(?:rss|feed|rdf:RDF)\b/i.test(head)
 }
 
 /** A feed's publisher metadata and its episodes with public media, newest first as the feed lists them. */
@@ -278,6 +278,50 @@ export async function directoryFeeds(html: string, pageUrl: string, read: typeof
   return found
 }
 
+export const SPOTIFY_MESSAGE =
+  "Spotify only lets TVN play 30-second previews. TVN could not find this show's own public feed; paste its RSS feed address instead"
+
+export function isSpotifyPage(pageUrl: string): boolean {
+  return new URL(pageUrl).hostname.toLowerCase() === 'open.spotify.com'
+}
+
+const sameName = (a: string, b: string) => a.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '') === b.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+
+const pageMeta = (html: string, property: string): string => {
+  const tag = html.match(new RegExp(`<meta\\b[^>]*property\\s*=\\s*["']${property}["'][^>]*>`, 'i'))?.[0]
+  return (tag ? attr(tag, 'content') ?? '' : '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&#39;/g, "'")
+    .trim()
+}
+
+/**
+ * A Spotify show's own public feed, as the public podcast directory lists it: only a show whose title and
+ * publisher both match the Spotify page, so another podcast of a similar name is never read instead.
+ */
+export async function spotifyShowFeeds(html: string, pageUrl: string, read: typeof fetch): Promise<string[]> {
+  if (!isSpotifyPage(pageUrl) || !new URL(pageUrl).pathname.startsWith('/show/')) return []
+  const title = pageMeta(html, 'og:title')
+  const publisher = pageMeta(html, 'og:description').match(/^Podcast\s*·\s*([^·]+?)\s*·/)?.[1] ?? ''
+  if (!title) return []
+  try {
+    const response = await read(`${DIRECTORY}?media=podcast&entity=podcast&limit=25&term=${encodeURIComponent(title)}`, { headers: { 'user-agent': USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!response.ok) return []
+    const body = (await response.json()) as { results?: { feedUrl?: unknown; collectionName?: unknown; artistName?: unknown }[] }
+    const found: string[] = []
+    for (const result of body.results ?? []) {
+      if (typeof result.collectionName !== 'string' || !sameName(result.collectionName, title)) continue
+      if (publisher && (typeof result.artistName !== 'string' || !sameName(result.artistName, publisher))) continue
+      const url = typeof result.feedUrl === 'string' ? publicFeedUrl(result.feedUrl) : null
+      if (url && !found.includes(url.toString())) found.push(url.toString())
+    }
+    return found
+  } catch {
+    return []
+  }
+}
+
 /** The first feed the public podcast directory lists for this site. */
 export async function directoryFeed(html: string, pageUrl: string, read: typeof fetch): Promise<string | null> {
   return (await directoryFeeds(html, pageUrl, read))[0] ?? null
@@ -371,6 +415,12 @@ export async function resolveFeed(
         if (found && !isPrivateFeed(found.feedUrl) && !PRIVATE_TITLE.test(found.title)) return found
       }
       return null
+    }
+    // A Spotify page carries only 30-second previews; the show is read from its own feed or not at all.
+    if (isSpotifyPage(page.url)) {
+      const found = await tryFeeds(await spotifyShowFeeds(page.text, page.url, read), 'directory')
+      if (found) return found
+      throw new FeedError(404, SPOTIFY_MESSAGE)
     }
     // A site with a feed verified by hand as its public one is read from that feed alone: if it fails, that is
     // reported, never answered from the site's other feeds (a members' feed among them).

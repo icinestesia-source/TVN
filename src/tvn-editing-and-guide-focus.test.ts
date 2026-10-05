@@ -62,7 +62,7 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
     expect(html.indexOf('Welcome to TVN')).toBeLessThan(keys)
     expect(html.indexOf('first-run-example')).toBeLessThan(keys)
     expect(keys).toBeLessThan(html.indexOf('first-run-actions'))
-    expect(html).toMatch(/<button[^>]*>TVN<\/button><button[^>]*>New<\/button><button[^>]*>Legal<\/button>/)
+    expect(html).toMatch(/<button[^>]*>TVN - CONTINUE<\/button><button[^>]*>NEW USER<\/button><button[^>]*>LEGAL<\/button>/)
     expect(read('src/app/TvScreen.tsx')).toContain('FirstRunNotice')
   })
 

@@ -120,12 +120,15 @@ function fillBlock(
     const fitLimit = segmented ? Math.min(segment, remain) : remain
     // Widest choice first: a fresh programme (even one running past a soft block boundary) beats a
     // same-day loop, and a same-day loop beats repeating across days. Neither may air the programme that
-    // has just finished while anything else fits; only then may it run again, and only then does the block hold.
+    // has just finished: only a channel with nothing else may run it again; otherwise the block holds.
     const canCross = !segmented && untilBarrier > remain
     const previous = state.history[state.history.length - 1]?.mediaItemId
     let chosen: ReturnType<typeof pick> = null
     let crosses = false
-    for (const [loop, exhausted, avoid] of [[false, false, undefined], [true, false, previous], [true, true, previous], [true, true, undefined]] as const) {
+    const onlyOne = !library.some((item) => item.id !== previous)
+    const tiers: [boolean, boolean, string | undefined][] = [[false, false, undefined], [true, false, previous], [true, true, previous]]
+    if (onlyOne) tiers.push([true, true, undefined])
+    for (const [loop, exhausted, avoid] of tiers) {
       chosen = pick(policy, block, fitLimit, library, state, seed, today, eventWeights, loop, exhausted, avoid)
       if (!chosen && canCross) {
         chosen = pick(policy, block, untilBarrier, library, state, seed, today, eventWeights, loop, exhausted, avoid)

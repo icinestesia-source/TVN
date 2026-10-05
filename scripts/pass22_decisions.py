@@ -15,7 +15,7 @@ Outcomes:
 
 # v41 group each channel came from.
 V41_GROUP = {
-    **{n: "OTHER_GENUINE_BLOCKER" for n in (134, 135, 142, 183, 185, 191, 323, 325, 326, 327, 394, 548, 549, 564, 579, 582, 586, 588, 589, 594, 616, 620, 729, 769, 883)},
+    **{n: "OTHER_GENUINE_BLOCKER" for n in (134, 135, 142, 183, 185, 191, 323, 325, 326, 327, 394, 548, 549, 564, 579, 582, 586, 588, 589, 594, 616, 620, 769, 883)},
     **{n: "RIGHTS_BLOCKED" for n in (87, 211, 212, 213, 214, 215, 297, 361, 802, 841)},
     **{n: "ORIGINAL_REQUIRED" for n in (19, 61, 78, 499, 699, 800, 887, 898)},
     **{n: "RESEARCH_UNRESOLVED" for n in (198, 199, 806, 812, 885)},
@@ -76,7 +76,6 @@ DECISIONS = {
     616: redundant("DUPLICATE_FRONT_DOOR", 424, "Same name and identity as 424 Economic History; its eligible programmes are the history inventory 400 and 424 already air."),
     620: open_("INSUFFICIENT_EXISTING_INVENTORY", "2.9 h of eligible programmes, most of it already the identity of 767 Property Life.", "Distinct remainder below 3 h."),
     883: redundant("DUPLICATE_FRONT_DOOR", 292, "Creator TV is the identity of 292 Creators; its eligible programmes are already aired by 277 and 292."),
-    729: redundant("DUPLICATE_FRONT_DOOR", 700, "Overflow slot of the food family; 700 Food carries the identity."),
     769: redundant("DUPLICATE_FRONT_DOOR", 750, "Overflow slot of the home family; 750 Home carries the identity."),
     # ---- 8 ORIGINAL_REQUIRED -----------------------------------------------------------------
     19: act("ORIGINAL_REQUIRED", "Archive: a curated front-door compilation, 26 curated archive programmes (BBC Archive, Thames, Carson, Cavett) disjoint from every other curated list.", "curated route (scripts/pass22_routes.py)"),

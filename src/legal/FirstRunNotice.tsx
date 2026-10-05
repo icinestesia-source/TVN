@@ -25,8 +25,8 @@ function EntryKeys() {
 }
 
 /**
- * Shown once per browser; About · Sources · Legal stays in Settings afterwards. TVN carries on with the network as
- * it is loaded, NEW clears the example channels for a network of the viewer's own, LEGAL opens About and returns here.
+ * Shown once per browser; About · Sources · Legal stays in Settings afterwards. TVN - CONTINUE carries on with the network as
+ * it is loaded, NEW USER clears the example channels for a network of the viewer's own, LEGAL opens About and returns here.
  * 000 TVN stays tuned behind it whichever is chosen.
  */
 export function FirstRunNotice({
@@ -74,8 +74,8 @@ export function FirstRunNotice({
         for YouTube). CREDITS on the remote shows sources and creators.
       </p>
       <p className="first-run-example">
-        TVN includes an example network of channels to demonstrate the platform. TVN carries on with it; NEW clears the channels to start
-        a network of your own.
+        TVN includes an example network of channels to demonstrate the platform. TVN - CONTINUE carries on with it; NEW USER clears the
+        channels to start a network of your own.
       </p>
       <EntryKeys />
       {confirming ? (
@@ -94,13 +94,13 @@ export function FirstRunNotice({
       ) : (
         <div className="first-run-actions">
           <button type="button" onClick={() => acknowledgeNotice()} disabled={busy} autoFocus title="Continue with TVN as it is loaded">
-            TVN
+            TVN - CONTINUE
           </button>
           <button type="button" onClick={() => void askNew()} disabled={busy} title="Clear the channels and start a new network">
-            New
+            NEW USER
           </button>
           <button type="button" onClick={() => openAbout()} disabled={busy} title="About, sources and legal information">
-            Legal
+            LEGAL
           </button>
         </div>
       )}

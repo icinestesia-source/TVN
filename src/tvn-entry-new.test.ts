@@ -27,7 +27,7 @@ afterEach(() => {
 describe('the entry screen reads TVN · NEW · LEGAL', () => {
   it('in that order, with one line saying the channels are an example', () => {
     const html = renderToStaticMarkup(createElement(FirstRunNotice))
-    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['TVN', 'New', 'Legal'])
+    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['TVN - CONTINUE', 'NEW USER', 'LEGAL'])
     expect(html).toContain('TVN includes an example network of channels to demonstrate the platform.')
     expect(html).not.toContain('>Continue<')
   })
