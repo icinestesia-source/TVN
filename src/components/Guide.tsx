@@ -969,11 +969,11 @@ function ChannelCell({
           disabled={busy || !selected}
           onClick={act(onLatest)}
           aria-pressed={live}
-          title="Latest: check for the newest programme and play it now; the schedule resumes when it ends"
+          title={live ? 'Latest is on: press to return to the normal schedule' : 'Latest: schedule every programme newest first, the very latest now'}
         >
           <span aria-hidden="true">◉</span>
           <span className="sr">
-            Play latest {padChannel(channel.number)}
+            {live ? 'Latest off' : 'Latest on'} {padChannel(channel.number)}
           </span>
         </button>
       ) : null}

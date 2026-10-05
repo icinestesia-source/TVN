@@ -12,6 +12,7 @@ import { channelsFromSources, livePhase, poolProgramme, type ImportedVideo, type
 import { loadSurfUntilEnd, saveSurfUntilEnd, SURF_END_LIMIT_MS, surfUntilEndMs } from './state/surf.ts'
 import type { Channel } from './types/channel.ts'
 import { loadGuideActionsAll, saveGuideActionsAll } from './view/guide-actions-store.ts'
+import { saveScheduleBeforeLatest, takeScheduleBeforeLatest } from './view/latest-mode-store.ts'
 import { newestProgramme } from './view/programme-order.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
@@ -181,16 +182,32 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(loadGuideActionsAll(store)).toBe(false)
   })
 
-  it('LATEST reads the sources again and plays the newest now outside the schedule, leaving the running order alone', () => {
+  it('LATEST is a switch: on schedules newest first from the very latest now, off brings the schedule back', () => {
     const provider = read('src/state/TvProvider.tsx')
     const latest = provider.slice(provider.indexOf('const latestFirst = useCallback('), provider.indexOf('const reloadChannel = useCallback('))
+    expect(latest).toContain("if (opened.orderKind === 'latest' && opened.liveFromMs !== undefined && opened.order?.length) {")
+    expect(latest).toContain('const before = takeScheduleBeforeLatest(number)')
     expect(latest).toContain('const current = await rescanChannelEdit(number, opened).then(')
-    expect(latest).toContain('() => opened,')
-    expect(latest).toContain('newestProgramme(pool, programmesFor(target.id), (video) => poolProgramme(video, target.id, target.name))')
-    expect(latest).toContain('playFromGuideRef.current(target, programme)')
-    expect(latest).not.toContain('saveChannelEdit')
-    expect(latest).not.toContain("orderKind: 'latest'")
-    expect(read('src/components/Guide.tsx')).toContain("channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' }))")
+    expect(latest).toContain('const order = latestVideos(pool).map((video) => video.id)')
+    expect(latest).toContain('saveScheduleBeforeLatest(number, { order: opened.order, orderKind: opened.orderKind, scheduleSize: opened.scheduleSize })')
+    expect(latest).toContain("orderKind: 'latest', liveFromMs: Date.now()")
+    expect(latest).not.toContain('playFromGuideRef')
+    const guide = read('src/components/Guide.tsx')
+    expect(guide).toContain("channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' }))")
+    expect(guide).toContain('live={channel.liveFromMs !== undefined}')
+    expect(guide).toContain('aria-pressed={live}')
+  })
+
+  it('remembers the schedule before LATEST once, per channel, and never a latest order', () => {
+    const store = memory()
+    expect(takeScheduleBeforeLatest(7, store)).toBeNull()
+    saveScheduleBeforeLatest(7, { order: ['a', 'b'], orderKind: 'manual', scheduleSize: 2 }, store)
+    saveScheduleBeforeLatest(8, {}, store)
+    saveScheduleBeforeLatest(9, { order: ['a'], orderKind: 'latest' }, store)
+    expect(takeScheduleBeforeLatest(7, store)).toEqual({ order: ['a', 'b'], orderKind: 'manual', scheduleSize: 2 })
+    expect(takeScheduleBeforeLatest(7, store)).toBeNull()
+    expect(takeScheduleBeforeLatest(8, store)).toEqual({})
+    expect(takeScheduleBeforeLatest(9, store)).toEqual({})
   })
 
   it('RELOAD rescans and schedules the channel again; only an order arranged by hand is kept', () => {
@@ -200,6 +217,7 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(reload).toContain("if (kind === 'manual' || pool.length === 0) {")
     expect(reload).toContain("const orderKind: OrderKind = kind === 'az' || kind === 'random' ? kind : 'rebuilt'")
     expect(reload).toContain('liveFromMs: undefined')
+    expect(reload).toContain("if (kind === 'latest' && next.liveFromMs !== undefined) {")
     expect(reload).toContain('replayIfWatching(number)')
     expect(read('src/components/Guide.tsx')).toContain('title="Reload: rescan the channel and schedule it again"')
   })

@@ -49,7 +49,6 @@ import {
   firstEmptySlot,
   migrateLegacyUserNumbers,
   planImport,
-  poolProgramme,
   type ParsedExport,
   type StoredSource,
 } from '../services/channels-import.ts'
@@ -61,7 +60,8 @@ import { curatedChannelManifest, manifestText, userChannelManifest } from '../se
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
 import { airingSources, inventoryOf, type ChannelSource, type OrderKind } from '../services/channel-sources.ts'
-import { alphabeticalVideos, newestProgramme, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
+import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
+import { saveScheduleBeforeLatest, takeScheduleBeforeLatest } from '../view/latest-mode-store.ts'
 import { addRoute } from '../sources/providers.ts'
 import {
   appliedCuratedEdits,
@@ -2767,29 +2767,38 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * LATEST in the Guide: the sources are read again for anything new, then the channel's newest programme
-   * plays now, from its start, outside the schedule. The running order is untouched: when that programme
-   * has played through, the channel returns to its schedule.
+   * LATEST in the Guide, a switch. On: the sources are read again for anything new, and the whole channel is
+   * scheduled newest first, its very latest programme on air now. Off: the schedule it had before returns.
    */
   const latestFirst = useCallback(
     async (number: number) => {
       const edit = await openChannelEdit(number)
-      if (!edit) throw new Error('This channel cannot be played here')
+      if (!edit) throw new Error('This channel cannot be arranged here')
       const { review: _review, ...opened } = edit
+      if (opened.orderKind === 'latest' && opened.liveFromMs !== undefined && opened.order?.length) {
+        const before = takeScheduleBeforeLatest(number)
+        const restored = before?.order?.length
+          ? { ...opened, order: before.order, orderKind: before.orderKind, scheduleSize: before.scheduleSize, liveFromMs: undefined }
+          : { ...opened, order: undefined, orderKind: undefined, scheduleSize: undefined, liveFromMs: undefined }
+        await saveChannelEdit(number, restored)
+        replayIfWatching(number)
+        return before?.order?.length ? 'LATEST OFF · THE SCHEDULE IS BACK' : 'LATEST OFF · SCHEDULED BY TVN'
+      }
       const current = await rescanChannelEdit(number, opened).then(
         (result) => result.edit,
         () => opened,
       )
-      const target = channelByNumber(number)
-      if (!target) throw new Error('That channel is not in the network')
-      const pool = inventoryOf(current.sources)
-      const programme = newestProgramme(pool, programmesFor(target.id), (video) => poolProgramme(video, target.id, target.name))
-      if (!programme) throw new Error('No dated programme to play: add a source to this channel')
-      playFromGuideRef.current(target, programme)
-      return `LATEST · ${programme.title.toUpperCase().slice(0, 60)} NOW, THEN BACK TO THE SCHEDULE`
+      const pool = inventoryOf(airingSources(current.sources))
+      if (pool.length === 0) throw new Error("TVN schedules this channel's own programming: add a source to play it latest first")
+      const order = latestVideos(pool).map((video) => video.id)
+      saveScheduleBeforeLatest(number, { order: opened.order, orderKind: opened.orderKind, scheduleSize: opened.scheduleSize })
+      await saveChannelEdit(number, { ...current, order, orderKind: 'latest', liveFromMs: Date.now(), scheduleSize: undefined })
+      replayIfWatching(number)
+      const first = pool.find((video) => video.id === order[0])
+      return `LATEST ON · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [openChannelEdit, rescanChannelEdit],
+    [openChannelEdit, rescanChannelEdit, saveChannelEdit],
   )
 
   /**
@@ -2809,6 +2818,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (kind === 'manual' || pool.length === 0) {
         replayIfWatching(number)
         return `${result.message} · ${kind === 'manual' ? 'YOUR ORDER KEPT' : 'SCHEDULED BY TVN'}`
+      }
+      if (kind === 'latest' && next.liveFromMs !== undefined) {
+        const latest = { ...next, order: latestVideos(pool).map((video) => video.id), orderKind: 'latest' as const, liveFromMs: Date.now(), scheduleSize: undefined }
+        await saveChannelEdit(number, { ...latest, compiled: eligibilityKey(latest) })
+        replayIfWatching(number)
+        return `${result.message} · LATEST FROM NOW`
       }
       const fromSource = new Map(next.sources.flatMap((source) => (source.videos ?? []).map((video) => [video.id, source.id] as const)))
       const order = kind === 'az' ? alphabeticalVideos(pool) : kind === 'random' ? shuffledVideos(pool) : rebuiltVideos(pool.map((video) => ({ ...video, from: fromSource.get(video.id) })))
