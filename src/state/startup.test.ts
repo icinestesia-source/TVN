@@ -135,13 +135,13 @@ describe('startup loading presentation', () => {
     expect(markup).not.toMatch(/error|exception|undefined|null|fetch|IndexedDB|stack/i)
   })
 
-  it('L: TVNolo.png ships as a bundled 640x640 PNG asset referenced by the startup screen', () => {
-    const png = readFileSync('src/assets/TVNolo.png')
+  it('L: tvn-logo.png ships as a bundled 640x640 PNG asset referenced by the startup screen', () => {
+    const png = readFileSync('src/assets/tvn-logo.png')
     const header = new DataView(png.buffer, png.byteOffset, png.byteLength)
     expect(String.fromCharCode(...png.subarray(1, 4))).toBe('PNG')
     expect(header.getUint32(16)).toBe(640)
     expect(header.getUint32(20)).toBe(640)
-    expect(readFileSync('src/components/StartupScreen.tsx', 'utf8')).toContain("from '../assets/TVNolo.png'")
+    expect(readFileSync('src/components/StartupScreen.tsx', 'utf8')).toContain("from '../assets/tvn-logo.png'")
     expect(screen('loading')).toMatch(/<img[^>]*class="startup-logo"[^>]*alt="TVN"/)
     expect(png.length).toBeGreaterThan(4096)
     expect(readFileSync('vite.config.ts', 'utf8')).not.toContain('assetsInlineLimit')

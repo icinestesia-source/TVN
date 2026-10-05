@@ -1,4 +1,4 @@
-import logo from '../assets/TVNolo.png'
+import logo from '../assets/tvn-logo.png'
 import { BRAND } from './StartupScreen.tsx'
 
 export const SLEEP_COPY = {

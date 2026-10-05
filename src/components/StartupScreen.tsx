@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import logoImage from '../assets/TVNolo.png'
+import logoImage from '../assets/tvn-logo.png'
 import type { StartupPhase } from '../state/startup.ts'
 import { ringColour } from './ring-colour.ts'
 
