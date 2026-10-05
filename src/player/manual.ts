@@ -7,7 +7,8 @@ import type { ScheduleSnapshot } from '../types/schedule.ts'
 /**
  * A programme the viewer picked from the Guide, playing from its beginning outside the schedule.
  * It lives in memory only and never touches the schedule: the broadcast carries on underneath, and
- * NOW, a channel change or the programme ending returns the channel to it.
+ * NOW or a channel change returns the channel to it. A pick that continues plays on through the running
+ * order after it, the schedule shifted to start where the pick did; any other returns when it ends.
  */
 export interface ManualAiring {
   channelNumber: number
@@ -16,17 +17,33 @@ export interface ManualAiring {
   endMs: number
   /** Where the programme sits in the schedule, so Prev and Next step along the running order from it. */
   slot?: { startMs: number; endMs: number }
+  /** A continuing pick: how far behind (positive) or ahead of the broadcast the channel now plays. */
+  shiftMs?: number
 }
 
-let selected: ManualAiring | null = null
+let selected: (ManualAiring & { channel?: Channel }) | null = null
 
+/**
+ * Picks a programme. Given the channel (`continueOn`) and the programme's slot in its schedule, the pick
+ * continues: once it ends, the programmes after it in the running order follow, rather than the broadcast.
+ */
 export function selectProgramme(
   channelNumber: number,
   programme: Programme,
   nowMs: number,
   slot?: { startMs: number; endMs: number },
+  continueOn?: Channel,
 ): ManualAiring {
-  selected = { channelNumber, programme, startMs: nowMs, endMs: nowMs + programme.durationSeconds * 1000, slot }
+  const scheduled = slot && continueOn?.number === channelNumber ? broadcast(continueOn, slot.startMs).current : null
+  const continues = scheduled !== null && scheduled.startMs === slot?.startMs && scheduled.programme.id === programme.id
+  selected = {
+    channelNumber,
+    programme,
+    startMs: nowMs,
+    endMs: nowMs + programme.durationSeconds * 1000,
+    slot,
+    ...(continues && slot ? { shiftMs: nowMs - slot.startMs, channel: continueOn } : {}),
+  }
   return selected
 }
 
@@ -75,9 +92,19 @@ export function pickTunes(targetNumber: number, watchingNumber: number, tuning: 
   return targetNumber !== watchingNumber || tuning
 }
 
-/** The picked programme still playing on this channel, if any. One that has run its length is forgotten. */
+/**
+ * The picked programme still playing on this channel, if any. One that has run its length is forgotten,
+ * unless it continues: then whatever follows it in the running order, at the shifted time.
+ */
 export function manualAiring(channelNumber: number, nowMs: number): ManualAiring | null {
   if (!selected) return null
+  const { channel, shiftMs } = selected
+  if (channel && shiftMs !== undefined) {
+    if (selected.channelNumber !== channelNumber) return null
+    if (nowMs < selected.endMs) return selected
+    const current = broadcast(channel, nowMs - shiftMs).current
+    return { channelNumber, programme: current.programme, startMs: current.startMs + shiftMs, endMs: current.endMs + shiftMs, slot: { startMs: current.startMs, endMs: current.endMs }, shiftMs }
+  }
   if (nowMs >= selected.endMs) {
     selected = null
     return null
@@ -108,6 +135,11 @@ export function onScreen(channel: Channel, nowMs: number): ScheduleSnapshot<Prog
       elapsedSeconds,
       seekSeconds: elapsedSeconds,
     },
-    next: stepFrom(channel, nowMs, 1),
+    next: shifted(stepFrom(channel, nowMs, 1), manual.shiftMs),
   }
+}
+
+/** A schedule slot at the time a continuing pick plays it. */
+function shifted<T extends { startMs: number; endMs: number }>(slot: T, shiftMs: number | undefined): T {
+  return shiftMs ? { ...slot, startMs: slot.startMs + shiftMs, endMs: slot.endMs + shiftMs } : slot
 }

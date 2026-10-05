@@ -622,10 +622,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const videoId = snap.current.programme.videoId
     const refused = refusedVideos()
     if (!videoId || !refused.has(videoId) || videoOverride(target.number)) return true
-    const from = manualAiring(target.number, nowMs)?.slot ?? snap.current
+    const picked = manualAiring(target.number, nowMs)
+    const from = picked?.slot ?? snap.current
     const next = fallbackProgramme(target, from, refused)
     if (!next) return false
-    selectProgramme(target.number, next.programme, nowMs, { startMs: next.startMs, endMs: next.endMs })
+    selectProgramme(target.number, next.programme, nowMs, { startMs: next.startMs, endMs: next.endMs }, picked?.shiftMs !== undefined ? target : undefined)
     return true
   }
 
@@ -1221,11 +1222,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   /**
    * Plays a Guide programme from its beginning, outside the schedule. Only this viewing changes: the
-   * schedule is untouched, and on the channel already being watched Previous is left alone.
+   * schedule is untouched, and on the channel already being watched Previous is left alone. Picked from its
+   * slot in the schedule, the channel then plays on through the programmes after it until NOW or a tune.
    */
   const playFromGuide = (target: Channel, programme: Programme, slot?: { startMs: number; endMs: number }) => {
     if (!guideDrivingRef.current) guideEngine.current.suspend()
-    selectProgramme(target.number, programme, Date.now(), slot && { startMs: slot.startMs, endMs: slot.endMs })
+    selectProgramme(target.number, programme, Date.now(), slot && { startMs: slot.startMs, endMs: slot.endMs }, slot && !guideDrivingRef.current && target.origin !== 'tvn' && target.origin !== 'session' ? target : undefined)
     if (multiviewRef.current !== '1') {
       multiviewRef.current = '1'
       setMultiviewMode('1')

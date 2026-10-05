@@ -80,8 +80,9 @@
 .guide-top {
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
   min-height: 54px;
   height: auto;
   padding: 8px 12px;

@@ -214,6 +214,32 @@ describe('programme selection', () => {
     expect(onScreen(channel, after)).toEqual(broadcast(channel, after))
   })
 
+  it('picked from its slot, plays on through the programmes after it, shifted, until NOW', () => {
+    const [channel] = installUsers(userSource('yt:UCcccccccccccccccccccccc', 'Gamma', 1001))
+    const slot = guideSlots(channel, T0, T0 + 12 * HOUR).find((item) => item.startMs > T0 && hasPicture(item.programme))!
+    const following = broadcast(channel, slot.endMs).current
+    const shiftMs = T0 - slot.startMs
+    selectProgramme(channel.number, slot.programme, T0, { startMs: slot.startMs, endMs: slot.endMs }, channel)
+    expect(onScreen(channel, T0).current.programme.id).toBe(slot.programme.id)
+    expect(onScreen(channel, T0).next.startMs).toBe(following.startMs + shiftMs)
+    const after = slot.endMs + shiftMs + 1000
+    const later = manualAiring(channel.number, after)!
+    expect(later.programme.id).toBe(following.programme.id)
+    expect(later.startMs).toBe(following.startMs + shiftMs)
+    expect(onScreen(channel, after).current.seekSeconds).toBe(1)
+    expect(manualAiring(channel.number + 1, after)).toBeNull()
+    expect(clearManual()).toBe(true)
+    expect(onScreen(channel, after)).toEqual(broadcast(channel, after))
+  })
+
+  it('a pick that does not match its slot, or has none, still ends with the programme', () => {
+    const { channel, programme } = curatedWithLaterPicture(T0)
+    selectProgramme(channel.number, programme, T0, { startMs: T0 - 1, endMs: T0 }, channel)
+    expect(manualAiring(channel.number, T0 + programme.durationSeconds * 1000 + 1)).toBeNull()
+    const body = provider.slice(provider.indexOf('const playFromGuide = ('), provider.indexOf('/** PLAY LATEST in Edit Channel'))
+    expect(body).toContain("slot && !guideDrivingRef.current && target.origin !== 'tvn' && target.origin !== 'session' ? target : undefined")
+  })
+
   it('on the channel being watched plays in place and makes no Previous entry', () => {
     expect(pickTunes(7, 7, false)).toBe(false)
     expect(pickTunes(8, 7, false)).toBe(true)

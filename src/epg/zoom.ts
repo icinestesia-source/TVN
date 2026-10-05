@@ -4,7 +4,7 @@
  * are untouched.
  */
 export const GUIDE_ZOOM_MIN = 1
-export const GUIDE_ZOOM_MAX = 6
+export const GUIDE_ZOOM_MAX = 10
 /** The slider moves in fine steps; pinch and trackpad zoom are continuous within the same range. */
 export const GUIDE_ZOOM_STEP = 0.05
 
@@ -72,7 +72,7 @@ export function keyZoomAnchor(
 }
 
 /** The zooms the Guide may open at: the lowest that frames the listings usefully is chosen. */
-export const OPENING_ZOOMS = [1, 1.5, 2, 3, 4, 5, 6] as const
+export const OPENING_ZOOMS = [1, 1.5, 2, 3, 4, 5, 6, 8, 10] as const
 /** The share of the listed time whose programmes must show their titles for a zoom to be useful. */
 export const OPENING_READABLE_SHARE = 0.6
 
@@ -103,27 +103,37 @@ export function readableShare(rows: readonly (readonly { startMs: number; endMs:
       const visible = Math.min(slot.endMs, toMs) - Math.max(slot.startMs, fromMs)
       if (visible <= 0) continue
       shown += visible
-      if (((slot.endMs - slot.startMs) / 60_000) * px - 3 > frame.titleMinPx) readable += visible
+      if (titleShows(slot, zoom, frame)) readable += visible
     }
   }
   return shown > 0 ? readable / shown : 1
 }
 
+/** Whether a programme is wide enough to show its title at `zoom`. */
+export function titleShows(slot: { startMs: number; endMs: number }, zoom: number, frame: Pick<OpeningFrame, 'basePx' | 'titleMinPx'>): boolean {
+  return ((slot.endMs - slot.startMs) / 60_000) * frame.basePx * zoom - 3 > frame.titleMinPx
+}
+
 /**
- * The zoom the Guide opens at: the lowest that lets most of the listings around NOW show their titles. One
- * short programme does not raise it; a screen of short clips does. When no zoom gets there, the one that shows
- * the most titles (the lowest of equals).
+ * The zoom the Guide opens at: the lowest that lets most of the listings around NOW show their titles, and the
+ * programme on air on the watched channel (`onAir`) show its own whenever any zoom can. Another short programme
+ * does not raise it; a screen of short clips does. When no zoom gets the listings there, the one that shows the
+ * most titles (the lowest of equals).
  */
-export function openingZoom(rows: readonly (readonly { startMs: number; endMs: number }[])[], frame: OpeningFrame): number {
+export function openingZoom(rows: readonly (readonly { startMs: number; endMs: number }[])[], frame: OpeningFrame, onAir?: { startMs: number; endMs: number } | null): number {
   let best: number = GUIDE_ZOOM_MIN
   let bestShare = -1
   for (const zoom of OPENING_ZOOMS) {
     const share = readableShare(rows, zoom, frame)
-    if (share >= OPENING_READABLE_SHARE) return zoom
+    if (share >= OPENING_READABLE_SHARE) {
+      best = zoom
+      break
+    }
     if (share > bestShare + 1e-9) {
       best = zoom
       bestShare = share
     }
   }
-  return best
+  if (!onAir || titleShows(onAir, best, frame)) return best
+  return OPENING_ZOOMS.find((zoom) => zoom > best && titleShows(onAir, zoom, frame)) ?? best
 }

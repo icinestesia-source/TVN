@@ -166,7 +166,7 @@ describe('Guide timeline zoom', () => {
     expect(guide).not.toMatch(/ROW_HEIGHT \* [a-z]*[zZ]oom/)
   })
 
-  it('12. the slider in the channel heading drives the zoom, 1x to 6x, keyboard reachable', () => {
+  it('12. the slider in the channel heading drives the zoom, 1x to 10x, keyboard reachable', () => {
     const head = guide.slice(guide.indexOf('<div className="ch-head"'), guide.indexOf('<div\n              className="channel-scroll"'))
     expect(head.indexOf('aria-label="Next 100 channels"')).toBeLessThan(head.indexOf('type="range"'))
     expect(head).toContain('aria-label="Guide timeline zoom"')
@@ -175,9 +175,9 @@ describe('Guide timeline zoom', () => {
     expect(head).toContain('step={GUIDE_ZOOM_STEP}')
     expect(head).toContain('value={tv.guideZoom}')
     expect(head).toContain('onChange={(event) => applyZoom(Number(event.target.value), null)}')
-    expect([GUIDE_ZOOM_MIN, GUIDE_ZOOM_MAX]).toEqual([1, 6])
+    expect([GUIDE_ZOOM_MIN, GUIDE_ZOOM_MAX]).toEqual([1, 10])
     expect(clampZoom(0.4)).toBe(1)
-    expect(clampZoom(9)).toBe(6)
+    expect(clampZoom(14)).toBe(10)
     expect(clampZoom(2.75)).toBe(2.75)
     expect(clampZoom(Number.NaN)).toBe(1)
     // The slider is an input: the television's arrow keys leave it to the slider.

@@ -66,7 +66,10 @@
 
 .tv.is-integrated .guide-brand { min-width: 0; }
 .tv.is-integrated .tab { min-width: 0; padding: 0 10px; }
-.tv.is-integrated .guide-top { flex-wrap: nowrap; overflow: hidden; }
+/* The Guide's tabs never shrink under the search box; when the bar runs out of room its buttons take a second row. */
+.tv.is-integrated .guide-top { overflow: hidden; }
+.guide-top .tabs { flex-shrink: 0; max-width: 100%; }
+.guide-top .tabs .tab { flex: none; }
 
 .tv.is-integrated.is-narrow .guide-top {
   flex-wrap: wrap;

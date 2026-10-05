@@ -7,7 +7,7 @@ import { playbackLabel } from './view/playback-label.ts'
 import { UserNetworkImportTools } from './components/GuideAdd.tsx'
 import { basePxPerMinute, TITLE_MIN_PX } from './epg/geometry.ts'
 import { guideOpeningZoom } from './epg/opening-zoom.ts'
-import { openingZoom, readableShare, type OpeningFrame } from './epg/zoom.ts'
+import { OPENING_ZOOMS, openingZoom, readableShare, titleShows, type OpeningFrame } from './epg/zoom.ts'
 import { withSourceDrafts, type SourceFilter } from './services/channel-curation.ts'
 import type { ChannelSource } from './services/channel-sources.ts'
 import type { StoredSource } from './services/channels-import.ts'
@@ -64,9 +64,20 @@ describe('TVN 2.0 · adaptive Guide opening zoom', () => {
     expect(openingZoom([row(60, 2, 120, 120), row(120, 120, 120), row(90, 90, 90)], frame)).toBe(1)
   })
 
-  it('never goes beyond the existing 1–6× range', () => {
+  it('the clip on air on the watched channel opens wide enough to show its title, when any zoom can', () => {
+    const watched = row(60, 2, 120, 120)
+    const onAir = watched[1]
+    const zoom = openingZoom([watched, row(120, 120, 120), row(90, 90, 90)], frame, onAir)
+    expect(zoom).toBeGreaterThan(1)
+    expect(titleShows(onAir, zoom, frame)).toBe(true)
+    for (const step of OPENING_ZOOMS.filter((value) => value < zoom)) expect(titleShows(onAir, step, frame)).toBe(false)
+    const flash = { startMs: NOW, endMs: NOW + 1000 }
+    expect(openingZoom([row(120, 120, 120)], frame, flash)).toBe(1)
+  })
+
+  it('never goes beyond the 1–10× range', () => {
     expect(openingZoom([row(...repeat(0.2, 2000))], frame)).toBe(1)
-    expect(openingZoom([row(...repeat(1.5, 400))], frame)).toBeLessThanOrEqual(6)
+    expect(openingZoom([row(...repeat(1.5, 400))], frame)).toBeLessThanOrEqual(10)
     expect(guideOpeningZoom([], 1, NOW, 1400, 900)).toBe(1)
   })
 

@@ -17,5 +17,6 @@ export function guideOpeningZoom(channels: readonly Channel[], channelNumber: nu
   const first = Math.max(0, Math.min(channels.length - rowsShown, at - Math.floor(rowsShown / 2)))
   const span = (viewportWidth / basePx) * 60_000
   const rows = channels.slice(first, first + rowsShown).map((channel) => guideSlots(channel, nowMs - GUIDE_LEAD_MS, nowMs + span))
-  return openingZoom(rows, { nowMs, basePx, viewportWidth, leadMs: GUIDE_LEAD_MS, titleMinPx: TITLE_MIN_PX })
+  const onAir = rows[at - first]?.find((slot) => slot.startMs <= nowMs && nowMs < slot.endMs) ?? null
+  return openingZoom(rows, { nowMs, basePx, viewportWidth, leadMs: GUIDE_LEAD_MS, titleMinPx: TITLE_MIN_PX }, onAir)
 }
