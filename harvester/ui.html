@@ -60,13 +60,25 @@
   .compare { display: grid; grid-template-columns: max-content repeat(3, max-content); gap: 2px 18px; margin-bottom: 8px; }
   .compare .h { color: var(--dim); }
   .added { color: var(--good); }
+  .lost { color: var(--bad); }
+  .standing-STRONG { color: var(--good); border-color: var(--good); } .standing-WEAK { color: var(--warn); border-color: var(--warn); }
+  .cands { display: grid; gap: 8px; margin: 8px 0; }
+  .cand { display: grid; grid-template-columns: 22px 1fr; gap: 4px 8px; border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; }
+  .cand input { margin-top: 3px; }
+  .cand .t { font-weight: 700; }
+  .cand .sample { color: var(--dim); font-size: 12px; overflow-wrap: anywhere; }
+  .rel-HIGH { color: var(--good); } .rel-MEDIUM { color: #b8d36a; } .rel-LOW { color: var(--warn); }
+  .used { color: var(--warn); }
+  .jobs { display: grid; grid-template-columns: max-content max-content 1fr max-content; gap: 3px 10px; align-items: baseline; font-size: 12px; }
+  .j-running { color: var(--good); font-weight: 700; } .j-queued { color: var(--accent); } .j-failed, .j-interrupted { color: var(--bad); } .j-done, .j-cancelled { color: var(--dim); }
+  label.toggle { color: var(--dim); display: inline-flex; gap: 6px; align-items: center; }
 </style>
 </head>
 <body>
 <header><h1>TVN HARVESTER</h1><span class="sub" id="where">No workspace open</span></header>
 <main>
   <section class="wide" id="desk">
-    <h2>SOURCE DESK · CENTRAL NETWORK FROM 001</h2>
+    <h2 id="deskTitle">SOURCE DESK · CENTRAL NETWORK</h2>
     <div class="row">
       <button id="previous">◀ PREVIOUS<kbd>P</kbd></button>
       <button id="next">NEXT ▶<kbd>N</kbd></button>
@@ -74,11 +86,12 @@
       <button id="gotoButton">GO<kbd>G</kbd></button>
       <span class="dim" id="deskWhere"></span>
     </div>
-    <div class="desk-head"><span class="num" id="dNum">—</span><span class="name" id="dName"></span><span class="badge" id="dState"></span><span class="badge" id="dHealth"></span><span class="badge" id="dGap"></span><span class="dim" id="dLayer"></span></div>
+    <div class="desk-head"><span class="num" id="dNum">—</span><span class="name" id="dName"></span><span class="badge" id="dState"></span><span class="badge" id="dHealth"></span><span class="badge" id="dGap"></span><span class="badge" id="dStanding"></span><span class="dim" id="dLayer"></span></div>
     <div class="desc" id="dDesc"></div>
     <div class="dim" id="dFilters"></div>
     <div class="metrics" id="dMetrics"></div>
     <div class="dim" id="dDiversity"></div>
+    <div id="dEnrichment"></div>
     <div class="desk-grid">
       <div>
         <h2 style="margin-top:12px">EXISTING SOURCES</h2>
@@ -101,8 +114,34 @@
         <div id="dCompare"></div>
       </div>
     </div>
+    <h2 style="margin-top:12px">DISCOVER SOURCES</h2>
+    <div class="row">
+      <button id="discover">DISCOVER SOURCES<kbd>D</kbd></button>
+      <input type="text" id="extra" placeholder="Extra search terms (optional)" autocomplete="off" spellcheck="false">
+      <button id="searchAgain">SEARCH AGAIN</button>
+      <label class="toggle"><input type="checkbox" id="includeRejected"> SHOW REJECTED</label>
+    </div>
+    <div class="row">
+      <label class="toggle"><input type="checkbox" id="assist"> ENRICHMENT ASSIST (refresh + discover on each channel, then wait for approval)</label>
+      <label class="toggle"><input type="checkbox" id="autoAdd"> AUTO-ADD HIGH CONFIDENCE</label>
+    </div>
+    <div class="dim" id="dSearch"></div>
+    <div class="cands" id="dCands"></div>
+    <div class="row">
+      <button class="primary" id="addSelected">ADD SELECTED</button>
+      <button id="addSuitable">ADD ALL SUITABLE</button>
+      <button id="reject">REJECT SELECTED</button>
+    </div>
+    <div id="dDecided"></div>
     <h2 style="margin-top:12px">CENTRAL SOURCE DESK PROGRESS</h2>
     <dl id="dProgress"></dl>
+    <h2 style="margin-top:12px">THIS SESSION <button class="x" id="newSession" title="Write this session's report and start a new one">NEW SESSION</button></h2>
+    <dl id="dSession"></dl>
+  </section>
+
+  <section class="wide">
+    <h2>JOBS</h2>
+    <div class="jobs" id="jobs"></div>
   </section>
 
   <section id="setup">
@@ -154,6 +193,7 @@ let state = null
 let logLength = -1
 let channels = []
 let lastFull = 0
+let autoFromSet = false
 
 async function post(path, payload = {}) {
   const response = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-harvester': '1' }, body: JSON.stringify(payload) })
@@ -172,7 +212,6 @@ function renderDesk(s) {
   if (!d) return
   const v = d.view
   const h = v.health
-  const busy = s.progress.running
   $('deskWhere').textContent = `channel ${v.index} of ${v.total}`
   $('dNum').textContent = pad(v.channel.number)
   $('dName').textContent = v.channel.name
@@ -198,13 +237,31 @@ function renderDesk(s) {
     return `<div class="url">${esc(p.url.replace(/^https?:\/\/(www\.)?/, ''))}${p.note ? `<div class="dim">${esc(p.note)}</div>` : ''}${result}</div><div class="dim">${esc(p.typeLabel)}</div><div class="s-${p.status.split(/[ —]/)[0]}">${esc(p.status)}</div><div>${removable ? `<button class="x" data-remove="${p.id}" title="Remove">×</button>` : ''}</div>`
   }).join('')
   const ready = v.pending.filter((p) => p.status === 'READY').length
-  const partial = v.sources.some((x) => x.enabled && x.partial && x.provenance === 'desk')
-  $('scan').disabled = busy || (!ready && !partial)
-  $('scanNext').disabled = busy || (!ready && !partial)
+  const partial = v.sources.some((x) => x.enabled && x.partial && (x.provenance === 'desk' || x.provenance === 'discovered'))
+  const jobsOpen = (s.jobs || []).filter((j) => j.state === 'running' || j.state === 'queued')
+  // Work is queued, so the desk can move on while approved sources are harvested.
+  $('scan').disabled = !ready && !partial
+  $('scanNext').disabled = !ready && !partial
   $('scan').textContent = ready ? `SCAN ${ready} SOURCE${ready === 1 ? '' : 'S'}` : partial ? 'CARRY ON PARTIAL' : 'SCAN SOURCES'
-  $('deskStop').disabled = !busy || s.progress.stopping || s.progress.kind === 'auto'
-  for (const id of ['refreshChannel']) $(id).disabled = busy
-  for (const id of ['previous', 'next', 'skip', 'gotoButton', 'needsMore']) $(id).disabled = busy && s.progress.kind !== 'auto'
+  $('deskStop').disabled = !jobsOpen.length
+  const e = d.enrichment || {}
+  $('deskTitle').textContent = `SOURCE DESK · CENTRAL NETWORK · CONTINUE FROM ${pad(v.channel.number)}`
+  $('dStanding').textContent = e.standing === 'STRONG' ? 'STRONG CHANNEL' : e.standing === 'WEAK' ? 'NEEDS SOURCES' : ''
+  $('dStanding').className = `badge standing-${e.standing || ''}`
+  $('dStanding').style.display = e.standing === 'STRONG' || e.standing === 'WEAK' ? '' : 'none'
+  // A strong channel: NEXT is the obvious action. A weak one: DISCOVER SOURCES is.
+  $('next').className = e.standing === 'STRONG' ? 'primary' : ''
+  $('discover').className = e.standing === 'WEAK' ? 'primary' : ''
+  if (h) $('dDiversity').textContent += ` · SOURCE DIVERSITY: ${e.diversity || '—'}${e.diversityNote ? ` · ${e.diversityNote}` : ''}`
+  if (e.before && e.after) {
+    const keys = [['Sources', 'sources'], ['Creators', 'creators'], ['Available', 'available'], ['Eligible', 'eligible'], ['Playable', 'hours', 'h'], ['Dated', 'knownDatePct', '%']]
+    const g = (key, unit = '') => { const n = e.gain[key]; return `<span class="${n > 0 ? 'added' : n < 0 ? 'lost' : 'dim'}">${n > 0 ? '+' : ''}${n}${unit}</span>` }
+    $('dEnrichment').innerHTML = `<div class="compare" style="grid-template-columns: max-content repeat(${keys.length + 1}, max-content)"><div class="h"></div>${keys.map(([l]) => `<div class="h">${l}</div>`).join('')}<div class="h">Health</div>` +
+      `<div>BEFORE</div>${keys.map(([, k, u = '']) => `<div>${e.before[k]}${u}</div>`).join('')}<div>${esc(e.before.class)}</div>` +
+      `<div>AFTER</div>${keys.map(([, k, u = '']) => `<div>${e.after[k]}${u}</div>`).join('')}<div>${esc(e.after.class)}</div>` +
+      `<div>GAIN</div>${keys.map(([, k, u = '']) => `<div>${g(k, u)}</div>`).join('')}<div></div></div><div class="dim">BEFORE as the desk found it ${esc((e.beforeAt || '').slice(0, 16).replace('T', ' '))}</div>`
+  } else $('dEnrichment').innerHTML = ''
+  renderDiscovery(s)
   const c = d.compare
   if (c && c.before) {
     const a = c.after
@@ -223,6 +280,63 @@ function renderDesk(s) {
     ['New programmes', g.newProgrammes.toLocaleString()],
     ['New playable hours', g.newPlayableHours.toLocaleString()],
   ])
+  const n = s.session
+  if (n) dl($('dSession'), [
+    ['Since', esc(n.since.slice(0, 16).replace('T', ' '))],
+    ['Channels', `${n.channels.reviewed} reviewed · ${n.channels.enriched} enriched · ${n.channels.skipped} skipped`],
+    ['Existing sources refreshed', n.existingSourcesRefreshed],
+    ['Discovery', `${n.discovery.searches} searches · ${n.discovery.shown} candidates shown · ${n.discovery.approved} approved · ${n.discovery.rejected} rejected · ${n.discovery.dropped} filtered out`],
+    ['New programmes', `${n.newProgrammes.fromExisting} from existing sources · ${n.newProgrammes.fromDiscovered} from discovered sources · ${n.newProgrammes.fromPasted} from pasted sources`],
+    ['New playable hours', `${n.newPlayableHours.fromExisting} h existing · ${n.newPlayableHours.fromNew} h new sources`],
+    ['New dates', n.newDates],
+    ['Provider failures', n.providerFailures],
+    ['Embed refusals', `${n.embedRefusals} (programmes, not broken sources)`],
+  ])
+}
+
+const selected = new Set()
+let candKey = ''
+function renderDiscovery(s) {
+  const x = s.desk.discovery
+  $('assist').checked = s.desk.assist
+  $('autoAdd').checked = s.desk.autoAdd
+  const here = s.desk.view.channel.id
+  const discovering = (s.jobs || []).find((j) => j.kind === 'discover' && j.channelId === here && (j.state === 'running' || j.state === 'queued'))
+  $('discover').disabled = Boolean(discovering)
+  $('searchAgain').disabled = Boolean(discovering)
+  $('discover').textContent = discovering ? (discovering.state === 'running' ? 'DISCOVERING…' : 'DISCOVERY QUEUED') : x.search ? 'DISCOVER SOURCES (CACHED)' : 'DISCOVER SOURCES'
+  const q = x.search
+  const dropped = q ? Object.entries(q.counts.dropped).filter(([, n]) => n).map(([k, n]) => `${n} ${k}`).join(' · ') : ''
+  $('dSearch').innerHTML = q
+    ? `Search ${q.id} · ${esc(q.at.slice(0, 16).replace('T', ' '))}${q.cached ? ' (cached)' : ''} · ${q.counts.found} found · ${q.counts.shown} shown${dropped ? ` · filtered out: ${esc(dropped)}` : ''}${q.counts.hiddenRejected ? ` · ${q.counts.hiddenRejected} rejected before (hidden)` : ''}<br>Queries: ${q.queries.map((item) => `“${esc(item.text)}”`).join(', ')} · providers: ${esc(q.providers.join(', '))}<br>Not searched: ${esc(x.notSearched.join('; '))}`
+    : 'No search yet for this channel. DISCOVER SOURCES searches from its name, description, filters, creators and programmes.'
+  const key = `${here}|${x.candidates.map((c) => `${c.id}:${c.status}`).join(',')}`
+  if (key !== candKey) {
+    candKey = key
+    for (const id of [...selected]) if (!x.candidates.some((c) => c.id === id)) selected.delete(id)
+    $('dCands').innerHTML = x.candidates.map((c) => {
+      const p = c.preview
+      const span = p && p.oldest && p.newest ? ` · ${p.oldest.slice(0, 4)}–${p.newest.slice(0, 4)}` : ''
+      const sample = p && p.sample.length ? p.sample.slice(0, 4).map((t) => esc(t.title)).join(' · ') : ''
+      return `<label class="cand"><input type="checkbox" data-cand="${c.id}"${selected.has(c.id) ? ' checked' : ''}><div>` +
+        `<span class="t">${esc(c.label)}</span> · ${esc(c.typeLabel)} · <span class="rel-${c.relevance}">RELEVANCE ${c.relevance}</span>${c.listed ? ` · ${c.listed.toLocaleString()} listed` : ''}${c.audience ? ` · ${esc(c.audience)}` : ''}` +
+        `${c.usedBy ? ` · <span class="used">${esc(c.usedBy)}</span>` : ''}` +
+        `<div class="dim">${esc(c.url.replace(/^https?:\/\/(www\.)?/, ''))}${c.owner && c.owner !== c.label ? ` · by ${esc(c.owner)}` : ''}</div>` +
+        `${p ? `<div class="dim">Preview: ${p.read} read · ${p.eligible} eligible for this channel${p.dated ? ` · ${p.dated} dated` : ''}${span}${p.refused ? ` · ${p.refused} refuse embedding` : ''}</div>` : '<div class="dim">Not previewed</div>'}` +
+        `${c.reasons.length ? `<div class="dim">${esc(c.reasons.join(' · '))}</div>` : ''}${c.flags.length ? `<div class="used">${esc(c.flags.join(' · '))}</div>` : ''}` +
+        `${sample ? `<div class="sample">${sample}</div>` : ''}${c.description ? `<div class="sample">${esc(c.description.slice(0, 220))}</div>` : ''}</div></label>`
+    }).join('') || (q ? '<div class="dim">No new candidates. SEARCH AGAIN with extra terms, or paste sources above.</div>' : '')
+  }
+  $('addSelected').disabled = selected.size === 0
+  $('reject').disabled = selected.size === 0
+  $('addSuitable').disabled = !x.candidates.some((c) => c.relevance === 'HIGH' || c.relevance === 'MEDIUM')
+  $('dDecided').innerHTML = x.decided.length
+    ? `<h2 style="margin-top:8px">APPROVED</h2>` + x.decided.map((c) => `<div><b>${esc(c.label)}</b> · <span class="s-${esc(c.status)}">${esc(c.status === 'APPROVED' ? 'APPROVED · WAITING FOR HARVEST' : c.status)}</span> · ${esc(c.decidedBy || '')} ${esc((c.decidedAt || '').slice(0, 16).replace('T', ' '))}${c.result ? ` · ${c.result.programmes ?? 0} discovered · ${c.result.eligible ?? 0} eligible · ${(c.result.programmes ?? 0) - (c.result.eligible ?? 0)} excluded by rules${c.result.complete === false ? ' · not read to its end' : ''}` : ''}</div>`).join('')
+    : ''
+}
+
+function renderJobs(s) {
+  $('jobs').innerHTML = (s.jobs || []).map((j) => `<div class="j-${j.state}">${esc(j.state.toUpperCase())}</div><div class="dim">#${j.id} ${esc((j.startedAt || j.submittedAt).slice(11, 19))}</div><div>${esc(j.label)}${j.origin !== 'operator' ? ` <span class="dim">(${esc(j.origin)})</span>` : ''}${j.result ? ` <span class="dim">· ${esc(j.result)}</span>` : ''}</div><div>${j.state === 'running' || j.state === 'queued' ? `<button class="x" data-job="${j.id}" title="${j.state === 'running' ? 'STOP this job' : 'Withdraw'}">×</button>` : ''}</div>`).join('') || '<div class="dim">No jobs yet</div>'
 }
 
 function render() {
@@ -246,11 +360,12 @@ function render() {
   ])
   const run = s.lastRun
   const status = p.stopping ? 'stopping' : p.running ? 'running' : 'idle'
-  $('start').disabled = p.running
-  $('stop').disabled = !p.running || p.stopping
-  $('resume').disabled = p.running || !s.unfinished
+  const open = (s.jobs || []).filter((j) => j.state === 'running' || j.state === 'queued')
+  $('start').disabled = open.some((j) => j.kind === 'auto' || j.kind === 'resume')
+  $('stop').disabled = !open.length
+  $('resume').disabled = open.some((j) => j.kind === 'auto' || j.kind === 'resume') || !s.unfinished
+  if (!autoFromSet && s.desk) { $('autoFrom').value = pad(s.desk.view.channel.number); autoFromSet = true }
   $('resume').textContent = s.unfinished ? `RESUME AUTO (RUN ${s.unfinished.id}${s.unfinished.range_from ? ` · FROM ${pad(s.unfinished.range_from)}` : ''})` : 'RESUME AUTO'
-  for (const id of ['export', 'report']) $(id).disabled = p.running
   $('folder').disabled = false
   const t = run ? run.totals : null
   const span = p.running ? p.range : run && run.range_from ? { from: run.range_from, to: run.range_to } : null
@@ -270,6 +385,7 @@ function render() {
     ['Elapsed', time(p.running ? p.elapsedMs : run ? run.elapsed_ms : 0)],
   ])
   renderDesk(s)
+  renderJobs(s)
   const summary = s.health.summary
   $('chips').innerHTML = Object.entries(summary).map(([k, v]) => `<span class="chip c-${k.split(' ')[0]}">${esc(k)} ${v}</span>`).join('') +
     Object.entries(s.health.gaps || {}).map(([k, v]) => `<span class="chip">${esc(k)} ${v}</span>`).join('') + `<span class="chip">${s.health.central} central · ${s.health.user} user</span>`
@@ -349,6 +465,28 @@ $('scan').onclick = () => desk('scan')
 $('scanNext').onclick = () => desk('scan', { andNext: true })
 $('refreshChannel').onclick = () => desk('refresh')
 $('deskStop').onclick = () => post('/api/stop')
+$('discover').onclick = () => desk('discover', { includeRejected: $('includeRejected').checked })
+$('searchAgain').onclick = () => desk('discover', { force: true, extra: $('extra').value.trim(), includeRejected: $('includeRejected').checked })
+$('extra').addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); $('searchAgain').click() } })
+$('dCands').addEventListener('change', (event) => {
+  const id = Number(event.target?.dataset?.cand)
+  if (!id) return
+  if (event.target.checked) selected.add(id)
+  else selected.delete(id)
+  $('addSelected').disabled = selected.size === 0
+  $('reject').disabled = selected.size === 0
+})
+const decide = (action) => { const ids = [...selected]; selected.clear(); candKey = ''; return desk(action, { ids }) }
+$('addSelected').onclick = () => decide('approve')
+$('reject').onclick = () => decide('reject')
+$('addSuitable').onclick = () => { if (confirm('Add every HIGH and MEDIUM relevance candidate shown to this channel and harvest them?')) desk('approve-suitable') }
+$('assist').onchange = () => desk('assist', { on: $('assist').checked })
+$('autoAdd').onchange = () => { if (!$('autoAdd').checked || confirm('AUTO-ADD HIGH CONFIDENCE adds strict HIGH-relevance candidates without asking. Turn it on?')) desk('auto-add', { on: $('autoAdd').checked }); else $('autoAdd').checked = false }
+$('newSession').onclick = () => desk('new-session')
+$('jobs').addEventListener('click', (event) => {
+  const id = event.target?.dataset?.job
+  if (id) post('/api/jobs/cancel', { id: Number(id) })
+})
 
 // Shortcuts only when no field is being typed in, and never with a modifier held.
 document.addEventListener('keydown', (event) => {
@@ -363,6 +501,7 @@ document.addEventListener('keydown', (event) => {
   else if (key === 'p') press('previous')
   else if (key === 'k') press('skip')
   else if (key === 'm') press('needsMore')
+  else if (key === 'd') press('discover')
 })
 
 $('open').onclick = () => post('/api/workspace', { dir: $('dir').value.trim(), master: $('master').value.trim() })

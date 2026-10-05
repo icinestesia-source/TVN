@@ -29,6 +29,9 @@ export interface ChannelHealth {
   sourcesRefreshable: number
   /** Distinct creators among the enabled sources' eligible programmes (the source itself where a programme names none). */
   creators: number
+  /** The creator supplying most eligible programmes, and their share of them (0–100). */
+  topCreator: string | null
+  topCreatorShare: number
   /** Everything the enabled sources hold and could play (not marked unavailable). */
   available: number
   /** Available programmes the channel's rules admit, held-back ones included; on 001–999, TVN's default exclusions apply. */
@@ -145,6 +148,7 @@ export function computeHealth(db: Db, thresholds: HealthThresholds, now: Date = 
     const eligible = new Map<string, number>()
     const owners = new Map<string, number>()
     const creators = new Set<string>()
+    const creatorCounts = new Map<string, { name: string; n: number }>()
     const eligibleBySource = new Map<number, Set<string>>()
     let editorialExcluded = 0
     sources.forEach((source, index) => {
@@ -164,6 +168,11 @@ export function computeHealth(db: Db, thresholds: HealthThresholds, now: Date = 
           editorialExcluded += 1
           continue
         }
+        if (!eligible.has(video.id)) {
+          const key = video.creator?.channelId ?? video.creator?.name ?? `source:${state.id}`
+          const count = creatorCounts.get(key)
+          creatorCounts.set(key, { name: video.creator?.name ?? source.label ?? key, n: (count?.n ?? 0) + 1 })
+        }
         eligible.set(video.id, video.durationSec)
         mine.add(video.id)
         creators.add(video.creator?.channelId ?? video.creator?.name ?? `source:${state.id}`)
@@ -178,6 +187,7 @@ export function computeHealth(db: Db, thresholds: HealthThresholds, now: Date = 
     const knownDates = [...available.values()].filter((video) => video.published).length
     const latest = (field: 'last_success_at' | 'last_attempt_at') => states.map((state) => state[field]).filter((value): value is string => Boolean(value)).sort().at(-1) ?? null
     const provenance = Object.fromEntries((byProvenance.all(row.id) as { provenance: string; n: number }[]).map((item) => [item.provenance, item.n]))
+    const top = [...creatorCounts.values()].sort((a, b) => b.n - a.n)[0]
     const metrics = {
       number: row.number,
       name: row.name,
@@ -189,6 +199,8 @@ export function computeHealth(db: Db, thresholds: HealthThresholds, now: Date = 
       sourcesEnabled: enabledStates.length,
       sourcesRefreshable: enabledStates.filter((state) => state.reader !== 'none').length,
       creators: creators.size,
+      topCreator: top?.name ?? null,
+      topCreatorShare: top && eligible.size > 0 ? Math.round((top.n / eligible.size) * 100) : 0,
       available: available.size,
       eligible: eligible.size,
       filteredOut: Math.max(0, available.size - eligible.size),
@@ -221,6 +233,26 @@ export function computeHealth(db: Db, thresholds: HealthThresholds, now: Date = 
     for (const item of out) save.run(item.key, now.toISOString(), item.class, JSON.stringify(item))
   })
   return out
+}
+
+export type Diversity = 'GOOD' | 'MODERATE' | 'LOW'
+
+/** Source diversity, gently: how far one creator carries the channel. Advisory; a single great archive is allowed. */
+export function diversityOf(health: Pick<ChannelHealth, 'eligible' | 'creators' | 'topCreatorShare'>): Diversity | null {
+  if (health.eligible === 0) return null
+  if (health.creators <= 1 || health.topCreatorShare >= 75) return 'LOW'
+  return health.topCreatorShare >= 50 ? 'MODERATE' : 'GOOD'
+}
+
+/**
+ * STRONG CHANNEL: already a deep television channel (healthy, many hours, no broken source, not leaning on
+ * one creator), so NEXT is the obvious move. WEAK: thin, fair, broken or without a refreshable source, where
+ * DISCOVER SOURCES deserves the operator's attention.
+ */
+export function deskStanding(health: ChannelHealth | null, strongHours = 100): 'STRONG' | 'WEAK' | 'OK' | null {
+  if (!health) return null
+  if (health.class !== 'HEALTHY' || health.gap === 'NO REFRESHABLE SOURCE' || health.gap === 'SHIPPED POOL ONLY') return 'WEAK'
+  return health.hours >= strongHours && health.brokenSources === 0 && diversityOf(health) !== 'LOW' ? 'STRONG' : 'OK'
 }
 
 /** Every channel's last computed health, by number. */

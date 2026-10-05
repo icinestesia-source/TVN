@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { chmodSync, copyFileSync, constants, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { chmodSync, copyFileSync, constants, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { DEFAULT_CONFIG, withOverrides, type HarvesterConfig } from './config.ts'
 import { openDb, type Db } from './db.ts'
@@ -33,10 +33,86 @@ function workspaceAt(dir: string, db: Db): Workspace {
   return { dir, db, config: configOf(dir), path: (folder, name) => (name ? join(dir, folder, name) : join(dir, folder)) }
 }
 
-/** Open an existing workspace, bringing its database's schema forward if a newer Harvester added to it. */
-export function openWorkspace(raw: string): Workspace {
+export const LOCK_FILE = 'workspace.lock'
+
+/** Who owns a workspace for writing: one process at a time, the operator window or a CLI run. */
+export interface WorkspaceOwner {
+  pid: number
+  role: 'serve' | 'cli'
+  /** The operator window's port, when the owner is `serve`: CLI commands hand their work to it. */
+  port?: number
+  since: string
+}
+
+export class WorkspaceInUse extends Error {
+  readonly owner: WorkspaceOwner
+  constructor(owner: WorkspaceOwner) {
+    super(`WORKSPACE ALREADY IN USE by ${owner.role === 'serve' ? `the operator window${owner.port ? ` (http://127.0.0.1:${owner.port})` : ''}` : 'a Harvester command'}, process ${owner.pid}, since ${owner.since}`)
+    this.owner = owner
+  }
+}
+
+function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM'
+  }
+}
+
+/** The live owner of a workspace, if another process holds it. A lock left by a process that is gone is no lock. */
+export function workspaceOwner(dir: string): WorkspaceOwner | null {
+  const file = join(resolve(dir), LOCK_FILE)
+  if (!existsSync(file)) return null
+  try {
+    const owner = JSON.parse(readFileSync(file, 'utf8')) as WorkspaceOwner
+    return Number.isInteger(owner.pid) && owner.pid !== process.pid && processAlive(owner.pid) ? owner : null
+  } catch {
+    return null
+  }
+}
+
+const held = new Map<string, WorkspaceOwner>()
+
+/**
+ * Take the workspace for writing, or refuse with WORKSPACE ALREADY IN USE. The lock names its process (and the
+ * operator window's port) and is let go when the process ends; this process may take it again freely.
+ */
+export function lockWorkspace(raw: string, role: WorkspaceOwner['role'], port?: number): WorkspaceOwner {
+  const dir = resolve(raw)
+  const other = workspaceOwner(dir)
+  if (other) throw new WorkspaceInUse(other)
+  const owner: WorkspaceOwner = { pid: process.pid, role, ...(port ? { port } : {}), since: new Date().toISOString() }
+  writeFileSync(join(dir, LOCK_FILE), `${JSON.stringify(owner)}\n`)
+  if (!held.size) process.once('exit', () => releaseAll())
+  held.set(dir, owner)
+  return owner
+}
+
+export function unlockWorkspace(raw: string): void {
+  const dir = resolve(raw)
+  if (!held.delete(dir)) return
+  const file = join(dir, LOCK_FILE)
+  try {
+    if ((JSON.parse(readFileSync(file, 'utf8')) as WorkspaceOwner).pid === process.pid) rmSync(file, { force: true })
+  } catch {
+    // Already gone.
+  }
+}
+
+function releaseAll(): void {
+  for (const dir of [...held.keys()]) unlockWorkspace(dir)
+}
+
+/**
+ * Open an existing workspace, bringing its database's schema forward if a newer Harvester added to it.
+ * `readOnly` inspects it without writing, which is safe while another process owns it.
+ */
+export function openWorkspace(raw: string, options: { readOnly?: boolean } = {}): Workspace {
   const dir = resolve(raw)
   if (!isWorkspace(dir)) throw new Error(`No Harvester workspace at ${dir}`)
+  if (options.readOnly) return workspaceAt(dir, openDb(join(dir, DB_FILE), undefined, { readOnly: true }))
   for (const folder of FOLDERS) mkdirSync(join(dir, folder), { recursive: true })
   return workspaceAt(dir, openDb(join(dir, DB_FILE)))
 }

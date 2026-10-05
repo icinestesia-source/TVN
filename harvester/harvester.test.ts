@@ -169,7 +169,7 @@ describe('Harvester import', () => {
     expect(masterIntact(workspace.db).ok).toBe(true)
     for (const folder of ['master', 'checkpoints', 'additions', 'exports', 'reports', 'logs']) expect(existsSync(join(workspace.dir, folder))).toBe(true)
     const meta = Object.fromEntries((workspace.db.prepare('SELECT key, value FROM meta').all() as { key: string; value: string }[]).map((row) => [row.key, row.value]))
-    expect(meta).toMatchObject({ schema_version: '2', master_sha256: before, app_commit: 'abc1234', app_build: 'build1' })
+    expect(meta).toMatchObject({ schema_version: '3', master_sha256: before, app_commit: 'abc1234', app_build: 'build1' })
     expect(meta.workspace_id).toMatch(/^[0-9a-f-]{36}$/)
     const readers = workspace.db.prepare('SELECT key, reader, enabled FROM sources ORDER BY key').all()
     expect(readers).toEqual(
@@ -207,7 +207,7 @@ describe('Harvester export', () => {
     const out = JSON.parse(JSON.stringify(assembleCorpus(workspace.db, new Date('2026-10-05T00:00:00Z')))) as Record<string, unknown>
     for (const key of ['format', 'version', 'app', 'favourites', 'settings', 'central'] as const) expect(out[key]).toEqual(doc[key])
     expect({ ...(out.userNetwork as object), exportedAt: 0 }).toEqual({ ...(doc.userNetwork as object), exportedAt: 0 })
-    expect(out.harvest).toMatchObject({ schemaVersion: 2, runId: null })
+    expect(out.harvest).toMatchObject({ schemaVersion: 3, runId: null })
     expect(validateTvnExport(out).ok).toBe(true)
   })
 })
@@ -451,9 +451,9 @@ describe('Harvester foundations', () => {
   it('brings an older schema forward and refuses a newer one', () => {
     const path = join(scratch(), 'h.db')
     openDb(path).close()
-    const next = [...MIGRATIONS, { version: 3, sql: 'ALTER TABLE desk ADD COLUMN owner TEXT;' }]
+    const next = [...MIGRATIONS, { version: 4, sql: 'ALTER TABLE desk ADD COLUMN owner TEXT;' }]
     const db = openDb(path, next)
-    expect(schemaVersionOf(db)).toBe(3)
+    expect(schemaVersionOf(db)).toBe(4)
     db.close()
     expect(() => openDb(path)).toThrow(/newer Harvester/)
   })

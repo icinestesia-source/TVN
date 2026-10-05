@@ -28,9 +28,31 @@ export interface Pacing {
   cooldownMs: number
 }
 
+export interface DiscoverySettings {
+  /** A channel's last search is shown again, without asking any provider, for this many hours; SEARCH AGAIN always asks. */
+  cacheHours: number
+  /** Searches made from the channel's editorial context per DISCOVER (each asked for channels and for playlists). */
+  maxQueries: number
+  /** Results kept from each search, in the provider's own order. */
+  perSearch: number
+  /** Candidates offered for a decision, best first; the rest are kept, set aside as below the shortlist. */
+  shortlist: number
+  /** Candidates whose newest page is read for a preview, best first (each read checks every programme can be embedded). */
+  previewTop: number
+  /** Programmes from that page shown as the candidate's sample. */
+  sampleSize: number
+  /** A channel with at least this many playable hours (healthy, diverse, nothing broken) is a STRONG CHANNEL. */
+  strongHours: number
+  /** AUTO-ADD HIGH CONFIDENCE (off unless the operator turns it on): the strict bar a candidate must clear. */
+  autoMinScore: number
+  autoMinSampleShare: number
+  autoMinListed: number
+}
+
 export interface HarvesterConfig {
   health: HealthThresholds
   pacing: Pacing
+  discovery: DiscoverySettings
   /** A temporary failure is tried again this many times, after these waits (ms). STOP cuts any wait short. */
   retries: number
   backoffMs: number[]
@@ -53,6 +75,7 @@ export interface HarvesterConfig {
 export const DEFAULT_CONFIG: HarvesterConfig = {
   health: { thinProgrammes: 12, thinHours: 6, fairProgrammes: 40, fairHours: 24, brokenAfterFailures: 2, brokenShare: 0.5 },
   pacing: { concurrency: 4, gapMs: 120, betweenSourcesMs: 1500, requestTimeoutMs: 20_000, cooldownMs: 60_000 },
+  discovery: { cacheHours: 72, maxQueries: 5, perSearch: 15, shortlist: 30, previewTop: 6, sampleSize: 12, strongHours: 100, autoMinScore: 10, autoMinSampleShare: 0.6, autoMinListed: 30 },
   retries: 2,
   backoffMs: [5_000, 20_000],
   staleHours: 12,
@@ -80,6 +103,6 @@ export function withOverrides(raw: unknown, base: HarvesterConfig = DEFAULT_CONF
     }
     return out as T
   }
-  const top = pick({ ...base, health: undefined, pacing: undefined } as unknown as Record<string, unknown>, raw) as unknown as HarvesterConfig
-  return { ...top, health: pick(base.health, raw.health), pacing: pick(base.pacing, raw.pacing) }
+  const top = pick({ ...base, health: undefined, pacing: undefined, discovery: undefined } as unknown as Record<string, unknown>, raw) as unknown as HarvesterConfig
+  return { ...top, health: pick(base.health, raw.health), pacing: pick(base.pacing, raw.pacing), discovery: pick(base.discovery, raw.discovery) }
 }

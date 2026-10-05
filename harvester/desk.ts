@@ -3,7 +3,7 @@ import { shippedChannel } from '../src/data/catalogue.ts'
 import type { ExportSource, ExportSourceType } from '../src/services/user-network-export.ts'
 import type { HealthThresholds } from './config.ts'
 import { getMeta, setMeta, transaction, type Db } from './db.ts'
-import { computeHealth, type ChannelHealth } from './health.ts'
+import { computeHealth, deskStanding, diversityOf, type ChannelHealth, type Diversity } from './health.ts'
 import { readerOf, type Reader } from './importer.ts'
 
 export const DESK_STATES = ['UNREVIEWED', 'REVIEWED', 'SKIPPED', 'ENRICHED', 'NEEDS MORE'] as const
@@ -354,7 +354,7 @@ export function deskView(db: Db, channelId: number): DeskView {
   const index = channels.findIndex((channel) => channel.id === channelId)
   const row = db.prepare('SELECT id, number, name, scope, layer, stable_id, body FROM channels WHERE id = ?').get(channelId) as { id: number; number: number; name: string; scope: 'user' | 'central'; layer: 'master' | 'shipped'; stable_id: string | null; body: string }
   const body = JSON.parse(row.body) as Record<string, unknown>
-  const sources = db.prepare('SELECT s.id, s.source_type, s.label, s.url, s.enabled, s.provenance, s.last_success_at, s.status, s.complete, s.continuation, s.body, (SELECT COUNT(*) FROM programmes p WHERE p.source_id = s.id) AS programmes FROM sources s WHERE s.channel_id = ? ORDER BY s.position').all(channelId) as {
+  const sources = db.prepare('SELECT s.id, s.source_type, s.label, s.url, s.enabled, s.provenance, s.last_success_at, s.status, s.complete, s.continuation, s.body, s.discovery_id, (SELECT COUNT(*) FROM programmes p WHERE p.source_id = s.id) AS programmes FROM sources s WHERE s.channel_id = ? ORDER BY s.position').all(channelId) as {
     id: number
     source_type: string
     label: string
@@ -366,6 +366,7 @@ export function deskView(db: Db, channelId: number): DeskView {
     complete: number
     continuation: string | null
     body: string
+    discovery_id: number | null
     programmes: number
   }[]
   const health = db.prepare('SELECT metrics FROM health WHERE channel_id = ?').get(channelId) as { metrics: string } | undefined
@@ -393,7 +394,7 @@ export function deskView(db: Db, channelId: number): DeskView {
       label: source.label,
       url: source.url,
       enabled: source.enabled === 1,
-      provenance: source.provenance,
+      provenance: source.discovery_id !== null ? 'discovered' : source.provenance,
       programmes: source.programmes,
       lastRefresh: source.last_success_at,
       status: source.status,
@@ -437,4 +438,134 @@ export function deskProgress(db: Db): DeskProgress {
 /** One channel's health again, after a scan or refresh, so the desk shows AFTER at once. */
 export function refreshChannelHealth(db: Db, channelId: number, thresholds: HealthThresholds, now: Date): ChannelHealth | null {
   return computeHealth(db, thresholds, now, [channelId])[0] ?? null
+}
+
+/** The numbers BEFORE/AFTER/GAIN compares for a channel at the desk. */
+export interface EnrichmentMetrics {
+  sources: number
+  creators: number
+  available: number
+  eligible: number
+  hours: number
+  knownDatePct: number
+  class: string
+  brokenSources: number
+}
+
+export interface Enrichment {
+  before: EnrichmentMetrics | null
+  beforeAt: string | null
+  after: EnrichmentMetrics | null
+  gain: Omit<EnrichmentMetrics, 'class'> | null
+  standing: 'STRONG' | 'WEAK' | 'OK' | null
+  diversity: Diversity | null
+  /** "1 creator supplies 91%" when one creator dominates the channel. */
+  diversityNote: string | null
+}
+
+const metricsOf = (health: ChannelHealth): EnrichmentMetrics => ({
+  sources: health.sourcesEnabled,
+  creators: health.creators,
+  available: health.available,
+  eligible: health.eligible,
+  hours: health.hours,
+  knownDatePct: health.knownDatePct,
+  class: health.class,
+  brokenSources: health.brokenSources,
+})
+
+/** The channel as the desk found it, kept the first time the desk lands on it, so AFTER and GAIN mean something. */
+export function ensureBefore(db: Db, channelId: number, now: Date): void {
+  const row = db.prepare('SELECT before_metrics FROM desk WHERE channel_id = ?').get(channelId) as { before_metrics: string | null } | undefined
+  if (row?.before_metrics) return
+  const health = db.prepare('SELECT metrics FROM health WHERE channel_id = ?').get(channelId) as { metrics: string } | undefined
+  if (!health) return
+  const before = JSON.stringify(metricsOf(JSON.parse(health.metrics) as ChannelHealth))
+  db.prepare("INSERT INTO desk (channel_id, state, updated_at, before_metrics, before_at) VALUES (?, 'UNREVIEWED', ?, ?, ?) ON CONFLICT (channel_id) DO UPDATE SET before_metrics = excluded.before_metrics, before_at = excluded.before_at").run(
+    channelId,
+    now.toISOString(),
+    before,
+    now.toISOString(),
+  )
+}
+
+export function enrichmentOf(db: Db, channelId: number, strongHours: number): Enrichment {
+  const row = db.prepare('SELECT before_metrics, before_at FROM desk WHERE channel_id = ?').get(channelId) as { before_metrics: string | null; before_at: string | null } | undefined
+  const stored = db.prepare('SELECT metrics FROM health WHERE channel_id = ?').get(channelId) as { metrics: string } | undefined
+  const health = stored ? (JSON.parse(stored.metrics) as ChannelHealth) : null
+  const before = row?.before_metrics ? (JSON.parse(row.before_metrics) as EnrichmentMetrics) : null
+  const after = health ? metricsOf(health) : null
+  const round = (value: number) => Math.round(value * 10) / 10
+  const gain =
+    before && after
+      ? {
+          sources: after.sources - before.sources,
+          creators: after.creators - before.creators,
+          available: after.available - before.available,
+          eligible: after.eligible - before.eligible,
+          hours: round(after.hours - before.hours),
+          knownDatePct: round(after.knownDatePct - before.knownDatePct),
+          brokenSources: after.brokenSources - before.brokenSources,
+        }
+      : null
+  const diversity = health ? diversityOf(health) : null
+  return {
+    before,
+    beforeAt: row?.before_at ?? null,
+    after,
+    gain,
+    standing: deskStanding(health, strongHours),
+    diversity,
+    diversityNote: health && diversity && diversity !== 'GOOD' && health.topCreator ? `1 creator supplies ${Math.round(health.topCreatorShare)}%` : null,
+  }
+}
+
+/** What an enrichment session did, from the journal: existing sources refreshed versus new sources added. */
+export interface SessionReport {
+  since: string
+  channels: { reviewed: number; enriched: number; skipped: number }
+  existingSourcesRefreshed: number
+  discovery: { searches: number; shown: number; approved: number; rejected: number; dropped: number }
+  newProgrammes: { fromExisting: number; fromDiscovered: number; fromPasted: number }
+  newPlayableHours: { fromExisting: number; fromNew: number }
+  newDates: number
+  providerFailures: number
+  embedRefusals: number
+}
+
+export function sessionReport(db: Db, since: string): SessionReport {
+  const count = (sql: string) => (db.prepare(sql).get(since) as { n: number | null }).n ?? 0
+  const added = db
+    .prepare(
+      `SELECT c.provenance AS provenance, s.discovery_id IS NOT NULL AS discovered, COUNT(*) AS n, COALESCE(SUM(json_extract(c.detail, '$.durationSec')), 0) AS seconds
+       FROM changes c LEFT JOIN sources s ON s.id = c.source_id WHERE c.kind = 'added' AND c.at >= ? GROUP BY 1, 2`,
+    )
+    .all(since) as { provenance: string; discovered: number; n: number; seconds: number }[]
+  const sum = (match: (row: (typeof added)[number]) => boolean, key: 'n' | 'seconds') => added.filter(match).reduce((total, row) => total + row[key], 0)
+  const hours = (seconds: number) => Math.round((seconds / 3600) * 10) / 10
+  return {
+    since,
+    channels: {
+      reviewed: count('SELECT COUNT(*) AS n FROM desk WHERE MAX(COALESCE(reviewed_at, \'\'), COALESCE(skipped_at, \'\'), COALESCE(enriched_at, \'\')) >= ?'),
+      enriched: count('SELECT COUNT(*) AS n FROM desk WHERE enriched_at >= ?'),
+      skipped: count('SELECT COUNT(*) AS n FROM desk WHERE skipped_at >= ?'),
+    },
+    existingSourcesRefreshed: count("SELECT COUNT(*) AS n FROM run_queue q JOIN runs r ON r.id = q.run_id WHERE r.kind IN ('auto', 'channel') AND q.state = 'done' AND q.finished_at >= ?"),
+    discovery: {
+      searches: count('SELECT COUNT(*) AS n FROM discovery_searches WHERE at >= ?'),
+      shown: count("SELECT COUNT(*) AS n FROM discovery_candidates WHERE discovered_at >= ? AND status != 'DROPPED'"),
+      approved: count("SELECT COUNT(*) AS n FROM discovery_candidates WHERE decided_at >= ? AND status IN ('APPROVED', 'ADDED', 'PARTIAL', 'FAILED', 'DUPLICATE')"),
+      rejected: count("SELECT COUNT(*) AS n FROM discovery_candidates WHERE decided_at >= ? AND status = 'REJECTED'"),
+      dropped: count("SELECT COUNT(*) AS n FROM discovery_candidates WHERE discovered_at >= ? AND status = 'DROPPED'"),
+    },
+    newProgrammes: {
+      fromExisting: sum((row) => row.provenance === 'auto', 'n'),
+      fromDiscovered: sum((row) => row.provenance === 'desk' && row.discovered === 1, 'n'),
+      fromPasted: sum((row) => row.provenance === 'desk' && row.discovered !== 1, 'n'),
+    },
+    newPlayableHours: { fromExisting: hours(sum((row) => row.provenance === 'auto', 'seconds')), fromNew: hours(sum((row) => row.provenance === 'desk', 'seconds')) },
+    newDates: count("SELECT COUNT(*) AS n FROM changes WHERE kind = 'date' AND at >= ?"),
+    providerFailures: count("SELECT COUNT(*) AS n FROM run_queue WHERE state = 'failed' AND finished_at >= ?"),
+    embedRefusals: count('SELECT COALESCE(SUM(refused), 0) AS n FROM run_queue WHERE finished_at >= ?'),
+  }
 }

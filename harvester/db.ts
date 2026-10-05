@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 
 /** The working database's own schema version, separate from the export's. */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 /**
  * Each migration takes the schema from the version before it to its own. A newer Harvester adds one at
@@ -220,6 +220,88 @@ export const MIGRATIONS: readonly { version: number; sql: string }[] = [
       );
     `,
   },
+  {
+    // Phase 2B: assisted source discovery, the operator's job queue, and each channel's BEFORE at the Source Desk.
+    version: 3,
+    sql: `
+      -- A source added from an approved discovery candidate (its provenance stays 'desk').
+      ALTER TABLE sources ADD COLUMN discovery_id INTEGER;
+      ALTER TABLE desk_pending ADD COLUMN candidate_id INTEGER;
+      -- The channel's health when the desk first came to it: the BEFORE its enrichment is measured against.
+      ALTER TABLE desk ADD COLUMN before_metrics TEXT;
+      ALTER TABLE desk ADD COLUMN before_at TEXT;
+
+      -- One DISCOVER SOURCES search for a channel: the queries made from its editorial context, and what came back.
+      CREATE TABLE discovery_searches (
+        id INTEGER PRIMARY KEY,
+        channel_id INTEGER NOT NULL REFERENCES channels (id),
+        context_key TEXT NOT NULL,
+        extra TEXT NOT NULL DEFAULT '',
+        queries TEXT NOT NULL,
+        providers TEXT NOT NULL,
+        counts TEXT NOT NULL,
+        status TEXT NOT NULL,
+        at TEXT NOT NULL
+      );
+
+      -- Every source a search found, kept or set aside by the pre-filter, and what the operator decided.
+      CREATE TABLE discovery_candidates (
+        id INTEGER PRIMARY KEY,
+        search_id INTEGER NOT NULL REFERENCES discovery_searches (id),
+        channel_id INTEGER NOT NULL REFERENCES channels (id),
+        canonical TEXT NOT NULL,
+        identities TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        url TEXT NOT NULL,
+        provider_id TEXT,
+        label TEXT NOT NULL,
+        owner TEXT,
+        description TEXT,
+        listed INTEGER,
+        preview TEXT,
+        relevance TEXT NOT NULL,
+        score REAL NOT NULL,
+        reasons TEXT NOT NULL,
+        used_by TEXT,
+        query TEXT NOT NULL,
+        status TEXT NOT NULL,
+        drop_reason TEXT,
+        discovered_at TEXT NOT NULL,
+        decided_at TEXT,
+        decided_by TEXT,
+        source_id INTEGER,
+        result TEXT
+      );
+      CREATE INDEX discovery_candidates_channel ON discovery_candidates (channel_id, status);
+
+      -- Candidates the operator rejected, remembered per channel against the editorial context they were rejected in.
+      CREATE TABLE discovery_rejections (
+        channel_id INTEGER NOT NULL REFERENCES channels (id),
+        canonical TEXT NOT NULL,
+        context_key TEXT NOT NULL,
+        label TEXT,
+        at TEXT NOT NULL,
+        PRIMARY KEY (channel_id, canonical)
+      );
+
+      -- The operator's job queue: one engine owns the database, and every job is visible to the operator window.
+      CREATE TABLE jobs (
+        id INTEGER PRIMARY KEY,
+        kind TEXT NOT NULL,
+        lane TEXT NOT NULL,
+        channel_id INTEGER,
+        label TEXT NOT NULL,
+        params TEXT NOT NULL,
+        state TEXT NOT NULL,
+        origin TEXT NOT NULL DEFAULT 'operator',
+        submitted_at TEXT NOT NULL,
+        started_at TEXT,
+        ended_at TEXT,
+        result TEXT
+      );
+    `,
+  },
 ]
 
 export type Db = DatabaseSync
@@ -232,7 +314,17 @@ export function schemaVersionOf(db: Db): number {
 }
 
 /** Open (or create) a working database and bring its schema up to date. A newer schema than this Harvester knows is refused. */
-export function openDb(path: string, migrations: readonly { version: number; sql: string }[] = MIGRATIONS): Db {
+export function openDb(path: string, migrations: readonly { version: number; sql: string }[] = MIGRATIONS, options: { readOnly?: boolean } = {}): Db {
+  if (options.readOnly) {
+    const db = new DatabaseSync(path, { readOnly: true })
+    db.exec('PRAGMA busy_timeout = 5000;')
+    const current = schemaVersionOf(db)
+    if (current !== (migrations.at(-1)?.version ?? 0)) {
+      db.close()
+      throw new Error(`This workspace is at schema ${current}; open it once for writing (harvester serve) to bring it up to date`)
+    }
+    return db
+  }
   const db = new DatabaseSync(path)
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;')
   const target = migrations.at(-1)?.version ?? 0

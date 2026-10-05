@@ -6,8 +6,9 @@ import { MAX_LIST_VIDEOS, type ExportSource, type ExportVideo } from '../src/ser
 import { channelSource } from '../src/services/user-network-restore.ts'
 import { ensureBaseline } from './baseline.ts'
 import { programmesOf } from './corpus.ts'
-import { setMeta, transaction } from './db.ts'
+import { setMeta, transaction, type Db } from './db.ts'
 import { canonicalSource, detectSource, duplicateCheck, recordEnrichment, type SourceResult } from './desk.ts'
+import { channelRules, discoveryContext } from './discovery.ts'
 import { computeHealth, storedHealth, type ChannelHealth } from './health.ts'
 import { readerOf, type Reader } from './importer.ts'
 import { enrichedVideo, mergeFresh } from './merge.ts'
@@ -111,14 +112,27 @@ export interface ChannelCompare {
   channelId: number
   kind: RunKind
   runId: number
-  before: Pick<ChannelHealth, 'sourcesEnabled' | 'available' | 'eligible' | 'hours' | 'knownDates'> | null
-  after: Pick<ChannelHealth, 'sourcesEnabled' | 'available' | 'eligible' | 'hours' | 'knownDates'> | null
+  before: Pick<ChannelHealth, 'sourcesEnabled' | 'creators' | 'available' | 'eligible' | 'hours' | 'knownDates' | 'knownDatePct' | 'class'> | null
+  after: Pick<ChannelHealth, 'sourcesEnabled' | 'creators' | 'available' | 'eligible' | 'hours' | 'knownDates' | 'knownDatePct' | 'class'> | null
   results: (SourceResult & { url: string; status: string; note?: string })[]
 }
 
 const STATIC_REASONS: Partial<Record<Reader, string>> = { none: 'Nothing to read: TVN programming, or an imported list with no known uploader' }
 
-const compareOf = (health: ChannelHealth | null | undefined) => (health ? { sourcesEnabled: health.sourcesEnabled, available: health.available, eligible: health.eligible, hours: health.hours, knownDates: health.knownDates } : null)
+const compareOf = (health: ChannelHealth | null | undefined) => (health ? { sourcesEnabled: health.sourcesEnabled, creators: health.creators, available: health.available, eligible: health.eligible, hours: health.hours, knownDates: health.knownDates, knownDatePct: health.knownDatePct, class: health.class } : null)
+
+/** The latest AUTO run that still has sources to visit and was not completed (read-only). */
+export function unfinishedRunOf(db: Db): RunRow | null {
+  return (
+    (db
+      .prepare("SELECT r.* FROM runs r WHERE r.kind = 'auto' AND r.status IN ('stopped', 'interrupted', 'running') AND EXISTS (SELECT 1 FROM run_queue q WHERE q.run_id = r.id AND q.state = 'pending') ORDER BY r.id DESC LIMIT 1")
+      .get() as unknown as RunRow | undefined) ?? null
+  )
+}
+
+export function lastRunOf(db: Db, kind: RunKind = 'auto'): RunRow | null {
+  return (db.prepare('SELECT * FROM runs WHERE kind = ? ORDER BY id DESC LIMIT 1').get(kind) as unknown as RunRow | undefined) ?? null
+}
 
 /** Whether the process that wrote a lock is still alive. */
 function alive(pid: number): boolean {
@@ -210,6 +224,11 @@ export class Harvester {
     return this.lines
   }
 
+  /** A line in the operator's Activity from outside a run (discovery, the job queue). */
+  note(level: LogLine['level'], message: string): void {
+    this.say(level, message)
+  }
+
   private say(level: LogLine['level'], message: string): void {
     const line = { at: this.now().toISOString(), level, message }
     this.lines.push(line)
@@ -221,15 +240,11 @@ export class Harvester {
 
   /** The latest AUTO run that still has sources to visit and was not completed. */
   unfinishedRun(): RunRow | null {
-    return (
-      (this.db
-        .prepare("SELECT r.* FROM runs r WHERE r.kind = 'auto' AND r.status IN ('stopped', 'interrupted', 'running') AND EXISTS (SELECT 1 FROM run_queue q WHERE q.run_id = r.id AND q.state = 'pending') ORDER BY r.id DESC LIMIT 1")
-        .get() as unknown as RunRow | undefined) ?? null
-    )
+    return unfinishedRunOf(this.db)
   }
 
   lastRun(kind: RunKind = 'auto'): RunRow | null {
-    return (this.db.prepare('SELECT * FROM runs WHERE kind = ? ORDER BY id DESC LIMIT 1').get(kind) as unknown as RunRow | undefined) ?? null
+    return lastRunOf(this.db, kind)
   }
 
   get running(): boolean {
@@ -641,7 +656,7 @@ export class Harvester {
     this.progress.channel = { index: 1, total: 1, number: channel.number, name: channel.name }
     let crashed: unknown = null
     try {
-      const rows = this.db.prepare("SELECT id, url FROM desk_pending WHERE channel_id = ? AND status = 'READY' ORDER BY id").all(channelId) as { id: number; url: string }[]
+      const rows = this.db.prepare("SELECT id, url, candidate_id FROM desk_pending WHERE channel_id = ? AND status = 'READY' ORDER BY id").all(channelId) as { id: number; url: string; candidate_id: number | null }[]
       const partials = this.db.prepare("SELECT * FROM run_queue WHERE run_id = ? AND state = 'pending' ORDER BY seq").all(runId) as unknown as QueueRow[]
       const total = rows.length + partials.length
       let index = 0
@@ -649,8 +664,14 @@ export class Harvester {
         if (signal.aborted) break
         index += 1
         const detection = detectSource(row.url)
-        const setRow = (status: string, note: string | null, result: object | null = null, sourceId: number | null = null) =>
+        const setRow = (status: string, note: string | null, result: object | null = null, sourceId: number | null = null) => {
           this.db.prepare('UPDATE desk_pending SET status = ?, note = ?, result = COALESCE(?, result), source_id = COALESCE(?, source_id) WHERE id = ?').run(status, note, result ? JSON.stringify(result) : null, sourceId, row.id)
+          // A discovered candidate follows its row: harvested, partial, failed, or a duplicate once the provider named it.
+          const candidate = { ADDED: 'ADDED', PARTIAL: 'PARTIAL', FAILED: 'FAILED', 'ALREADY ADDED': 'DUPLICATE', 'EXISTING SOURCE — DISABLED': 'DUPLICATE', 'UNKNOWN — REVIEW': 'FAILED' }[status]
+          if (row.candidate_id !== null && candidate) {
+            this.db.prepare('UPDATE discovery_candidates SET status = ?, source_id = COALESCE(?, source_id), result = COALESCE(?, result) WHERE id = ?').run(candidate, sourceId, result ? JSON.stringify(result) : null, row.candidate_id)
+          }
+        }
         if (!detection.ready || !detection.sourceType) {
           setRow('UNKNOWN — REVIEW', detection.note ?? 'TVN cannot tell what this address is')
           continue
@@ -676,7 +697,7 @@ export class Harvester {
           compare.results.push({ url: row.url, status: duplicate.status, label: identity.label, programmes: 0, eligible: 0, seconds: 0, dated: 0, refused: 0, complete: false })
           continue
         }
-        const item = this.addDeskSource(runId, channel, row, identity, detection.url)
+        const item = this.addDeskSource(runId, channel, row, identity, detection.url, row.candidate_id)
         setRow('SCANNING', duplicate.note, null, item.source_id)
         const visited = await this.visit(runId, item, index, total, 'desk', signal, read)
         const result = this.sourceResult(item.source_id as number, runId, channel.scope === 'central')
@@ -695,6 +716,7 @@ export class Harvester {
         const result = this.sourceResult(item.source_id as number, runId, channel.scope === 'central')
         const pending = this.db.prepare('SELECT id FROM desk_pending WHERE source_id = ?').get(item.source_id) as { id: number } | undefined
         if (pending) this.db.prepare('UPDATE desk_pending SET status = ?, result = ? WHERE id = ?').run(result.partial ? 'PARTIAL' : 'ADDED', JSON.stringify(result), pending.id)
+        this.db.prepare('UPDATE discovery_candidates SET status = ?, result = ? WHERE source_id = ?').run(result.partial ? 'PARTIAL' : 'ADDED', JSON.stringify(result), item.source_id)
         compare.results.push({ url: result.label, status: result.partial ? 'PARTIAL' : 'ADDED', ...result })
         recordEnrichment(this.db, channelId, { sources: 0, programmes: result.programmes - before.programmes, seconds: result.seconds - before.seconds }, this.now())
         if (visited === 'stopped' || signal.aborted) break
@@ -707,25 +729,47 @@ export class Harvester {
     this.finish(runId, crashed)
   }
 
-  /** A pasted source joins the channel: its row, its queue entry and a journal entry, in one transaction. */
-  private addDeskSource(runId: number, channel: { id: number; key: string }, row: { id: number }, identity: NonNullable<ReadResult['identity']>, pasted: string): QueueRow {
+  /**
+   * A pasted or discovered source joins the channel: its row, its queue entry and a journal entry, in one
+   * transaction. A discovered source carries the channel's rules and its discovery provenance.
+   */
+  private addDeskSource(runId: number, channel: { id: number; key: string }, row: { id: number }, identity: NonNullable<ReadResult['identity']>, pasted: string, candidateId: number | null = null): QueueRow {
     const at = this.now().toISOString()
+    const candidate = candidateId === null ? undefined : (this.db.prepare('SELECT id, query, search_id, relevance, score, decided_at, decided_by, canonical FROM discovery_candidates WHERE id = ?').get(candidateId) as Record<string, unknown> | undefined)
+    const rules = candidate ? channelRules(discoveryContext(this.db, channel.id)) : undefined
+    const search = candidate ? (this.db.prepare('SELECT context_key, extra FROM discovery_searches WHERE id = ?').get(Number(candidate.search_id)) as { context_key: string; extra: string } | undefined) : undefined
     return transaction(this.db, () => {
       const position = ((this.db.prepare('SELECT MAX(position) AS p FROM sources WHERE channel_id = ?').get(channel.id) as { p: number | null }).p ?? -1) + 1
-      const body: ExportSource = { sourceType: identity.sourceType, url: identity.url, ...(identity.providerId ? { providerId: identity.providerId } : {}), label: identity.label, enabled: true, deep: true }
+      const body: ExportSource = { sourceType: identity.sourceType, url: identity.url, ...(identity.providerId ? { providerId: identity.providerId } : {}), label: identity.label, enabled: true, deep: true, ...(rules ? { filter: rules } : {}) }
       const sourceId = Number(
         this.db
           .prepare(
-            "INSERT INTO sources (channel_id, position, key, source_type, url, provider_id, label, enabled, reader, body, has_videos, provenance, added_run, added_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 1, 'desk', ?, ?)",
+            "INSERT INTO sources (channel_id, position, key, source_type, url, provider_id, label, enabled, reader, body, has_videos, provenance, added_run, added_at, discovery_id) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 1, 'desk', ?, ?, ?)",
           )
-          .run(channel.id, position, `${channel.key}#d:${row.id}`, identity.sourceType, identity.url, identity.providerId ?? null, identity.label, readerOf({ sourceType: identity.sourceType }), JSON.stringify(body), runId, at).lastInsertRowid,
+          .run(channel.id, position, `${channel.key}#d:${row.id}`, identity.sourceType, identity.url, identity.providerId ?? null, identity.label, readerOf({ sourceType: identity.sourceType }), JSON.stringify(body), runId, at, candidateId).lastInsertRowid,
       )
       const seq = ((this.db.prepare('SELECT MAX(seq) AS s FROM run_queue WHERE run_id = ?').get(runId) as { s: number | null }).s ?? -1) + 1
       this.db.prepare("INSERT INTO run_queue (run_id, seq, channel_id, source_id, state, depth) VALUES (?, ?, ?, ?, 'pending', 'deep')").run(runId, seq, channel.id, sourceId)
+      const discovered = candidate
+        ? {
+            discovered: {
+              by: 'harvester',
+              candidateId: candidate.id,
+              canonical: candidate.canonical,
+              query: candidate.query,
+              context: search ? { key: search.context_key, ...(search.extra ? { extra: search.extra } : {}) } : null,
+              relevance: candidate.relevance,
+              score: candidate.score,
+              approvedBy: candidate.decided_by,
+              approvedAt: candidate.decided_at,
+              ...(rules ? { rules } : {}),
+            },
+          }
+        : {}
       this.db
         .prepare("INSERT INTO changes (run_id, channel_id, source_id, kind, video_id, detail, at, provenance) VALUES (?, ?, ?, 'source', NULL, ?, ?, 'desk')")
-        .run(runId, channel.id, sourceId, JSON.stringify({ pasted, sourceType: identity.sourceType, url: identity.url, ...(identity.providerId ? { providerId: identity.providerId } : {}), label: identity.label }), at)
-      this.say('info', `${this.where(channel.id)}: source added at the Source Desk: ${identity.label} (${identity.sourceType})`)
+        .run(runId, channel.id, sourceId, JSON.stringify({ pasted, sourceType: identity.sourceType, url: identity.url, ...(identity.providerId ? { providerId: identity.providerId } : {}), label: identity.label, ...discovered }), at)
+      this.say('info', `${this.where(channel.id)}: source added at the Source Desk${candidate ? ' from DISCOVER SOURCES' : ''}: ${identity.label} (${identity.sourceType})`)
       return { run_id: runId, seq, channel_id: channel.id, source_id: sourceId, state: 'pending', depth: 'deep' }
     })
   }
