@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { webmSeconds } from './media-probe.ts'
 import { resolveFeed } from './podcast-feed.ts'
 import { firstVariant, isSignedUrl, readMediaPlaylist } from './url-sources.ts'
+import { refusal } from './web-read.ts'
 
 type Route = (url: string, init?: RequestInit) => Response | null
 const reader = (route: Route) => (async (url: string | URL, init?: RequestInit) => route(String(url), init) ?? new Response('', { status: 404 })) as typeof fetch
@@ -135,5 +136,15 @@ describe('the pieces', () => {
     expect(webmSeconds(new Uint8Array([0x53, 0xab, 0x84, 0x15, 0x49, 0xa9, 0x66, ...info]))).toBe(635)
     expect(isSignedUrl(new URL('https://cdn.example/a.m3u8?token=1'))).toBe(true)
     expect(isSignedUrl(new URL('https://cdn.example/a.m3u8?quality=hd'))).toBe(false)
+  })
+})
+
+describe('a site that refuses TVN', () => {
+  it('says sign-in only for a sign-in, and a bot wall turning the server away as just that', () => {
+    expect(refusal(new Response('', { status: 401 }), 'That address')?.message).toBe('That address needs a sign-in or subscription, which TVN does not use')
+    expect(refusal(new Response('', { status: 403, headers: { server: 'cloudflare' } }), 'That address')?.message).toBe("That address turns away TVN's server (its protection blocks automated readers), so TVN cannot read it here")
+    expect(refusal(new Response('', { status: 403 }), 'That site')?.message).toBe('That site refused TVN: it may need a sign-in, or block automated readers')
+    expect(refusal(new Response('', { status: 403 }), 'That site')?.status).toBe(403)
+    expect(refusal(new Response('', { status: 404 }), 'That site')).toBeNull()
   })
 })

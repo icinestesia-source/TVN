@@ -1,5 +1,5 @@
 import type { FeedEpisode, ResolvedFeed } from './podcast-feed.ts'
-import { decodeText, FeedError, fnv, publicFeedUrl, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
+import { decodeText, FeedError, fnv, publicFeedUrl, refusal, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 
 /**
  * Programmes that are a web page rather than a recording: an interactive website, or a public X post shown
@@ -67,7 +67,8 @@ export async function resolveWebsite(start: URL, read: typeof fetch): Promise<Re
   } catch {
     throw new FeedError(502, 'That site could not be reached')
   }
-  if (response.status === 401 || response.status === 402 || response.status === 403) throw new FeedError(403, 'That site needs a sign-in or subscription, which TVN does not use')
+  const refused = refusal(response, 'That site')
+  if (refused) throw refused
   if (response.status === 404) throw new FeedError(404, 'Nothing was found at that address')
   if (!response.ok) throw new FeedError(502, 'That site did not answer')
   const final = publicFeedUrl(response.url || start.toString())

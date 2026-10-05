@@ -1,5 +1,5 @@
 import { measureMedia } from './media-probe.ts'
-import { attr, dayOf, FeedError, fetchText, field, fnv, publicFeedUrl, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
+import { attr, dayOf, FeedError, fetchText, field, fnv, publicFeedUrl, refusal, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 import type { FeedEpisode, ResolvedFeed } from './podcast-feed.ts'
 import { isXHost, resolveXPost } from './web-programmes.ts'
 
@@ -282,7 +282,8 @@ export async function probeUrl(raw: string, read: typeof fetch): Promise<Probe |
   } catch {
     return null
   }
-  if (response.status === 401 || response.status === 402 || response.status === 403) throw new FeedError(403, 'That address needs a sign-in or subscription, which TVN does not use')
+  const refused = refusal(response, 'That address')
+  if (refused) throw refused
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined)
     return null

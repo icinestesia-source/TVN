@@ -11,6 +11,23 @@ export class FeedError extends Error {
   }
 }
 
+/** Servers that answer 403 to automated readers as a whole, whatever the address: a bot wall, not a members' area. */
+function botWall(response: Response): boolean {
+  const server = (response.headers.get('server') ?? '').toLowerCase()
+  return response.headers.has('cf-mitigated') || /cloudflare|akamai|sucuri|incapsula|imperva|ddos-guard/.test(server)
+}
+
+/**
+ * Why a site refused TVN, for a 401, 402 or 403; null for any other answer. A sign-in or payment is said as
+ * such; a 403 from a bot wall is the site turning TVN's server away, which is not the same as members only.
+ */
+export function refusal(response: Response, what: string): FeedError | null {
+  if (response.status === 401 || response.status === 402) return new FeedError(403, `${what} needs a sign-in or subscription, which TVN does not use`)
+  if (response.status !== 403) return null
+  if (botWall(response)) return new FeedError(403, `${what} turns away TVN's server (its protection blocks automated readers), so TVN cannot read it here`)
+  return new FeedError(403, `${what} refused TVN: it may need a sign-in, or block automated readers`)
+}
+
 export const MAX_BYTES = 12 * 1024 * 1024
 export const TIMEOUT_MS = 15_000
 export const USER_AGENT = 'TVN feed reader (+https://tvn.lol)'
@@ -126,7 +143,8 @@ export async function fetchText(
   } catch {
     throw new FeedError(502, 'That site could not be reached')
   }
-  if (response.status === 401 || response.status === 402 || response.status === 403) throw new FeedError(403, 'That site needs a sign-in or subscription, which TVN does not use')
+  const refused = refusal(response, 'That site')
+  if (refused) throw refused
   if (response.status === 404) throw new FeedError(404, 'Nothing was found at that address')
   if (!response.ok) throw new FeedError(502, 'That site did not answer')
   if (from > 0 && response.status !== 206) throw new FeedError(502, 'That site cannot send the rest of its feed')

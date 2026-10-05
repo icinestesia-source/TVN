@@ -66,10 +66,22 @@
 
 .tv.is-integrated .guide-brand { min-width: 0; }
 .tv.is-integrated .tab { min-width: 0; padding: 0 10px; }
-/* The Guide's tabs never shrink under the search box; when the bar runs out of room its buttons take a second row. */
-.tv.is-integrated .guide-top { overflow: hidden; }
-.guide-top .tabs { flex-shrink: 0; max-width: 100%; }
+.tv.is-integrated .guide-top { flex-wrap: nowrap; overflow: hidden; }
+/*
+ * The Guide's top line stays one line: as it narrows, the tabs and buttons draw in their spacing to fit. The
+ * tabs never shrink under the search box; the search box gives way first.
+ */
+.guide-top .tabs { flex-shrink: 0; }
 .guide-top .tabs .tab { flex: none; }
+.guide-top .tab {
+  padding: 0 clamp(4px, 1.4cqi - 8px, 14px);
+  letter-spacing: clamp(0.02em, 0.012cqi, 0.12em);
+}
+.guide-top .guide-actions { gap: clamp(0px, 0.6cqi - 2px, 6px); flex-shrink: 0; }
+.guide-top .guide-close { margin-left: clamp(0px, 0.8cqi - 4px, 8px); flex-shrink: 0; }
+.guide-top .guide-search { flex: 0 1 150px; min-width: 64px; }
+.guide-top .guide-brand { min-width: 0; flex-shrink: 0; }
+.guide-top .guide-clock { font-size: clamp(15px, 2.2cqi - 4px, 20px); letter-spacing: clamp(0.02em, 0.006cqi, 0.06em); white-space: nowrap; }
 
 .tv.is-integrated.is-narrow .guide-top {
   flex-wrap: wrap;
