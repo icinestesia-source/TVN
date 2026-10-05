@@ -969,11 +969,11 @@ function ChannelCell({
           disabled={busy || !selected}
           onClick={act(onLatest)}
           aria-pressed={live}
-          title={live ? 'Latest first is on: press to catch up with the newest programme again' : 'Latest first: play the newest programme now, then newest to oldest'}
+          title="Latest: check for the newest programme and play it now; the schedule resumes when it ends"
         >
           <span aria-hidden="true">◉</span>
           <span className="sr">
-            Latest first {padChannel(channel.number)}
+            Play latest {padChannel(channel.number)}
           </span>
         </button>
       ) : null}
@@ -984,7 +984,7 @@ function ChannelCell({
         </button>
       ) : null}
       {all && onReload ? (
-        <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onReload)} title="Reload: rescan the channel and put it back in its order">
+        <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onReload)} title="Reload: rescan the channel and schedule it again">
           <span aria-hidden="true">↻</span>
           <span className="sr">Reload channel {padChannel(channel.number)}</span>
         </button>

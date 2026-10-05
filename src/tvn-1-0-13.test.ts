@@ -242,10 +242,10 @@ describe('the starter network', () => {
   const checked = readUserNetworkFile(file)
   const records = checked.ok ? recordsFromExport(checked.value, 0) : []
 
-  it('is a valid TVN User Network file: 122 channels, 1001–1122 A–Z, TVN’s, keyless', () => {
+  it('is a valid TVN User Network file: 136 channels, 1001–1136 A–Z, TVN’s, keyless', () => {
     expect(checked.ok).toBe(true)
     if (!checked.ok) return
-    expect(checked.value.channels).toHaveLength(122)
+    expect(checked.value.channels).toHaveLength(136)
     const numbers = checked.value.channels.map((channel) => channel.number)
     expect(numbers).toEqual(numbers.map((_, index) => 1001 + index))
     const names = checked.value.channels.map((channel) => channel.name.trim())
@@ -260,8 +260,8 @@ describe('the starter network', () => {
     expect(plan.added).toEqual(records.map((record) => record.channelNumber))
     expect(plan.added).toEqual(records.map((_, index) => 1001 + index))
     expect(plan.sources.find((record) => record.channelNumber === 1001)?.sourceType).toBe('youtube-channel')
-    expect(plan.sources.filter((record) => record.videos.length === 0)).toHaveLength(45)
-    expect(starterCollections(records).sources).toHaveLength(77)
+    expect(plan.sources.filter((record) => record.videos.length === 0)).toHaveLength(1)
+    expect(starterCollections(records).sources).toHaveLength(135)
   })
 
   it('every default favourite resolves on a fresh install, in order', () => {
@@ -270,7 +270,7 @@ describe('the starter network', () => {
     expect([...expected.keys()]).toEqual(DEFAULT_FAVOURITES.filter((number) => number > 1000))
     expect(placeStarterFavourites(DEFAULT_FAVOURITES, expected, fresh)).toEqual(DEFAULT_FAVOURITES)
     const names = new Map(fresh.map((record) => [record.channelNumber, record.name]))
-    expect([1008, 1023, 1052, 1095, 1119, 1102].map((number) => names.get(number))).toEqual([
+    expect([1009, 1025, 1056, 1105, 1132, 1112].map((number) => names.get(number))).toEqual([
       'Argyle Life | Green',
       'CinemaSins',
       'Heat Check',

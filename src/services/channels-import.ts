@@ -586,6 +586,31 @@ export function channelsFromSources(
   return { channels, programmes }
 }
 
+/** One of a channel's programmes on its own, off the schedule: what LATEST plays when the newest is not scheduled. */
+export function poolProgramme(video: ImportedVideo, channelId: string, name: string): Programme {
+  const id = `${channelId}-latest-${video.id}`
+  if (video.media) return episodeProgramme(video, id, channelId, name)
+  return {
+    id,
+    title: video.title,
+    description: `${video.title} on ${name}. The slot is the video's own duration.`,
+    videoId: video.id,
+    durationSeconds: video.durationSec,
+    mediaDurationSeconds: video.durationSec,
+    thumbnail: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
+    channelId,
+    category: 'User',
+    source: 'imported',
+    kind: 'programme',
+    programmeType: programmeTypeFor(video.durationSec),
+    mediaKind: 'video',
+    sourceRef: `youtube:${video.id}`,
+    playbackMode: 'linear',
+    ...(video.published ? { publishedAt: video.published } : {}),
+    ...creatorFields(video.creator),
+  }
+}
+
 /** A podcast or archive episode: its own public audio or video file, played by the browser's media element, never by YouTube. */
 function episodeProgramme(video: ImportedVideo, id: string, channelId: string, name: string): Programme {
   if (video.web) return webProgramme(video, id, channelId, name)

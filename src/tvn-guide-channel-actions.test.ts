@@ -8,10 +8,11 @@ import { calculateSchedule } from './scheduler/calculate.ts'
 import { SCHEDULE_EPOCH_MS } from './scheduler/epoch.ts'
 import { applyChannelEdit, editOf, holdNew, admitted, loadMoreSource, type ChannelEdit } from './services/channel-editor.ts'
 import type { ChannelSource } from './services/channel-sources.ts'
-import { channelsFromSources, livePhase, type ImportedVideo, type StoredSource } from './services/channels-import.ts'
+import { channelsFromSources, livePhase, poolProgramme, type ImportedVideo, type StoredSource } from './services/channels-import.ts'
 import { loadSurfUntilEnd, saveSurfUntilEnd, SURF_END_LIMIT_MS, surfUntilEndMs } from './state/surf.ts'
 import type { Channel } from './types/channel.ts'
 import { loadGuideActionsAll, saveGuideActionsAll } from './view/guide-actions-store.ts'
+import { newestProgramme } from './view/programme-order.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const dated = (count: number, from = 0): ImportedVideo[] =>
@@ -180,17 +181,47 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(loadGuideActionsAll(store)).toBe(false)
   })
 
-  it('the provider reads the sources again and plays the newest now on every press, and RELOAD keeps the kind of order', () => {
+  it('LATEST reads the sources again and plays the newest now outside the schedule, leaving the running order alone', () => {
     const provider = read('src/state/TvProvider.tsx')
     const latest = provider.slice(provider.indexOf('const latestFirst = useCallback('), provider.indexOf('const reloadChannel = useCallback('))
     expect(latest).toContain('const current = await rescanChannelEdit(number, opened).then(')
     expect(latest).toContain('() => opened,')
-    expect(latest).toContain("await saveChannelEdit(number, { ...current, order, orderKind: 'latest', liveFromMs: Date.now(), scheduleSize: undefined })")
-    expect(latest).toContain('replayIfWatching(number)')
-    expect(latest).not.toContain('LATEST FIRST OFF')
+    expect(latest).toContain('newestProgramme(pool, programmesFor(target.id), (video) => poolProgramme(video, target.id, target.name))')
+    expect(latest).toContain('playFromGuideRef.current(target, programme)')
+    expect(latest).not.toContain('saveChannelEdit')
+    expect(latest).not.toContain("orderKind: 'latest'")
     expect(read('src/components/Guide.tsx')).toContain("channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' }))")
-    expect(provider).toContain('const result = await rescanChannelEdit(number, current)')
-    expect(provider).toContain("kind === 'latest' ? latestVideos(pool) : kind === 'az' ? alphabeticalVideos(pool)")
+  })
+
+  it('RELOAD rescans and schedules the channel again; only an order arranged by hand is kept', () => {
+    const provider = read('src/state/TvProvider.tsx')
+    const reload = provider.slice(provider.indexOf('const reloadChannel = useCallback('), provider.indexOf('const loadMoreChannelSource = useCallback('))
+    expect(reload).toContain('const result = await rescanChannelEdit(number, current)')
+    expect(reload).toContain("if (kind === 'manual' || pool.length === 0) {")
+    expect(reload).toContain("const orderKind: OrderKind = kind === 'az' || kind === 'random' ? kind : 'rebuilt'")
+    expect(reload).toContain('liveFromMs: undefined')
+    expect(reload).toContain('replayIfWatching(number)')
+    expect(read('src/components/Guide.tsx')).toContain('title="Reload: rescan the channel and schedule it again"')
+  })
+
+  it('picks the newest programme as scheduled, builds it when the schedule leaves it out, and falls back to the newest dated', () => {
+    const built = channelsFromSources([record([youtube(videos)])])
+    const channel = built.channels[0]
+    const scheduled = built.programmes.get(channel.id)!
+    const build = (video: ImportedVideo) => poolProgramme(video, channel.id, channel.name)
+    const picked = newestProgramme(videos, scheduled, build)!
+    expect(picked.videoId).toBe(newest[0].id)
+    expect(picked.id.endsWith('-r')).toBe(false)
+    expect(scheduled).toContain(picked)
+    const fresh = { ...dated(1, 30)[0], published: '2026-12-31' }
+    const off = newestProgramme([...videos, fresh], scheduled, build)!
+    expect(off.videoId).toBe(fresh.id)
+    expect(off.id).toBe(`${channel.id}-latest-${fresh.id}`)
+    expect(off.thumbnail).toBe(`https://i.ytimg.com/vi/${fresh.id}/hqdefault.jpg`)
+    expect(off.publishedAt).toBe('2026-12-31')
+    const fallback = newestProgramme([], scheduled, build)!
+    expect(fallback.videoId).toBe(newest[0].id)
+    expect(newestProgramme([], scheduled.map(({ publishedAt: _day, ...programme }) => programme), build)).toBeNull()
   })
 })
 

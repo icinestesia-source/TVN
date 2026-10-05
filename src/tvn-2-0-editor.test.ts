@@ -49,15 +49,15 @@ const names = (filter: 'all' | 'user' | 'favourites', favourites: number[] = [])
 afterEach(() => installUserCatalogue([], new Map()))
 
 describe('DEFAULT USER NETWORK', () => {
-  it('the shipped starter is the 3 October file, sorted A–Z and numbered 1001–1122 with no gaps', () => {
+  it('the shipped starter is the 5 October harvested file, sorted A–Z and numbered 1001–1136 with no gaps', () => {
     const file = readUserNetworkFile(read('public/user-network/starter-network.json'))
     expect(file.ok).toBe(true)
     if (!file.ok) return
     const channels = file.value.channels
-    expect(channels).toHaveLength(122)
+    expect(channels).toHaveLength(136)
     expect(channels.map((channel) => channel.number)).toEqual(channels.map((_, index) => 1001 + index))
     expect(channels[0]?.name).toBe('8K Earth')
-    expect(channels.at(-1)?.name).toBe('X Games')
+    expect(channels.at(-1)?.name).toBe('XEN CUTS')
     const ids = channels.map((channel) => channel.id).filter(Boolean)
     expect(new Set(ids).size).toBe(ids.length)
     expect(channels.every((channel) => channel.sources.length > 0)).toBe(true)

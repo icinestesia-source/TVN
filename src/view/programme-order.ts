@@ -59,3 +59,26 @@ export function latestVideos<T extends OrderedVideo>(videos: readonly T[]): T[] 
     })
     .map(({ video }) => video)
 }
+
+interface PlayableProgramme {
+  id: string
+  videoId?: string | null
+  sourceRef?: string
+  publishedAt?: string
+  durationSeconds: number
+}
+
+/**
+ * What LATEST plays: the newest of the channel's programmes, as the schedule lists it, or built on its own when
+ * the schedule leaves it out. A channel with no programmes of its own offers its newest scheduled programme.
+ */
+export function newestProgramme<V extends OrderedVideo, P extends PlayableProgramme>(pool: readonly V[], scheduled: readonly P[], build: (video: V) => P): P | null {
+  const [video] = latestVideos(pool)
+  if (video) {
+    const found = scheduled.filter((programme) => programme.videoId === video.id || programme.sourceRef?.endsWith(`:${video.id}`))
+    return found.find((programme) => !programme.id.endsWith('-r')) ?? found[0] ?? build(video)
+  }
+  const day = (programme: P) => programme.publishedAt?.slice(0, 10) ?? ''
+  const dated = scheduled.filter((programme) => programme.durationSeconds > 0 && DAY.test(day(programme)))
+  return dated.reduce<P | null>((best, programme) => (!best || day(programme) > day(best) ? programme : best), null)
+}

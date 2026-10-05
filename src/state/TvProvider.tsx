@@ -49,6 +49,7 @@ import {
   firstEmptySlot,
   migrateLegacyUserNumbers,
   planImport,
+  poolProgramme,
   type ParsedExport,
   type StoredSource,
 } from '../services/channels-import.ts'
@@ -59,8 +60,8 @@ import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile,
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
-import { airingSources, inventoryOf, type ChannelSource } from '../services/channel-sources.ts'
-import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
+import { airingSources, inventoryOf, type ChannelSource, type OrderKind } from '../services/channel-sources.ts'
+import { alphabeticalVideos, newestProgramme, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
 import { addRoute } from '../sources/providers.ts'
 import {
   appliedCuratedEdits,
@@ -1257,6 +1258,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return null
   }
   const playChannelProgramme = useCallback((channelNumber: number, programmeId: string) => playChannelRef.current(channelNumber, programmeId), [])
+  const playFromGuideRef = useRef(playFromGuide)
+  playFromGuideRef.current = playFromGuide
 
   // ── GUIDES: the viewer's own viewing sequences, played through the same picks as the Guide grid ──
 
@@ -2764,32 +2767,36 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   /**
-   * LATEST FIRST in the Guide: the sources are read again for anything new, then the channel's newest
-   * programme goes to air now, from its start, and the rest follow newest to oldest, so the channel feels
-   * live. Every press does this afresh; another order in the Channel Editor ends it.
+   * LATEST in the Guide: the sources are read again for anything new, then the channel's newest programme
+   * plays now, from its start, outside the schedule. The running order is untouched: when that programme
+   * has played through, the channel returns to its schedule.
    */
   const latestFirst = useCallback(
     async (number: number) => {
       const edit = await openChannelEdit(number)
-      if (!edit) throw new Error('This channel cannot be arranged here')
+      if (!edit) throw new Error('This channel cannot be played here')
       const { review: _review, ...opened } = edit
       const current = await rescanChannelEdit(number, opened).then(
         (result) => result.edit,
         () => opened,
       )
-      const pool = inventoryOf(airingSources(current.sources))
-      if (pool.length === 0) throw new Error("TVN schedules this channel's own programming: add a source to play it newest first")
-      const order = latestVideos(pool).map((video) => video.id)
-      await saveChannelEdit(number, { ...current, order, orderKind: 'latest', liveFromMs: Date.now(), scheduleSize: undefined })
-      replayIfWatching(number)
-      const first = pool.find((video) => video.id === order[0])
-      return `LATEST FIRST · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
+      const target = channelByNumber(number)
+      if (!target) throw new Error('That channel is not in the network')
+      const pool = inventoryOf(current.sources)
+      const programme = newestProgramme(pool, programmesFor(target.id), (video) => poolProgramme(video, target.id, target.name))
+      if (!programme) throw new Error('No dated programme to play: add a source to this channel')
+      playFromGuideRef.current(target, programme)
+      return `LATEST · ${programme.title.toUpperCase().slice(0, 60)} NOW, THEN BACK TO THE SCHEDULE`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [openChannelEdit, rescanChannelEdit, saveChannelEdit],
+    [openChannelEdit, rescanChannelEdit],
   )
 
-  /** RELOAD in the Guide: the channel rescanned, then put back in the kind of order it keeps, and replayed if watched. */
+  /**
+   * RELOAD in the Guide: the channel rescanned and scheduled again. A running order arranged by hand is kept,
+   * with what the rescan found joining it; A–Z sorts again and a shuffle reshuffles; any other channel is
+   * rebuilt afresh from every eligible programme, each source in turn. Replayed if watched.
+   */
   const reloadChannel = useCallback(
     async (number: number) => {
       const edit = await openChannelEdit(number)
@@ -2799,12 +2806,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const next = result.edit
       const pool = inventoryOf(airingSources(next.sources))
       const kind = next.order?.length ? next.orderKind : undefined
+      if (kind === 'manual' || pool.length === 0) {
+        replayIfWatching(number)
+        return `${result.message} · ${kind === 'manual' ? 'YOUR ORDER KEPT' : 'SCHEDULED BY TVN'}`
+      }
       const fromSource = new Map(next.sources.flatMap((source) => (source.videos ?? []).map((video) => [video.id, source.id] as const)))
-      const order =
-        kind === 'latest' ? latestVideos(pool) : kind === 'az' ? alphabeticalVideos(pool) : kind === 'random' ? shuffledVideos(pool) : kind === 'rebuilt' ? rebuiltVideos(pool.map((video) => ({ ...video, from: fromSource.get(video.id) }))) : null
-      if (order) await saveChannelEdit(number, { ...next, order: order.map((video) => video.id), ...(kind === 'latest' ? { liveFromMs: Date.now() } : {}) })
+      const order = kind === 'az' ? alphabeticalVideos(pool) : kind === 'random' ? shuffledVideos(pool) : rebuiltVideos(pool.map((video) => ({ ...video, from: fromSource.get(video.id) })))
+      const orderKind: OrderKind = kind === 'az' || kind === 'random' ? kind : 'rebuilt'
+      const scheduled = { ...next, order: order.map((video) => video.id), orderKind, liveFromMs: undefined }
+      await saveChannelEdit(number, { ...scheduled, compiled: eligibilityKey(scheduled) })
       replayIfWatching(number)
-      return `${result.message} · ${kind === 'latest' ? 'NEWEST FIRST FROM NOW' : kind === 'az' ? 'A–Z' : kind === 'random' ? 'RESHUFFLED' : kind === 'rebuilt' ? 'REBUILT' : kind === 'manual' ? 'YOUR ORDER KEPT' : 'ARRANGED BY TVN'}`
+      return `${result.message} · ${orderKind === 'az' ? 'RESCHEDULED A–Z' : orderKind === 'random' ? 'RESHUFFLED' : 'RESCHEDULED'}`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [openChannelEdit, rescanChannelEdit, saveChannelEdit],
