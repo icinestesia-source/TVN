@@ -18,7 +18,7 @@ function sequence(count: number): number[] {
   return [...Array(count).keys()].map((index) => index / count)
 }
 
-describe('R random channel', () => {
+describe('Space random channel', () => {
   const items = expandPlayableCatalogue(JSON.parse(readFileSync('public/independent/playable.json', 'utf8')))
 
   beforeAll(() => {
@@ -30,10 +30,11 @@ describe('R random channel', () => {
 
   afterAll(() => installUserCatalogue([], new Map()))
 
-  it('maps R to a random tune while watching, and leaves the guide and browser shortcuts alone', () => {
-    expect(commandFromKey('r', plain, false)).toEqual({ type: 'random-channel' })
-    expect(commandFromKey('R', plain, false)).toEqual({ type: 'random-channel' })
-    expect(commandFromKey('r', plain, true)).toBeNull()
+  it('maps Space to a random tune while watching, R to the Guide tabs, and leaves browser shortcuts alone', () => {
+    expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
+    expect(commandFromKey(' ', plain, true)).toBeNull()
+    expect(commandFromKey('r', plain, false)).toEqual({ type: 'guide-cycle' })
+    expect(commandFromKey('R', plain, true)).toEqual({ type: 'guide-cycle' })
     expect(commandFromKey('r', { ...plain, meta: true }, false)).toBeNull()
     expect(commandFromKey('r', { ...plain, ctrl: true }, false)).toBeNull()
   })

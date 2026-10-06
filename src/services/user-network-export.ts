@@ -131,6 +131,11 @@ export interface UserNetworkExport {
   numbering: { first: number; limit: number }
   users?: ExportUser[]
   channels: ExportChannel[]
+  /**
+   * The Favourites among these channels, in the order the Favourites tab lists them. Absent in files from
+   * before them: a restore then keeps this browser's User Network Favourites wherever their numbers survive.
+   */
+  favourites?: number[]
 }
 
 /** A stored channel id: plain printable text, never a number slot. */
@@ -260,12 +265,14 @@ export function buildUserNetworkExport(
   now: Date,
   uploaderOf: UploaderOf = () => null,
   users: readonly ExportUser[] = [],
+  favourites?: readonly number[],
 ): UserNetworkExport {
   const listed = users.map(({ id, name }) => ({ id, name }))
   const channels = stored
     .filter((record) => record.channelNumber !== null && record.channelNumber >= USER_NUMBER_START && record.channelNumber < USER_NUMBER_LIMIT)
     .map((record) => exportChannel(record, uploaderOf, listed))
     .sort((a, b) => a.number - b.number)
+  const filled = new Set(channels.filter((channel) => channel.state !== 'empty').map((channel) => channel.number))
   return {
     format: USER_NETWORK_FORMAT,
     version: USER_NETWORK_VERSION,
@@ -273,6 +280,7 @@ export function buildUserNetworkExport(
     numbering: { first: USER_NUMBER_START, limit: USER_NUMBER_LIMIT },
     users: listed,
     channels,
+    ...(favourites ? { favourites: [...new Set(favourites)].filter((number) => filled.has(number)) } : {}),
   }
 }
 
@@ -502,6 +510,15 @@ export function validateUserNetworkExport(data: unknown): { ok: true; value: Use
       userIds.add(user.id)
       named.push({ id: user.id, name: user.name })
     })
+  }
+  if (data.favourites !== undefined) {
+    if (!Array.isArray(data.favourites)) errors.push('favourites is not a list')
+    else {
+      data.favourites.forEach((number, index) => {
+        if (!(typeof number === 'number' && Number.isInteger(number) && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT)) errors.push(`favourites[${index}] is not a User Network channel number`)
+      })
+      if (new Set(data.favourites).size !== data.favourites.length) errors.push('favourites repeats a channel')
+    }
   }
   const seen = new Set<number>()
   const ids = new Set<string>()

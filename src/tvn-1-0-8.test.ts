@@ -296,7 +296,7 @@ describe('EXPORT: the User Network as tvn-user-network-v1', () => {
     const html = renderToStaticMarkup(createElement(AddChannelForm, { nextNumber: 1055, onAdd: async () => '', onExport: async () => '' }))
     expect(html.indexOf('<input')).toBeLessThan(html.indexOf('>Import</button>'))
     const labels = [...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Import', 'Export'])
+    expect(labels).toEqual(['Import', 'Export USER'])
     const actions = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
     expect([...actions.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Guide', 'Options', 'Now', 'Add', 'Media'])
     const guide = read('src/components/Guide.tsx')

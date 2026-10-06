@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
 import { noteLocalSource } from '../session/session-channel.ts'
 import { fileScale } from './file-scale.ts'
+import { attachFlv, type Remuxer } from './flv.ts'
 import { nativeHls } from './stream.ts'
 import { notePlayback } from './trace.ts'
 import type { LocalPlayerHandle } from './routed.ts'
@@ -43,6 +44,7 @@ export function LocalStage({
   const liveRef = useRef(false)
   const timerRef = useRef(0)
   const scaleRef = useRef(1)
+  const remuxRef = useRef<Remuxer | null>(null)
   const onStatusRef = useRef(onStatus)
 
   useEffect(() => {
@@ -94,7 +96,18 @@ export function LocalStage({
     )
   }
 
+  const dropRemux = () => {
+    const remuxer = remuxRef.current
+    remuxRef.current = null
+    try {
+      remuxer?.destroy()
+    } catch {
+      // A converter that fails to let go still leaves the element to be cleared below.
+    }
+  }
+
   const release = () => {
+    dropRemux()
     const video = videoRef.current
     if (!video) return
     video.pause()
@@ -142,10 +155,24 @@ export function LocalStage({
           timerRef.current = window.setTimeout(() => fail(id), live ? STREAM_TIMEOUT_MS : web ? WEB_FILE_TIMEOUT_MS : LOAD_TIMEOUT_MS)
           onStatusRef.current('buffering')
           notePlayback({ playerState: 'buffering', expectedSeek: startSeconds })
-          if (!live && video.getAttribute('src') === url && video.readyState >= 1) {
+          const showing = remuxRef.current ? remuxRef.current.url : video.getAttribute('src')
+          if (!live && showing === url && video.readyState >= 1) {
             begin(id)
             return
           }
+          if (!live && request.remux) {
+            release()
+            noteLocalSource(url)
+            attachFlv(video, url, (reason) => fail(id, reason)).then(
+              (remuxer) => {
+                if (id === requestId.current) remuxRef.current = remuxer
+                else remuxer.destroy()
+              },
+              () => fail(id, 'flv unsupported'),
+            )
+            return
+          }
+          dropRemux()
           liveRef.current = live
           video.src = url
           noteLocalSource(live ? null : url)

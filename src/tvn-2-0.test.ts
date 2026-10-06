@@ -279,7 +279,7 @@ describe('TVN 2.0 · COMPLETE TVN EXPORT (tvn-export-v1)', () => {
     expect([...at].sort((x, y) => x - y)).toEqual(at)
     const footer = renderToStaticMarkup(createElement(UserNetworkImportTools, { userChannels: 2, onApply: async () => '', onApplyComplete: async () => '' }))
     expect(footer).toContain('Choose file')
-    expect(read('src/components/GuideAdd.tsx')).toContain('Restore complete TVN export? This will replace your Favourites')
+    expect(read('src/components/GuideAdd.tsx')).toContain('ALL also replaces your Favourites (with ${pending.favourites}), your settings')
   })
 
   it('existing User Network files still restore through the same Restore', () => {

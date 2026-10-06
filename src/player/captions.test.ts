@@ -180,7 +180,7 @@ describe('subtitles toggle', () => {
   })
 
   it('J: the first Random tune still wins over delayed startup restoration', () => {
-    expect(commandFromKey('r', plain, false)).toEqual({ type: 'random-channel' })
+    expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
     const startup = createStartupRestore()
     startup.noteUserTune()
     const restored = startup.target({ number: 501 } as never, [{ number: 1 }, { number: 501 }] as never)

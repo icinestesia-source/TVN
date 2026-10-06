@@ -17,7 +17,9 @@ import { CHANNEL_ID, shareableUrl, storedKindOf, validateUserNetworkExport, type
  * confirmed; a file that fails is refused whole.
  */
 
-export type ReadResult = { ok: true; value: UserNetworkExport; channels: number; empty: number; users: number } | { ok: false; errors: string[] }
+export type ReadResult =
+  | { ok: true; value: UserNetworkExport; channels: number; empty: number; users: number; favourites: number | null }
+  | { ok: false; errors: string[] }
 
 /** Parse and validate the text of a chosen file. Reads only. */
 export function readUserNetworkFile(text: string): ReadResult {
@@ -30,7 +32,7 @@ export function readUserNetworkFile(text: string): ReadResult {
   const checked = validateUserNetworkExport(data)
   if (!checked.ok) return checked
   const empty = checked.value.channels.filter((channel) => channel.state === 'empty').length
-  return { ok: true, value: checked.value, channels: checked.value.channels.length, empty, users: checked.value.users?.length ?? 0 }
+  return { ok: true, value: checked.value, channels: checked.value.channels.length, empty, users: checked.value.users?.length ?? 0, favourites: checked.value.favourites?.length ?? null }
 }
 
 const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
@@ -153,7 +155,8 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
         ...notes,
       }
       const curated = Boolean(first?.filter || first?.mode)
-      const plain = !channel.edited && !curated && sources.length === 1 && ((first.kind === 'youtube' && Boolean(first.ref)) || first.kind === 'collection')
+      // A list that brings no programmes keeps its source, so the channel stays listed to be rescanned.
+      const plain = !channel.edited && !curated && sources.length === 1 && ((first.kind === 'youtube' && Boolean(first.ref)) || (first.kind === 'collection' && record.videos.length > 0))
       if (plain && first.kind === 'youtube') return { ...record, sourceType: first.youtube === 'playlist' ? 'youtube-playlist' : 'youtube-channel' }
       if (plain) return { ...record, ...(channel.listName ? { listName: channel.listName } : {}) }
       return { ...record, channelSources: sources, ...(channel.listName ? { listName: channel.listName } : {}) }
@@ -252,6 +255,11 @@ export async function resolveRestored(
       // What the file held stays; a fresh read only adds to it and brings its dates.
       const fresh = read(wanted[0])
       const videos = fresh === null ? record.videos : rescanned(cleanVideos(fresh), record.videos, 'recent', record.videos.length > 0)
+      // Nothing to air yet: the channel keeps its source and its number, listed for a later rescan.
+      if (videos.length === 0) {
+        const status = { state: fresh === null ? 'failed' : 'ready', playable: 0, checkedAt: now } as const
+        return { ...record, videos: [], channelSources: [{ ...wanted[0], videos: [], status }] }
+      }
       const sources: ChannelSource[] = [{ ...wanted[0], videos }]
       const runningOrder = videos.length > 0 ? order(sources) : record.runningOrder
       return { ...record, videos, ...(runningOrder?.length ? { runningOrder } : {}) }
@@ -302,12 +310,17 @@ export function restoreUserNetwork(existing: readonly StoredSource[], restored: 
 }
 
 /**
- * Favourites after a restore. Curated, 000 and 1000 favourites stay. A 1001+ favourite stays on its
+ * Favourites after a restore. Curated, 000 and 1000 favourites stay. When the file lists its own User
+ * Network Favourites, those replace this browser's 1001+ ones. Otherwise a 1001+ favourite stays on its
  * number when the restored network has that number (the viewer is restoring stable numbers); one whose
  * number the restored network does not have is dropped, so a channel added there later never inherits it.
  * Nothing is reseeded.
  */
-export function favouritesAfterRestore(favourites: readonly number[], restored: readonly StoredSource[]): number[] {
+export function favouritesAfterRestore(favourites: readonly number[], restored: readonly StoredSource[], fromFile?: readonly number[]): number[] {
   const numbers = new Set(restored.map((record) => record.channelNumber))
-  return favourites.filter((number) => number < USER_NUMBER_START || numbers.has(number))
+  if (!fromFile) return favourites.filter((number) => number < USER_NUMBER_START || numbers.has(number))
+  // A file that lists its Favourites decides the User Network's; every other Favourite stays where it was.
+  const filled = new Set(restored.filter((record) => !record.emptySlot).map((record) => record.channelNumber))
+  const kept = favourites.filter((number) => number < USER_NUMBER_START)
+  return [...kept, ...fromFile.filter((number) => filled.has(number) && !kept.includes(number))]
 }

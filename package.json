@@ -13,6 +13,7 @@
     "harvester": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning harvester/cli.ts"
   },
   "dependencies": {
+    "mpegts.js": "^1.8.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

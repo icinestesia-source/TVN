@@ -94,7 +94,7 @@ export function commandFromKey(
       return { type: 'user-channels' }
     case 'r':
     case 'R':
-      return guideOpen ? null : { type: 'random-channel' }
+      return { type: 'guide-cycle' }
     case 't':
     case 'T':
       return { type: 'surf' }

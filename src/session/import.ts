@@ -1,18 +1,25 @@
+import { attachFlv, remuxSupported, type Remux } from '../player/flv.ts'
 import type { MediaKind } from '../types/programme.ts'
 import { replaceSession, type SessionItem } from './session-channel.ts'
 
-const VIDEO_EXTENSIONS = new Set(['mp4', 'm4v', 'webm', 'mov', 'mkv', 'ogv', '3gp'])
-const AUDIO_EXTENSIONS = new Set(['mp3', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac', 'weba'])
+const VIDEO_EXTENSIONS = new Set(['mp4', 'm4v', 'f4v', 'webm', 'mov', 'qt', 'mkv', 'ogv', 'ogm', '3gp', '3g2', 'flv'])
+const AUDIO_EXTENSIONS = new Set(['mp3', 'm4a', 'm4b', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac', 'weba', 'mka', 'aif', 'aiff', 'caf'])
 const EXTENSION_TYPES: Record<string, string> = {
   mp4: 'video/mp4',
   m4v: 'video/mp4',
+  f4v: 'video/mp4',
   webm: 'video/webm',
   mov: 'video/quicktime',
+  qt: 'video/quicktime',
   mkv: 'video/x-matroska',
   ogv: 'video/ogg',
+  ogm: 'video/ogg',
   '3gp': 'video/3gpp',
+  '3g2': 'video/3gpp2',
+  flv: 'video/x-flv',
   mp3: 'audio/mpeg',
   m4a: 'audio/mp4',
+  m4b: 'audio/mp4',
   aac: 'audio/aac',
   wav: 'audio/wav',
   ogg: 'audio/ogg',
@@ -20,7 +27,13 @@ const EXTENSION_TYPES: Record<string, string> = {
   opus: 'audio/ogg',
   flac: 'audio/flac',
   weba: 'audio/webm',
+  mka: 'audio/x-matroska',
+  aif: 'audio/aiff',
+  aiff: 'audio/aiff',
+  caf: 'audio/x-caf',
 }
+/** Containers TVN repackages itself rather than leave to the browser. */
+const REMUX_TYPES: Record<string, Remux> = { 'video/x-flv': 'flv', 'video/flv': 'flv' }
 
 /** Files are scanned up to this many; a folder of a whole disk should not stall the tab. */
 export const MAX_SCANNED_FILES = 5000
@@ -47,7 +60,7 @@ function extensionOf(name: string): string {
 export function mediaKindOf(file: LocalFile, canPlay: (mime: string) => boolean): MediaKind | null {
   if (file.name.startsWith('.')) return null
   const ext = extensionOf(file.name)
-  const declared = file.type.toLowerCase()
+  const declared = mimeOf(file)
   const kind: MediaKind | null = declared.startsWith('video/')
     ? 'video'
     : declared.startsWith('audio/')
@@ -60,6 +73,18 @@ export function mediaKindOf(file: LocalFile, canPlay: (mime: string) => boolean)
   if (!kind) return null
   const mime = declared || EXTENSION_TYPES[ext] || ''
   return mime && canPlay(mime) ? kind : null
+}
+
+/** The file's type as declared, else as its extension names it; FLV is often declared as nothing at all. */
+function mimeOf(file: LocalFile): string {
+  const declared = file.type.toLowerCase()
+  if (declared && declared !== 'application/octet-stream') return declared
+  return EXTENSION_TYPES[extensionOf(file.name)] ?? ''
+}
+
+/** Set for a file TVN repackages as it plays, such as FLV. */
+export function remuxFor(file: LocalFile): Remux | undefined {
+  return REMUX_TYPES[mimeOf(file)]
 }
 
 /** The file name without its extension, with underscores read as spaces. The file itself is never renamed. */
@@ -91,7 +116,7 @@ export interface ImportDeps<F extends LocalFile> {
   createUrl: (file: F) => string
   revokeUrl: (url: string) => void
   /** Seconds of playable media, or null when the file cannot be played or measured. */
-  probe: (url: string, kind: MediaKind) => Promise<number | null>
+  probe: (url: string, kind: MediaKind, remux?: Remux) => Promise<number | null>
   random?: () => number
   /** A newer import started; this one's URLs are handed back. */
   cancelled?: () => boolean
@@ -124,12 +149,13 @@ export async function buildSessionItems<F extends LocalFile>(files: readonly F[]
       next += 1
       const { file, kind } = candidates[index]
       if (deps.cancelled?.()) return
+      const remux = remuxFor(file)
       let url: string | null = null
       try {
         url = deps.createUrl(file)
-        const seconds = await deps.probe(url, kind)
+        const seconds = await deps.probe(url, kind, remux)
         if (validDuration(seconds) && !deps.cancelled?.()) {
-          accepted[index] = { title: titleFromName(file.name), durationSeconds: seconds, url, kind }
+          accepted[index] = { title: titleFromName(file.name), durationSeconds: seconds, url, kind, ...(remux ? { remux } : {}) }
           url = null
         }
       } catch {
@@ -166,16 +192,18 @@ export function importSummary(result: Pick<ImportResult, 'items' | 'skipped'>): 
 }
 
 /** Loads only the file's metadata, locally, and always tears the element down. */
-export function probeDuration(url: string, kind: MediaKind, timeoutMs = PROBE_TIMEOUT_MS): Promise<number | null> {
+export function probeDuration(url: string, kind: MediaKind, remux?: Remux, timeoutMs = PROBE_TIMEOUT_MS): Promise<number | null> {
   return new Promise((resolve) => {
     const element = document.createElement(kind === 'audio' ? 'audio' : 'video')
     let done = false
+    let remuxer: { destroy(): void } | null = null
     const finish = (seconds: number | null) => {
       if (done) return
       done = true
       window.clearTimeout(timer)
       element.removeEventListener('loadedmetadata', onMeta)
       element.removeEventListener('error', onError)
+      remuxer?.destroy()
       element.removeAttribute('src')
       element.load()
       resolve(seconds)
@@ -191,14 +219,25 @@ export function probeDuration(url: string, kind: MediaKind, timeoutMs = PROBE_TI
     element.muted = true
     element.addEventListener('loadedmetadata', onMeta)
     element.addEventListener('error', onError)
-    element.src = url
+    if (!remux) {
+      element.src = url
+      return
+    }
+    attachFlv(element, url, () => finish(null)).then(
+      (attached) => {
+        if (done) attached.destroy()
+        else remuxer = attached
+      },
+      () => finish(null),
+    )
   })
 }
 
 export function browserCanPlay(mime: string): boolean {
+  if (REMUX_TYPES[mime]) return remuxSupported()
   const probe = document.createElement(mime.startsWith('audio/') ? 'audio' : 'video')
   // Matroska is widely playable in Chromium even though it rarely admits it.
-  return probe.canPlayType(mime) !== '' || mime === 'video/x-matroska' || mime === 'video/quicktime'
+  return probe.canPlayType(mime) !== '' || mime === 'video/x-matroska' || mime === 'audio/x-matroska' || mime === 'video/quicktime'
 }
 
 interface DirectoryHandleLike {

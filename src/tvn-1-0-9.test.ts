@@ -142,7 +142,7 @@ describe('Guide terminology: NOW · ADD · MEDIA', () => {
 
   it('the Add Channel row reads [ link ] IMPORT · EXPORT, with no ADD left in it', () => {
     const html = renderToStaticMarkup(createElement(AddChannelForm, { nextNumber: 1004, onAdd: async () => '', onExport: async () => '' }))
-    expect(labelsOf(html)).toEqual(['Import', 'Export'])
+    expect(labelsOf(html)).toEqual(['Import', 'Export USER'])
     expect(html.indexOf('<input')).toBeLessThan(html.indexOf('>Import</button>'))
     expect(html).not.toMatch(/>Add</)
     expect(addSource).toContain("{busy ? 'Importing…' : 'Import'}")
@@ -263,8 +263,8 @@ describe('IMPORT: restoring a User Network export', () => {
     const tool = addSource.slice(addSource.indexOf('export function UserNetworkImportTools'), addSource.indexOf('export function UserNetworkTools'))
     expect(tool).toMatch(/if \(!read\.ok\) \{\s*setNote\([^\n]*NOT A TVN USER NETWORK FILE[^\n]*\n\s*return\s*\}/)
     expect(tool.indexOf("setPending({ kind: 'network', document: read.value")).toBeGreaterThan(tool.indexOf('if (!read.ok)'))
-    expect(tool).toMatch(/'Import User Network\? This will replace'\}\{' '\}\s*your current User Network/)
-    expect(tool).toContain("key('Yes, replace it', () => void apply(), 'tab remove-key')")
+    expect(tool).toContain('Restoring replaces your User Network')
+    expect(tool).toContain("key(pending.kind === 'complete' ? 'Restore USER only' : 'Restore USER', () => void apply('user'), 'tab remove-key')")
     expect(tool).toContain("key('Keep mine', () => setPending(null))")
     expect(tool.match(/onApply\(/g)).toHaveLength(1)
     const body = provider.slice(provider.indexOf('const importUserNetwork = useCallback'), provider.indexOf('const restoreCentralCuration = '))
@@ -299,7 +299,7 @@ describe('favourites through a User Network import', () => {
 
   it('never reseeds favourites', () => {
     const body = provider.slice(provider.indexOf('const importUserNetwork = useCallback'), provider.indexOf('const openChannelEdit = useCallback'))
-    expect(body).toContain('setFavourites((current) => favouritesAfterRestore(current, resolved.records))')
+    expect(body).toContain('setFavourites((current) => favouritesAfterRestore(current, resolved.records, document.favourites))')
     expect(body).not.toMatch(/starterFavourite|placeStarter|DEFAULT_FAVOURITES/)
   })
 })

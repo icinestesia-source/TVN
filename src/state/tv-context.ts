@@ -216,7 +216,8 @@ export interface TvContextValue {
   /** COMPLETE TVN EXPORT (tvn-export-v1): the User Network, Favourites and portable settings in one file. */
   exportTvn: () => Promise<string>
   /** Restores a confirmed complete export; a file that fails validation changes nothing. */
-  importTvn: (document: import('../services/tvn-export.ts').TvnExport) => Promise<string>
+  /** ALL restores everything the file holds; USER only its User Network and that network's Favourites. */
+  importTvn: (document: import('../services/tvn-export.ts').TvnExport, scope?: 'all' | 'user') => Promise<string>
   /**
    * The Channel Editor, for one channel at a time. A 1001+ channel is read from and saved to the User
    * Network; a curated channel's change is kept in this browser, over the shipped channel.

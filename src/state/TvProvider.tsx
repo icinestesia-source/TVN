@@ -161,7 +161,7 @@ import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
-import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
+import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionNeighbour, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
 import { chooseAnotherTvn, driveTvn, endedTvn, enterTvn, setTvnChannelSettings, TVN_CHANNEL_NUMBER, tvnChannelSettings, tvnChoice } from '../tvn/tvn-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, type StartupPhase } from './startup.ts'
 
@@ -204,6 +204,7 @@ import { confirmStart, soundHeld, soundRefused, viewerInteracted, type StartHold
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './history.ts'
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
 import { BUILD_INFO } from '../build-info.ts'
+import { guideTabLabel, nextGuideTab } from './guide-tabs.ts'
 import { addUser, checkUserName, filterUserId, loadUsers, releaseUserChannels, saveUsers, userFilter, userNetworkName, type NetworkUser } from '../data/user-network/users.ts'
 import { networkFilterOf, randomScoped } from '../view/info-shortcuts.ts'
 import {
@@ -1047,7 +1048,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         canPlay: browserCanPlay,
         createUrl: (file) => URL.createObjectURL(file),
         revokeUrl: (url) => URL.revokeObjectURL(url),
-        probe: (url, kind) => probeDuration(url, kind),
+        probe: (url, kind, remux) => probeDuration(url, kind, remux),
         cancelled: () => token !== importToken.current,
       })
       const summary = commitImport(result, Date.now())
@@ -1798,6 +1799,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
       case 'guide-tool':
         openGuideTool(command.tool, command.channelNumber)
         break
+      case 'guide-cycle': {
+        const next = nextGuideTab(guideFilter, usersRef.current.map((user) => user.id))
+        setGuideFilter(next)
+        if (!guideOpenRef.current) flash(`GUIDE · ${guideTabLabel(next, usersRef.current)}`)
+        break
+      }
       case 'user-channels':
         setGuideFilter('user')
         if (guideModeRef.current === 'closed') openGuide('expanded')
@@ -2553,11 +2560,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const exportUserNetwork = useCallback(async () => {
     const now = new Date()
-    const document = buildUserNetworkExport(await loadStoredSources(), now, uploaderIdFor, usersRef.current)
+    const document = buildUserNetworkExport(await loadStoredSources(), now, uploaderIdFor, usersRef.current, favouritesRef.current)
     downloadText(exportFilename(now), serialiseUserNetworkExport(document))
     const count = document.channels.length
     const users = document.users?.length ?? 0
-    return `EXPORTED ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${users > 0 ? ` · ${users} ${users === 1 ? 'USER' : 'USERS'}` : ''}`
+    const favourites = document.favourites?.length ?? 0
+    return `EXPORTED USER · ${count} ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${users > 0 ? ` · ${users} ${users === 1 ? 'USER' : 'USERS'}` : ''} · ${favourites} ${favourites === 1 ? 'FAVOURITE' : 'FAVOURITES'}`
   }, [])
 
   const exportTvn = useCallback(async () => {
@@ -2615,7 +2623,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const next = restoreUserNetwork(await loadStoredSources(), resolved.records)
       await saveStoredSources(next)
       if (starterState() === 'pending') setStarterState('installed')
-      setFavourites((current) => favouritesAfterRestore(current, resolved.records))
+      setFavourites((current) => favouritesAfterRestore(current, resolved.records, document.favourites))
       const users = usersFromExport(document)
       commitUsers(users)
       setGuideFilter((current) => (current.startsWith('user:') && !users.some((user) => userFilter(user.id) === current) ? 'user' : current))
@@ -2624,7 +2632,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const empty = resolved.records.filter((record) => record.emptySlot).length
       return `USER NETWORK IMPORTED · ${count} ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${empty > 0 ? ` · ${empty} EMPTY` : ''}${
         users.length > 0 ? ` · ${users.length} ${users.length === 1 ? 'USER' : 'USERS'}` : ''
-      }${
+      }${document.favourites ? ` · ${document.favourites.length} ${document.favourites.length === 1 ? 'FAVOURITE' : 'FAVOURITES'}` : ''}${
         resolved.failed > 0 ? ` · ${resolved.failed} ${resolved.failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : ''
       }`
     },
@@ -2662,9 +2670,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * Network is restored next, and only once that has succeeded do Favourites and settings follow.
    */
   const importTvn = useCallback(
-    async (document: TvnExport) => {
+    async (document: TvnExport, scope: 'all' | 'user' = 'all') => {
       const checked = validateTvnExport(document)
       if (!checked.ok) throw new Error(`Not a complete TVN export · ${checked.errors[0]}`)
+      // USER only: the User Network and its Favourites; curation, Guides, settings and other Favourites stay as they are.
+      if (scope === 'user') {
+        const favourites = checked.value.favourites.filter((number) => number >= USER_NUMBER_START)
+        return importUserNetwork({ ...checked.value.userNetwork, favourites })
+      }
       const restored = await importUserNetwork(checked.value.userNetwork)
       const central = checked.value.central ? await restoreCentralCuration(checked.value.central) : ''
       const guides = checked.value.guides
@@ -3083,7 +3096,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (direction === 1) chooseAnotherOnTvn()
       return
     }
-    if (!here || here.origin === 'session' || onScreen(here, Date.now()).current.programme.liveStream) return
+    if (here?.origin === 'session') {
+      const target = sessionNeighbour(Date.now(), direction)
+      if (target) sessionRef.current.play(target.id)
+      return
+    }
+    if (!here || onScreen(here, Date.now()).current.programme.liveStream) return
     const target = stepFrom(here, Date.now(), direction)
     if (hasPicture(target.programme)) playFromGuide(here, target.programme, target)
     // eslint-disable-next-line react-hooks/exhaustive-deps

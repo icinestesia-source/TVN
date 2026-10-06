@@ -117,7 +117,7 @@ describe('ADD', () => {
       createElement(AddChannelForm, { nextNumber: 1001, onAdd: async () => '', onExport: async () => '', onNewChannel: async () => {}, onRestore: () => undefined }),
     )
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Import', 'Export', 'Restore', 'New channel…'])
+    expect(labels).toEqual(['Import', 'Export USER', 'Restore', 'New channel…'])
     const footer = renderToStaticMarkup(
       createElement(UserNetworkTools, { userChannels: 3, onImportList: async () => '', onLoadTest: async () => '', onRemoveStarter: async () => '', onRemoveAll: async () => '' }),
     )

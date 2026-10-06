@@ -92,6 +92,7 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
       '-': ['guide-zoom', true],
       '=': ['guide-zoom', true],
       G: ['guide', false],
+      R: ['guide-cycle', false],
       Home: ['guide-now', false],
       F: ['fullscreen', false],
       Space: ['random-channel', false],

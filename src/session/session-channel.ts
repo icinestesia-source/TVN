@@ -1,5 +1,6 @@
 import { calculateSchedule } from '../scheduler/calculate.ts'
 import { slotsOverlapping } from '../scheduler/window.ts'
+import type { Remux } from '../player/flv.ts'
 import type { Channel } from '../types/channel.ts'
 import type { MediaKind, Programme } from '../types/programme.ts'
 import type { GuideSlot, ScheduleSnapshot } from '../types/schedule.ts'
@@ -33,6 +34,8 @@ export interface SessionItem {
   durationSeconds: number
   url: string
   kind: MediaKind
+  /** Set for a file the browser cannot play itself, which is repackaged as it plays. */
+  remux?: Remux
 }
 
 interface Session {
@@ -40,6 +43,7 @@ interface Session {
   /** The running order: shuffled once at import, rotated (never reshuffled) by Play Now. */
   programmes: Programme[]
   urls: Map<string, string>
+  remuxes: Map<string, Remux>
   /** The running order starts here and loops. */
   anchorMs: number
 }
@@ -120,6 +124,11 @@ export function sessionUrlFor(programme: { id: string; sourceRef?: string }): st
   return session.urls.get(programme.id) ?? null
 }
 
+export function sessionRemuxFor(programme: { id: string; sourceRef?: string }): Remux | undefined {
+  if (!session || !isSessionProgramme(programme)) return undefined
+  return session.remuxes.get(programme.id)
+}
+
 /**
  * Makes the session channel from these items, in the order given (the importer shuffles once), starting now.
  * Whatever the channel held before is dropped, and its URLs are revoked once no player holds them.
@@ -132,9 +141,11 @@ export function replaceSession(items: readonly SessionItem[], nowMs: number): vo
   }
   generation += 1
   const urls = new Map<string, string>()
+  const remuxes = new Map<string, Remux>()
   const programmes = items.map((item, index): Programme => {
     const id = `session-${generation}-${index + 1}`
     urls.set(id, item.url)
+    if (item.remux) remuxes.set(id, item.remux)
     return {
       id,
       title: item.title,
@@ -152,7 +163,7 @@ export function replaceSession(items: readonly SessionItem[], nowMs: number): vo
       sourceRef: `${SOURCE_PREFIX}${generation}-${index + 1}`,
     }
   })
-  session = { generation, programmes, urls, anchorMs: nowMs }
+  session = { generation, programmes, urls, remuxes, anchorMs: nowMs }
   if (previous) retired.push(...previous.urls.values())
   sweep()
   changed()
@@ -209,6 +220,18 @@ export function rebaseSession(programmeId: string, nowMs: number): boolean {
   }
   changed()
   return true
+}
+
+/**
+ * B and N on 1000: the imported programme before or after the one airing, round the running order.
+ * With a single file, N or B starts it again. Null for the empty channel.
+ */
+export function sessionNeighbour(nowMs: number, direction: -1 | 1): Programme | null {
+  if (!session) return null
+  const programmes = session.programmes
+  const index = programmes.findIndex((programme) => programme.id === sessionBroadcast(nowMs).current.programme.id)
+  if (index < 0) return programmes[0] ?? null
+  return programmes[(index + direction + programmes.length) % programmes.length] ?? null
 }
 
 /**

@@ -119,6 +119,7 @@ export function AddChannelForm({
   onAdd,
   onPreview,
   onExport,
+  onExportAll,
   onNewChannel,
   onRestore,
   onFocus,
@@ -128,8 +129,10 @@ export function AddChannelForm({
   onAdd: (link: string) => Promise<string>
   /** Reads a website, feed or archive first, so the viewer sees what it holds before it is added; null adds directly. */
   onPreview?: (link: string, onProgress: (text: string) => void) => Promise<FoundFeed | null>
-  /** Download the User Network as a file; the answer is a short line for the viewer. */
+  /** Download the User Network, with its Favourites, as a file; the answer is a short line for the viewer. */
   onExport?: () => Promise<string>
+  /** Download everything portable: User Network, curation of 001–999, Favourites and settings. */
+  onExportAll?: () => Promise<string>
   /** A new, empty channel, opened in Edit Channel to name and fill with sources. */
   onNewChannel?: () => Promise<void>
   /** Opens RESTORE: a User Network file saved with EXPORT, replacing the User Network. */
@@ -140,24 +143,25 @@ export function AddChannelForm({
   const [link, setLink] = useState('')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
-  const [exporting, setExporting] = useState(false)
-  const [exported, setExported] = useState(false)
+  const [exporting, setExporting] = useState<'all' | 'user' | null>(null)
+  const [exported, setExported] = useState<'all' | 'user' | null>(null)
   const [preview, setPreview] = useState<FoundFeed | null>(null)
 
-  const runExport = () => {
-    if (!onExport || exporting) return
-    setExporting(true)
-    onExport()
+  const runExport = (which: 'all' | 'user') => {
+    const work = which === 'all' ? onExportAll : onExport
+    if (!work || exporting) return
+    setExporting(which)
+    work()
       .then((message) => {
         setNote(message)
-        setExported(true)
+        setExported(which)
       })
-      .catch((caught: unknown) => setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE EXPORTED')))
-      .finally(() => setExporting(false))
+      .catch((caught: unknown) => setNote(viewerMessage(caught, 'THE EXPORT COULD NOT BE SAVED')))
+      .finally(() => setExporting(null))
   }
   useEffect(() => {
     if (!exported) return
-    const timer = setTimeout(() => setExported(false), 4000)
+    const timer = setTimeout(() => setExported(null), 4000)
     return () => clearTimeout(timer)
   }, [exported])
 
@@ -219,13 +223,24 @@ export function AddChannelForm({
       <button type="submit" className="tab" disabled={busy || !link.trim()}>
         {busy ? 'Importing…' : 'Import'}
       </button>
+      {onExportAll ? (
+        <button
+          type="button"
+          className="tab"
+          title="Download ALL: your User Network, your curation of 001–999, Favourites and settings"
+          disabled={exporting !== null}
+          onClick={() => runExport('all')}
+        >
+          {exporting === 'all' ? 'Exporting…' : exported === 'all' ? 'Exported' : 'Export ALL'}
+        </button>
+      ) : null}
       {onExport ? (
-        <button type="button" className="tab" title="Download your User Network (1001+) as a JSON file" disabled={exporting} onClick={runExport}>
-          {exporting ? 'Exporting…' : exported ? 'Exported' : 'Export'}
+        <button type="button" className="tab" title="Download your User Network (1001+) and its Favourites" disabled={exporting !== null} onClick={() => runExport('user')}>
+          {exporting === 'user' ? 'Exporting…' : exported === 'user' ? 'Exported' : 'Export USER'}
         </button>
       ) : null}
       {onRestore ? (
-        <button type="button" className="tab" title="Replace the User Network with a file saved with EXPORT" onClick={onRestore}>
+        <button type="button" className="tab" title="Restore an ALL or USER export" onClick={onRestore}>
           Restore
         </button>
       ) : null}
@@ -483,12 +498,12 @@ export function UserNetworkImportTools({
 }: {
   userChannels: number
   onApply: (document: UserNetworkExport) => Promise<string>
-  onApplyComplete: (document: TvnExport) => Promise<string>
+  onApplyComplete: (document: TvnExport, scope: 'all' | 'user') => Promise<string>
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [pending, setPending] = useState<
-    | { kind: 'network'; document: UserNetworkExport; channels: number; empty: number; users: number; filename: string }
+    | { kind: 'network'; document: UserNetworkExport; channels: number; empty: number; users: number; favourites: number | null; filename: string }
     | { kind: 'complete'; document: TvnExport; channels: number; empty: number; users: number; favourites: number; overrides: number; filename: string }
     | null
   >(null)
@@ -516,20 +531,20 @@ export function UserNetworkImportTools({
       if (read.kind === 'complete') {
         const empty = read.value.userNetwork.channels.filter((channel) => channel.state === 'empty').length
         setPending({ kind: 'complete', document: read.value, channels: read.channels, empty, users: read.users, favourites: read.favourites, overrides: read.overrides, filename: file.name })
-      } else setPending({ kind: 'network', document: read.value, channels: read.channels, empty: read.empty, users: read.users, filename: file.name })
+      } else setPending({ kind: 'network', document: read.value, channels: read.channels, empty: read.empty, users: read.users, favourites: read.favourites, filename: file.name })
     } catch {
       setNote('THAT FILE COULD NOT BE READ')
     }
   }
 
-  const apply = async () => {
+  const apply = async (scope: 'all' | 'user') => {
     if (!pending) return
     const chosen = pending
     setPending(null)
     setBusy(true)
-    setNote(chosen.kind === 'complete' ? 'RESTORING TVN…' : 'IMPORTING USER NETWORK…')
+    setNote(chosen.kind === 'complete' && scope === 'all' ? 'RESTORING ALL…' : 'RESTORING USER NETWORK…')
     try {
-      setNote(chosen.kind === 'complete' ? await onApplyComplete(chosen.document) : await onApply(chosen.document))
+      setNote(chosen.kind === 'complete' ? await onApplyComplete(chosen.document, scope) : await onApply(chosen.document))
     } catch (caught) {
       setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE IMPORTED'))
     } finally {
@@ -560,22 +575,25 @@ export function UserNetworkImportTools({
       <div className="info-actions">
         {pending ? (
           <>
-            <span className="remove-ask" role="alertdialog" aria-label={pending.kind === 'complete' ? 'Restore complete TVN export?' : 'Import User Network?'}>
-              {pending.kind === 'complete'
-                ? `Restore complete TVN export? This will replace your Favourites (with ${pending.favourites}), your settings and`
-                : 'Import User Network? This will replace'}{' '}
-              your current User Network
-              {userChannels > 0 ? ` (${userChannels} ${userChannels === 1 ? 'channel' : 'channels'})` : ''} with {pending.channels}{' '}
+            <span className="remove-ask" role="alertdialog" aria-label={pending.kind === 'complete' ? 'Restore ALL or USER?' : 'Restore USER?'}>
+              {pending.kind === 'complete' ? 'An ALL export. ' : 'A USER export. '}
+              Restoring replaces your User Network
+              {userChannels > 0 ? ` (${userChannels} ${userChannels === 1 ? 'channel' : 'channels'})` : ''} with exactly its {pending.channels}{' '}
               {pending.channels === 1 ? 'channel' : 'channels'}
-              {pending.empty > 0 ? `, ${pending.empty} empty,` : ''} from {pending.filename}.
+              {pending.empty > 0 ? `, ${pending.empty} empty,` : ''} from {pending.filename}, adding any that are missing here.
               {pending.users > 0
                 ? ` Its ${pending.users} ${pending.users === 1 ? 'user replaces' : 'users replace'} yours.`
                 : ' It has no named users: every channel goes to TVN.'}
-              {pending.kind === 'complete' && pending.document.central
-                ? ` Your curation of TVN channels 001–999 is replaced with its ${pending.overrides}; TVN's own channels are not changed.`
-                : ''}
+              {pending.kind === 'complete'
+                ? ` ALL also replaces your Favourites (with ${pending.favourites}), your settings${
+                    pending.document.central ? ` and your curation of TVN channels 001–999 (with its ${pending.overrides})` : ''
+                  }. USER restores only the User Network and its Favourites.`
+                : pending.favourites !== null
+                  ? ` Its ${pending.favourites} User Network ${pending.favourites === 1 ? 'Favourite replaces' : 'Favourites replace'} yours; other Favourites stay.`
+                  : ' It lists no Favourites: yours stay wherever their channels do.'}
             </span>
-            {key('Yes, replace it', () => void apply(), 'tab remove-key')}
+            {pending.kind === 'complete' ? key('Restore ALL', () => void apply('all'), 'tab remove-key') : null}
+            {key(pending.kind === 'complete' ? 'Restore USER only' : 'Restore USER', () => void apply('user'), 'tab remove-key')}
             {key('Keep mine', () => setPending(null))}
           </>
         ) : (

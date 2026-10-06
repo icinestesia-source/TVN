@@ -21,6 +21,7 @@ export const ENTRY_KEYS: readonly { group: string; keys: readonly { key: string;
     group: 'Guide',
     keys: [
       { key: 'G', label: 'Guide', name: 'G' },
+      { key: 'R', label: 'All / User / Fav', name: 'R' },
       { key: 'Home', label: 'Now', name: 'Home' },
       { key: '-', label: 'Zoom out', name: 'Minus' },
       { key: '=', label: 'Zoom in', name: 'Equals' },

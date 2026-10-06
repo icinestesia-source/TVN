@@ -58,6 +58,8 @@ export type TvCommand =
   | { type: 'favourite'; channelNumber?: number }
   | { type: 'debug' }
   | { type: 'guide-filter'; filter?: GuideFilter }
+  /** R: the next of the Guide's tabs, All → the User Network → each named user → Favourites → All. */
+  | { type: 'guide-cycle' }
   | { type: 'guide-now' }
   /** = zooms the Guide's timeline in (wider programmes, less time), - zooms it out. */
   | { type: 'guide-zoom'; direction: -1 | 1 }

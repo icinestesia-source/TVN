@@ -1,3 +1,5 @@
+import type { Remux } from './flv.ts'
+
 export type PlayerStatus =
   | 'loading-api'
   | 'playing'
@@ -19,6 +21,8 @@ export interface PlayerLoadRequest {
   localUrl?: string
   /** How long the schedule takes that file to be, so a browser that measures it differently is seeked in proportion. */
   localSeconds?: number
+  /** A container the browser cannot play itself (FLV), repackaged in the page before it reaches the media element. */
+  remux?: Remux
   /** A direct or HLS live stream, also played by the local media element; always joined live. */
   streamUrl?: string
   hls?: boolean

@@ -324,7 +324,7 @@ export function GuideOptions() {
             </span>
           </Row>
           <p className="options-note">
-            Random (TVN on the control pad, R on a keyboard), CH+ and CH− draw from the Guide tab chosen here. TVN on the control pad is underlined while it draws from a User Network.
+            Random (TVN on the control pad, Space on a keyboard), CH+ and CH− draw from the Guide tab chosen here. TVN on the control pad is underlined while it draws from a User Network.
           </p>
           <p className="options-note">Hold TVN on the control pad to start or stop it (T on a keyboard); each hop comes after a random wait in this range.</p>
           <label className="options-row">
@@ -384,17 +384,17 @@ export function GuideOptions() {
 
         <Card title="Save & restore">
           <p className="options-note">
-            Everything here is kept in this browser. The complete export saves your users, User Network channels, your curation of TVN
-            channels 001–999, Favourites and settings;
-            Restore takes it or a User Network file, and asks before replacing anything. Single channels and their manifests are in Edit
+            Everything here is kept in this browser. Export ALL saves your users, User Network channels, your curation of TVN channels
+            001–999, Favourites and settings. Export USER saves your users, User Network channels and their Favourites. Restore takes
+            either, asks first, and can restore just the USER part of an ALL export. Single channels and their manifests are in Edit
             Channel.
           </p>
           <div className="options-choices">
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => void run(tv.exportTvn)}>
-              Complete export
+              Export ALL
             </button>
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => void run(tv.exportUserNetwork)}>
-              User Network only
+              Export USER
             </button>
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}>
               Restore

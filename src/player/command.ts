@@ -1,6 +1,7 @@
 import { demoCredit } from '../data/media.ts'
-import { sessionUrlFor } from '../session/session-channel.ts'
+import { sessionRemuxFor, sessionUrlFor } from '../session/session-channel.ts'
 import type { Programme } from '../types/programme.ts'
+import { remuxOf } from './flv.ts'
 import { mediaSeekSeconds } from './seek.ts'
 import type { PlayerHandle, PlayerLoadRequest } from './types.ts'
 import { notePlayback, type PictureKind } from './trace.ts'
@@ -46,10 +47,12 @@ export function playbackCommand(programme: Programme, scheduleSeekSeconds: numbe
   }
   const localUrl = sessionUrlFor(programme) ?? programme.mediaUrl
   if (localUrl) {
+    const remux = sessionRemuxFor(programme) ?? remuxOf(programme.mediaUrl)
     return {
       videoId: null,
       localUrl,
       ...(/\.m3u8(?:[?#]|$)/i.test(localUrl) ? { hls: true } : {}),
+      ...(remux ? { remux } : {}),
       startSeconds: mediaSeekSeconds(scheduleSeekSeconds, programme),
       ...(localSeconds(programme) ? { localSeconds: localSeconds(programme) } : {}),
       loop: false,

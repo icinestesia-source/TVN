@@ -258,7 +258,7 @@ describe('information overlay: 3×3 control pad', () => {
     press('TV Surf')
     expect(sent).toEqual([{ type: 'random-channel' }])
     expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
-    expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
+    expect(commandFromKey(' ', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
     // Right-click (a mouse) switches the scope and never surfs or opens settings.
     const scoped = context({ randomScoped: true, surfScopeName: 'Ann' })
     expect(SHORTCUTS.random.describe!(scoped)).toBe('Surf: ANN only (Space) · right-click, hold or hold Space: surf all')

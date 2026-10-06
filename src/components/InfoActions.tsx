@@ -120,7 +120,7 @@ function cornerKey(at: Corner, shortcut: ShortcutDefinition, context: ShortcutCo
 /**
  * The information bar's controls, one 3×3 pad wherever the bar appears, in the Guide and over the picture.
  * The gold Guide key in the centre keeps the size of the Watch key it replaced, and its corners hold the
- * viewer's shortcuts. TV Surf (R on a keyboard), labelled with the active User Network's name, surfs to another
+ * viewer's shortcuts. TV Surf (Space on a keyboard), labelled with the active User Network's name, surfs to another
  * channel on a click; a right-click or a hold switches it between surfing ALL and that network; ⚙ opens Settings:
  *
  *   REMOTE  ↑ CH+  ⛶

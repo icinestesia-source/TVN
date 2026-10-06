@@ -72,13 +72,13 @@ describe('guide search', () => {
   })
 
   it('leaves R and digits to the search box instead of the television', () => {
-    expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'random-channel' })
+    expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'guide-cycle' })
     for (const guideOpen of [true, false]) {
       expect(commandFromKeyEvent(key('r', 'INPUT'), guideOpen)).toBeNull()
       expect(commandFromKeyEvent(key('R', 'INPUT'), guideOpen)).toBeNull()
       for (const digit of '0123456789') expect(commandFromKeyEvent(key(digit, 'INPUT'), guideOpen)).toBeNull()
     }
-    expect(commandFromKeyEvent(key('R', 'DIV'), false)).toEqual({ type: 'random-channel' })
+    expect(commandFromKeyEvent(key('R', 'DIV'), false)).toEqual({ type: 'guide-cycle' })
     expect(commandFromKeyEvent(key('4', 'DIV'), true)).toEqual({ type: 'digit', digit: 4 })
   })
 })
