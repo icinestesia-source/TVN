@@ -377,6 +377,24 @@ export function ChannelEditor({
     change({ ...edit, order: ids, orderKind: how })
   }
   const latest = sorted === 'latest' ? lineup.find((video) => !left.has(video.id)) : undefined
+  /** DELETE: one of TVN's own programmes is left out (tick it to bring it back); one from an added source is removed for good. */
+  const deleteClip = (video: ListedVideo) => {
+    if (!edit) return
+    const order = edit.order?.filter((id) => id !== video.id)
+    if (tvnLineup || video.original) {
+      if (!left.has(video.id)) change({ ...edit, excluded: [...left, video.id], orderKind: edit.orderKind ?? 'manual' })
+      return
+    }
+    const sources = edit.sources.map((source) =>
+      source.videos?.some((item) => item.id === video.id) && !source.removed?.includes(video.id) ? { ...source, removed: [...(source.removed ?? []), video.id] } : source,
+    )
+    change({ ...edit, sources, ...(order ? { order } : {}), orderKind: edit.orderKind ?? 'manual' })
+  }
+  const deletedCount = new Set(edit?.sources.flatMap((source) => source.removed ?? []) ?? []).size
+  const restoreDeleted = () => {
+    if (!edit) return
+    change({ ...edit, sources: edit.sources.map(({ removed: _removed, ...source }) => source) })
+  }
   const move = (index: number, delta: -1 | 1) => {
     const to = index + delta
     if (!edit || to < 0 || to >= lineup.length) return
@@ -1113,9 +1131,25 @@ export function ChannelEditor({
                       >
                         ▼
                       </button>
+                      <button
+                        type="button"
+                        className="tab editor-delete"
+                        aria-label={`Delete ${video.title}`}
+                        title="Delete this programme from the schedule. Save to keep it."
+                        disabled={busy !== null || left.has(video.id)}
+                        onKeyDown={keepKey}
+                        onClick={() => deleteClip(video)}
+                      >
+                        ✕
+                      </button>
                     </li>
                   ))}
                 </ol>
+                {deletedCount > 0 ? (
+                  <button type="button" className="tab editor-restore-deleted" disabled={busy !== null} onKeyDown={keepKey} onClick={restoreDeleted}>
+                    Restore {deletedCount} deleted
+                  </button>
+                ) : null}
                 {lineup.length > ROW_LIMIT && !allRows.has('lineup') ? (
                   <button type="button" className="tab editor-show-all" onKeyDown={keepKey} onClick={() => setAllRows((current) => new Set([...current, 'lineup']))}>
                     Show all {lineup.length}

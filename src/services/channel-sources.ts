@@ -74,6 +74,8 @@ export interface ChannelSource {
   complete?: boolean
   /** The viewer loaded past the first batch: a rescan adds new programmes and keeps the older ones loaded. */
   deep?: boolean
+  /** Programmes (video ids) the viewer deleted from the schedule: never eligible again, whatever a rescan or LOAD reads. */
+  removed?: string[]
 }
 
 interface SourceType {

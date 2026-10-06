@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { CaptionController } from './captions.ts'
 import { loadYouTubeApi } from './load-api.ts'
 import { PLAYER_LOAD_TIMEOUT_MS, playingRequested } from './picture.ts'
@@ -6,6 +6,7 @@ import { shieldProviderFrame } from './picture-shield.ts'
 import { notePlayback } from './trace.ts'
 import type { LoadResult, PlayerHandle, PlayerLoadRequest, PlayerStatus } from './types.ts'
 import type { YouTubePlayer } from '../types/youtube.ts'
+import { qualityFrame, useDisplayQuality } from '../view/display-quality.ts'
 
 interface YoutubeStageProps {
   playerRef: RefObject<PlayerHandle | null>
@@ -25,6 +26,22 @@ interface QueuedLoad {
 
 export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, captions = false }: YoutubeStageProps) {
   const hostRef = useRef<HTMLDivElement>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
+  const quality = useDisplayQuality()
+  const [slotSize, setSlotSize] = useState({ width: 0, height: 0 })
+  useEffect(() => {
+    const slot = frameRef.current?.parentElement
+    if (!slot || quality === 'auto' || preview || typeof ResizeObserver === 'undefined') return
+    const measure = () => setSlotSize({ width: slot.clientWidth, height: slot.clientHeight })
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(slot)
+    return () => observer.disconnect()
+  }, [quality, preview])
+  const frame = preview ? null : qualityFrame(quality, slotSize, typeof window === 'undefined' ? 1 : window.devicePixelRatio)
+  const frameStyle: CSSProperties | undefined = frame
+    ? { right: 'auto', bottom: 'auto', width: `${frame.width}px`, height: `${frame.height}px`, transform: `scale(${frame.scale})`, transformOrigin: '0 0' }
+    : undefined
   const ytRef = useRef<YouTubePlayer | null>(null)
   const requestId = useRef(0)
   const loopRef = useRef(false)
@@ -300,5 +317,9 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
     }
   }, [])
 
-  return <div className="yt-host" ref={hostRef} />
+  return (
+    <div className="yt-frame" ref={frameRef} style={frameStyle}>
+      <div className="yt-host" ref={hostRef} />
+    </div>
+  )
 }

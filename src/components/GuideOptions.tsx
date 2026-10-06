@@ -8,6 +8,7 @@ import { GUIDE_ZOOM_MAX, GUIDE_ZOOM_MIN, GUIDE_ZOOM_STEP } from '../epg/zoom.ts'
 import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
 import { useTv } from '../state/tv-context.ts'
+import { DISPLAY_QUALITIES, setDisplayQuality, useDisplayQuality } from '../view/display-quality.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
 
 /** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
@@ -170,6 +171,7 @@ function UserRow({ user, channels, onStatus }: { user: NetworkUser; channels: nu
  */
 export function GuideOptions() {
   const tv = useTv()
+  const quality = useDisplayQuality()
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const users = listChannels().filter((channel) => channel.number >= USER_NUMBER_START && !channel.emptySlot)
@@ -235,6 +237,26 @@ export function GuideOptions() {
 
         <Card title="Channel change" wide>
           <ChannelChangeOptions settings={tv.transition} onChange={tv.setTransition} />
+        </Card>
+
+        <Card title="Display">
+          <p className="options-note">The highest picture quality TVN asks YouTube for. On a slow connection YouTube may still choose less.</p>
+          <div className="options-choices" role="radiogroup" aria-label="Picture quality">
+            {DISPLAY_QUALITIES.map(({ id, label, hint }) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={quality === id}
+                className={quality === id ? 'tab is-on' : 'tab'}
+                title={hint}
+                onKeyDown={keepKey}
+                onClick={() => setDisplayQuality(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </Card>
 
         <Card title="Sleep">

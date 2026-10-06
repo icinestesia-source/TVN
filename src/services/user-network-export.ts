@@ -83,6 +83,8 @@ export interface ExportSource {
   mode?: SourceMode
   /** A website or post: the slot (seconds) the viewer gave it, since the page has no length of its own. */
   slotSeconds?: number
+  /** Programmes (video ids) the viewer deleted from the schedule. Absent in older files: none. */
+  removed?: string[]
 }
 
 export interface ExportChannel {
@@ -205,6 +207,7 @@ export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): Exp
     ...(source.info ? { info: structuredClone(source.info) } : {}),
     ...(filter ? { filter } : {}),
     ...(mode !== 'recent' ? { mode } : {}),
+    ...(source.removed?.length ? { removed: [...source.removed] } : {}),
   }
   if (source.kind === 'youtube') return { ...base, url: shareableUrl(canonicalYouTubeUrl(source)), ...heldVideos(source) }
   if (source.kind === 'collection') {
@@ -451,6 +454,9 @@ export function checkSources(sources: readonly unknown[], at: string, errors: st
     }
     if (source.listed !== undefined && !(typeof source.listed === 'number' && Number.isInteger(source.listed) && source.listed >= 0)) errors.push(`${where}.listed is not a count`)
     for (const name of ['complete', 'deep'] as const) if (source[name] !== undefined && typeof source[name] !== 'boolean') errors.push(`${where}.${name} is not true or false`)
+    if (source.removed !== undefined && !(Array.isArray(source.removed) && source.removed.length <= MAX_LIST_VIDEOS && source.removed.every((id) => typeof id === 'string'))) {
+      errors.push(`${where}.removed is not a list of programme ids`)
+    }
     checkFilter(source.filter, `${where}.filter`, errors)
     if (source.mode !== undefined && !SOURCE_MODES.includes(source.mode as SourceMode)) errors.push(`${where}.mode must be recent, archive or all`)
     if (source.slotSeconds !== undefined && !(typeof source.slotSeconds === 'number' && Number.isInteger(source.slotSeconds) && source.slotSeconds >= 60 && source.slotSeconds <= 6 * 3600)) {

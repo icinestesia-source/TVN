@@ -73,7 +73,15 @@ export function channelSource(source: ExportSource, index: number): ChannelSourc
   const filter = cleanFilter(source.filter)
   const mode = source.mode && SOURCE_MODES.includes(source.mode) && source.mode !== 'recent' ? source.mode : undefined
   const curation = source.sourceType === 'youtube-channel' || source.sourceType === 'youtube-playlist' || source.sourceType === 'collection' ? { ...(filter ? { filter } : {}), ...(mode ? { mode } : {}) } : {}
-  const base = { id: `s${index + 1}`, label: source.label, enabled: source.enabled, ...(source.info ? { info: structuredClone(source.info) } : {}), ...curation }
+  const removed = Array.isArray(source.removed) ? source.removed.filter((id) => typeof id === 'string') : []
+  const base = {
+    id: `s${index + 1}`,
+    label: source.label,
+    enabled: source.enabled,
+    ...(source.info ? { info: structuredClone(source.info) } : {}),
+    ...curation,
+    ...(removed.length ? { removed } : {}),
+  }
   if (source.sourceType === 'youtube-channel' || source.sourceType === 'youtube-playlist') {
     const ref = source.providerId || youTubeRef(source.url)
     const youtube = source.sourceType === 'youtube-playlist' ? ('playlist' as const) : ('channel' as const)

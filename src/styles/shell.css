@@ -35,6 +35,12 @@
 }
 
 .stage.is-card iframe,
+.yt-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .stage.is-card .yt-host {
   opacity: 0;
 }

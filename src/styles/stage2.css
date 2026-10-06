@@ -226,6 +226,12 @@
   pointer-events: none;
 }
 
+.tile .yt-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .tile .yt-host,
 .tile iframe {
   position: absolute;

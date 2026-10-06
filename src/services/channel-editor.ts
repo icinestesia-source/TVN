@@ -220,6 +220,7 @@ const copySource = (source: ChannelSource): ChannelSource => ({
   videos: source.videos?.map((video) => ({ ...video })),
   status: source.status ? { ...source.status } : undefined,
   ...(source.filter ? { filter: structuredClone(source.filter) } : {}),
+  ...(source.removed ? { removed: [...source.removed] } : {}),
 })
 
 /** A source as a user channel keeps it: filter in its canonical shape, mode only when it is not the default. */

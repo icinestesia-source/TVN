@@ -207,8 +207,9 @@ export function spread<T>(list: readonly T[]): T[] {
 }
 
 /** The programmes a scheduled source makes eligible, in the order its mode gives them. */
-export function eligibleOf(source: Pick<ChannelSource, 'videos' | 'filter' | 'mode'>): ImportedVideo[] {
-  const matching = applyFilter(source.videos ?? [], source.filter)
+export function eligibleOf(source: Pick<ChannelSource, 'videos' | 'filter' | 'mode' | 'removed'>): ImportedVideo[] {
+  const removed = new Set(source.removed ?? [])
+  const matching = applyFilter(removed.size ? (source.videos ?? []).filter((video) => !removed.has(video.id)) : (source.videos ?? []), source.filter)
   return sourceModeOf(source) === 'recent' ? matching : spread(matching)
 }
 

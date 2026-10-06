@@ -438,13 +438,17 @@ span.editor-expand { border-color: transparent; }
   text-decoration: none;
 }
 
-.editor-move {
+.editor-move,
+.editor-delete {
   width: 30px;
   height: 26px;
   padding: 0;
   letter-spacing: 0;
   font-size: 11px;
 }
+.editor-delete:not(:disabled):hover,
+.editor-delete:not(:disabled):focus-visible { color: #ff6b6b; border-color: #ff6b6b; }
+.editor-restore-deleted { margin-top: 6px; }
 
 .editor-lineup-head {
   display: flex;
