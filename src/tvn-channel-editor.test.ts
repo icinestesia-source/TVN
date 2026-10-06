@@ -189,13 +189,13 @@ describe('the editor', () => {
     const danger = user.slice(user.indexOf('editor-danger'))
     expect(danger).toContain('Delete channel…')
     expect(user.indexOf('editor-actions')).toBeLessThan(user.indexOf('editor-danger'))
-    expect(user.slice(user.indexOf('editor-actions'), user.indexOf('editor-danger'))).not.toContain('Delete')
+    expect(user.slice(user.indexOf('editor-actions'), user.indexOf('editor-actions-help'))).not.toContain('Delete')
     expect(user).not.toContain('Yes, delete')
     const curated = render('curated')
     expect(curated).not.toContain('Delete channel')
     expect(curated).toContain('Restore TVN original…')
     expect(curated).toContain('kept in this browser and in your complete export')
-    expect(curated.slice(curated.indexOf('editor-actions'), curated.indexOf('editor-danger'))).not.toContain('Restore')
+    expect(curated.slice(curated.indexOf('editor-actions'), curated.indexOf('editor-actions-help'))).not.toContain('Restore')
   })
 
   it('states failures in plain words', () => {
@@ -624,5 +624,13 @@ describe('one information bar, in the Guide and over the picture', () => {
   it('Watch over the picture returns to the broadcast at NOW after a pick; Prev and Next play from the beginning', () => {
     expect(provider).toMatch(/const screenAction = useCallback\(\(\) => \{[\s\S]*?if \(clearManual\(\)\) \{\s*loadedKey\.current = ''/)
     expect(provider).toMatch(/const target = stepFrom\(here, Date\.now\(\), direction\)\s*if \(hasPicture\(target\.programme\)\) playFromGuide\(here, target\.programme, target\)/)
+  })
+})
+
+describe('Edit Channel toolbar', () => {
+  it('runs REFRESH to CLOSE across the top, before the channel itself, and keeps it there while the editor scrolls', () => {
+    const editor = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
+    expect(editor.indexOf('editor-actions editor-toolbar')).toBeLessThan(editor.indexOf('<div className="info-main">'))
+    expect(readFileSync('src/styles/guide.css', 'utf8')).toMatch(/\.guide-editor > \.editor-toolbar \{\s*grid-column: 1 \/ -1;\s*position: sticky;/)
   })
 })

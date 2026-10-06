@@ -624,6 +624,21 @@ span.editor-expand { border-color: transparent; }
 
 .guide-editor .editor-actions { align-self: start; }
 
+/* REFRESH to CLOSE run across the top of the editor and stay there while it scrolls. */
+.guide-editor > .editor-toolbar {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: -6px;
+  z-index: 2;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  max-width: none;
+  margin: -6px -12px 0;
+  padding: 6px 12px;
+  background: #08111c;
+  border-bottom: 1px solid #1d4c78;
+}
+
 /* A source's filter and mode, and the channel's editorial notes: user channels only. */
 .curation {
   grid-column: 1 / -1;
@@ -788,6 +803,7 @@ span.editor-expand { border-color: transparent; }
   .curation { padding-left: 4px; padding-right: 4px; }
   .curation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guide-editor .editor-actions { justify-self: end; max-width: none; margin-top: 6px; flex-wrap: wrap; }
+  .guide-editor > .editor-toolbar { justify-self: stretch; margin-top: -6px; }
 }
 
 .match-list {
@@ -2050,8 +2066,10 @@ a.info-creator:focus-visible {
 
 .editor-actions-help {
   grid-column: 1 / -1;
-  margin: 0;
+  margin: 2px 0 0;
   color: #9fb3c8;
   font-size: 13px;
   line-height: 1.35;
 }
+
+.editor-toolbar-status { grid-column: 1 / -1; margin: 4px 0 0; }

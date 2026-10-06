@@ -668,6 +668,91 @@ export function ChannelEditor({
 
   return (
     <footer ref={rootRef} className="guide-info guide-tool guide-editor" aria-label={`Edit channel ${padChannel(number)}`} tabIndex={-1} onKeyDown={onKeyDown}>
+      <div className="info-actions editor-actions editor-toolbar">
+        {edit ? (
+          <>
+            <button
+              type="button"
+              className="tab"
+              disabled={busy !== null}
+              onKeyDown={keepKey}
+              title="Rebuild the schedule from the programmes already loaded; nothing is fetched"
+              onClick={refresh}
+            >
+              {busy === 'order' ? 'Refreshing…' : 'Refresh'}
+            </button>
+            {onLoadMore ? (
+              batch ? (
+                <>
+                  <span className="editor-load-progress" role="status">
+                    Loading · {batch.of} {batch.of === 1 ? 'source' : 'sources'} · {batch.from} → {batch.reached}
+                  </span>
+                  <button type="button" className="tab" onKeyDown={keepKey} onClick={() => stopRef.current?.abort()}>
+                    Stop
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="tab"
+                  disabled={busy !== null || loadable.length === 0}
+                  onKeyDown={keepKey}
+                  title={
+                    loadable.length === 0
+                      ? 'Every enabled source is read as far as it goes'
+                      : `Read the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more, and schedule it`
+                  }
+                  onClick={loadBatch}
+                >
+                  Load more
+                </button>
+              )
+            ) : null}
+            <button
+              type="button"
+              className={dirty ? 'tab is-dirty' : 'tab'}
+              disabled={busy !== null}
+              onKeyDown={keepKey}
+              title={
+                drafts.size > 0
+                  ? 'Rescans with the filter changes not applied yet'
+                  : held.size > 0
+                    ? `${held.size} loaded ${held.size === 1 ? 'programme waits' : 'programmes wait'} for RESCAN to be scheduled`
+                    : dirty
+                      ? 'Sources or filters have changed since the last rescan'
+                      : undefined
+              }
+              onClick={() => rescan(edit)}
+            >
+              {busy === 'rescan' ? 'Rescanning…' : drafts.size > 0 ? 'Apply filters & rescan *' : dirty ? 'Rescan channel *' : 'Rescan channel'}
+            </button>
+            <button type="button" className="tune-key" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('save', () => onSave(number, edit))}>
+              {busy === 'save' ? 'Saving…' : 'Save'}
+            </button>
+            {scope === 'user' && onExport ? (
+              <>
+                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'json'))}>
+                  Export channel
+                </button>
+              </>
+            ) : null}
+          </>
+        ) : null}
+        <button type="button" className="tab" onKeyDown={keepKey} onClick={onClose}>
+          Close
+        </button>
+      </div>
+      {edit ? (
+        <p className="editor-actions-help" role="note">
+          REFRESH rebuilds the schedule from the programmes already loaded. LOAD MORE reads the next batch from every source and
+          schedules it at once. RESCAN CHANNEL reads every source again from the start, with its mode and filter.
+        </p>
+      ) : null}
+      {note ? (
+        <p className="guide-tool-status editor-toolbar-status" role="status">
+          {note}
+        </p>
+      ) : null}
       <div className="info-main">
         {kicker}
         {scope === 'curated' ? (
@@ -1168,91 +1253,6 @@ export function ChannelEditor({
             )}
           </>
         )}
-        {note ? (
-          <p className="guide-tool-status" role="status">
-            {note}
-          </p>
-        ) : null}
-      </div>
-      {edit ? (
-        <p className="editor-actions-help" role="note">
-          REFRESH rebuilds the schedule from the programmes already loaded. LOAD MORE reads the next batch from every source and
-          schedules it at once. RESCAN CHANNEL reads every source again from the start, with its mode and filter.
-        </p>
-      ) : null}
-      <div className="info-actions editor-actions">
-        {edit ? (
-          <>
-            <button
-              type="button"
-              className="tab"
-              disabled={busy !== null}
-              onKeyDown={keepKey}
-              title="Rebuild the schedule from the programmes already loaded; nothing is fetched"
-              onClick={refresh}
-            >
-              {busy === 'order' ? 'Refreshing…' : 'Refresh'}
-            </button>
-            {onLoadMore ? (
-              batch ? (
-                <>
-                  <span className="editor-load-progress" role="status">
-                    Loading · {batch.of} {batch.of === 1 ? 'source' : 'sources'} · {batch.from} → {batch.reached}
-                  </span>
-                  <button type="button" className="tab" onKeyDown={keepKey} onClick={() => stopRef.current?.abort()}>
-                    Stop
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="tab"
-                  disabled={busy !== null || loadable.length === 0}
-                  onKeyDown={keepKey}
-                  title={
-                    loadable.length === 0
-                      ? 'Every enabled source is read as far as it goes'
-                      : `Read the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more, and schedule it`
-                  }
-                  onClick={loadBatch}
-                >
-                  Load more
-                </button>
-              )
-            ) : null}
-            <button
-              type="button"
-              className={dirty ? 'tab is-dirty' : 'tab'}
-              disabled={busy !== null}
-              onKeyDown={keepKey}
-              title={
-                drafts.size > 0
-                  ? 'Rescans with the filter changes not applied yet'
-                  : held.size > 0
-                    ? `${held.size} loaded ${held.size === 1 ? 'programme waits' : 'programmes wait'} for RESCAN to be scheduled`
-                    : dirty
-                      ? 'Sources or filters have changed since the last rescan'
-                      : undefined
-              }
-              onClick={() => rescan(edit)}
-            >
-              {busy === 'rescan' ? 'Rescanning…' : drafts.size > 0 ? 'Apply filters & rescan *' : dirty ? 'Rescan channel *' : 'Rescan channel'}
-            </button>
-            <button type="button" className="tune-key" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('save', () => onSave(number, edit))}>
-              {busy === 'save' ? 'Saving…' : 'Save'}
-            </button>
-            {scope === 'user' && onExport ? (
-              <>
-                <button type="button" className="tab" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('export', () => onExport(number, edit, 'json'))}>
-                  Export channel
-                </button>
-              </>
-            ) : null}
-          </>
-        ) : null}
-        <button type="button" className="tab" onKeyDown={keepKey} onClick={onClose}>
-          Close
-        </button>
       </div>
       {edit ? (
         <div className="editor-danger">
