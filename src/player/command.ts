@@ -51,6 +51,7 @@ export function playbackCommand(programme: Programme, scheduleSeekSeconds: numbe
       localUrl,
       ...(/\.m3u8(?:[?#]|$)/i.test(localUrl) ? { hls: true } : {}),
       startSeconds: mediaSeekSeconds(scheduleSeekSeconds, programme),
+      ...(localSeconds(programme) ? { localSeconds: localSeconds(programme) } : {}),
       loop: false,
       programmeId: programme.id,
       programmeTitle: programme.title,
@@ -72,6 +73,11 @@ export function playbackCommand(programme: Programme, scheduleSeekSeconds: numbe
     mediaId: programme.sourceRef ?? null,
     kind,
   }
+}
+
+function localSeconds(programme: Programme): number | undefined {
+  const seconds = programme.mediaDurationSeconds ?? programme.durationSeconds
+  return Number.isFinite(seconds) && seconds > 1 ? seconds : undefined
 }
 
 /** Ask the player to render a command. The seek belongs to this video, not the previous one. */

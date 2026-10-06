@@ -17,6 +17,8 @@ export interface PlayerLoadRequest {
   live?: boolean
   /** A session-channel file, played by the local media element instead of YouTube. */
   localUrl?: string
+  /** How long the schedule takes that file to be, so a browser that measures it differently is seeked in proportion. */
+  localSeconds?: number
   /** A direct or HLS live stream, also played by the local media element; always joined live. */
   streamUrl?: string
   hls?: boolean

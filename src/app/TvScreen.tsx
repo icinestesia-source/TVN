@@ -32,6 +32,8 @@ import { START_HOLD_COPY } from '../player/autoplay.ts'
 import { AboutPanel } from '../legal/AboutPanel.tsx'
 import { FirstRunNotice } from '../legal/FirstRunNotice.tsx'
 import { presentedChannel, transitionTiming } from '../state/transitions.ts'
+import { BufferingTitle } from '../components/BufferingTitle.tsx'
+import { slowSource } from '../player/slow-source.ts'
 
 function useViewportWidth(): number {
   const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1280 : window.innerWidth))
@@ -81,6 +83,8 @@ export function TvScreen() {
   const owner = holding ? 'picture' : pictureOwner({ face, live: tv.pictureLive, paused: tv.paused })
   const audio = face === 'radio'
   const showCard = face === 'card'
+  // Only a publisher's own file or stream is titled while it buffers; YouTube keeps its plain cut.
+  const slow = single && face === 'picture' && slowSource(programme)
   const nextClip = owner === 'cover' && tv.tuningNumber === null && tv.presentation === null && tv.pictureChannel === tv.channel.number
   const presented = presentedChannel({
     presentation: tv.presentation,
@@ -125,9 +129,12 @@ export function TvScreen() {
             <PlayerStage playerRef={tv.playerRef} onReady={tv.onPlayerReady} onStatus={tv.onPlayerStatus} captions={tv.subtitles} prebuffer={tv.transition.id === 'instant'} onHold={setHeld} />
             {/* Static belongs to changing channel; the next clip on the same channel comes in on a plain cut. */}
             {owner === 'cover' ? (
-              <div className="stage-waiting" aria-hidden="true">
+              <div className="stage-waiting">
                 {nextClip ? null : <Noise />}
+                {slow ? <BufferingTitle key={programme.id} programme={programme} /> : null}
               </div>
+            ) : slow && owner === 'video' && tv.playerStatus === 'buffering' && !tv.paused ? (
+              <BufferingTitle key={programme.id} programme={programme} over />
             ) : null}
             {audio ? <RadioFace channel={tv.channel} /> : null}
             {showCard ? <TestCard /> : null}

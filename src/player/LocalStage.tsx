@@ -1,5 +1,6 @@
 import { useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
 import { noteLocalSource } from '../session/session-channel.ts'
+import { fileScale } from './file-scale.ts'
 import { nativeHls } from './stream.ts'
 import { notePlayback } from './trace.ts'
 import type { LocalPlayerHandle } from './routed.ts'
@@ -15,6 +16,8 @@ const STREAM_TIMEOUT_MS = 15_000
 interface Pending {
   id: number
   startSeconds: number
+  /** The file's length on the schedule, when known. */
+  scheduledSeconds?: number
   live: boolean
   /** When a web file still loading must give up, however steadily it is arriving. */
   giveUpAt?: number
@@ -39,6 +42,7 @@ export function LocalStage({
   const requestId = useRef(0)
   const liveRef = useRef(false)
   const timerRef = useRef(0)
+  const scaleRef = useRef(1)
   const onStatusRef = useRef(onStatus)
 
   useEffect(() => {
@@ -65,7 +69,9 @@ export function LocalStage({
     const pending = pendingRef.current
     if (!video || !pending || pending.id !== id) return
     // A live stream is joined where it is; only a file is seeked to the broadcast position.
-    if (!pending.live && Math.abs(video.currentTime - pending.startSeconds) > 0.5) video.currentTime = pending.startSeconds
+    scaleRef.current = pending.live ? 1 : fileScale(video.duration, pending.scheduledSeconds)
+    const target = pending.live ? 0 : Math.min(pending.startSeconds * scaleRef.current, Number.isFinite(video.duration) ? Math.max(0, video.duration - 1) : Infinity)
+    if (!pending.live && Math.abs(video.currentTime - target) > 0.5) video.currentTime = target
     video.play().then(
       () => {
         if (id !== requestId.current) return
@@ -97,6 +103,7 @@ export function LocalStage({
       video.load()
     }
     liveRef.current = false
+    scaleRef.current = 1
     noteLocalSource(null)
   }
 
@@ -117,7 +124,14 @@ export function LocalStage({
           const live = !request.localUrl
           const startSeconds = !live && Number.isFinite(request.startSeconds) ? Math.max(0, request.startSeconds) : 0
           const web = !live && /^https?:/i.test(url)
-          pendingRef.current = { id, startSeconds, live, resolve, ...(web ? { giveUpAt: Date.now() + WEB_FILE_LIMIT_MS } : {}) }
+          pendingRef.current = {
+            id,
+            startSeconds,
+            live,
+            resolve,
+            ...(live ? {} : { scheduledSeconds: request.localSeconds }),
+            ...(web ? { giveUpAt: Date.now() + WEB_FILE_LIMIT_MS } : {}),
+          }
           window.clearTimeout(timerRef.current)
           if (request.hls && !nativeHls((mime) => video.canPlayType(mime))) {
             release()
@@ -152,7 +166,7 @@ export function LocalStage({
       },
       seek(seconds) {
         const video = videoRef.current
-        if (video && !liveRef.current && Number.isFinite(seconds)) video.currentTime = Math.max(0, seconds)
+        if (video && !liveRef.current && Number.isFinite(seconds)) video.currentTime = Math.max(0, seconds * scaleRef.current)
       },
       setAudible(audible, volume, muted) {
         const video = videoRef.current
@@ -162,7 +176,7 @@ export function LocalStage({
       },
       currentTime() {
         const value = videoRef.current?.currentTime
-        return typeof value === 'number' && Number.isFinite(value) ? value : 0
+        return typeof value === 'number' && Number.isFinite(value) ? value / scaleRef.current : 0
       },
       actualVideoId() {
         return null
