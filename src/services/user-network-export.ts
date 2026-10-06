@@ -9,7 +9,7 @@ import {
   RELATED_NUMBER_MAX,
   SOURCE_MODES, sourceModeOf, type ChannelEditorial, type SourceFilter, type SourceMode } from './channel-curation.ts'
 import { sourcesOf } from './channel-editor.ts'
-import { canonicalYouTubeUrl, youTubeSourceType, type ChannelSource, type OrderKind, type SourceInfo, type SourceKind } from './channel-sources.ts'
+import { canonicalYouTubeUrl, singleVideoId, youTubeSourceType, type ChannelSource, type OrderKind, type SourceInfo, type SourceKind } from './channel-sources.ts'
 import type { UploaderOf } from './user-network.ts'
 import { checkUserName, ownerOf, TVN_OWNER, USER_ID } from '../data/user-network/users.ts'
 
@@ -210,6 +210,7 @@ export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): Exp
     ...(source.removed?.length ? { removed: [...source.removed] } : {}),
   }
   if (source.kind === 'youtube') return { ...base, url: shareableUrl(canonicalYouTubeUrl(source)), ...heldVideos(source) }
+  if (source.kind === 'collection' && singleVideoId(source)) return { ...base, url: source.url, ...heldVideos(source) }
   if (source.kind === 'collection') {
     const uploader = source.ref ? uploaderOf(source.ref) : null
     return {

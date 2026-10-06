@@ -14,6 +14,7 @@ import {
   isStreamSource,
   liveStreamOf,
   newSource,
+  singleVideoId,
   SLOT_CHOICES,
   sourceStatusText,
   SOURCE_CHOICES,
@@ -101,7 +102,7 @@ function WebsiteSlot({ source, disabled, onChange }: { source: ChannelSource; di
 
 function sourceTitle(source: ChannelSource): string {
   if (source.kind === 'tvn') return 'TVN programming'
-  if (source.kind === 'collection') return `${source.label} · TVN list`
+  if (source.kind === 'collection') return singleVideoId(source) ? source.label || source.url : `${source.label} · TVN list`
   return source.label && source.kind === 'youtube' ? source.label : source.url
 }
 
@@ -610,7 +611,7 @@ export function ChannelEditor({
       setLink('')
       setKind('auto')
       setAdding(false)
-      if (onAcquire && (source.kind === 'youtube' || source.kind === 'podcast' || source.kind === 'website')) {
+      if (onAcquire && (source.kind === 'youtube' || source.kind === 'podcast' || source.kind === 'website' || singleVideoId(source))) {
         acquire(base, source)
         return
       }
@@ -875,7 +876,7 @@ export function ChannelEditor({
                     {sourceStatusText(source, edit.sources)}
                     {added?.rows.get(source.id)?.programmes ? ` · adds ${contributionText(added.rows.get(source.id)!, channelSeconds)}` : null}
                   </span>
-                  {onLoadMore && (source.kind === 'youtube' || source.kind === 'podcast' || source.kind === 'collection') ? (
+                  {onLoadMore && (source.kind === 'youtube' || source.kind === 'podcast' || (source.kind === 'collection' && !singleVideoId(source))) ? (
                     <button
                       type="button"
                       className="tab editor-source-load"

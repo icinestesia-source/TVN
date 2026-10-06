@@ -188,6 +188,7 @@ export function sourceStatusText(source: ChannelSource, siblings: readonly Chann
     const what = youTubeSourceType(source) === 'playlist' ? 'YouTube playlist' : 'YouTube uploader'
     return state === 'unchecked' ? `${what} · not scanned yet` : `${what} · ${source.status?.playable ?? source.videos?.length ?? 0} playable${matching}`
   }
+  if (singleVideoId(source)) return state === 'unchecked' ? 'YouTube single video · not read yet' : 'YouTube single video · just this video'
   if (source.kind === 'collection') return `Imported list · ${source.videos?.length ?? 0} programmes${matching}`
   if (source.kind === 'podcast') return state === 'unchecked' ? 'Podcast · not read yet · Rescan to find its feed' : `Podcast · ${source.videos?.length ?? 0} episodes${matching}`
   const label = SOURCE_TYPES[source.kind].label
@@ -273,6 +274,7 @@ export function isLocalDevelopment(url: URL, page: string | undefined = typeof l
 export type SourceChoice =
   | 'auto'
   | 'youtube-video'
+  | 'youtube-single'
   | 'youtube-channel'
   | 'youtube-playlist'
   | 'youtube-mix'
@@ -291,6 +293,7 @@ export type SourceChoice =
 export const SOURCE_CHOICES: readonly { value: SourceChoice; label: string }[] = [
   { value: 'auto', label: 'Detect' },
   { value: 'youtube-video', label: 'YouTube video (its channel)' },
+  { value: 'youtube-single', label: 'YouTube single video (just this video)' },
   { value: 'youtube-channel', label: 'YouTube channel' },
   { value: 'youtube-playlist', label: 'YouTube playlist' },
   { value: 'youtube-mix', label: 'YouTube Mix (seed video + its channel)' },
@@ -313,6 +316,31 @@ const PROVIDER_HOSTS: Partial<Record<SourceChoice, [RegExp, string]>> = {
   bitchute: [/^(?:www\.|api\.|old\.)?bitchute\.com$/i, 'BitChute'],
 }
 
+/** The one video a YouTube address names (watch, youtu.be, shorts, live, embed), or null. */
+export function youTubeVideoId(raw: string): string | null {
+  let url: URL
+  try {
+    url = webAddress(raw)
+  } catch {
+    return null
+  }
+  if (!YOUTUBE_HOST.test(url.hostname)) return null
+  const parts = url.pathname.split('/').filter(Boolean)
+  const id = url.hostname.toLowerCase() === 'youtu.be' ? parts[0] : parts[0] === 'watch' ? url.searchParams.get('v') : ['shorts', 'live', 'embed', 'v'].includes(parts[0] ?? '') ? parts[1] : null
+  return id && /^[0-9A-Za-z_-]{11}$/.test(id) ? id : null
+}
+
+const SINGLE_VIDEO = /^https:\/\/www\.youtube\.com\/watch\?v=([0-9A-Za-z_-]{11})$/
+
+export function singleVideoUrl(id: string): string {
+  return `https://www.youtube.com/watch?v=${id}`
+}
+
+/** A source holding exactly one YouTube video: never widened to its channel. */
+export function singleVideoId(source: Pick<ChannelSource, 'kind' | 'url'>): string | null {
+  return source.kind === 'collection' ? (source.url.match(SINGLE_VIDEO)?.[1] ?? null) : null
+}
+
 /** What a YouTube address names, as far as the address alone says. */
 export function youTubeLinkType(raw: string): 'video' | 'channel' | 'playlist' | 'mix' | null {
   let url: URL
@@ -333,6 +361,11 @@ export function youTubeLinkType(raw: string): 'video' | 'channel' | 'playlist' |
 /** A pasted address as the source kind the chosen type reads it with, or the reason it is not that type. */
 export function classifyChoice(raw: string, choice: SourceChoice): { kind: SourceKind; url: string } {
   if (choice === 'auto') return classifySourceUrl(raw)
+  if (choice === 'youtube-single') {
+    const id = youTubeVideoId(raw)
+    if (!id) throw new Error(youTubeLinkType(raw) ? 'That YouTube address does not name one video' : 'That is not a YouTube address')
+    return { kind: 'collection', url: singleVideoUrl(id) }
+  }
   if (choice.startsWith('youtube-')) {
     const found = classifySourceUrl(raw, 'youtube')
     const named = youTubeLinkType(raw)

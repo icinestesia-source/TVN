@@ -1,7 +1,7 @@
 import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { cleanEditorial, cleanFilter, rescanned, SOURCE_MODES, sourceModeOf, type SourceMode } from './channel-curation.ts'
 import { cleanName, keptOrder, widenSources, withPlaylistVideos } from './channel-editor.ts'
-import { canonicalYouTubeUrl, inventoryOf, type ChannelSource } from './channel-sources.ts'
+import { canonicalYouTubeUrl, inventoryOf, singleVideoId, type ChannelSource } from './channel-sources.ts'
 import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, videoCreator, type ImportedVideo, type StoredSource } from './channels-import.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 import { TVN_OWNER, type NetworkUser } from '../data/user-network/users.ts'
@@ -88,6 +88,8 @@ export function channelSource(source: ExportSource, index: number): ChannelSourc
     return { ...base, kind: 'youtube', url: ref ? canonicalYouTubeUrl({ ref, url: source.url, youtube }) : source.url, ...(ref ? { ref } : {}), youtube, videos: cleanVideos(source.videos), ...readState(source) }
   }
   if (source.sourceType === 'collection') {
+    const single = singleVideoId({ kind: 'collection', url: source.url })
+    if (single) return { ...base, kind: 'collection', url: source.url, videos: cleanVideos(source.videos), ...readState(source) }
     return { ...base, kind: 'collection', url: '', ref: source.providerId || source.label, videos: cleanVideos(source.videos), ...readState(source) }
   }
   if (source.sourceType === 'tvn') return { ...base, kind: 'tvn', url: '', ...(source.providerId ? { ref: source.providerId } : {}) }

@@ -20,6 +20,8 @@ import {
   isStreamSource,
   liveStreamOf,
   localWebsiteId,
+  singleVideoId,
+  singleVideoUrl,
   SOURCE_TYPES,
   WEBSITE_SLOT_SECONDS,
   type ChannelSource,
@@ -356,6 +358,19 @@ function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: nu
       const source = copySource(original)
       if (!source.enabled) return source
       if (source.kind === 'tvn') return { ...source, status: { state: 'ready', checkedAt: now } }
+      const single = singleVideoId(source)
+      if (single) {
+        if (source.videos?.length) return { ...source, status: { state: 'ready', playable: source.videos.length, checkedAt: now } }
+        try {
+          // YouTube's Mix of a video leads with that video, read from its own page and checked as embeddable.
+          const found = await deps.resolveYouTube(`${singleVideoUrl(single)}&list=RD${single}`)
+          const video = found.videos.find((item) => item.id === single)
+          if (!video) throw new Error('not embeddable')
+          return { ...source, label: source.label || video.title, videos: [{ ...video }], status: { state: 'ready', playable: 1, checkedAt: now } }
+        } catch {
+          return { ...source, status: { state: 'failed', playable: 0, checkedAt: now } }
+        }
+      }
       if (source.kind === 'collection') {
         const uploader = source.ref ? deps.uploaderOf?.(source.ref) : null
         if (!uploader) return { ...source, status: { state: 'ready', playable: source.videos?.length ?? 0, checkedAt: now } }
@@ -406,6 +421,11 @@ function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: nu
             status: { state: 'ready', playable: videos.length, checkedAt: now },
           }
         } catch {
+          // A site with no feed, never read as a podcast: shown as the website it is, if it can be.
+          if (!source.videos?.length && source.status?.state !== 'ready') {
+            const site = await rescanWebsite({ ...source, kind: 'website' }, deps, now)
+            if (site.status?.state === 'ready' && site.videos?.length) return site
+          }
           return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
         }
       }
