@@ -123,7 +123,8 @@ export function loadPreferences(): UserPreferences {
       previousChannelNumber:
         typeof record.previousChannelNumber === 'number' ? record.previousChannelNumber : null,
       volume: clampVolume(record.volume),
-      muted: Boolean(record.muted),
+      // Every visit starts with sound: Mute lasts only as long as the visit it was pressed in.
+      muted: false,
       favouriteChannelNumbers: savedRecordDue(record) ? [...DEFAULT_FAVOURITES] : asNumbers(record.favouriteChannelNumbers),
       guideFilter: asFilter(record.guideFilter),
       guideSplit: clampGuideSplit(record.guideSplit ?? 0.5),

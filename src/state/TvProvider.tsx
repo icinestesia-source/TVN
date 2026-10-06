@@ -205,6 +205,7 @@ import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, vis
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
 import { BUILD_INFO } from '../build-info.ts'
 import { guideTabLabel, nextGuideTab } from './guide-tabs.ts'
+import { VOLUME_FULL, volumeLimit } from '../player/volume.ts'
 import { addUser, checkUserName, filterUserId, loadUsers, releaseUserChannels, saveUsers, userFilter, userNetworkName, type NetworkUser } from '../data/user-network/users.ts'
 import { networkFilterOf, randomScoped } from '../view/info-shortcuts.ts'
 import {
@@ -508,6 +509,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   /** The one writer of the tuned channel: the ref the controls step from and the state on screen move together. */
   const commitChannel = (next: Tuned, record = true) => {
+    // Boost belongs to 1000 Local Media: anywhere else the volume comes back to full.
+    if (next.channelNumber !== SESSION_CHANNEL_NUMBER && volumeRef.current > VOLUME_FULL) {
+      volumeRef.current = VOLUME_FULL
+      setVolume(VOLUME_FULL)
+    }
     channelRef.current = next.channelNumber
     previousRef.current = next.previousNumber
     setChannelNumber(next.channelNumber)
@@ -1877,7 +1883,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       case 'volume-up':
       case 'volume-down': {
         const delta = command.type === 'volume-up' ? 5 : -5
-        const nextVolume = clamp(volumeRef.current + delta, 0, 100)
+        const limit = volumeLimit(channelRef.current === SESSION_CHANNEL_NUMBER && multiviewRef.current === '1')
+        const nextVolume = clamp(volumeRef.current + delta, 0, limit)
         volumeRef.current = nextVolume
         setVolume(nextVolume)
         if (nextVolume > 0 && mutedRef.current) {
@@ -2576,7 +2583,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       users: usersRef.current,
       favourites: favouritesRef.current,
       settings: {
-        volume: volumeRef.current,
+        volume: Math.min(VOLUME_FULL, volumeRef.current),
         muted: mutedRef.current,
         subtitles: subtitlesRef.current,
         sleepMinutes: sleepMinutesRef.current,

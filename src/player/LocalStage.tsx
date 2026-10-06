@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, type RefObject } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from 'react'
 import { noteLocalSource } from '../session/session-channel.ts'
 import { fileScale } from './file-scale.ts'
 import { attachFlv, type Remuxer } from './flv.ts'
@@ -6,6 +6,7 @@ import { nativeHls } from './stream.ts'
 import { notePlayback } from './trace.ts'
 import type { LocalPlayerHandle } from './routed.ts'
 import type { LoadResult, PlayerStatus } from './types.ts'
+import { boostableUrl, boostGain, elementVolume, VOLUME_FULL } from './volume.ts'
 
 const LOAD_TIMEOUT_MS = 10_000
 /** A publisher's file on the web may go this long without sending anything before it counts as failed. */
@@ -39,6 +40,12 @@ export function LocalStage({
   shown: boolean
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  /** Files from this device play on their own element, the only one ever routed through the boost: once routed, an element stays routed, and a web file without the host's leave would play silent on it. */
+  const ownRef = useRef<HTMLVideoElement>(null)
+  const onOwnRef = useRef(false)
+  const [onOwn, setOnOwn] = useState(false)
+  const boostRef = useRef<{ context: AudioContext; gain: GainNode } | null>(null)
+  const element = () => (onOwnRef.current ? ownRef.current : videoRef.current)
   const pendingRef = useRef<Pending | null>(null)
   const requestId = useRef(0)
   const liveRef = useRef(false)
@@ -67,7 +74,7 @@ export function LocalStage({
   }
 
   const begin = (id: number) => {
-    const video = videoRef.current
+    const video = element()
     const pending = pendingRef.current
     if (!video || !pending || pending.id !== id) return
     // A live stream is joined where it is; only a file is seeked to the broadcast position.
@@ -108,7 +115,7 @@ export function LocalStage({
 
   const release = () => {
     dropRemux()
-    const video = videoRef.current
+    const video = element()
     if (!video) return
     video.pause()
     if (video.hasAttribute('src')) {
@@ -120,6 +127,20 @@ export function LocalStage({
     noteLocalSource(null)
   }
 
+  /** Routes the own element through a gain stage, the first time boost is asked for; it stays routed. */
+  const connectBoost = () => {
+    const own = ownRef.current
+    if (boostRef.current || !own || typeof AudioContext === 'undefined') return
+    try {
+      const context = new AudioContext()
+      const gain = context.createGain()
+      context.createMediaElementSource(own).connect(gain).connect(context.destination)
+      boostRef.current = { context, gain }
+    } catch {
+      // Without a gain stage the file still plays, at full volume.
+    }
+  }
+
   useImperativeHandle(
     handleRef,
     (): LocalPlayerHandle => ({
@@ -127,8 +148,14 @@ export function LocalStage({
         return new Promise<LoadResult>((resolve) => {
           pendingRef.current?.resolve('slate')
           const id = ++requestId.current
-          const video = videoRef.current
           const url = request.localUrl ?? request.streamUrl
+          const own = boostableUrl(request.localUrl)
+          if (own !== onOwnRef.current) {
+            release()
+            onOwnRef.current = own
+            setOnOwn(own)
+          }
+          const video = element()
           if (!video || !url) {
             pendingRef.current = null
             resolve('slate')
@@ -186,23 +213,30 @@ export function LocalStage({
         release()
       },
       play() {
-        void videoRef.current?.play().catch(() => undefined)
+        if (onOwnRef.current) void boostRef.current?.context.resume().catch(() => undefined)
+        void element()?.play().catch(() => undefined)
       },
       pause() {
-        videoRef.current?.pause()
+        element()?.pause()
       },
       seek(seconds) {
-        const video = videoRef.current
+        const video = element()
         if (video && !liveRef.current && Number.isFinite(seconds)) video.currentTime = Math.max(0, seconds * scaleRef.current)
       },
       setAudible(audible, volume, muted) {
-        const video = videoRef.current
+        const video = element()
         if (!video) return
-        video.volume = Math.min(1, Math.max(0, volume / 100))
+        video.volume = elementVolume(volume)
         video.muted = !audible || muted || volume <= 0
+        const boost = onOwnRef.current && volume > VOLUME_FULL
+        if (boost) connectBoost()
+        const routed = boostRef.current
+        if (!routed) return
+        routed.gain.gain.value = boost ? boostGain(volume) : 1
+        if (onOwnRef.current) void routed.context.resume().catch(() => undefined)
       },
       currentTime() {
-        const value = videoRef.current?.currentTime
+        const value = element()?.currentTime
         return typeof value === 'number' && Number.isFinite(value) ? value / scaleRef.current : 0
       },
       actualVideoId() {
@@ -213,46 +247,54 @@ export function LocalStage({
   )
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    const onMeta = () => {
+    const elements = [videoRef.current, ownRef.current].filter((item): item is HTMLVideoElement => item !== null)
+    // Both elements are listened to; only the one in use speaks.
+    const mine = (event: Event) => event.currentTarget === element()
+    const onMeta = (event: Event) => {
       const pending = pendingRef.current
-      if (pending) begin(pending.id)
+      if (pending && mine(event)) begin(pending.id)
     }
-    const onError = () => {
-      if (!video.hasAttribute('src')) return
+    const onError = (event: Event) => {
+      if (!mine(event) || !(event.currentTarget as HTMLVideoElement).hasAttribute('src')) return
       fail(requestId.current)
     }
-    const onWaiting = () => onStatusRef.current('buffering')
-    const onProgress = () => {
+    const onWaiting = (event: Event) => {
+      if (mine(event)) onStatusRef.current('buffering')
+    }
+    const onProgress = (event: Event) => {
+      if (!mine(event)) return
       const pending = pendingRef.current
       if (!pending?.giveUpAt) return
       const id = pending.id
       window.clearTimeout(timerRef.current)
       timerRef.current = window.setTimeout(() => fail(id), Math.max(0, Math.min(WEB_FILE_TIMEOUT_MS, pending.giveUpAt - Date.now())))
     }
-    const onPlaying = () => onStatusRef.current('playing')
+    const onPlaying = (event: Event) => {
+      if (mine(event)) onStatusRef.current('playing')
+    }
     // A live stream has no end; one that ends has dropped.
-    const onEnded = () => (liveRef.current ? fail(requestId.current, 'stream ended') : onStatusRef.current('ended'))
-    video.addEventListener('loadedmetadata', onMeta)
-    video.addEventListener('error', onError)
-    video.addEventListener('waiting', onWaiting)
-    video.addEventListener('progress', onProgress)
-    video.addEventListener('playing', onPlaying)
-    video.addEventListener('ended', onEnded)
+    const onEnded = (event: Event) => {
+      if (!mine(event)) return
+      if (liveRef.current) fail(requestId.current, 'stream ended')
+      else onStatusRef.current('ended')
+    }
+    const listeners = { loadedmetadata: onMeta, error: onError, waiting: onWaiting, progress: onProgress, playing: onPlaying, ended: onEnded }
+    for (const video of elements) for (const [type, listener] of Object.entries(listeners)) video.addEventListener(type, listener)
     return () => {
-      video.removeEventListener('loadedmetadata', onMeta)
-      video.removeEventListener('error', onError)
-      video.removeEventListener('waiting', onWaiting)
-      video.removeEventListener('progress', onProgress)
-      video.removeEventListener('playing', onPlaying)
-      video.removeEventListener('ended', onEnded)
+      for (const video of elements) for (const [type, listener] of Object.entries(listeners)) video.removeEventListener(type, listener)
       window.clearTimeout(timerRef.current)
       release()
+      void boostRef.current?.context.close().catch(() => undefined)
+      boostRef.current = null
     }
     // Listeners are bound once to the one element; they read the current request through refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return <video ref={videoRef} className="local-host" hidden={!shown} playsInline preload="auto" />
+  return (
+    <>
+      <video ref={videoRef} className="local-host" hidden={!shown || onOwn} playsInline preload="auto" />
+      <video ref={ownRef} className="local-host" hidden={!shown || !onOwn} playsInline preload="auto" />
+    </>
+  )
 }

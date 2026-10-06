@@ -135,7 +135,7 @@ describe('a slow publisher file is given time while it is still arriving', () =>
     const stage = readFileSync('src/player/LocalStage.tsx', 'utf8')
     expect(stage).toMatch(/WEB_FILE_TIMEOUT_MS = 30_000/)
     expect(stage).toMatch(/WEB_FILE_LIMIT_MS = 120_000/)
-    expect(stage).toMatch(/addEventListener\('progress', onProgress\)/)
+    expect(stage).toMatch(/progress: onProgress/)
     expect(stage).toMatch(/Math\.min\(WEB_FILE_TIMEOUT_MS, pending\.giveUpAt - Date\.now\(\)\)/)
   })
 })

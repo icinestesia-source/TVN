@@ -7,6 +7,7 @@ import { notePlayback } from './trace.ts'
 import type { LoadResult, PlayerHandle, PlayerLoadRequest, PlayerStatus } from './types.ts'
 import type { YouTubePlayer } from '../types/youtube.ts'
 import { qualityFrame, useDisplayQuality } from '../view/display-quality.ts'
+import { VOLUME_FULL } from './volume.ts'
 
 interface YoutubeStageProps {
   playerRef: RefObject<PlayerHandle | null>
@@ -212,7 +213,7 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
           player.mute()
           return
         }
-        player.setVolume(volume)
+        player.setVolume(Math.min(VOLUME_FULL, volume))
         player.unMute()
       },
       currentTime() {

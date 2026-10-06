@@ -605,6 +605,9 @@
   background: var(--ink);
 }
 
+.volume-track { position: relative; }
+.volume-track .volume-boost { position: absolute; inset: 0 auto 0 0; background: #f2b134; }
+
 .volume-value { text-align: right; font-variant-numeric: tabular-nums; }
 
 .notice {
