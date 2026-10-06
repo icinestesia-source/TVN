@@ -143,14 +143,14 @@ describe('starter Favourites', () => {
     savePreferences({ ...loaded, favouriteChannelNumbers: change(loaded.favouriteChannelNumbers), defaultFavouritesOffered: true })
     return loaded.favouriteChannelNumbers
   }
-  const NINETEEN = [225, 125, 534, 289, 1009, 710, 103, 1056, 805, 535, 1132, 412, 1025, 485, 1105, 844, 536, 491, 1112]
+  const EIGHTEEN = [225, 125, 534, 289, 1014, 710, 103, 1072, 805, 535, 1188, 412, 1033, 485, 1148, 844, 536, 491]
 
-  it('are exactly the nineteen requested channels, in order', () => expect(DEFAULT_FAVOURITES).toEqual(NINETEEN))
+  it('are exactly the eighteen requested channels, in order', () => expect(DEFAULT_FAVOURITES).toEqual(EIGHTEEN))
 
-  it('a fresh viewer gets all nineteen in order', () => {
+  it('a fresh viewer gets all eighteen in order', () => {
     withStore({}, () => {
       expect(defaultFavouritesDue()).toBe(true)
-      expect(visit()).toEqual(NINETEEN)
+      expect(visit()).toEqual(EIGHTEEN)
       expect(defaultFavouritesDue()).toBe(false)
     })
   })
@@ -158,7 +158,7 @@ describe('starter Favourites', () => {
   it('a browser saved before the starter Favourites existed, with none of its own, is offered them once', () => {
     withStore(record({ ...preMarker, favouriteChannelNumbers: [] }), () => {
       expect(defaultFavouritesDue()).toBe(true)
-      expect(visit()).toEqual(NINETEEN)
+      expect(visit()).toEqual(EIGHTEEN)
       visit(() => [])
       expect(defaultFavouritesDue()).toBe(false)
       expect(visit()).toEqual([])
@@ -176,13 +176,13 @@ describe('starter Favourites', () => {
 
   it('edited defaults are preserved and a removed default never returns', () => {
     withStore({}, () => {
-      visit((favourites) => [...favourites.filter((number) => number !== 225 && number !== 1009), 301])
+      visit((favourites) => [...favourites.filter((number) => number !== 225 && number !== 1014), 301])
       for (let reload = 0; reload < 3; reload += 1) {
         const back = visit()
         expect(back).not.toContain(225)
-        expect(back).not.toContain(1009)
+        expect(back).not.toContain(1014)
         expect(back.at(-1)).toBe(301)
-        expect(back).toHaveLength(NINETEEN.length - 1)
+        expect(back).toHaveLength(EIGHTEEN.length - 1)
       }
     })
   })
