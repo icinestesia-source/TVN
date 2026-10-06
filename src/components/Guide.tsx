@@ -78,6 +78,12 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     const info = section?.querySelector<HTMLElement>('.guide-info')
     if (section && info) section.style.setProperty('--info-h', `${info.offsetHeight}px`)
   }, [closing])
+  // ADD's footer stands at the height of the programme information it replaces.
+  useLayoutEffect(() => {
+    const section = sectionRef.current
+    const info = section?.querySelector<HTMLElement>('.guide-info.is-programme')
+    if (section && info) section.style.setProperty('--programme-info-h', `${info.offsetHeight}px`)
+  })
   const timeRef = useRef<HTMLDivElement>(null)
   const channelScrollRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
@@ -267,6 +273,12 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     // Only a new ADD moves the Guide; the cursor is read to confirm it is still the one ADD placed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tv.guideTool])
+
+  const newChannel = async () => {
+    const number = await tv.createEmptyChannel()
+    tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: number })
+  }
+  const restoreNetwork = () => tv.dispatch({ type: 'guide-tool', tool: 'network' })
 
   const addLink = async (link: string) => {
     const result = await tv.addChannel(link, owner)
@@ -614,7 +626,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {addRow ? (
             <>
               <p className="guide-empty-note">Your User Network starts at {padChannel(USER_NUMBER_START)} and is kept in this browser.</p>
-              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onFocus={openAddRow} inputRef={addInput} />
+              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onNewChannel={newChannel} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
               {owner ? null : <TestChannelsButton onLoad={tv.loadTestChannels} />}
             </>
           ) : null}
@@ -770,7 +782,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                 </div>
                 {addRow ? (
                   <div className="add-row" style={{ top: tv.visibleChannels.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(200, viewWidth - 16) }}>
-                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onFocus={openAddRow} inputRef={addInput} />
+                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onNewChannel={newChannel} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
                   </div>
                 ) : null}
                 <div className="now-line" style={{ left: nowX }} />
@@ -824,15 +836,10 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       ) : tool === 'add' ? (
         <UserNetworkTools
           userChannels={userNumbers.length}
-          onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}
           onImportList={importList}
           onLoadTest={tv.loadTestChannels}
           onRemoveStarter={tv.removeStarterNetwork}
           onRemoveAll={() => tv.removeUserChannels('all')}
-          onNewChannel={async () => {
-            const number = await tv.createEmptyChannel()
-            tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: number })
-          }}
         />
       ) : sessionMatches.length > 0 ? (
         <SessionMatches matches={sessionMatches} onPlay={tv.playSession} />

@@ -1,5 +1,6 @@
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
+import { EMPTY_SITE } from '../app/site.ts'
 
 let userChannels: readonly Channel[] = []
 let userProgrammes = new Map<string, readonly Programme[]>()
@@ -68,7 +69,8 @@ function browserStore(): Store | null {
   }
 }
 
-export function readNetworkBase(store: Store | null = browserStore()): NetworkBase {
+export function readNetworkBase(store: Store | null = browserStore(), empty = EMPTY_SITE): NetworkBase {
+  if (empty) return 'new'
   try {
     return store?.getItem(NETWORK_BASE_KEY) === 'new' ? 'new' : 'tvn'
   } catch {
@@ -89,6 +91,6 @@ export function setNetworkBase(base: NetworkBase, store: Store | null = browserS
   } catch {
     // Private browsing may refuse storage; the choice still holds for this visit.
   }
-  networkBase = base
+  networkBase = EMPTY_SITE ? 'new' : base
   for (const listener of listeners) listener()
 }

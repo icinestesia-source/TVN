@@ -477,7 +477,9 @@ describe('startup', () => {
   })
 
   it('a fresh install’s starter waits until the start has settled (picture, refusal, or the player’s own timeout), so the first picture comes first', () => {
-    expect(provider).toMatch(/if \(starterDue && !startupSettled\) return/)
+    expect(provider).toMatch(/if \(starterDue && !starterClear\) return/)
+    // and then until the logo has faded off: in Firefox the install holds the main thread for seconds.
+    expect(provider).toMatch(/if \(!startupSettled \|\| starterClear\) return\s+const timer = window\.setTimeout\(\(\) => setStarterClear\(true\), STARTER_AFTER_PICTURE_MS\)/)
     expect(provider).toMatch(/window\.setTimeout\(\(\) => setStartupSettled\(true\), PLAYER_LOAD_TIMEOUT_MS\)/)
     expect(read('src/player/YoutubeStage.tsx')).toMatch(/\}, PLAYER_LOAD_TIMEOUT_MS\)/)
   })

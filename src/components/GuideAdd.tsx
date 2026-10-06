@@ -119,6 +119,8 @@ export function AddChannelForm({
   onAdd,
   onPreview,
   onExport,
+  onNewChannel,
+  onRestore,
   onFocus,
   inputRef,
 }: {
@@ -128,6 +130,10 @@ export function AddChannelForm({
   onPreview?: (link: string, onProgress: (text: string) => void) => Promise<FoundFeed | null>
   /** Download the User Network as a file; the answer is a short line for the viewer. */
   onExport?: () => Promise<string>
+  /** A new, empty channel, opened in Edit Channel to name and fill with sources. */
+  onNewChannel?: () => Promise<void>
+  /** Opens RESTORE: a User Network file saved with EXPORT, replacing the User Network. */
+  onRestore?: () => void
   onFocus?: () => void
   inputRef?: RefObject<HTMLInputElement | null>
 }) {
@@ -216,6 +222,20 @@ export function AddChannelForm({
       {onExport ? (
         <button type="button" className="tab" title="Download your User Network (1001+) as a JSON file" disabled={exporting} onClick={runExport}>
           {exporting ? 'Exporting…' : exported ? 'Exported' : 'Export'}
+        </button>
+      ) : null}
+      {onRestore ? (
+        <button type="button" className="tab" title="Replace the User Network with a file saved with EXPORT" onClick={onRestore}>
+          Restore
+        </button>
+      ) : null}
+      {onNewChannel ? (
+        <button
+          type="button"
+          className="tune-key"
+          onClick={() => void onNewChannel().catch((caught: unknown) => setNote(viewerMessage(caught, 'THE CHANNEL COULD NOT BE MADE')))}
+        >
+          New channel…
         </button>
       ) : null}
       {note ? (
@@ -587,18 +607,12 @@ export function UserNetworkImportTools({
  */
 export function UserNetworkTools({
   userChannels,
-  onImportNetwork,
   onImportList,
   onLoadTest,
   onRemoveStarter,
   onRemoveAll,
-  onNewChannel,
 }: {
   userChannels: number
-  /** A new, empty channel, opened in Edit Channel to name and fill with sources. */
-  onNewChannel?: () => Promise<void>
-  /** Opens IMPORT: a User Network file saved with EXPORT, replacing the User Network. */
-  onImportNetwork?: () => void
   /** A channel list file (a TVN export or a list of YouTube links) joins 1001+. */
   onImportList: (file: File) => Promise<string>
   /** The bundled starter network, added after the viewer's own channels. */
@@ -631,7 +645,7 @@ export function UserNetworkTools({
   )
 
   return (
-    <footer className="guide-info guide-tool" aria-label="User Network">
+    <footer className="guide-info guide-tool user-tools" aria-label="User Network">
       <div className="info-main">
         <p className="info-kicker">
           <span className="info-net">User</span>
@@ -640,7 +654,7 @@ export function UserNetworkTools({
             {userChannels} {userChannels === 1 ? 'channel' : 'channels'}
           </span>
         </p>
-        <p className="guide-tool-note">Kept in this browser. Paste a YouTube channel or video link in the last row, or start a new channel and add its sources in Edit Channel.</p>
+        <p className="guide-tool-note">Kept in this browser. Paste a YouTube channel or video link in the last row, or press NEW CHANNEL there and add its sources in Edit Channel. RESTORE brings back a file saved with EXPORT.</p>
         {note ? (
           <p className="guide-tool-status" role="status">
             {note}
@@ -662,8 +676,6 @@ export function UserNetworkTools({
           </>
         ) : (
           <>
-            {onNewChannel ? key('New channel…', () => void run(async () => (await onNewChannel(), '')), 'tune-key') : null}
-            {onImportNetwork ? key('Restore', onImportNetwork) : null}
             {key('Channel list', () => listInput.current?.click())}
             {key('Add starter network', () => void run(onLoadTest))}
             {userChannels > 0 ? key('Remove starter…', () => setConfirming('starter'), 'tab remove-key') : null}

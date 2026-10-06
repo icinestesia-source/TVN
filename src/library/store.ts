@@ -9,6 +9,7 @@ import { reconcileLibrary } from './ingest.ts'
 import type { ImportPhase, ImportSession, IngestCounts, IngestReport, LibraryMedia, MediaEdit, SourceRecord } from './types.ts'
 import type { ParsedExport } from '../services/channels-import.ts'
 import { isRefusedVideo } from '../services/embed-refusals.ts'
+import { siteName } from '../app/site.ts'
 
 type PhaseCallback = (phase: ImportPhase, counts?: IngestCounts) => void
 
@@ -22,7 +23,7 @@ export interface LibraryWriter {
   read(): Promise<LibrarySnapshot>
 }
 
-const DB_NAME = 'retrotv-library'
+const DB_NAME = siteName('retrotv-library')
 const DB_VERSION = 1
 
 let media: LibraryMedia[] = []

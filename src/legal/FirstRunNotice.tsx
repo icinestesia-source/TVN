@@ -3,6 +3,7 @@ import type { TvContextValue } from '../state/tv-context.ts'
 import { acknowledgeNotice, openAbout } from './about-store.ts'
 import { ENTRY_KEYS } from './entry-keys.ts'
 import { GOOGLE_PRIVACY, YOUTUBE_TERMS } from './legal-text.ts'
+import { EMPTY_SITE, EMPTY_SITE_PATH, EMPTY_SITE_WELCOMED } from '../app/site.ts'
 
 function EntryKeys() {
   return (
@@ -26,7 +27,8 @@ function EntryKeys() {
 
 /**
  * Shown once per browser; About · Sources · Legal stays in Settings afterwards. TVN - CONTINUE carries on with the network as
- * it is loaded, NEW USER clears the example channels for a network of the viewer's own, LEGAL opens About and returns here.
+ * it is loaded, NEW USER goes to tvn.lol/tvn (TVN without the example channels, kept apart from this network) for a network
+ * of the viewer's own, and there clears that network again; LEGAL opens About and returns here.
  * 000 TVN stays tuned behind it whichever is chosen.
  */
 export function FirstRunNotice({
@@ -47,6 +49,11 @@ export function FirstRunNotice({
   }
   const askNew = async () => {
     if (busy) return
+    if (!EMPTY_SITE) {
+      acknowledgeNotice()
+      window.location.assign(`${EMPTY_SITE_PATH}${EMPTY_SITE_WELCOMED}`)
+      return
+    }
     if (confirming || !(await networkCustomised())) return startNew()
     setConfirming(true)
   }
@@ -74,8 +81,8 @@ export function FirstRunNotice({
         for YouTube). CREDITS on the remote shows sources and creators.
       </p>
       <p className="first-run-example">
-        TVN includes an example network of channels to demonstrate the platform. TVN - CONTINUE carries on with it; NEW USER clears the
-        channels to start a network of your own.
+        TVN includes an example network of channels to demonstrate the platform. TVN - CONTINUE carries on with it; NEW USER opens an empty
+        TVN to start a network of your own.
       </p>
       <EntryKeys />
       {confirming ? (
@@ -96,7 +103,7 @@ export function FirstRunNotice({
           <button type="button" onClick={() => acknowledgeNotice()} disabled={busy} autoFocus title="Continue with TVN as it is loaded">
             TVN - CONTINUE
           </button>
-          <button type="button" onClick={() => void askNew()} disabled={busy} title="Clear the channels and start a new network">
+          <button type="button" onClick={() => void askNew()} disabled={busy} title={EMPTY_SITE ? 'Clear the channels and start a new network' : 'Open an empty TVN to build a network of your own'}>
             NEW USER
           </button>
           <button type="button" onClick={() => openAbout()} disabled={busy} title="About, sources and legal information">

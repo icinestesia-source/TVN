@@ -85,7 +85,7 @@ describe('EDIT CHANNEL: LOAD MORE on each source, before REMOVE', () => {
   it('puts Load more on the source line, just before Remove', () => {
     const html = render({ name: 'Alpha', sources: [youtube(dated(3))] })
     expect(html).toMatch(/<button type="button" class="tab editor-source-load"[^>]*>Load more<\/button><button type="button" class="tab editor-source-remove"/)
-    expect(html.match(/>Load more</g)).toHaveLength(1)
+    expect(html.match(/editor-source-load[^>]*>Load more</g)).toHaveLength(1)
     expect(html).toContain('>Load all<')
   })
 

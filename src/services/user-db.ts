@@ -1,7 +1,8 @@
 import { readAllPaged } from '../library/idb-read.ts'
 import type { StoredSource } from './channels-import.ts'
+import { siteName } from '../app/site.ts'
 
-const DB_NAME = 'retrotv-user'
+const DB_NAME = siteName('retrotv-user')
 const DB_VERSION = 1
 const STORE = 'sources'
 

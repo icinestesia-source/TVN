@@ -1,4 +1,5 @@
 import type { MediaItem } from '../director/types.ts'
+import { siteName } from '../app/site.ts'
 
 /**
  * The network-wide channel pools, kept between visits. Working them out takes seconds; a return visit to an
@@ -135,7 +136,7 @@ export function resetPoolCacheForTests(): void {
   calculated = null
 }
 
-const DB_NAME = 'retrotv-pools'
+const DB_NAME = siteName('retrotv-pools')
 const STORE = 'pools'
 const RECORD = 'network'
 

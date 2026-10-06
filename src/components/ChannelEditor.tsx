@@ -468,6 +468,13 @@ export function ChannelEditor({
     const size = scheduleSize ?? kept.length
     keepOrder({ ...next, compiled: eligibilityKey(next) }, `REBUILT FROM ${kept.length} ELIGIBLE · ${size} SCHEDULED · SAVED`)
   }
+  /** REFRESH rebuilds the schedule from what the sources already hold; nothing is fetched. */
+  const refresh = () => {
+    if (!edit) return
+    if (ownOrder && !tvnLineup) return rebuild()
+    const next = { ...edit, sources: admitted(edit.sources) }
+    keepOrder({ ...next, compiled: eligibilityKey(next) }, `SCHEDULE REBUILT FROM ${kept.length} ELIGIBLE · SAVED`)
+  }
   const loadMore = (source: ChannelSource, all: boolean) => {
     if (!edit || !onLoadMore) return
     const stop = new AbortController()
@@ -479,8 +486,8 @@ export function ChannelEditor({
         signal: stop.signal,
         onProgress: (loaded, listed) => setLoading((current) => (current ? { ...current, loaded, listed } : current)),
       })
-      const arrived = holding ? holdNew(source, found) : found
-      const next = { ...edit, sources: edit.sources.map((item) => (item.id === source.id ? arrived : item)) }
+      const loaded = { ...edit, sources: admitted(edit.sources.map((item) => (item.id === source.id ? found : item))) }
+      const next = { ...loaded, compiled: eligibilityKey(loaded) }
       setEdit(next)
       await onSave(number, next)
       const count = found.videos?.length ?? 0
@@ -489,8 +496,7 @@ export function ChannelEditor({
         stop.signal.aborted ? 'STOPPED' : count > before ? `${count - before} MORE LOADED` : 'NOTHING NEW',
         `${count}${found.listed ? ` OF ${found.listed}` : ''} IN THIS SOURCE`,
         found.complete ? 'WHOLE SOURCE READ' : null,
-        'SAVED',
-        holding && count > before ? 'RESCAN TO SCHEDULE THEM' : null,
+        count > before ? 'SCHEDULED · SAVED' : 'SAVED',
       ]
         .filter(Boolean)
         .join(' · ')
@@ -504,8 +510,8 @@ export function ChannelEditor({
   const loadableSource = (source: ChannelSource) => onLoadMore !== undefined && (canLoad ? canLoad(source) : canLoadMore(source))
   const loadable = edit ? edit.sources.filter(loadableSource) : []
   /**
-   * LOAD: one more batch from every enabled source that has more, one source after another. What arrives is
-   * available at once and scheduled only after RESCAN, so the channel on air is not rebuilt mid-edit.
+   * LOAD MORE: one more batch from every enabled source that has more, one source after another. What arrives
+   * joins the schedule as soon as the batch is in, after any running order of the viewer's own.
    */
   const loadBatch = () => {
     if (!edit || !onLoadMore || loadable.length === 0) return
@@ -530,8 +536,7 @@ export function ChannelEditor({
               setBatch((current) => (current ? { ...current, reached: base + Math.max(0, loaded - start) } : current))
             },
           })
-          const arrived = holding ? holdNew(source, found) : found
-          next = { ...next, sources: next.sources.map((item) => (item.id === source.id ? arrived : item)) }
+          next = { ...next, sources: next.sources.map((item) => (item.id === source.id ? found : item)) }
           setEdit(next)
         } catch {
           if (stop.signal.aborted) break
@@ -540,13 +545,17 @@ export function ChannelEditor({
       }
       const reached = availableOf(next)
       const gained = reached > from
-      if (gained) await onSave(number, holding ? next : { ...next, compiled: eligibilityKey(next) })
-      if (gained && !holding) setEdit({ ...next, compiled: eligibilityKey(next) })
+      if (gained) {
+        const loaded = { ...next, sources: admitted(next.sources) }
+        const scheduledNow = { ...loaded, compiled: eligibilityKey(loaded) }
+        await onSave(number, scheduledNow)
+        setEdit(scheduledNow)
+      }
       return [
         stop.signal.aborted ? 'STOPPED' : null,
         gained ? `LOADED · ${from} → ${reached} AVAILABLE` : 'NOTHING NEW',
         failed ? `${failed} ${failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : null,
-        gained ? (holding ? 'SAVED · RESCAN TO SCHEDULE THEM' : 'SAVED') : null,
+        gained ? 'SCHEDULED · SAVED' : null,
       ]
         .filter(Boolean)
         .join(' · ')
@@ -789,7 +798,7 @@ export function ChannelEditor({
                       aria-label={`Load more programmes from ${sourceTitle(source)}`}
                       title={
                         loadableSource(source)
-                          ? 'Read the next batch of this source; RESCAN then schedules them'
+                          ? 'Read the next batch of this source, and schedule it'
                           : source.complete
                             ? 'The whole source is read'
                             : !source.enabled
@@ -1165,9 +1174,25 @@ export function ChannelEditor({
           </p>
         ) : null}
       </div>
+      {edit ? (
+        <p className="editor-actions-help" role="note">
+          REFRESH rebuilds the schedule from the programmes already loaded. LOAD MORE reads the next batch from every source and
+          schedules it at once. RESCAN CHANNEL reads every source again from the start, with its mode and filter.
+        </p>
+      ) : null}
       <div className="info-actions editor-actions">
         {edit ? (
           <>
+            <button
+              type="button"
+              className="tab"
+              disabled={busy !== null}
+              onKeyDown={keepKey}
+              title="Rebuild the schedule from the programmes already loaded; nothing is fetched"
+              onClick={refresh}
+            >
+              {busy === 'order' ? 'Refreshing…' : 'Refresh'}
+            </button>
             {onLoadMore ? (
               batch ? (
                 <>
@@ -1187,11 +1212,11 @@ export function ChannelEditor({
                   title={
                     loadable.length === 0
                       ? 'Every enabled source is read as far as it goes'
-                      : `Read the next batch of ${loadable.length === 1 ? 'the one source' : `all ${loadable.length} sources`} that have more; RESCAN then schedules them`
+                      : `Read the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more, and schedule it`
                   }
                   onClick={loadBatch}
                 >
-                  Load
+                  Load more
                 </button>
               )
             ) : null}

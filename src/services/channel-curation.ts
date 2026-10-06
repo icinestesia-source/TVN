@@ -43,14 +43,15 @@ export interface SourceFilter {
   }
   exclude?: {
     terms?: string[]
-    /** YouTube Shorts: a minute or less, or tagged #shorts in the title. */
+    /** YouTube Shorts: three minutes or less, or tagged #shorts in the title. */
     shorts?: boolean
   }
 }
 
 export const FILTER_LIMITS = { terms: 20, termLength: 80, playlists: 10, maxSeconds: 24 * 3600, firstYear: 1900, lastYear: 2100 } as const
 const PLAYLIST_ID = /^(?:PL|OL|UU|FL)[0-9A-Za-z_-]{10,64}$/
-const SHORTS_SECONDS = 60
+/** YouTube Shorts run to three minutes; TVN cannot see a portrait picture, so length and the #shorts tag decide. */
+export const SHORTS_SECONDS = 180
 
 export function sourceModeOf(source: Pick<ChannelSource, 'mode'>): SourceMode {
   return source.mode && SOURCE_MODES.includes(source.mode) ? source.mode : 'recent'

@@ -2037,3 +2037,21 @@ a.info-creator:focus-visible {
 .editor-slot-custom.is-on {
   color: var(--gold);
 }
+
+.guide-info.user-tools {
+  box-sizing: border-box;
+  min-height: var(--programme-info-h, 0);
+}
+
+.user-tools > .info-actions {
+  flex-wrap: nowrap;
+  max-width: none;
+}
+
+.editor-actions-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #9fb3c8;
+  font-size: 13px;
+  line-height: 1.35;
+}

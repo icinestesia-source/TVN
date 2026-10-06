@@ -132,7 +132,7 @@ describe('Guide terminology: NOW · ADD · MEDIA', () => {
 
   it('IMPORT behind the + row restores a User Network file', () => {
     expect(guide).toMatch(/tool === 'network' \? \(\s*<UserNetworkImportTools [^\n]*onApply=\{tv\.importUserNetwork\} onApplyComplete=\{tv\.importTvn\} \/>/)
-    expect(guide).toContain("onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}")
+    expect(guide).toContain("const restoreNetwork = () => tv.dispatch({ type: 'guide-tool', tool: 'network' })")
     const footer = renderToStaticMarkup(createElement(UserNetworkImportTools, { userChannels: 3, onApply: async () => '', onApplyComplete: async () => '' }))
     expect(footer).toMatch(/aria-label="Import User Network"/)
     expect(footer).not.toContain('Restore a User Network file')

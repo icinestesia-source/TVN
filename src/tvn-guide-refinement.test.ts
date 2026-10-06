@@ -104,7 +104,7 @@ describe('ADD', () => {
         onRemoveAll: async () => '',
       }),
     )
-    expect(markup).toMatch(/^<footer class="guide-info guide-tool"/)
+    expect(markup).toMatch(/^<footer class="guide-info guide-tool user-tools"/)
     expect(markup).toMatch(/>Channel list</)
     expect(markup).toMatch(/>Add starter network</)
     expect(markup).toMatch(/>Remove starter…</)
@@ -112,20 +112,17 @@ describe('ADD', () => {
     expect(markup).not.toMatch(/Yes, remove/)
   })
 
-  it('ADD keeps RESTORE of a User Network file first in its footer', () => {
+  it('ADD puts NEW CHANNEL and RESTORE in the add row, so its footer stays the height of the information bar', () => {
     const markup = renderToStaticMarkup(
-      createElement(UserNetworkTools, {
-        userChannels: 3,
-        onImportNetwork: () => undefined,
-        onImportList: async () => '',
-        onLoadTest: async () => '',
-        onRemoveStarter: async () => '',
-        onRemoveAll: async () => '',
-      }),
+      createElement(AddChannelForm, { nextNumber: 1001, onAdd: async () => '', onExport: async () => '', onNewChannel: async () => {}, onRestore: () => undefined }),
     )
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels[0]).toBe('Restore')
-    expect(guide).toContain("onImportNetwork={() => tv.dispatch({ type: 'guide-tool', tool: 'network' })}")
+    expect(labels).toEqual(['Import', 'Export', 'Restore', 'New channel…'])
+    const footer = renderToStaticMarkup(
+      createElement(UserNetworkTools, { userChannels: 3, onImportList: async () => '', onLoadTest: async () => '', onRemoveStarter: async () => '', onRemoveAll: async () => '' }),
+    )
+    expect(footer).not.toMatch(/>Restore<|>New channel…</)
+    expect(guide).toContain("const restoreNetwork = () => tv.dispatch({ type: 'guide-tool', tool: 'network' })")
   })
 
   it('the + tab offers a named new user or a channel list imported as a new user', () => {

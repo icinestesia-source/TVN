@@ -124,6 +124,26 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
   const failed = phase === 'failed'
   const loading = phase === 'loading'
   const percent = useCountUp(Math.round(Math.min(100, Math.max(0, progress))))
+  const leftRef = useRef(false)
+  const leave = () => {
+    if (leftRef.current) return
+    leftRef.current = true
+    onLeft?.()
+  }
+  const onLeftRef = useRef(onLeft)
+  useEffect(() => {
+    onLeftRef.current = onLeft
+  }, [onLeft])
+  // Firefox can fire animationend seconds late while the main thread is busy; the fade is over by then.
+  useEffect(() => {
+    if (phase !== 'ready') return
+    const id = window.setTimeout(() => {
+      if (leftRef.current) return
+      leftRef.current = true
+      onLeftRef.current?.()
+    }, 600)
+    return () => window.clearTimeout(id)
+  }, [phase])
   return (
     <div
       className={phase === 'ready' ? 'startup is-leaving' : 'startup'}
@@ -131,7 +151,7 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
       aria-live="polite"
       aria-busy={loading}
       onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget) onLeft?.()
+        if (event.target === event.currentTarget && phase === 'ready') leave()
       }}
     >
       <StartupNoise />

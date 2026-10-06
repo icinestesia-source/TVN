@@ -10,6 +10,7 @@ import {
   parseTerms,
   previewFilter,
   SOURCE_MODE_LABELS,
+  SHORTS_SECONDS,
   SOURCE_MODES,
   sourceModeOf,
   widenSource,
@@ -176,9 +177,18 @@ export function SourceFilterPanel({
       <div className="curation-grid">
         {field('Title contains any of', 'terms', { placeholder: 'words or phrases, comma separated', wide: true })}
         {shipped ? null : field('From playlists', 'playlists', { placeholder: 'playlist links or ids', wide: true })}
-        {field('Min minutes', 'minMinutes', { inputMode: 'decimal' })}
-        {field('Max minutes', 'maxMinutes', { inputMode: 'decimal' })}
       </div>
+      <p className="curation-sub">
+        Length · {draft.minMinutes.trim() || draft.maxMinutes.trim() ? `${draft.minMinutes.trim() || 'any'} to ${draft.maxMinutes.trim() || 'any'} minutes` : 'any length'}
+      </p>
+      <div className="curation-grid">
+        {field('Shortest (minutes)', 'minMinutes', { inputMode: 'decimal', placeholder: 'any' })}
+        {field('Longest (minutes)', 'maxMinutes', { inputMode: 'decimal', placeholder: 'any' })}
+      </div>
+      <label className="editor-check curation-check">
+        <input type="checkbox" checked={draft.shorts} disabled={disabled} onKeyDown={keepKey} onChange={() => set({ shorts: !draft.shorts })} />
+        <span>Leave out YouTube Shorts · portrait clips of {SHORTS_SECONDS / 60} minutes or less, or tagged #shorts</span>
+      </label>
       <p className="curation-sub">Dates · {dated ? `${draft.yearFrom.trim() || 'any'} to ${draft.yearTo.trim() || 'now'}` : 'all dates'}</p>
       <div className="curation-grid">
         {field('From year', 'yearFrom', { inputMode: 'numeric', placeholder: 'year' })}
@@ -197,10 +207,6 @@ export function SourceFilterPanel({
       ) : null}
       <p className="curation-sub">Exclude words</p>
       <div className="curation-grid">{field('Title contains any of', 'excludeTerms', { placeholder: 'words or phrases, comma separated · case ignored', wide: true })}</div>
-      <label className="editor-check curation-check">
-        <input type="checkbox" checked={draft.shorts} disabled={disabled} onKeyDown={keepKey} onChange={() => set({ shorts: !draft.shorts })} />
-        <span>Shorts</span>
-      </label>
       <p className="curation-step">{shipped ? '2 · Preview · from what TVN ships from this source' : '3 · Preview · from what this source already holds'}</p>
       <p className="curation-count" role="status" aria-label="Filter preview">
         <span>Matches {preview.matches}</span>

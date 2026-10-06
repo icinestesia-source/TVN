@@ -200,7 +200,7 @@ import {
   tileCount,
 } from '../view/multiview.ts'
 import { isOnAir } from '../network/airing.ts'
-import { confirmStart, soundHeld, viewerInteracted, type StartHold } from '../player/autoplay.ts'
+import { confirmStart, soundHeld, soundRefused, viewerInteracted, type StartHold } from '../player/autoplay.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './history.ts'
 import { useNoticeAcknowledged } from '../legal/about-store.ts'
 import { BUILD_INFO } from '../build-info.ts'
@@ -225,6 +225,7 @@ const GUIDE_KEY_ZOOM = 1.25
 const NUMERIC_MS = 1600
 // A refused or failed first programme is usually replaced within a second or two (the refusal fallback).
 const STARTUP_RETRY_MS = 4000
+const STARTER_AFTER_PICTURE_MS = 1500
 /** Loading shown after director cache, library, shipped network and user network; 100 once tuned. */
 const STARTUP_STEPS = [10, 30, 75, 90] as const
 
@@ -233,8 +234,10 @@ const shippedIds = (shipped: Channel) => shippedProgrammes(shipped.id).map((prog
 /** A TVN channel's original sources, from the library as published now (names are added where shown). */
 const originalsOf = (number: number, register?: SourceRegister): OriginalSource[] => channelOriginals(number, register)
 const poolIdsOf = (number: number) => originalsOf(number).flatMap((source) => source.videos.map((video) => video.id))
-/** Only an override that decides about original sources, or arranges TVN's programmes, reads them. */
-const readsOriginals = (edit: CuratedEdit) => Boolean(edit.originals?.length || edit.order?.length || edit.excluded?.length || edit.sources.some((source) => source.kind !== 'tvn' && source.enabled))
+/** Only an override that keeps TVN's programming on and decides about its original sources, or arranges TVN's programmes, reads them. */
+const readsOriginals = (edit: CuratedEdit) =>
+  edit.sources.some((source) => source.kind === 'tvn' && source.enabled) &&
+  Boolean(edit.originals?.length || edit.order?.length || edit.excluded?.length || edit.sources.some((source) => source.kind !== 'tvn' && source.enabled))
 
 setChannelIdentity((channel) => shippedChannel(channel.number)?.name ?? channel.name)
 
@@ -823,7 +826,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (!guideOpenRef.current || !target || !editorScope(target)) return
       // E on a channel whose editor is already open closes it again.
       if (channelNumber === undefined && editingRef.current()) {
-        setGuideTool(null)
+        closeGuideTool()
         return
       }
     } else if (panelOpenRef.current() === kind) {
@@ -940,12 +943,19 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const current = channelByNumber(channelRef.current)
     if (!current || !playerRef.current) return
     bootedRef.current = true
-    playerRef.current.setAudible(true, volumeRef.current, mutedRef.current)
+    // A browser that says outright it allows only muted play (Firefox) starts muted, rather than waiting on a
+    // refused start; any key or tap then brings the sound.
+    const refused = soundRefused()
+    if (refused) {
+      startHoldRef.current = 'sound'
+      setStartHold('sound')
+    }
+    playerRef.current.setAudible(true, volumeRef.current, mutedRef.current || refused)
     if (!pausedRef.current) {
-      startCheckRef.current = true
+      startCheckRef.current = !refused
       void loadProgramme(current, Date.now()).then((result) => {
         const player = playerRef.current
-        if (result !== 'playing' || !player) {
+        if (refused || result !== 'playing' || !player) {
           startCheckRef.current = false
           return
         }
@@ -2384,10 +2394,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const starterRanRef = useRef(false)
   /** The automatic starter install (and its Favourites) while it runs, so NEW can wait for it to finish. */
   const starterRunRef = useRef<Promise<unknown> | null>(null)
+  const [starterClear, setStarterClear] = useState(false)
+  // The install holds the main thread for seconds in Firefox, so it waits for the logo to finish fading off.
+  useEffect(() => {
+    if (!startupSettled || starterClear) return
+    const timer = window.setTimeout(() => setStarterClear(true), STARTER_AFTER_PICTURE_MS)
+    return () => window.clearTimeout(timer)
+  }, [startupSettled, starterClear])
   useEffect(() => {
     if (startupPhase !== 'ready' || (!starterDue && !favouritesSeeded) || starterRanRef.current) return
     // A fresh install's starter channels wait until the first picture is up (or the start has settled otherwise).
-    if (starterDue && !startupSettled) return
+    if (starterDue && !starterClear) return
     starterRanRef.current = true
     const installed = starterDue ? loadTestChannels(true).catch(() => undefined) : Promise.resolve()
     starterRunRef.current = installed
@@ -2402,7 +2419,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setFavourites((current) => placeStarterFavourites(current, expected, sources))
       })
       .catch(() => undefined)
-  }, [startupPhase, starterDue, favouritesSeeded, loadTestChannels, startupSettled])
+  }, [startupPhase, starterDue, favouritesSeeded, loadTestChannels, starterClear])
 
   const removeStarterNetwork = useCallback(async () => {
     const previous = await Promise.all(PREVIOUS_STARTER_FILES.map((path) => readStarterNetwork(path).then((doc) => recordsFromExport(doc, 0)).catch(() => [])))

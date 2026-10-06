@@ -72,3 +72,21 @@ export function viewerInteracted(): boolean {
   }
   return touched
 }
+
+type AutoplayPolicy = 'allowed' | 'allowed-muted' | 'disallowed'
+
+/**
+ * True when the browser says outright that this site may start media only muted (Firefox answers; Chrome keeps
+ * no such answer and TVN checks the start instead), and the viewer has not yet clicked or pressed a key.
+ */
+export function soundRefused(
+  policy: (() => AutoplayPolicy | undefined) | null = () =>
+    (navigator as Navigator & { getAutoplayPolicy?: (type: 'mediaelement') => AutoplayPolicy }).getAutoplayPolicy?.('mediaelement'),
+  interacted: () => boolean = viewerInteracted,
+): boolean {
+  try {
+    return typeof navigator !== 'undefined' && policy?.() === 'allowed-muted' && !interacted()
+  } catch {
+    return false
+  }
+}

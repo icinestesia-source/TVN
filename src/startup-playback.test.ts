@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { advancing, confirmStart, soundHeld, START_HOLD_COPY, type StartHold } from './player/autoplay.ts'
+import { advancing, confirmStart, soundHeld, soundRefused, START_HOLD_COPY, type StartHold } from './player/autoplay.ts'
 import type { PlayerHandle } from './player/types.ts'
 import { DEFAULT_PREFERENCES } from './services/preferences.ts'
 
@@ -122,7 +122,7 @@ describe('startup activates the selected channel', () => {
         ?.length,
     ).toBe(2)
     const boot = provider.slice(provider.indexOf('bootRef.current = () => {'), provider.indexOf('// The viewer\'s first key or tap'))
-    expect(boot).toMatch(/startCheckRef\.current = true\s+void loadProgramme/)
+    expect(boot).toMatch(/startCheckRef\.current = !refused\s+void loadProgramme/)
     expect(boot.match(/startCheckRef\.current = false/g)?.length).toBe(2)
   })
 
@@ -354,5 +354,15 @@ describe('/tvn before the viewer interacts: every Surf hop plays', () => {
     expect(soundHeld(null, true, false)).toBe(true)
     expect(soundHeld(null, true, true)).toBe(false)
     expect(soundHeld('sound', false, true)).toBe(true)
+  })
+})
+
+describe('a browser that only allows muted autoplay (Firefox by default)', () => {
+  it('starts the first programme muted at once instead of waiting for a sound start that never comes', () => {
+    expect(soundRefused(() => 'allowed-muted', () => false)).toBe(true)
+    expect(soundRefused(() => 'allowed', () => false)).toBe(false)
+    expect(soundRefused(() => 'allowed-muted', () => true)).toBe(false)
+    expect(soundRefused(() => undefined, () => false)).toBe(false)
+    expect(soundRefused(() => { throw new Error('no policy') }, () => false)).toBe(false)
   })
 })

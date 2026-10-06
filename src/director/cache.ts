@@ -3,6 +3,7 @@ import { readAllPaged } from '../library/idb-read.ts'
 import { CATALOGUE_VERSION } from './network.ts'
 import { addCalendarDays, broadcastDateFor } from './time.ts'
 import type { FrozenDailySchedule } from './types.ts'
+import { siteName } from '../app/site.ts'
 
 /** A day from an older catalogue generation is not today's television. */
 export function scheduleIsCurrent(schedule: Pick<FrozenDailySchedule, 'catalogueVersion' | 'seed'>): boolean {
@@ -25,7 +26,7 @@ export function compiledWithoutProgrammes(schedule: Pick<FrozenDailySchedule, 'b
   return schedule.blocks.every((block) => block.children.every((child) => child.fallback || !child.mediaItemId))
 }
 
-const DB_NAME = 'retrotv-schedules'
+const DB_NAME = siteName('retrotv-schedules')
 const DB_VERSION = 1
 const STORE = 'days'
 const RETAIN_DAYS = 31
