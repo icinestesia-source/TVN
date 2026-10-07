@@ -66,7 +66,7 @@ export function episodeAttribution(raw: string | undefined): Attribution | null 
   if (!page) return null
   const url = new URL(page)
   const site = url.hostname.replace(/^www\./, '')
-  return { text: url.pathname === '/' && !url.search ? site : 'Episode page', url: page }
+  return { text: url.pathname === '/' && !url.search ? site : 'LINK', url: page }
 }
 
 /** The source register once it has loaded (it is read once per visit); empty until then. */

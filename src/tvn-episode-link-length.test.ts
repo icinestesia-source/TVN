@@ -50,7 +50,7 @@ describe('A feed episode links to its own page, or its publisher', () => {
 
   it('shows on the information bar where a YouTube @user would', () => {
     const programme = { id: 'p', title: 'One', channelId: 'c', durationSeconds: 60, videoId: null, mediaUrl: 'https://media.example.org/one.mp3' } as Programme
-    expect(programmeAttribution({ ...programme, episodeUrl: 'https://www.crrow777radio.com/699-where-we-go/' }, EMPTY_REGISTER)).toEqual({ text: 'Episode page', url: 'https://www.crrow777radio.com/699-where-we-go/' })
+    expect(programmeAttribution({ ...programme, episodeUrl: 'https://www.crrow777radio.com/699-where-we-go/' }, EMPTY_REGISTER)).toEqual({ text: 'LINK', url: 'https://www.crrow777radio.com/699-where-we-go/' })
     expect(programmeAttribution({ ...programme, episodeUrl: 'https://veritas7.com/' }, EMPTY_REGISTER)).toEqual({ text: 'veritas7.com', url: 'https://veritas7.com/' })
     expect(programmeAttribution(programme, EMPTY_REGISTER)).toBeNull()
   })
