@@ -17,6 +17,8 @@ import { Guide } from '../components/Guide.tsx'
 import { Hints } from '../components/Hints.tsx'
 import { MultiviewGrid } from '../components/MultiviewGrid.tsx'
 import { ChannelEditor } from '../components/ChannelEditor.tsx'
+import { SessionImportTools } from '../components/GuideAdd.tsx'
+import { sessionProgrammes } from '../session/session-channel.ts'
 import { NowNextOverlay } from '../components/NowNextOverlay.tsx'
 import { editorScope } from '../view/channel-edit.ts'
 import { NumericEntry } from '../components/NumericEntry.tsx'
@@ -138,7 +140,7 @@ export function TvScreen() {
             ) : null}
             {audio ? <RadioFace channel={tv.channel} /> : null}
             {showCard ? <TestCard /> : null}
-            {face === 'session-empty' ? <SessionCard /> : null}
+            {face === 'session-empty' ? <SessionCard channel={tv.channel} /> : null}
             {/* TVN's glass: lifted only while the viewer uses a website they chose INTERACT on. */}
             {web.interacting ? null : <PictureCatch />}
             <WebControls />
@@ -269,6 +271,23 @@ function ScreenEditor() {
   const tv = useTv()
   const scope = editorScope(tv.channel)
   if (!scope || tv.screenEdit !== tv.channel.number) return null
+  if (scope === 'local') {
+    return (
+      <div className="info-bar screen-editor">
+        <SessionImportTools
+          key={tv.channel.number}
+          channel={tv.channel}
+          programmes={sessionProgrammes(tv.channel.number)}
+          watching
+          onImport={tv.importSession}
+          onRemove={tv.removeSessionFile}
+          onClear={tv.clearLocalChannel}
+          onRename={tv.renameLocalChannel}
+          onWatch={() => {}}
+        />
+      </div>
+    )
+  }
   if (scope === 'tvn') {
     return (
       <div className="info-bar screen-editor">

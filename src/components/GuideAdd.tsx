@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type RefObject } from 'react'
 import { createGuidePress } from '../view/guide-press.ts'
 import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
-import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
+import { LOCAL_NAME_LIMIT, SESSION_CHANNEL } from '../session/session-channel.ts'
+import type { Channel } from '../types/channel.ts'
+import type { Programme } from '../types/programme.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
 import { sourcePreviewLines, type FoundFeed } from '../services/podcast-source.ts'
 import { readRestoreFile, type TvnExport } from '../services/tvn-export.ts'
 import type { GuideTool } from '../types/input.ts'
 import { USER_NAME_MAX } from '../data/user-network/users.ts'
-import { padChannel } from '../utils/time.ts'
+import { formatDuration, padChannel } from '../utils/time.ts'
 
 /** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
 function keepKey(event: KeyboardEvent<HTMLElement>) {
@@ -282,10 +284,35 @@ export function AddChannelForm({
   )
 }
 
-/** The Guide footer while MEDIA is open: 1000 Local Media from a folder or files on this device. */
-export function SessionImportTools({ onImport }: { onImport: (files: readonly File[]) => Promise<string> }) {
+/**
+ * The Guide footer while MEDIA is open, and the editor of a Local Media channel (992–1000): its name, the
+ * files it holds, more from a folder or files on this device, Watch, and Clear. Added files join the end of
+ * its running order and the panel stays open, so one folder after another builds the channel.
+ */
+export function SessionImportTools({
+  channel = SESSION_CHANNEL,
+  programmes = [],
+  watching = false,
+  onImport,
+  onRemove = () => {},
+  onClear = () => {},
+  onRename = () => false,
+  onWatch = () => {},
+}: {
+  channel?: Channel
+  programmes?: readonly Programme[]
+  watching?: boolean
+  onImport: (files: readonly File[], channelNumber: number) => Promise<string>
+  onRemove?: (programmeId: string) => void
+  onClear?: (channelNumber: number) => void
+  onRename?: (channelNumber: number, name: string) => boolean
+  onWatch?: (channelNumber: number) => void
+}) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [draft, setDraft] = useState<string | null>(null)
+  const name = draft ?? channel.name
+  const cancelled = useRef(false)
   const first = useRef<HTMLButtonElement>(null)
   const folderInput = useRef<HTMLInputElement>(null)
   const filesInput = useRef<HTMLInputElement>(null)
@@ -301,18 +328,25 @@ export function SessionImportTools({ onImport }: { onImport: (files: readonly Fi
     setBusy(true)
     setNote('READING…')
     try {
-      setNote((await onImport(files)) || null)
+      setNote((await onImport(files, channel.number)) || null)
     } catch (caught) {
       setNote(viewerMessage(caught, 'THOSE FILES COULD NOT BE READ'))
     } finally {
       setBusy(false)
+      first.current?.focus()
     }
   }
 
   const chooseFolder = async () => {
     const picker = directoryPicker()
-    if (picker) await run(await pickFolder(picker))
-    else folderInput.current?.click()
+    if (!picker) {
+      folderInput.current?.click()
+      return
+    }
+    const picked = await pickFolder(picker)
+    // A browser that will not show its own folder picker still has the ordinary one.
+    if (picked === 'refused') folderInput.current?.click()
+    else await run(picked)
   }
 
   const fromInput = (input: HTMLInputElement) => {
@@ -321,14 +355,67 @@ export function SessionImportTools({ onImport }: { onImport: (files: readonly Fi
     void run(files)
   }
 
+  const rename = () => {
+    if (!cancelled.current && draft !== null && onRename(channel.number, draft)) setNote(`${channel.number} · NAMED`)
+    cancelled.current = false
+    setDraft(null)
+  }
+
+  const shown = programmes.slice(0, 200)
+
   return (
-    <footer className="guide-info guide-tool" aria-label="Media">
+    <footer className="guide-info guide-tool local-media-tool" aria-label="Media">
       <div className="info-main">
         <p className="info-kicker">
-          <span>{padChannel(SESSION_CHANNEL_NUMBER)}</span>
-          <span>Local Media</span>
+          <span>{padChannel(channel.number)}</span>
+          <span>{channel.name}</span>
+          <span>
+            {programmes.length} {programmes.length === 1 ? 'file' : 'files'}
+          </span>
         </p>
-        <p className="guide-tool-note">A temporary channel from video or audio on this device, for this session only. Nothing is uploaded.</p>
+        <form
+          className="add-channel"
+          onSubmit={(event) => {
+            event.preventDefault()
+            rename()
+          }}
+          onKeyDown={keepKey}
+        >
+          <input
+            type="text"
+            value={name}
+            aria-label={`Name of channel ${channel.number}`}
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={LOCAL_NAME_LIMIT}
+            disabled={busy}
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={rename}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                event.stopPropagation()
+                cancelled.current = true
+                event.currentTarget.blur()
+              }
+            }}
+          />
+        </form>
+        {shown.length > 0 ? (
+          <ul className="local-media-list" aria-label={`Files on ${channel.name}`}>
+            {shown.map((programme) => (
+              <li key={programme.id}>
+                <span className="match-title">{programme.title}</span>
+                <span className="match-time">{formatDuration(programme.durationSeconds)}</span>
+                <button type="button" className="local-media-remove" aria-label={`Remove ${programme.title}`} title="Remove" onKeyDown={keepKey} onClick={() => onRemove(programme.id)}>
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="guide-tool-note">A channel from video or audio on this device, for this session only. Nothing is uploaded; the name is kept.</p>
+        )}
         {note ? (
           <p className="guide-tool-status" role="status">
             {note}
@@ -351,6 +438,25 @@ export function SessionImportTools({ onImport }: { onImport: (files: readonly Fi
         >
           Files
         </button>
+        {programmes.length > 0 && !watching ? (
+          <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => onWatch(channel.number)}>
+            Watch
+          </button>
+        ) : null}
+        {programmes.length > 0 ? (
+          <button
+            type="button"
+            className="tab"
+            disabled={busy}
+            onKeyDown={keepKey}
+            onClick={() => {
+              onClear(channel.number)
+              setNote(`${channel.number} · CLEARED`)
+            }}
+          >
+            Clear
+          </button>
+        ) : null}
       </div>
       <input ref={folderInput} className="sr" type="file" multiple tabIndex={-1} aria-hidden="true" onChange={(event) => fromInput(event.currentTarget)} />
       <input

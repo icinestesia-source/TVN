@@ -126,6 +126,8 @@ export interface TvContextValue {
   screenAction: () => void
   /** The information bar's Prev (-1) and Next (1) over the picture: that programme, from its start. */
   screenStep: (direction: -1 | 1) => void
+  /** The time slider: the programme on screen from this many seconds in. */
+  screenSeek: (seconds: number) => void
   /** 000 TVN: choose another programme now. */
   chooseAnotherTvn: () => void
   /** TV Surf's right-click or hold: surf every channel, or only one User Network (the Guide's tab follows). */
@@ -258,8 +260,14 @@ export interface TvContextValue {
   setSourceOverride: (channelNumber: number, videoId: string | null) => void
   /** Play Now on the session channel: this imported programme starts from the beginning. */
   playSession: (programmeId: string) => void
-  /** Makes 1000 Local Media from these files, replacing it. Resolves with the viewer-facing outcome ('' if superseded). */
-  importSession: (files: readonly File[]) => Promise<string>
+  /** Adds these files to a Local Media channel (992–1000). Resolves with the viewer-facing outcome ('' if superseded). */
+  importSession: (files: readonly File[], channelNumber: number) => Promise<string>
+  /** Takes one imported file out of its Local Media channel. */
+  removeSessionFile: (programmeId: string) => void
+  /** Empties a Local Media channel; its name stays. */
+  clearLocalChannel: (channelNumber: number) => void
+  /** Names a Local Media channel; an empty name restores the default. */
+  renameLocalChannel: (channelNumber: number, name: string) => boolean
 }
 
 export const TvContext = createContext<TvContextValue | null>(null)

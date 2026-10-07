@@ -147,12 +147,12 @@ describe('Pass 23 release-candidate hardening', () => {
     const clock = broadcast(channelByNumber(896)!, NOW).current.programme
     expect(clock.videoId).toBeNull()
     expect(clock.tags).toContain('clock')
-    for (const n of [897, 999]) {
+    for (const n of [897]) {
       const day = Array.from({ length: 24 }, (_, hour) => broadcast(channelByNumber(n)!, at(DATE, `${String(hour).padStart(2, '0')}:30:00`)).current.programme)
       expect(day.every((programme) => !programme.videoId && programme.caption), `${n}`).toBe(true)
       expect(day.some((programme) => programme.programmeType === 'closedown'), `${n}`).toBe(true)
     }
-    expect(broadcast(channelByNumber(999)!, NOW).current.programme.mediaKind).toBe('audio')
+    expect(channelByNumber(999)?.origin).toBe('session')
   })
 
   it('does not compile Director days for channels an original intercepts', () => {
@@ -417,7 +417,7 @@ describe('Pass 23 release-candidate hardening', () => {
       const first = built.channels[0]
       expect(first.number).toBe(1001)
       expect(channelByNumber(1000)?.origin).toBe('session')
-      const lastNetwork = [...listChannels()].filter((channel) => channel.number <= 999 && isOnAir(channel)).pop()!
+      const lastNetwork = [...listChannels()].filter((channel) => channel.number <= 999 && channel.origin !== 'session' && isOnAir(channel)).pop()!
       expect(adjacentChannel(lastNetwork.number, 1).number).toBe(1001)
       expect(adjacentChannel(1000, 1).number).toBe(1001)
       expect(adjacentChannel(1001, -1).number).toBe(lastNetwork.number)

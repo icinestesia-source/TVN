@@ -22,7 +22,7 @@ import { notePlayback } from '../player/trace.ts'
 import { notePhase, notePress } from '../player/tune-timing.ts'
 import { commitTune } from './tune-commit.ts'
 import { liveAiring, pauseViewing } from '../player/viewing.ts'
-import { clearManual, manualAiring, onScreen, pickTunes, resumeProgramme, selectProgramme, stepFrom } from '../player/manual.ts'
+import { clearManual, manualAiring, onScreen, pickTunes, resumeProgramme, seekable, selectProgramme, stepFrom } from '../player/manual.ts'
 import { afterRefusal, arrive, fallbackProgramme, giveUp, type Recovery } from '../player/refusal-fallback.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
 import { liveKey } from '../scheduler/calculate.ts'
@@ -161,7 +161,23 @@ import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
 import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
-import { SESSION_CHANNEL_NUMBER, hasPicture, rebaseSession, searchSession, sessionChoice, sessionNeighbour, sessionRefresh, subscribeSession } from '../session/session-channel.ts'
+import {
+  SESSION_CHANNEL_NUMBER,
+  clearSession,
+  hasPicture,
+  isLocalMediaNumber,
+  rebaseSession,
+  removeSessionProgramme,
+  renameLocalChannel,
+  searchSession,
+  sessionActive,
+  sessionBroadcast,
+  sessionChoice,
+  sessionNeighbour,
+  sessionNumberFor,
+  sessionRefresh,
+  subscribeSession,
+} from '../session/session-channel.ts'
 import { chooseAnotherTvn, driveTvn, endedTvn, enterTvn, setTvnChannelSettings, TVN_CHANNEL_NUMBER, tvnChannelSettings, tvnChoice } from '../tvn/tvn-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, type StartupPhase } from './startup.ts'
 
@@ -458,9 +474,16 @@ export function TvProvider({ children }: { children: ReactNode }) {
     async () => {},
   )
   const commitNumericRef = useRef<() => void>(() => {})
-  const sessionRef = useRef<{ play: (programmeId: string) => void; import: (files: readonly File[]) => Promise<string> }>({
+  const sessionRef = useRef<{
+    play: (programmeId: string) => void
+    import: (files: readonly File[], number: number) => Promise<string>
+    remove: (programmeId: string) => void
+    clear: (number: number) => void
+  }>({
     play: () => {},
     import: async () => '',
+    remove: () => {},
+    clear: () => {},
   })
   const importToken = useRef(0)
   const bootRef = useRef<() => void>(() => {})
@@ -481,7 +504,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }, [catalogueVersion, favourites, guideFilter, channelNumber])
   const guideVisiting = guideList.visiting
   const visibleChannels = useMemo(
-    () => searchGuideChannels(guideList.rows, guideQuery, (item, needle) => item.origin === 'session' && searchSession(needle).length > 0),
+    () => searchGuideChannels(guideList.rows, guideQuery, (item, needle) => item.origin === 'session' && searchSession(needle, item.number).length > 0),
     [guideList, guideQuery],
   )
   const guideQueryRef = useRef(guideQuery)
@@ -509,8 +532,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   /** The one writer of the tuned channel: the ref the controls step from and the state on screen move together. */
   const commitChannel = (next: Tuned, record = true) => {
-    // Boost belongs to 1000 Local Media: anywhere else the volume comes back to full.
-    if (next.channelNumber !== SESSION_CHANNEL_NUMBER && volumeRef.current > VOLUME_FULL) {
+    // Boost belongs to Local Media: anywhere else the volume comes back to full.
+    if (!isLocalMediaNumber(next.channelNumber) && volumeRef.current > VOLUME_FULL) {
       volumeRef.current = VOLUME_FULL
       setVolume(VOLUME_FULL)
     }
@@ -827,6 +850,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (here && editorScope(here) && multiviewRef.current === '1') openScreenEdit(here.number)
       return
     }
+    if (kind === 'edit' && guideOpenRef.current && editorScope(channelByNumber(channelNumber ?? cursorRef.current.channelNumber) ?? { number: -1 }) === 'local') {
+      // Editing a Local Media channel is MEDIA for that channel: its name, its files, more files.
+      kind = 'media'
+      channelNumber = channelNumber ?? cursorRef.current.channelNumber
+    }
     if (kind === 'edit') {
       const number = channelNumber ?? cursorRef.current.channelNumber
       const target = channelByNumber(number)
@@ -836,7 +864,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         closeGuideTool()
         return
       }
-    } else if (panelOpenRef.current() === kind) {
+    } else if (panelOpenRef.current() === kind && (channelNumber === undefined || channelNumber === cursorRef.current.channelNumber)) {
       // + and OPTIONS close again when pressed a second time.
       closeGuideTool()
       return
@@ -1026,29 +1054,34 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
   }, [startHold])
 
-  /** Show the session channel's schedule as it now stands: reload in place when watching it, tune to it otherwise. */
-  const showSession = () => {
-    const session = channelByNumber(SESSION_CHANNEL_NUMBER)
+  /**
+   * Show a Local Media channel's schedule as it now stands: reload in place when watching it, tune to it
+   * otherwise. `keepGuide` (MEDIA, adding or removing files) never tunes away and leaves the Guide open.
+   */
+  const showSession = (number: number, keepGuide = false) => {
+    const session = channelByNumber(number)
     if (!session) return
-    if (sessionRefresh(channelRef.current, tuningRef.current, multiviewRef.current === '1') === 'tune') {
-      requestTune(SESSION_CHANNEL_NUMBER)
+    if (sessionRefresh(channelRef.current, tuningRef.current, multiviewRef.current === '1', number) === 'tune') {
+      if (!keepGuide) requestTune(number)
       return
     }
     // Same channel, new running order: not a channel change, so Previous is untouched.
-    closeGuide()
+    if (!keepGuide) closeGuide()
     startup.noteUserTune()
     loadedKey.current = ''
     pausedRef.current = false
     setPaused(false)
     if (playerRef.current && playerReadyRef.current) void loadProgramme(session, Date.now())
-    showOverlay('info', INFO_MS)
+    if (!keepGuide) showOverlay('info', INFO_MS)
   }
 
   sessionRef.current = {
     play(programmeId) {
-      if (rebaseSession(programmeId, Date.now())) showSession()
+      const number = sessionNumberFor(programmeId)
+      if (number !== null && rebaseSession(programmeId, Date.now())) showSession(number)
     },
-    async import(files) {
+    async import(files, number) {
+      const target = isLocalMediaNumber(number) ? number : SESSION_CHANNEL_NUMBER
       const token = ++importToken.current
       const result = await buildSessionItems(files, {
         canPlay: browserCanPlay,
@@ -1057,11 +1090,24 @@ export function TvProvider({ children }: { children: ReactNode }) {
         probe: (url, kind, remux) => probeDuration(url, kind, remux),
         cancelled: () => token !== importToken.current,
       })
-      const summary = commitImport(result, Date.now())
+      const wasEmpty = !sessionActive(target)
+      const summary = commitImport(result, Date.now(), target)
       if (result.cancelled || result.items.length === 0) return summary
-      showSession()
-      flash(summary, 4000)
+      // Added files join the end of the running order; only a channel that was empty has a new programme on air.
+      if (wasEmpty) showSession(target, guideOpenRef.current)
+      if (!guideOpenRef.current) flash(summary, 4000)
       return summary
+    },
+    remove(programmeId) {
+      const number = sessionNumberFor(programmeId)
+      if (number === null) return
+      const onAir = sessionBroadcast(Date.now(), number).current.programme.id === programmeId
+      if (removeSessionProgramme(programmeId, Date.now()) && onAir) showSession(number, true)
+    },
+    clear(number) {
+      if (!sessionActive(number)) return
+      clearSession(number)
+      showSession(number, true)
     },
   }
 
@@ -1537,7 +1583,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const slot = slotContaining(slots, cursor.timeMs)
     if (selected.origin === 'session') {
       // Choosing an imported programme, from the grid or from a search, is Play Now.
-      const chosen = sessionChoice(guideQueryRef.current, slot?.programme ?? null)
+      const chosen = sessionChoice(guideQueryRef.current, slot?.programme ?? null, selected.number)
       if (chosen) sessionRef.current.play(chosen.id)
       else requestTune(selected.number)
       return
@@ -1883,7 +1929,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       case 'volume-up':
       case 'volume-down': {
         const delta = command.type === 'volume-up' ? 5 : -5
-        const limit = volumeLimit(channelRef.current === SESSION_CHANNEL_NUMBER && multiviewRef.current === '1')
+        const limit = volumeLimit(isLocalMediaNumber(channelRef.current) && multiviewRef.current === '1')
         const nextVolume = clamp(volumeRef.current + delta, 0, limit)
         volumeRef.current = nextVolume
         setVolume(nextVolume)
@@ -2117,7 +2163,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
   useEffect(() => subscribeSession(() => setCatalogueVersion((version) => version + 1)), [])
 
   const playSession = useCallback((programmeId: string) => sessionRef.current.play(programmeId), [])
-  const importSession = useCallback((files: readonly File[]) => sessionRef.current.import(files), [])
+  const importSession = useCallback((files: readonly File[], number: number) => sessionRef.current.import(files, number), [])
+  const removeSessionFile = useCallback((programmeId: string) => sessionRef.current.remove(programmeId), [])
+  const clearLocalChannel = useCallback((number: number) => sessionRef.current.clear(number), [])
+  const renameLocal = useCallback((number: number, name: string) => renameLocalChannel(number, name), [])
 
   useEffect(() => {
     if (!import.meta.env.DEV || new URLSearchParams(window.location.search).get('acquire') !== '1') return
@@ -3091,6 +3140,32 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /** The information bar's Prev (-1) and Next (1) over the picture: that programme, from its start. */
+  /**
+   * The information bar's time slider: the programme on screen from this many seconds in. Local Media moves
+   * its running order; anything else plays on as a Guide pick that started earlier, continuing as one does.
+   */
+  const screenSeek = useCallback((seconds: number) => {
+    const here = channelByNumber(channelRef.current)
+    if (!here || multiviewRef.current !== '1') return
+    const now = Date.now()
+    const shown = onScreen(here, now).current
+    if (!seekable(here, shown.programme)) return
+    const target = Math.max(0, Math.min(seconds, shown.programme.durationSeconds - 1))
+    if (here.origin === 'session') {
+      if (rebaseSession(shown.programme.id, now - target * 1000)) showSession(here.number, true)
+      return
+    }
+    const manual = manualAiring(here.number, now)
+    const slot = manual ? manual.slot : { startMs: shown.startMs, endMs: shown.endMs }
+    const continues = slot && !guideDrivingRef.current ? here : undefined
+    selectProgramme(here.number, shown.programme, now, slot, continues, target)
+    loadedKey.current = ''
+    pausedRef.current = false
+    setPaused(false)
+    if (playerRef.current && playerReadyRef.current) void loadProgramme(here, now)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const screenStep = useCallback((direction: -1 | 1) => {
     // While a Guide is followed, Prev and Next move along the Guide; ↑ and ↓ still go back through the channels watched.
     if (guideRunRef.current?.state === 'active') {
@@ -3104,7 +3179,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return
     }
     if (here?.origin === 'session') {
-      const target = sessionNeighbour(Date.now(), direction)
+      const target = sessionNeighbour(Date.now(), direction, here.number)
       if (target) sessionRef.current.play(target.id)
       return
     }
@@ -3371,6 +3446,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       screenEdit,
       screenAction,
       screenStep,
+      screenSeek,
       chooseAnotherTvn: chooseAnotherOnTvn,
       toggleSurfScope,
       surfScopeName,
@@ -3432,6 +3508,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       setSourceOverride,
       playSession,
       importSession,
+      removeSessionFile,
+      clearLocalChannel,
+      renameLocalChannel: renameLocal,
     }),
     [
       openChannelEdit,
@@ -3451,6 +3530,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       restoreCuratedChannel,
       playSession,
       importSession,
+      removeSessionFile,
+      clearLocalChannel,
+      renameLocal,
       addChannel,
       previewSource,
       networkUsers,
@@ -3522,6 +3604,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       screenEdit,
       screenAction,
       screenStep,
+      screenSeek,
       chooseAnotherOnTvn,
       holdInfo,
       guideLibrary,

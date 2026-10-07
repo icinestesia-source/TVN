@@ -6,7 +6,7 @@ import { ChannelEditor } from './components/ChannelEditor.tsx'
 import { channels } from './data/catalogue.ts'
 import { anchoredScrollLeft, keyZoomAnchor } from './epg/zoom.ts'
 import { commandFromKey } from './input/keyboard.ts'
-import { ENTRY_KEYS } from './legal/entry-keys.ts'
+import { KEYBOARD_NAV, KEYBOARD_ROWS } from './legal/entry-keys.ts'
 import { FirstRunNotice } from './legal/FirstRunNotice.tsx'
 import {
   admitted,
@@ -57,53 +57,55 @@ const scheduleOf = (stored: StoredSource) => {
 describe('ENTRY SCREEN: the keys at a glance', () => {
   const html = renderToStaticMarkup(createElement(FirstRunNotice))
 
-  it('sits in the existing notice, between the disclaimer and the TVN · NEW · LEGAL buttons', () => {
+  it('leads the notice with the keyboard, then the text, then the TVN · NEW · LEGAL buttons', () => {
     const keys = html.indexOf('first-run-keys')
     expect(html.indexOf('Welcome to TVN')).toBeLessThan(keys)
-    expect(html.indexOf('first-run-example')).toBeLessThan(keys)
-    expect(keys).toBeLessThan(html.indexOf('first-run-actions'))
+    expect(keys).toBeLessThan(html.indexOf('independent television'))
+    expect(html.indexOf('first-run-example')).toBeLessThan(html.indexOf('first-run-actions'))
     expect(html).toMatch(/<button[^>]*>TVN - CONTINUE<\/button><button[^>]*>NEW USER<\/button><button[^>]*>LEGAL<\/button>/)
     expect(read('src/app/TvScreen.tsx')).toContain('FirstRunNotice')
   })
 
-  it('shows every required key with its plain label', () => {
+  it('draws the whole keyboard and marks every required key with its plain label', () => {
     for (const [key, label] of [
       ['P', 'Pause'],
-      ['Space', 'Surf'],
-      ['Hold Space', 'Surf scope'],
-      ['S', 'Favourite'],
+      ['Space', 'Surf · hold: scope'],
+      ['S', 'Fav'],
       [',', 'Prev'],
       ['.', 'Next'],
       ['/', 'Multi'],
       ['-', 'Zoom out'],
       ['=', 'Zoom in'],
+      ['G', 'Guide'],
+      ['R', 'All / User / Fav'],
+      ['U', 'Media'],
+      ['B', 'Prev prog'],
+      ['N', 'Next prog'],
+      ['Home', 'Now'],
     ]) {
-      expect(html).toContain(`<kbd${key.length > 1 ? ' class="is-wide"' : ''}>${key}</kbd><span>${label}</span>`)
+      expect(html).toContain(`<kbd>${key}</kbd><span>${label}</span>`)
     }
+    expect(KEYBOARD_ROWS.flat().map((item) => item.cap).join('')).toContain('QWERTYUIOP')
+    expect(html).toContain('class="kb-key is-bound"')
   })
 
-  it('invents nothing: every key shown is one TVN binds', () => {
-    const expected: Record<string, [string, boolean]> = {
-      P: ['play-pause', false],
-      S: ['favourite', false],
-      ',': ['history-back', false],
-      '.': ['history-forward', false],
-      '/': ['multiview', false],
-      '-': ['guide-zoom', true],
-      '=': ['guide-zoom', true],
-      G: ['guide', false],
-      R: ['guide-cycle', false],
-      Home: ['guide-now', false],
-      F: ['fullscreen', false],
-      Space: ['random-channel', false],
+  it('invents nothing: every key marked is one TVN binds, to what its label says', () => {
+    const expected: Record<string, string> = {
+      Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'guide-tool', r: 'guide-cycle', t: 'surf', y: 'user-channels',
+      u: 'media', i: 'info', p: 'play-pause', a: 'guide-tool', s: 'favourite', f: 'fullscreen', g: 'guide', h: 'hints', Enter: 'confirm', c: 'subtitles',
+      v: 'guide-filter', b: 'step', n: 'step', m: 'mute', ',': 'history-back', '.': 'history-forward', '/': 'multiview', ' ': 'random-channel',
+      Home: 'guide-now', PageUp: 'channel-up', PageDown: 'channel-down', ArrowUp: 'channel-up', ArrowDown: 'channel-down', ArrowLeft: 'volume-down', ArrowRight: 'volume-up',
     }
-    for (const { keys } of ENTRY_KEYS) {
-      for (const { key } of keys) {
-        if (key === 'Hold Space') continue
-        const [type, guideOpen] = expected[key]
-        expect(commandFromKey(key === 'Space' ? ' ' : key, { meta: false, ctrl: false, alt: false }, guideOpen)?.type).toBe(type)
-      }
+    for (const item of [...KEYBOARD_ROWS.flat(), ...KEYBOARD_NAV]) {
+      if (!item.key) continue
+      const command = commandFromKey(item.key, { meta: false, ctrl: false, alt: false }, false)
+      expect(command, item.cap).not.toBeNull()
+      if (/^[0-9]$/.test(item.key)) expect(command?.type).toBe('digit')
+      else expect(command?.type, item.cap).toBe(expected[item.key])
     }
+    expect(commandFromKey('-', { meta: false, ctrl: false, alt: false }, true)?.type).toBe('guide-zoom')
+    // D (the developer overlay) is bound but left unmarked.
+    for (const item of KEYBOARD_ROWS.flat()) if (!item.key && item.cap.length === 1 && item.cap !== 'D') expect(commandFromKey(item.cap.toLowerCase(), { meta: false, ctrl: false, alt: false }, false), item.cap).toBeNull()
     expect(read('src/input/space-hold.ts')).toContain('toggle')
   })
 

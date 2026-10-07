@@ -297,7 +297,7 @@ describe('1001+ is part of every installation unless the viewer removed it', () 
     expect(numbers).toContain(1000)
     expect(channelByNumber(1001)?.origin).toBe('user-import')
     expect(channelByNumber(1000)?.origin).toBe('session')
-    const lastCurated = listChannels().filter((channel) => channel.enabled && channel.number <= 999).at(-1)!
+    const lastCurated = listChannels().filter((channel) => channel.enabled && channel.number <= 999 && channel.origin !== 'session').at(-1)!
     expect(adjacentChannel(lastCurated.number, 1).number).toBe(1001)
     expect(adjacentChannel(1000, 1).number).toBe(1001)
     expect(adjacentChannel(1001, -1).number).toBe(lastCurated.number)

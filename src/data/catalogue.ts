@@ -5,7 +5,7 @@ import { categoryIdFor } from './network.ts'
 import { isOnAir } from '../network/airing.ts'
 import { curatedEditList, curatedProgrammesFor, currentNetworkBase, userChannelList, userProgrammesFor, type NetworkBase } from './user-overlay.ts'
 import { DEMO_FILMS } from './media.ts'
-import { SESSION_CHANNEL, sessionProgrammes } from '../session/session-channel.ts'
+import { localChannels, localNumberForId, sessionProgrammes } from '../session/session-channel.ts'
 import { TVN_CHANNEL } from '../tvn/tvn-channel.ts'
 
 interface Seed {
@@ -367,7 +367,14 @@ function inferProgrammeType(
  * a curated channel (kept in this browser) is laid over the shipped one, at that channel's number.
  */
 let listed:
-  | { users: readonly Channel[]; curated: readonly Channel[]; base: NetworkBase; list: readonly Channel[]; byNumber: ReadonlyMap<number, Channel> }
+  | {
+      users: readonly Channel[]
+      curated: readonly Channel[]
+      base: NetworkBase
+      local: readonly Channel[]
+      list: readonly Channel[]
+      byNumber: ReadonlyMap<number, Channel>
+    }
   | undefined
 
 /** Rebuilt only when a layer is replaced; `enabled` is still read live by callers. */
@@ -375,7 +382,8 @@ function merged(): NonNullable<typeof listed> {
   const users = userChannelList()
   const curated = curatedEditList()
   const base = currentNetworkBase()
-  if (listed?.users === users && listed.curated === curated && listed.base === base) return listed
+  const local = localChannels()
+  if (listed?.users === users && listed.curated === curated && listed.base === base && listed.local === local) return listed
   const byNumber = new Map<number, Channel>()
   for (const channel of users) byNumber.set(channel.number, channel)
   // A viewer who chose NEW has no shipped channels in their network: 001–999 hold only what they add.
@@ -386,10 +394,10 @@ function merged(): NonNullable<typeof listed> {
       if (shipped && shipped.origin === 'default' && shipped.id === channel.id) byNumber.set(channel.number, channel)
     }
   }
-  // The two reserved positions are TVN's own: 000 TVN and 1000 Local Media.
+  // The reserved positions are TVN's own: 000 TVN, and 992–1000 Local Media in place of the shipped radio there.
   byNumber.set(TVN_CHANNEL.number, TVN_CHANNEL)
-  byNumber.set(SESSION_CHANNEL.number, SESSION_CHANNEL)
-  listed = { users, curated, base, list: [...byNumber.values()].sort((left, right) => left.number - right.number), byNumber }
+  for (const channel of local) byNumber.set(channel.number, channel)
+  listed = { users, curated, base, local, list: [...byNumber.values()].sort((left, right) => left.number - right.number), byNumber }
   return listed
 }
 
@@ -403,7 +411,8 @@ export function listChannels(): readonly Channel[] {
 }
 
 export function programmesFor(channelId: string): readonly Programme[] {
-  if (channelId === SESSION_CHANNEL.id) return sessionProgrammes()
+  const local = localNumberForId(channelId)
+  if (local !== null) return sessionProgrammes(local)
   return curatedProgrammesFor(channelId) ?? userProgrammesFor(channelId) ?? programmesByChannel.get(channelId) ?? []
 }
 

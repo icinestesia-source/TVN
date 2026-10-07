@@ -275,7 +275,7 @@ describe('users organise the Guide; they never change a channel', () => {
 
 describe('+ and OPTIONS close when pressed again, or with Esc', () => {
   it('a second press closes the panel; Esc closes it without adding anyone', () => {
-    expect(provider).toContain("} else if (panelOpenRef.current() === kind) {")
+    expect(provider).toContain("} else if (panelOpenRef.current() === kind && (channelNumber === undefined || channelNumber === cursorRef.current.channelNumber)) {")
     expect(provider).toContain('else if (guideOpenRef.current && (editingRef.current() || panelOpenRef.current())) closeGuideTool()')
     const plus = guide.slice(guide.indexOf('const pressPlus = () =>'), guide.indexOf('const sessionMatches'))
     expect(plus).toContain("if (tool === 'users' && newUserName.trim())")

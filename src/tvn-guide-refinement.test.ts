@@ -156,10 +156,10 @@ describe('MEDIA (1000 Local Media from local files)', () => {
 
   it('shows the existing FOLDER / FILES importer inline in the Guide footer, wired to 1000 Local Media', () => {
     const markup = renderToStaticMarkup(createElement(SessionImportTools, { onImport: async () => '' }))
-    expect(markup).toMatch(/^<footer class="guide-info guide-tool"/)
+    expect(markup).toMatch(/^<footer class="guide-info guide-tool local-media-tool"/)
     expect(markup).toMatch(/>Files</)
     expect(markup).not.toMatch(/role="dialog"/)
-    expect(guide).toContain('<SessionImportTools onImport={tv.importSession} />')
+    expect(guide).toMatch(/<SessionImportTools[\s\S]*?onImport=\{tv\.importSession\}/)
     expect(provider).toMatch(/case 'media':\s+openGuideTool\('media'\)/)
     expect(readdirSync('src/components')).not.toContain('ImportPanel.tsx')
   })

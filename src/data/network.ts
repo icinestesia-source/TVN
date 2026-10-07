@@ -7,7 +7,7 @@ import { canonicalByNumber, filterIdForCategory } from './canonical.ts'
 /** 000 is reserved for TVN's own channel (src/tvn/tvn-channel.ts), never a curated or user channel. */
 export const CHANNEL_ZERO_RESERVED = true
 
-/** 1000 is reserved for Local Media (the session channel), between the network and user television; never allocated. */
+/** 992–1000 are reserved for Local Media (media from this device), between the network and user television; never allocated. */
 export const CHANNEL_THOUSAND_RESERVED = true
 
 export interface NetworkArea {
@@ -31,7 +31,8 @@ export const NETWORK_AREAS: readonly NetworkArea[] = [
   { id: 'specialist', label: 'Specialist', from: 800, to: 849, note: 'Archive and experiment' },
   { id: 'live-world', label: 'Live World', from: 850, to: 879, note: 'Live world and webcams' },
   { id: 'news', label: 'News', from: 900, to: 949, note: 'News and information' },
-  { id: 'radio', label: 'Radio', from: 950, to: 999, note: 'Radio, ending at Closedown' },
+  { id: 'radio', label: 'Radio', from: 950, to: 991, note: 'Radio' },
+  { id: 'local', label: 'Local Media', from: 992, to: 1000, note: 'Media from this device, for this session' },
 ]
 
 /** Imported and hand-built television starts here and is not capped at four digits. */

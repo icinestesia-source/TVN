@@ -236,17 +236,18 @@ describe('initial tuned channel', () => {
     expect(stepTarget(tuned, null, 1)).toBe(adjacentChannel(picked.number, 1).number)
   })
 
-  it('J: 999 steps past 1000 Local Media to 1001; numbers 1001+ are unchanged', () => {
+  it('J: the last network channel steps past Local Media 992–1000 to 1001; numbers 1001+ are unchanged', () => {
     installUserChannels()
     try {
       expect(channelByNumber(1000)?.origin).toBe('session')
-      expect(isOnAir(channelByNumber(999)!)).toBe(true)
-      const up = commitTuned(start(999), stepTarget(start(999), null, 1))
-      expect(up).toEqual({ channelNumber: 1001, previousNumber: 999 })
+      const last = listChannels().filter((channel) => channel.number <= 999 && channel.origin !== 'session' && isOnAir(channel)).at(-1)!.number
+      expect(last).toBeLessThan(992)
+      const up = commitTuned(start(last), stepTarget(start(last), null, 1))
+      expect(up).toEqual({ channelNumber: 1001, previousNumber: last })
       const down = commitTuned(up, stepTarget(up, null, -1))
-      expect(down).toEqual({ channelNumber: 999, previousNumber: 1001 })
+      expect(down).toEqual({ channelNumber: last, previousNumber: 1001 })
       // 1000 is still reached by number, and steps on from there.
-      expect(stepTarget(start(999), 1000, 1)).toBe(1001)
+      expect(stepTarget(start(last), 1000, 1)).toBe(1001)
     } finally {
       installUserCatalogue([], new Map())
     }
@@ -299,7 +300,7 @@ describe('initial tuned channel', () => {
       const after = start(1001, 225)
       expect(after).toEqual({ channelNumber: 1001, previousNumber: 225 })
       expect(start(225, 1001).previousNumber).toBe(1001)
-      expect(stepTarget(after, null, -1)).toBe(999)
+      expect(stepTarget(after, null, -1)).toBeLessThan(992)
     } finally {
       installUserCatalogue([], new Map())
     }

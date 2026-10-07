@@ -59,7 +59,7 @@ describe('the numbering: 000 TVN, 1000 Local Media', () => {
     expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
     expect(SESSION_CHANNEL).toMatchObject({ id: 'ch-1000', name: 'Local Media', origin: 'session' })
     expect(editorScope(TVN_CHANNEL)).toBe('tvn')
-    expect(editorScope(SESSION_CHANNEL)).toBeNull()
+    expect(editorScope(SESSION_CHANNEL)).toBe('local')
   })
 
   it('MEDIA takes the Guide to 1000, and 1000 plays local files through their object URLs', () => {

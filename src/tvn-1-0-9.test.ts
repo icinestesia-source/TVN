@@ -123,7 +123,7 @@ describe('Guide terminology: NOW · ADD · MEDIA', () => {
   })
 
   it('MEDIA is the old local-media IMPORT, now 1000 Local Media from Folder or Files', () => {
-    expect(guide).toMatch(/tool === 'media' \? \(\s*<SessionImportTools onImport=\{tv\.importSession\} \/>/)
+    expect(guide).toMatch(/tool === 'media' \? \(\s*<SessionImportTools[\s\S]*?onImport=\{tv\.importSession\}/)
     const footer = renderToStaticMarkup(createElement(SessionImportTools, { onImport: async () => '' }))
     expect(footer).toMatch(/aria-label="Media"/)
     expect(footer).toMatch(/<span>1000<\/span><span>Local Media<\/span>/)

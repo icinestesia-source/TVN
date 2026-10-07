@@ -1,5 +1,5 @@
 import { channelByNumber, listChannels } from '../data/catalogue.ts'
-import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
+import { isLocalMediaNumber } from '../session/session-channel.ts'
 import type { TvCommand } from '../types/input.ts'
 import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 import type { StartupRestore } from './startup-channel.ts'
@@ -41,16 +41,16 @@ export function resolveStartupTuning(
   if (entry === 'tvn') stored = { lastChannelNumber: TVN_CHANNEL_NUMBER, previousChannelNumber: null }
   // A new session starts with an empty session channel, so it is never the place to resume: a viewer
   // who left on 000 comes back to the channel they watched before it.
-  const leftOnSession = stored.lastChannelNumber === SESSION_CHANNEL_NUMBER
+  const leftOnSession = stored.lastChannelNumber !== null && isLocalMediaNumber(stored.lastChannelNumber)
   const resume = leftOnSession ? stored.previousChannelNumber : stored.lastChannelNumber
-  const saved = resume === null || resume === SESSION_CHANNEL_NUMBER ? undefined : channelByNumber(resume)
+  const saved = resume === null || isLocalMediaNumber(resume) ? undefined : channelByNumber(resume)
   const start = restore.target(saved, listChannels())
   if (!start) return null
   const previous = leftOnSession ? null : stored.previousChannelNumber
   return {
     channelNumber: start.number,
     previousNumber:
-      previous !== null && previous !== start.number && previous !== SESSION_CHANNEL_NUMBER && channelByNumber(previous)
+      previous !== null && previous !== start.number && !isLocalMediaNumber(previous) && channelByNumber(previous)
         ? previous
         : null,
   }

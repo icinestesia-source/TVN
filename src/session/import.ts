@@ -1,6 +1,6 @@
 import { attachFlv, remuxSupported, type Remux } from '../player/flv.ts'
 import type { MediaKind } from '../types/programme.ts'
-import { replaceSession, type SessionItem } from './session-channel.ts'
+import { appendSession, localChannel, SESSION_CHANNEL_NUMBER, type SessionItem } from './session-channel.ts'
 
 const VIDEO_EXTENSIONS = new Set(['mp4', 'm4v', 'f4v', 'webm', 'mov', 'qt', 'mkv', 'ogv', 'ogm', '3gp', '3g2', 'flv'])
 const AUDIO_EXTENSIONS = new Set(['mp3', 'm4a', 'm4b', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac', 'weba', 'mka', 'aif', 'aiff', 'caf'])
@@ -175,20 +175,22 @@ export async function buildSessionItems<F extends LocalFile>(files: readonly F[]
 }
 
 /**
- * A finished import becomes the session channel only if it found something to play; an empty or
- * superseded import leaves 1000 Local Media exactly as it was. Returns the viewer-facing outcome.
+ * A finished import is added to the end of a Local Media channel's running order (1000 unless given), and
+ * only if it found something to play; an empty or superseded import leaves the channel exactly as it was.
+ * Returns the viewer-facing outcome.
  */
-export function commitImport(result: ImportResult, nowMs: number): string {
+export function commitImport(result: ImportResult, nowMs: number, number = SESSION_CHANNEL_NUMBER): string {
   if (result.cancelled) return ''
-  if (result.items.length > 0) replaceSession(result.items, nowMs)
-  return importSummary(result)
+  if (result.items.length > 0) appendSession(result.items, nowMs, number)
+  return importSummary(result, number)
 }
 
 /** Plain RetroTV wording for the outcome; never a browser error. */
-export function importSummary(result: Pick<ImportResult, 'items' | 'skipped'>): string {
+export function importSummary(result: Pick<ImportResult, 'items' | 'skipped'>, number = SESSION_CHANNEL_NUMBER): string {
   if (result.items.length === 0) return 'NO PLAYABLE MEDIA FOUND'
   const count = `${result.items.length} ${result.items.length === 1 ? 'PROGRAMME' : 'PROGRAMMES'}`
-  return result.skipped > 0 ? `1000 · LOCAL MEDIA · ${count} · ${result.skipped} SKIPPED` : `1000 · LOCAL MEDIA · ${count}`
+  const channel = `${number} · ${localChannel(number).name.toUpperCase()}`
+  return result.skipped > 0 ? `${channel} · ${count} · ${result.skipped} SKIPPED` : `${channel} · ${count}`
 }
 
 /** Loads only the file's metadata, locally, and always tears the element down. */
@@ -275,12 +277,18 @@ export async function filesInDirectory(root: DirectoryHandleLike): Promise<File[
 }
 
 /**
- * The native folder picker. Null when the viewer cancels or the browser refuses; the caller then does
- * nothing, so cancelling is never an error.
+ * The native folder picker. Null when the viewer cancels; 'refused' when the browser will not show it,
+ * so the caller can offer its ordinary folder input instead. Cancelling is never an error.
  */
-export async function pickFolder(picker: DirectoryPicker): Promise<File[] | null> {
+export async function pickFolder(picker: DirectoryPicker): Promise<File[] | null | 'refused'> {
+  let root: DirectoryHandleLike
   try {
-    return await filesInDirectory(await picker({ mode: 'read' }))
+    root = await picker({ mode: 'read' })
+  } catch (caught) {
+    return caught instanceof Error && caught.name === 'AbortError' ? null : 'refused'
+  }
+  try {
+    return await filesInDirectory(root)
   } catch {
     return null
   }

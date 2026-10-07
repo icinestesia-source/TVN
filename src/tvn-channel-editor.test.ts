@@ -91,7 +91,7 @@ describe('opening the Channel Editor from the Guide', () => {
     expect(editorScope(channelByNumber(1002)!)).toBe('user')
     expect(guide).toMatch(/onContextMenu=\{\(event: MouseEvent<HTMLButtonElement>\) => \{\s*if \(!onEdit\) return\s*event\.preventDefault\(\)\s*press\.opened\(\)\s*onEdit\(\)/)
     expect(guide).toContain("tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: channel.number })")
-    expect(guide).toContain("tool === 'edit' && focusedChannel && editScope ? (")
+    expect(guide).toContain("tool === 'edit' && focusedChannel && editScope && editScope !== 'local' ? (")
     expect(provider).toContain("if (!guideOpenRef.current || !target || !editorScope(target)) return")
   })
 
@@ -463,11 +463,12 @@ describe('editing curated 001–999 channels', () => {
     installCuratedEdits(built, programmes)
   }
 
-  it('every curated channel opens the editor; 1000 never does and 000 opens the TVN settings', () => {
+  it('every curated channel opens the editor; Local Media opens MEDIA for that channel and 000 opens the TVN settings', () => {
     install(network())
     expect(editorScope(channelByNumber(1)!)).toBe('curated')
     expect(editorScope(channelByNumber(42)!)).toBe('curated')
-    expect(editorScope(channelByNumber(SESSION_CHANNEL_NUMBER)!)).toBeNull()
+    expect(editorScope(channelByNumber(SESSION_CHANNEL_NUMBER)!)).toBe('local')
+    expect(editorScope(channelByNumber(992)!)).toBe('local')
     expect(editorScope({ number: 1000, origin: 'user-import' })).toBeNull()
     expect(editorScope(channelByNumber(0)!)).toBe('tvn')
     expect(editorScope({ number: 0, origin: 'default' })).toBeNull()
@@ -567,7 +568,7 @@ describe('existing Guide interactions', () => {
     expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
     expect(commandFromKey('Backspace', plain, false)).toEqual({ type: 'digit-back' })
     expect(guide).toContain('<GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />')
-    expect(guide).toContain('<SessionImportTools onImport={tv.importSession} />')
+    expect(guide).toMatch(/<SessionImportTools[\s\S]*?onImport=\{tv\.importSession\}/)
     expect(guide).toContain('<AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={newChannel} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />')
     expect(guide).toContain('onActivate={() => tv.activateGuide()}')
     expect(provider).toContain('const playFromGuide = (target: Channel, programme: Programme, slot?: { startMs: number; endMs: number }) => {')

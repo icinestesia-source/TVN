@@ -26,6 +26,7 @@ let selected: (ManualAiring & { channel?: Channel }) | null = null
 /**
  * Picks a programme. Given the channel (`continueOn`) and the programme's slot in its schedule, the pick
  * continues: once it ends, the programmes after it in the running order follow, rather than the broadcast.
+ * `fromSeconds` starts it part way in, as the information bar's time slider does.
  */
 export function selectProgramme(
   channelNumber: number,
@@ -33,18 +34,27 @@ export function selectProgramme(
   nowMs: number,
   slot?: { startMs: number; endMs: number },
   continueOn?: Channel,
+  fromSeconds = 0,
 ): ManualAiring {
   const scheduled = slot && continueOn?.number === channelNumber ? broadcast(continueOn, slot.startMs).current : null
   const continues = scheduled !== null && scheduled.startMs === slot?.startMs && scheduled.programme.id === programme.id
+  const startMs = nowMs - Math.max(0, Math.min(fromSeconds, programme.durationSeconds - 1)) * 1000
   selected = {
     channelNumber,
     programme,
-    startMs: nowMs,
-    endMs: nowMs + programme.durationSeconds * 1000,
+    startMs,
+    endMs: startMs + programme.durationSeconds * 1000,
     slot,
-    ...(continues && slot ? { shiftMs: nowMs - slot.startMs, channel: continueOn } : {}),
+    ...(continues && slot ? { shiftMs: startMs - slot.startMs, channel: continueOn } : {}),
   }
   return selected
+}
+
+/** Whether the information bar's time slider can move through this programme: recorded media with a length, not a stream, a page or 000. */
+export function seekable(channel: Channel, programme: Programme): boolean {
+  if (channel.origin === 'tvn' || programme.liveStream !== undefined || programme.playback === 'live') return false
+  if (programme.programmeType === 'website' || programme.programmeType === 'social-post') return false
+  return programme.durationSeconds > 1 && hasPicture(programme)
 }
 
 /**

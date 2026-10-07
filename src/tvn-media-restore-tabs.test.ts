@@ -82,7 +82,7 @@ describe('B and N on 1000 Local Media', () => {
   it('are null on the empty channel, and the provider plays the step through Play Now', () => {
     expect(sessionNeighbour(0, 1)).toBeNull()
     const provider = read('src/state/TvProvider.tsx')
-    expect(provider).toMatch(/here\?\.origin === 'session'\) \{\s+const target = sessionNeighbour\(Date\.now\(\), direction\)\s+if \(target\) sessionRef\.current\.play\(target\.id\)/)
+    expect(provider).toMatch(/here\?\.origin === 'session'\) \{\s+const target = sessionNeighbour\(Date\.now\(\), direction, here\.number\)\s+if \(target\) sessionRef\.current\.play\(target\.id\)/)
   })
 })
 

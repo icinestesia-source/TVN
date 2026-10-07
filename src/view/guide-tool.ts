@@ -1,12 +1,12 @@
 import { channelMatchesFilter } from '../data/network.ts'
-import { SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
+import { isLocalMediaNumber, SESSION_CHANNEL_NUMBER } from '../session/session-channel.ts'
 import type { Channel } from '../types/channel.ts'
 import type { GuideTool } from '../types/input.ts'
 import type { GuideFilter } from '../types/preferences.ts'
 
 /**
- * Where the Guide goes for MEDIA, IMPORT or ADD. MEDIA: 1000 Local Media at the current time, under a filter
- * that lists it. IMPORT and ADD: the foot of the User Network, keeping the cursor if its channel is still
+ * Where the Guide goes for MEDIA, IMPORT or ADD. MEDIA: the Local Media channel asked for, or the one under
+ * the cursor, otherwise 1000, at the current time, under a filter that lists it. IMPORT and ADD: the foot of the User Network, keeping the cursor if its channel is still
  * listed. EDIT: the channel asked for (or the cursor's), where the Guide already is.
  */
 export function guideToolTarget(
@@ -20,10 +20,11 @@ export function guideToolTarget(
 ): { filter: GuideFilter; cursor: { channelNumber: number; timeMs: number } } {
   if (kind === 'edit' || kind === 'users' || kind === 'options' || kind === 'guides' || kind === 'editor') return { filter, cursor: { channelNumber: requested ?? cursor.channelNumber, timeMs: cursor.timeMs } }
   if (kind === 'media') {
-    const session = channels.find((item) => item.number === SESSION_CHANNEL_NUMBER)
+    const number = requested !== undefined && isLocalMediaNumber(requested) ? requested : isLocalMediaNumber(cursor.channelNumber) ? cursor.channelNumber : SESSION_CHANNEL_NUMBER
+    const session = channels.find((item) => item.number === number)
     return {
       filter: session && channelMatchesFilter(session, filter, favourites) ? filter : 'all',
-      cursor: { channelNumber: SESSION_CHANNEL_NUMBER, timeMs: nowMs },
+      cursor: { channelNumber: number, timeMs: nowMs },
     }
   }
   const nextFilter: GuideFilter = filter === 'all' || filter === 'user' || filter.startsWith('user:') ? filter : 'user'

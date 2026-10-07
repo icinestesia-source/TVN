@@ -42,8 +42,16 @@ import {
   type LocalFile,
 } from './import.ts'
 import {
+  appendSession,
   clearSession,
+  LOCAL_MEDIA_NUMBERS,
+  localChannel,
   noteLocalSource,
+  removeSessionProgramme,
+  renameLocalChannel,
+  sessionNeighbour,
+  sessionNumberFor,
+  sessionUrlFor,
   rebaseSession,
   replaceSession,
   searchSession,
@@ -114,7 +122,7 @@ beforeAll(() => {
 }, 60000)
 
 beforeEach(() => {
-  clearSession()
+  for (const number of LOCAL_MEDIA_NUMBERS) clearSession(number)
   noteLocalSource(null)
   revoked.length = 0
 })
@@ -152,7 +160,7 @@ describe('1000 Local Media before import', () => {
     const guide = readFileSync('src/components/Guide.tsx', 'utf8')
     expect(guide).not.toMatch(/Arrows · Enter · Home · Esc/i)
     expect(guide).not.toContain('guide-help')
-    expect(guide).toContain('<SessionImportTools onImport={tv.importSession} />')
+    expect(guide).toMatch(/<SessionImportTools[\s\S]*?onImport=\{tv\.importSession\}/)
     expect(actions()).toMatch(/<button[^>]*>Media<\/button>/)
     expect(importTools()).toMatch(/<button[^>]*>Files<\/button>/)
   })
@@ -203,13 +211,16 @@ describe('building 1000 Local Media', () => {
     expect(calls).toBe(7)
   })
 
-  it('G: a new import replaces 1000 Local Media rather than adding to it', async () => {
+  it('G: a new import is added after 1000 Local Media’s running order without moving what is on air', async () => {
     commitImport(await buildSessionItems([file('Old One.mp4', 'video/mp4'), file('Old Two.mp4', 'video/mp4')], deps({ 'Old One.mp4': 600, 'Old Two.mp4': 600 })), T0)
-    commitImport(await buildSessionItems([file('New.mp4', 'video/mp4')], deps({ 'New.mp4': 900 })), T0 + 5 * MIN)
-    expect(titles()).toEqual(['New'])
-    expect(programmesFor('ch-1000').map((programme) => programme.title)).toEqual(['New'])
-    expect(current(T0 + 5 * MIN).programme.title).toBe('New')
-    expect(current(T0 + 5 * MIN).elapsedSeconds).toBe(0)
+    const before = current(T0 + 25 * MIN)
+    commitImport(await buildSessionItems([file('New.mp4', 'video/mp4')], deps({ 'New.mp4': 900 })), T0 + 25 * MIN)
+    expect(titles()).toHaveLength(3)
+    expect(titles()[2]).toBe('New')
+    expect(programmesFor('ch-1000').map((programme) => programme.title)).toContain('New')
+    const after = current(T0 + 25 * MIN)
+    expect(after.programme.title).toBe(before.programme.title)
+    expect(after.elapsedSeconds).toBe(before.elapsedSeconds)
   })
 
   it('H: a single file makes a valid 1000 Local Media', async () => {
@@ -324,8 +335,8 @@ describe('1000 Local Media as television', () => {
     expect(found.some((channel) => channel.number === 1000)).toBe(true)
     expect(found.some((channel) => channel.number === 0)).toBe(false)
     expect(searchSession('robocop').map((programme) => programme.title)).toEqual(['RoboCop (1987)'])
-    const network = searchGuideChannels(listChannels(), 'closedown', match)
-    expect(network.map((channel) => channel.number)).toContain(999)
+    const network = searchGuideChannels(listChannels(), channelByNumber(225)!.name, match)
+    expect(network.map((channel) => channel.number)).toContain(225)
     expect(network.some((channel) => channel.number === 1000)).toBe(false)
   })
 
@@ -370,14 +381,15 @@ describe('tuning around 1000', () => {
     expect(adjacentChannel(1, -1).origin).toBe('tvn')
   })
 
-  it('U: 1001+ keeps its numbers; 1000 Local Media stays tunable but CH+/CH- pass from 999 to 1001', () => {
+  it('U: 1001+ keeps its numbers; Local Media 992–1000 stays tunable but CH+/CH- pass over it to 1001', () => {
     installUserChannels()
     try {
       expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
       expect(adjacentChannel(999, 1).number).toBe(1001)
       expect(adjacentChannel(1000, 1).number).toBe(1001)
-      expect(adjacentChannel(1000, -1).number).toBe(999)
-      expect(adjacentChannel(1001, -1).number).toBe(999)
+      const below = adjacentChannel(1000, -1).number
+      expect(below).toBeLessThan(992)
+      expect(adjacentChannel(1001, -1).number).toBe(below)
     } finally {
       installUserCatalogue([], new Map())
     }
@@ -467,7 +479,7 @@ describe('isolation and privacy', () => {
     replaceSession([item('Keep Me', 30)], T0)
     const abort = Object.assign(new Error('The user aborted a request.'), { name: 'AbortError' })
     expect(await pickFolder(async () => Promise.reject(abort))).toBeNull()
-    expect(await pickFolder(async () => Promise.reject(new TypeError('not allowed')))).toBeNull()
+    expect(await pickFolder(async () => Promise.reject(new TypeError('not allowed')))).toBe('refused')
     const nothing = await buildSessionItems([], deps({}))
     expect(commitImport(nothing, T0 + MIN)).toBe('NO PLAYABLE MEDIA FOUND')
     const junk = await buildSessionItems([file('readme.txt', 'text/plain')], deps({}))
@@ -541,5 +553,64 @@ describe('isolation and privacy', () => {
     expect(await player.load(localCommand)).toBe('playing')
     expect(log.slice(-4)).toEqual(['local.audible:true', 'yt.audible:false', 'yt.load:silence', 'local.load:blob:home'])
     expect(routes).toEqual(['youtube', 'local', 'youtube', 'local'])
+  })
+})
+
+describe('Local Media 992–1000', () => {
+  it('replaces the shipped radio at 992–999 with nine Local Media channels, each its own', () => {
+    for (const number of LOCAL_MEDIA_NUMBERS) {
+      const channel = channelByNumber(number)!
+      expect(channel.origin, `${number}`).toBe('session')
+      expect(channel.id).toBe(number === 1000 ? 'ch-1000' : `ch-local-${number}`)
+      expect(broadcast(channel, T0).current.programme.title).toBe('Import media')
+    }
+    expect(channelByNumber(992)!.name).toBe('Local Media 1')
+    expect(channelByNumber(999)!.name).toBe('Local Media 8')
+    expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
+  })
+
+  it('imports go to the channel asked for, and leave the others alone', async () => {
+    commitImport(await buildSessionItems([file('Holiday.mp4', 'video/mp4')], deps({ 'Holiday.mp4': 600 })), T0, 994)
+    expect(sessionProgrammes(994).map((programme) => programme.title)).toEqual(['Holiday'])
+    expect(sessionActive(994)).toBe(true)
+    expect(sessionActive()).toBe(false)
+    expect(programmesFor('ch-local-994').map((programme) => programme.title)).toEqual(['Holiday'])
+    const airing = broadcast(channelByNumber(994)!, T0 + MIN).current.programme
+    expect(airing.title).toBe('Holiday')
+    expect(sessionNumberFor(airing.id)).toBe(994)
+    expect(sessionUrlFor(airing)).toMatch(/^blob:/)
+    expect(screenFace(channelByNumber(994)!, airing, 'playing')).toBe('picture')
+    expect(screenFace(SESSION_CHANNEL, current(T0).programme, 'playing')).toBe('session-empty')
+  })
+
+  it('a second folder adds to the running order; B and N step through all of it', () => {
+    replaceSession([item('One', 10), item('Two', 10)], T0, 995)
+    appendSession([item('Three', 10)], T0 + 15 * MIN, 995)
+    const order = sessionProgrammes(995).map((programme) => programme.title)
+    expect(order).toEqual(['Two', 'One', 'Three'])
+    expect(sessionBroadcast(T0 + 15 * MIN, 995).current.programme.title).toBe('Two')
+    expect(sessionBroadcast(T0 + 15 * MIN, 995).current.elapsedSeconds).toBe(5 * 60)
+    expect(sessionNeighbour(T0 + 15 * MIN, 1, 995)?.title).toBe('One')
+    expect(sessionNeighbour(T0 + 15 * MIN, -1, 995)?.title).toBe('Three')
+  })
+
+  it('removing the file on air starts the next now; removing the last empties the channel', () => {
+    replaceSession([item('One', 10, 'blob:r1'), item('Two', 10, 'blob:r2')], T0, 996)
+    const [one, two] = sessionProgrammes(996)
+    expect(removeSessionProgramme(one!.id, T0 + 3 * MIN)).toBe(true)
+    expect(revoked).toContain('blob:r1')
+    expect(sessionBroadcast(T0 + 3 * MIN, 996).current.programme.title).toBe('Two')
+    expect(sessionBroadcast(T0 + 3 * MIN, 996).current.elapsedSeconds).toBe(0)
+    expect(removeSessionProgramme(two!.id, T0 + 4 * MIN)).toBe(true)
+    expect(sessionActive(996)).toBe(false)
+  })
+
+  it('a Local Media channel can be named, and the name comes back to the default when cleared', () => {
+    expect(renameLocalChannel(997, '  Home   Movies ')).toBe(true)
+    expect(channelByNumber(997)!.name).toBe('Home Movies')
+    expect(localChannel(997).shortName).toBe('HOME MOVIES')
+    expect(renameLocalChannel(997, '')).toBe(true)
+    expect(channelByNumber(997)!.name).toBe('Local Media 6')
+    expect(renameLocalChannel(225, 'Not mine')).toBe(false)
   })
 })

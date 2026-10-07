@@ -1,6 +1,6 @@
 import { demoCredit } from '../data/media.ts'
 import { useTv } from '../state/tv-context.ts'
-import { manualAiring, onScreen, stepFrom } from '../player/manual.ts'
+import { manualAiring, onScreen, seekable, stepFrom } from '../player/manual.ts'
 import { hasPicture } from '../session/session-channel.ts'
 import { useClock } from '../utils/use-clock.ts'
 import { editorScope } from '../view/channel-edit.ts'
@@ -54,6 +54,7 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
         next={stream ? undefined : { title: next.programme.title, startMs: next.startMs, endMs: next.endMs }}
         picked={manualAiring(channel.number, now) !== null}
         following={following}
+        onSeek={tv.multiviewMode === '1' && seekable(channel, current.programme) ? tv.screenSeek : undefined}
       />
       <InfoActions
         key={channel.number}

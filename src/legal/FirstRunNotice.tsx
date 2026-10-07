@@ -1,26 +1,47 @@
 import { useState } from 'react'
 import type { TvContextValue } from '../state/tv-context.ts'
 import { acknowledgeNotice, openAbout } from './about-store.ts'
-import { ENTRY_KEYS } from './entry-keys.ts'
+import { KEYBOARD_NAV, KEYBOARD_ROWS, type KeyboardKey } from './entry-keys.ts'
 import { GOOGLE_PRIVACY, YOUTUBE_TERMS } from './legal-text.ts'
 import { EMPTY_SITE, EMPTY_SITE_PATH, EMPTY_SITE_WELCOMED } from '../app/site.ts'
 
+function KeyCap({ item }: { item: KeyboardKey }) {
+  const { cap, key, label, name, size = 1 } = item
+  return (
+    <li
+      className={key ? 'kb-key is-bound' : 'kb-key'}
+      style={size !== 1 ? { flexGrow: size } : undefined}
+      aria-label={key ? `${name ?? cap}${label ? `: ${label}` : ''}` : undefined}
+      aria-hidden={key ? undefined : true}
+    >
+      <kbd>{cap}</kbd>
+      {label ? <span>{label}</span> : null}
+    </li>
+  )
+}
+
+/** The keyboard drawn out, every key TVN answers to marked with what it does. */
 function EntryKeys() {
   return (
     <div className="first-run-keys" role="group" aria-label="Keyboard shortcuts">
-      {ENTRY_KEYS.map(({ group, keys }) => (
-        <div key={group} className="first-run-keygroup">
-          <p className="first-run-keygroup-head">{group}</p>
-          <ul>
-            {keys.map(({ key, label, name }) => (
-              <li key={key} aria-label={`${name}: ${label}`}>
-                <kbd className={key.length > 1 ? 'is-wide' : undefined}>{key}</kbd>
-                <span>{label}</span>
-              </li>
+      <div className="kb-main">
+        {KEYBOARD_ROWS.map((row, index) => (
+          <ul key={index} className="kb-row">
+            {row.map((item, at) => (
+              <KeyCap key={`${item.cap}-${at}`} item={item} />
             ))}
           </ul>
-        </div>
-      ))}
+        ))}
+      </div>
+      <ul className="kb-nav">
+        {KEYBOARD_NAV.map((item) => (
+          <KeyCap key={item.cap} item={item} />
+        ))}
+      </ul>
+      <p className="kb-note">
+        0–9 tune a channel · ↑ ↓ channel · ← → volume · G Guide · Space Surf (hold to change what it covers) · P Pause · R All / User / Fav · U Media · B N
+        programme · H Help · − and = zoom the Guide
+      </p>
     </div>
   )
 }
@@ -61,6 +82,7 @@ export function FirstRunNotice({
   return (
     <section className="first-run" role="dialog" aria-label="About TVN" onKeyDown={(event) => event.stopPropagation()}>
       <p className="first-run-head">Welcome to TVN</p>
+      <EntryKeys />
       <p>
         TVN is an independent television and media interface. Third-party programmes stay hosted and delivered by their providers, and
         TVN claims no ownership of them.
@@ -70,8 +92,8 @@ export function FirstRunNotice({
         <a href={YOUTUBE_TERMS} target="_blank" rel="noopener noreferrer">
           YouTube Terms of Service
         </a>
-        . Other programmes may come from direct video, live streams or radio, and Channel 1000 plays media you choose from your own
-        device.
+        . Other programmes may come from direct video, live streams or radio, and Channel 1000, with the Local Media channels from 992,
+        plays media you choose from your own device.
       </p>
       <p>
         Playback may involve communication between your browser and the programme’s provider (
@@ -84,7 +106,6 @@ export function FirstRunNotice({
         TVN includes an example network of channels to demonstrate the platform. TVN - CONTINUE carries on with it; NEW USER opens an empty
         TVN to start a network of your own.
       </p>
-      <EntryKeys />
       {confirming ? (
         <div className="first-run-confirm" role="alertdialog" aria-label="Start new network?">
           <p className="first-run-head">Start new network?</p>

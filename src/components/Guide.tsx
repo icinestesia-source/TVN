@@ -31,7 +31,7 @@ import type { Channel } from '../types/channel.ts'
 import type { GuideSlot } from '../types/schedule.ts'
 import type { Programme } from '../types/programme.ts'
 import { useClock } from '../utils/use-clock.ts'
-import { hasPicture, searchSession, SESSION_CHANNEL } from '../session/session-channel.ts'
+import { hasPicture, searchSession, SESSION_CHANNEL, SESSION_CHANNEL_NUMBER, sessionProgrammes } from '../session/session-channel.ts'
 import { TvnChannelPanel } from './TvnChannelPanel.tsx'
 import { channelActions, cornerActions, type ChannelActions, type CornerActions } from '../view/info-shortcuts.ts'
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
@@ -52,7 +52,7 @@ import { channelLinksFrom } from '../services/user-network.ts'
 import { USER_NETWORK_FORMAT } from '../services/user-network-export.ts'
 import { CHANNEL_FILE_FORMAT } from '../services/channel-file.ts'
 import { USER_NUMBER_START } from '../data/network.ts'
-import { listChannels } from '../data/catalogue.ts'
+import { channelByNumber, listChannels } from '../data/catalogue.ts'
 import {
   floorHalfHour,
   formatClock,
@@ -348,7 +348,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     tv.dispatch({ type: 'guide-filter', filter: userFilter(user.id) })
     return `${user.name} · ${message}`
   }
-  const sessionMatches = searching && focusedChannel?.origin === 'session' ? searchSession(tv.guideQuery) : []
+  const sessionMatches = searching && focusedChannel?.origin === 'session' ? searchSession(tv.guideQuery, focusedChannel.number) : []
+  const mediaChannel = (tool === 'media' && focusedChannel?.origin === 'session' ? focusedChannel : null) ?? channelByNumber(SESSION_CHANNEL_NUMBER) ?? SESSION_CHANNEL
   const numbers = useMemo(() => tv.visibleChannels.map((channel) => channel.number), [tv.visibleChannels])
   const [bandAnchor, setBandAnchor] = useState<{ channelNumber: number; scrollTop: number } | null>(null)
   const viewedNumber = guideViewedChannel(numbers, scrollTop, ROW_HEIGHT, bandAnchor) ?? tv.guideCursor.channelNumber
@@ -701,8 +702,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       }
                       live={channel.liveFromMs !== undefined}
                       busy={channelBusy === channel.number}
-                      onLatest={editorScope(channel) ? () => channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' })) : undefined}
-                      onReload={editorScope(channel) ? () => channelAction(channel.number, tv.reloadChannel) : undefined}
+                      onLatest={editorScope(channel) && channel.origin !== 'session' ? () => channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' })) : undefined}
+                      onReload={editorScope(channel) && channel.origin !== 'session' ? () => channelAction(channel.number, tv.reloadChannel) : undefined}
                       onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}
                       expanded={actionsAll}
                       onExpand={toggleActions}
@@ -802,7 +803,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
         <GuidePanel />
       ) : tool === 'edit' && focusedChannel && editScope === 'tvn' ? (
         <TvnChannelPanel onChooseAnother={tv.chooseAnotherTvn} onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })} />
-      ) : tool === 'edit' && focusedChannel && editScope ? (
+      ) : tool === 'edit' && focusedChannel && editScope && editScope !== 'local' ? (
         <ChannelEditor
           key={focusedChannel.number}
           channel={focusedChannel}
@@ -820,7 +821,17 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onPlay={tv.playChannelProgramme}
         />
       ) : tool === 'media' ? (
-        <SessionImportTools onImport={tv.importSession} />
+        <SessionImportTools
+          key={mediaChannel.number}
+          channel={mediaChannel}
+          programmes={sessionProgrammes(mediaChannel.number)}
+          watching={tv.channel.number === mediaChannel.number}
+          onImport={tv.importSession}
+          onRemove={tv.removeSessionFile}
+          onClear={tv.clearLocalChannel}
+          onRename={tv.renameLocalChannel}
+          onWatch={(channelNumber) => tv.dispatch({ type: 'tune', channelNumber })}
+        />
       ) : tool === 'options' || tool === 'editor' ? null : tool === 'users' ? (
         <NewUserTools
           name={newUserName}
@@ -842,7 +853,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onRemoveAll={() => tv.removeUserChannels('all')}
         />
       ) : sessionMatches.length > 0 ? (
-        <SessionMatches matches={sessionMatches} onPlay={tv.playSession} />
+        <SessionMatches channel={focusedChannel ?? SESSION_CHANNEL} matches={sessionMatches} onPlay={tv.playSession} />
       ) : (
         <ProgrammePanel
           channel={focusedChannel}
@@ -1277,14 +1288,14 @@ function TestChannelsButton({ onLoad }: { onLoad: () => Promise<string> }) {
 }
 
 /** Search results on the session channel: imported titles, each a Play Now. */
-function SessionMatches({ matches, onPlay }: { matches: readonly Programme[]; onPlay: (programmeId: string) => void }) {
+function SessionMatches({ channel, matches, onPlay }: { channel: Channel; matches: readonly Programme[]; onPlay: (programmeId: string) => void }) {
   const shown = matches.slice(0, 6)
   return (
     <footer className="guide-info guide-matches">
       <div className="info-main">
         <p className="info-kicker">
-          <span>{padChannel(SESSION_CHANNEL.number)}</span>
-          <span>{SESSION_CHANNEL.name}</span>
+          <span>{padChannel(channel.number)}</span>
+          <span>{channel.name}</span>
           <span>
             {matches.length} {matches.length === 1 ? 'match' : 'matches'}
           </span>

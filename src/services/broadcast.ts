@@ -11,7 +11,7 @@ import { slotsOverlapping } from '../scheduler/window.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import type { GuideSlot, ScheduleSnapshot } from '../types/schedule.ts'
-import { SESSION_CHANNEL_NUMBER, sessionBroadcast, sessionGuideSlots } from '../session/session-channel.ts'
+import { sessionBroadcast, sessionGuideSlots } from '../session/session-channel.ts'
 import { refusedVideos } from './embed-refusals.ts'
 import { isOnAir } from '../network/airing.ts'
 import { setTvnLookup, TVN_CHANNEL_NUMBER, tvnBroadcast, tvnGuideSlots } from '../tvn/tvn-channel.ts'
@@ -55,7 +55,7 @@ function liveListing(channel: Channel): Programme | null {
 
 export function broadcast(channel: Channel, nowMs = Date.now()): ScheduleSnapshot<Programme> {
   if (channel.origin === 'tvn' && channel.number === TVN_CHANNEL_NUMBER) return tvnBroadcast(nowMs)
-  if (channel.number === SESSION_CHANNEL_NUMBER) return sessionBroadcast(nowMs)
+  if (channel.origin === 'session') return sessionBroadcast(nowMs, channel.number)
   const live = liveListing(channel)
   if (live) return liveStreamBroadcast(channel, live, nowMs)
   if (channel.customLineup) return calculateSchedule(ownLineup(channel, nowMs))
@@ -71,7 +71,7 @@ export function broadcast(channel: Channel, nowMs = Date.now()): ScheduleSnapsho
 
 export function guideSlots(channel: Channel, startMs: number, endMs: number): GuideSlot<Programme>[] {
   if (channel.origin === 'tvn' && channel.number === TVN_CHANNEL_NUMBER) return tvnGuideSlots(startMs, endMs)
-  if (channel.number === SESSION_CHANNEL_NUMBER) return sessionGuideSlots(startMs, endMs)
+  if (channel.origin === 'session') return sessionGuideSlots(startMs, endMs, channel.number)
   const live = liveListing(channel)
   if (live) return liveStreamGuideSlots(live, startMs, endMs)
   if (channel.customLineup) return slotsOverlapping(ownLineup(channel, startMs), startMs, endMs)

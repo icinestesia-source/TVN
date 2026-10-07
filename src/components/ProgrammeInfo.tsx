@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { programmeAttribution, useSourceRegister } from '../credits/attribution.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import { playbackLabel } from '../view/playback-label.ts'
 import { programmeDate } from '../view/programme-date.ts'
 import { formatDuration, formatElapsed, formatRange, padChannel } from '../utils/time.ts'
+import { TimeSlider } from './TimeSlider.tsx'
 
 export function shownDescription(programme: Programme): string | null {
   if (programme.mediaKind === 'audio' && programme.mediaUrl) return null
@@ -35,6 +37,7 @@ export function ProgrammeInfo({
   next,
   picked = false,
   following = null,
+  onSeek,
 }: {
   channel: Channel
   programme: Programme
@@ -47,7 +50,10 @@ export function ProgrammeInfo({
   picked?: boolean
   /** A viewing Guide chose it: green rather than gold, and Next is the Guide's next item (null when it is the last). */
   following?: { next: { title: string; channelNumber: number } | null } | null
+  /** Over the picture: clicking the time opens a slider to move through the programme. */
+  onSeek?: (seconds: number) => void
 }) {
+  const [sliding, setSliding] = useState(false)
   const stream = programme.liveStream !== undefined
   const live = now >= startMs && now < endMs
   const later = now < startMs
@@ -90,13 +96,29 @@ export function ProgrammeInfo({
         {stream ? null : <span>{formatRange(startMs, endMs)}</span>}
         {stream ? null : <span>{formatDuration(programme.durationSeconds)}</span>}
         {stream ? null : <span className="info-date">{programmeDate(programme)}</span>}
-        {live && !stream ? (
+        {live && !stream && onSeek ? (
+          <button
+            type="button"
+            className={sliding ? 'info-elapsed is-sliding' : 'info-elapsed'}
+            title="Move through the programme"
+            aria-expanded={sliding}
+            onClick={(event) => {
+              event.stopPropagation()
+              setSliding((open) => !open)
+            }}
+          >
+            {formatElapsed(elapsed)} / {formatElapsed(programme.durationSeconds)}
+          </button>
+        ) : live && !stream ? (
           <span>
             {formatElapsed(elapsed)} / {formatElapsed(programme.durationSeconds)}
           </span>
         ) : null}
         {status ? <span className={alert ? 'info-status is-alert' : 'info-status'}>{status}</span> : null}
       </p>
+      {sliding && onSeek && live && !stream ? (
+        <TimeSlider key={programme.id} elapsedSeconds={elapsed} durationSeconds={programme.durationSeconds} onSeek={onSeek} onDone={() => setSliding(false)} />
+      ) : null}
       {description ? <p className="info-desc">{description}</p> : null}
       {following ? (
         <p className="info-next">
