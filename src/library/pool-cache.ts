@@ -124,11 +124,24 @@ export function noteCalculatedPools(items: readonly MediaItem[], pools: Readonly
   if (items.length > 0) calculated = { items, pools }
 }
 
+const byId = (a: MediaItem, b: MediaItem) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+
+/**
+ * The library as the next visit reads it back: the saved library comes out of its store in id order, whatever
+ * order this visit built it in. Kept in that order, a first visit's pools fit the second visit.
+ */
+export function asStored(items: readonly MediaItem[]): readonly MediaItem[] {
+  for (let index = 1; index < items.length; index += 1) {
+    if (byId(items[index - 1], items[index]) > 0) return [...items].sort(byId)
+  }
+  return items
+}
+
 /** The most recently calculated pools, ready to keep; null when nothing new has been worked out since. */
 export function poolsToKeep(): SavedPools | null {
   const latest = calculated
   calculated = null
-  return latest ? encodePools(latest.items, latest.pools) : null
+  return latest ? encodePools(asStored(latest.items), latest.pools) : null
 }
 
 export function resetPoolCacheForTests(): void {

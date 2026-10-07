@@ -447,23 +447,30 @@ export async function commitPlayableCatalogue(
 }
 
 /**
- * Loads programmes the resolver has already accepted. They are fetched and compared on every start, so
- * saving them never holds the start (see saveDeferredLibrary): a save that is lost is made again next time.
+ * The shipped catalogue, read and unpacked: begun at the very start, so it downloads while the saved library is
+ * still being read. Nothing when it cannot be had.
  */
-export async function loadShippedIndependentCatalogue(): Promise<number> {
+export async function fetchShippedCatalogue(): Promise<LibraryMedia[]> {
   let response: Response
   try {
     response = await fetch('/independent/playable.json')
   } catch {
-    return 0
+    return []
   }
-  if (!response.ok) return 0
-  let items: LibraryMedia[]
+  if (!response.ok) return []
   try {
-    items = expandPlayableCatalogue(await response.json())
+    return expandPlayableCatalogue(await response.json())
   } catch {
-    return 0
+    return []
   }
+}
+
+/**
+ * Loads programmes the resolver has already accepted. They are fetched and compared on every start, so
+ * saving them never holds the start (see saveDeferredLibrary): a save that is lost is made again next time.
+ */
+export async function loadShippedIndependentCatalogue(shipped: Promise<LibraryMedia[]> = fetchShippedCatalogue()): Promise<number> {
+  const items = await shipped
   if (items.length === 0) return 0
   const now = Date.now()
   return commitPlayableCatalogue(items, {

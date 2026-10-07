@@ -1,5 +1,5 @@
 /**
- * Every PNG dropped into src/assets/logos (1 to 10 of them) is a TVN logo. Only the URLs are bundled, so a
+ * Every PNG dropped into src/assets/logos (1 to 20 of them, square) is a TVN logo. Only the URLs are bundled, so a
  * page load fetches just the one it picks.
  */
 export const LOGOS: readonly string[] = Object.values(

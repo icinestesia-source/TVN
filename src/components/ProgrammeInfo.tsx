@@ -95,13 +95,13 @@ export function ProgrammeInfo({
         {/* Gold when the viewer picked it in the Guide: playing, but not what is on air now. */}
         <span className={following ? 'info-kind is-following' : picked ? 'info-kind is-picked' : 'info-kind'}>{kind}</span>
         {following ? <span className="info-following">Following Guide</span> : null}
-        {stream ? null : <span>{formatRange(startMs, endMs)}</span>}
-        {stream ? null : <span>{formatDuration(programme.durationSeconds)}</span>}
+        {stream ? null : <span className="info-clock">{formatRange(startMs, endMs)}</span>}
+        {stream ? null : <span className="info-clock">{formatDuration(programme.durationSeconds)}</span>}
         {stream ? null : <span className="info-date">{programmeDate(programme)}</span>}
         {live && !stream && onSeek ? (
           <button
             type="button"
-            className={sliding ? 'info-elapsed is-sliding' : 'info-elapsed'}
+            className={sliding ? 'info-clock info-elapsed is-sliding' : 'info-clock info-elapsed'}
             title="Move through the programme"
             aria-expanded={sliding}
             onClick={(event) => {
@@ -112,7 +112,7 @@ export function ProgrammeInfo({
             {formatElapsed(elapsed)} / {formatElapsed(programme.durationSeconds)}
           </button>
         ) : live && !stream ? (
-          <span>
+          <span className="info-clock">
             {formatElapsed(elapsed)} / {formatElapsed(programme.durationSeconds)}
           </span>
         ) : null}

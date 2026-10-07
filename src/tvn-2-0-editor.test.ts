@@ -185,7 +185,7 @@ describe('DATE', () => {
     const programme = { id: 'p', title: 'A Long Title', description: '', durationSeconds: 600, videoId: 'abcdefghijk', publishedAt: '2020-07-14T10:00:00Z' } as Programme
     const html = renderToStaticMarkup(createElement(ProgrammeInfo, { channel, programme, startMs: 0, endMs: 600_000, now: 0 }))
     expect(html).toContain('<h2 class="info-title">A Long Title</h2>')
-    expect(html).toContain('<span>10 min</span><span class="info-date">(14/07/20)</span>')
+    expect(html).toContain('<span class="info-clock">10 min</span><span class="info-date">(14/07/20)</span>')
     expect(guideProgramme(programme).publishedAt).toBe('2020-07-14T10:00:00Z')
     expect(read('src/styles/guide.css')).toMatch(/\.info-date \{[^}]*white-space: nowrap/)
     expect(read('src/components/Guide.tsx')).not.toContain('programmeDate')

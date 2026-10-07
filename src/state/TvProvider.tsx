@@ -31,7 +31,7 @@ import { beginScheduleBootstrap, endScheduleBootstrap, hydrateDirector } from '.
 import { primeDirector, setChannelIdentity } from '../director/director.ts'
 import { markLiveUnavailable } from '../dynamic/runtime.ts'
 import { loadUserLibraryMode, setUserLibraryMode, userLibraryMode } from '../library/mode.ts'
-import { ensureDefaultNetwork, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary, saveDeferredLibrary, subscribeLibrary } from '../library/store.ts'
+import { ensureDefaultNetwork, fetchShippedCatalogue, hydrateLibrary, ingestParsed, librarySnapshot, loadShippedIndependentCatalogue, recordPlaybackFailure, republishLibrary, saveDeferredLibrary, subscribeLibrary } from '../library/store.ts'
 import { loadRegister } from '../credits/load.ts'
 import type { SourceRegister } from '../credits/provenance.ts'
 import { reconcileOriginals, type OriginalSource } from '../services/original-sources.ts'
@@ -2270,13 +2270,16 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (!cancel) setStartupProgress(STARTUP_STEPS[step])
       }
       try {
+        // The shipped catalogue and the curated edits download while the saved schedules and library are read.
+        const shipped = fetchShippedCatalogue()
+        const centralEdits = import('../data/central-edits.json').then((module) => module.default as unknown, () => null)
         const savedPools = readSavedPools().catch(() => null)
         await hydrateDirector().catch(() => undefined)
         reached(0)
         offerSavedPools(await savedPools)
         await hydrateLibrary()
         reached(1)
-        await loadShippedIndependentCatalogue().catch(() => 0)
+        await loadShippedIndependentCatalogue(shipped).catch(() => 0)
         reached(2)
         const network = await bootstrapUserNetwork().catch(() => null)
         reached(3)
@@ -2284,7 +2287,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (cancel) return false
         republishLibrary()
         loadOverrides()
-        installCentralEdits(await import('../data/central-edits.json').then((module) => module.default as unknown, () => null))
+        installCentralEdits(await centralEdits)
         installCurated()
         if (network) {
           const migrated = migrateLegacyUserNumbers(network.sources)

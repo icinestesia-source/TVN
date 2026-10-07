@@ -136,10 +136,10 @@ describe('startup loading presentation', () => {
     expect(markup).not.toMatch(/error|exception|undefined|null|fetch|IndexedDB|stack/i)
   })
 
-  it('L: the logos folder ships 1 to 10 bundled square PNGs, and the startup screen shows one of them', () => {
+  it('L: the logos folder ships 1 to 20 bundled square PNGs, and the startup screen shows one of them', () => {
     const files = readdirSync('src/assets/logos').filter((file) => file.endsWith('.png'))
     expect(files.length).toBeGreaterThanOrEqual(1)
-    expect(files.length).toBeLessThanOrEqual(10)
+    expect(files.length).toBeLessThanOrEqual(20)
     expect(LOGOS).toHaveLength(files.length)
     for (const file of files) {
       const png = readFileSync(`src/assets/logos/${file}`)

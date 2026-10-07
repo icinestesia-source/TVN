@@ -1375,6 +1375,13 @@ a.info-creator:focus-visible {
   cursor: pointer;
 }
 
+/* The programme's times and length, and where it has got to, in the set's own lettering, as NEXT is. */
+.info-time .info-clock,
+.time-slider-value {
+  font-family: var(--font-ui);
+  letter-spacing: 0.04em;
+}
+
 .info-elapsed:hover,
 .info-elapsed:focus-visible,
 .info-elapsed.is-sliding {

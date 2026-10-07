@@ -33,7 +33,9 @@ describe('channel pools kept between visits', () => {
     expect(saved).not.toBeNull()
     expect(poolsToKeep()).toBeNull()
 
-    const again = [...pool]
+    // The next visit reads the library back from its store in id order, not the order this visit built it in.
+    const again = [...pool].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    expect(again.some((item, index) => item !== pool[index])).toBe(true)
     offerSavedPools(saved)
     let entries = 0
     for (const number of network) {

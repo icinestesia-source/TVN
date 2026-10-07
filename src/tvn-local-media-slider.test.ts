@@ -46,7 +46,7 @@ describe('the time slider in the information bar', () => {
     const channel = channelByNumber(225)!
     const airing = broadcast(channel, NOW).current
     const props = { channel, programme: airing.programme, startMs: airing.startMs, endMs: airing.endMs, now: NOW }
-    expect(renderToStaticMarkup(createElement(ProgrammeInfo, { ...props, onSeek: () => undefined }))).toMatch(/<button type="button" class="info-elapsed"[^>]*aria-expanded="false"/)
+    expect(renderToStaticMarkup(createElement(ProgrammeInfo, { ...props, onSeek: () => undefined }))).toMatch(/<button type="button" class="info-clock info-elapsed"[^>]*aria-expanded="false"/)
     expect(renderToStaticMarkup(createElement(ProgrammeInfo, props))).not.toContain('info-elapsed')
     expect(read('src/components/NowNextOverlay.tsx')).toContain("onSeek={tv.multiviewMode === '1' && seekable(channel, current.programme) ? tv.screenSeek : undefined}")
     const slider = read('src/components/TimeSlider.tsx')
