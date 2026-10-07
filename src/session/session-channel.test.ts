@@ -46,6 +46,7 @@ import {
   clearSession,
   LOCAL_MEDIA_NUMBERS,
   localChannel,
+  moveSessionProgramme,
   noteLocalSource,
   removeSessionProgramme,
   renameLocalChannel,
@@ -603,6 +604,26 @@ describe('Local Media 992–1000', () => {
     expect(sessionBroadcast(T0 + 3 * MIN, 996).current.elapsedSeconds).toBe(0)
     expect(removeSessionProgramme(two!.id, T0 + 4 * MIN)).toBe(true)
     expect(sessionActive(996)).toBe(false)
+  })
+
+  it('files can be put in a new order without disturbing what is on air', () => {
+    replaceSession([item('One', 10), item('Two', 10), item('Three', 10)], T0, 993)
+    const at = T0 + 13 * MIN
+    const before = sessionBroadcast(at, 993).current
+    expect(before.programme.title).toBe('Two')
+    const three = sessionProgrammes(993)[2]!
+    expect(moveSessionProgramme(three.id, 0, at)).toBe(true)
+    expect(sessionProgrammes(993).map((programme) => programme.title)).toEqual(['Three', 'One', 'Two'])
+    const after = sessionBroadcast(at, 993).current
+    expect(after.programme.title).toBe('Two')
+    expect(after.elapsedSeconds).toBe(before.elapsedSeconds)
+    expect(sessionBroadcast(at + 7 * MIN, 993).current.programme.title).toBe('Three')
+    const two = sessionProgrammes(993)[2]!
+    expect(moveSessionProgramme(two.id, 0, at)).toBe(true)
+    expect(sessionBroadcast(at, 993).current.programme.title).toBe('Two')
+    expect(sessionBroadcast(at, 993).current.elapsedSeconds).toBe(before.elapsedSeconds)
+    expect(sessionNeighbour(at, 1, 993)?.title).toBe('Three')
+    expect(moveSessionProgramme(two.id, 0, at)).toBe(false)
   })
 
   it('a Local Media channel can be named, and the name comes back to the default when cleared', () => {

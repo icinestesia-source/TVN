@@ -569,7 +569,7 @@ describe('existing Guide interactions', () => {
     expect(commandFromKey('Backspace', plain, false)).toEqual({ type: 'digit-back' })
     expect(guide).toContain('<GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />')
     expect(guide).toMatch(/<SessionImportTools[\s\S]*?onImport=\{tv\.importSession\}/)
-    expect(guide).toContain('<AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={newChannel} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />')
+    expect(guide).toContain('<AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />')
     expect(guide).toContain('onActivate={() => tv.activateGuide()}')
     expect(provider).toContain('const playFromGuide = (target: Channel, programme: Programme, slot?: { startMs: number; endMs: number }) => {')
   })

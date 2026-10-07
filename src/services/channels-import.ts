@@ -1,4 +1,5 @@
-import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { isLowUserNumber, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { currentNetworkBase } from '../data/user-overlay.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme, ProgrammeType } from '../types/programme.ts'
 import { reachesArchive, type ChannelEditorial } from './channel-curation.ts'
@@ -265,7 +266,7 @@ export function allocateUserNumber(taken: Set<number>): number | null {
  * to the default network, so move any assigned number below 1001 upward
  * without dropping the source record or its videos.
  */
-export function migrateLegacyUserNumbers(existing: readonly StoredSource[]): {
+export function migrateLegacyUserNumbers(existing: readonly StoredSource[], keepLow = currentNetworkBase() === 'new'): {
   sources: StoredSource[]
   migrated: number
 } {
@@ -276,7 +277,8 @@ export function migrateLegacyUserNumbers(existing: readonly StoredSource[]): {
     }
   }
   const ordered = existing
-    .filter((source) => source.channelNumber !== null && source.channelNumber < USER_NUMBER_START)
+    // With the shipped network cleared, 001–991 are the viewer's own and stay where they are.
+    .filter((source) => source.channelNumber !== null && source.channelNumber < USER_NUMBER_START && !(keepLow && isLowUserNumber(source.channelNumber)))
     .sort((left, right) => (left.channelNumber ?? 0) - (right.channelNumber ?? 0))
   const renumber = new Map<string, number>()
   for (const source of ordered) {

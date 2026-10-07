@@ -47,7 +47,7 @@ export function searchChannels(editorialOf: (number: number) => ChannelEditorial
   const out: SearchChannel[] = []
   for (const channel of listChannels()) {
     if (!channel.enabled || channel.number < 1 || channel.origin === 'session' || isLiveStreamChannel(channel)) continue
-    const own = channel.customLineup || !policyFor(channel.number)
+    const own = channel.customLineup || channel.origin === 'user-import' || !policyFor(channel.number)
     const programmes = (own ? programmesFor(channel.id).map((programme) => fromListing(channel, programme)) : getChannelMedia(library, channel.number).map(fromLibrary)).filter(
       (programme): programme is SearchProgramme => programme !== null && !(programme.videoId && refused.has(programme.videoId)),
     )

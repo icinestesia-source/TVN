@@ -210,7 +210,8 @@ export interface TvContextValue {
   /** NEW: clear the example network (and any channels) so this browser's network starts empty but for 000 and 1000. */
   startNewNetwork: () => Promise<string>
   /** A new, empty 1001+ channel for Edit Channel to fill; its number. */
-  createEmptyChannel: () => Promise<number>
+  /** A new, empty channel after the User Network; `low` puts it at the first free number from 001 in a network of the viewer's own. */
+  createEmptyChannel: (low?: boolean) => Promise<number>
   /** Download the User Network (1001+) as tvn-user-network-v1 JSON. Reads only: nothing is changed. */
   exportUserNetwork: () => Promise<string>
   /** Replace the User Network (1001+) with a validated, confirmed tvn-user-network-v1 document. */
@@ -264,6 +265,8 @@ export interface TvContextValue {
   importSession: (files: readonly File[], channelNumber: number) => Promise<string>
   /** Takes one imported file out of its Local Media channel. */
   removeSessionFile: (programmeId: string) => void
+  /** Moves one imported file to this position in its Local Media channel's running order; what is on air carries on. */
+  moveSessionFile: (programmeId: string, to: number) => boolean
   /** Empties a Local Media channel; its name stays. */
   clearLocalChannel: (channelNumber: number) => void
   /** Names a Local Media channel; an empty name restores the default. */

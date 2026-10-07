@@ -1,4 +1,4 @@
-import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import type { ImportedVideo, StoredSource, VideoCreator } from './channels-import.ts'
 import {
   cleanArtwork,
@@ -269,7 +269,7 @@ export function buildUserNetworkExport(
 ): UserNetworkExport {
   const listed = users.map(({ id, name }) => ({ id, name }))
   const channels = stored
-    .filter((record) => record.channelNumber !== null && record.channelNumber >= USER_NUMBER_START && record.channelNumber < USER_NUMBER_LIMIT)
+    .filter((record) => isOwnNumber(record.channelNumber))
     .map((record) => exportChannel(record, uploaderOf, listed))
     .sort((a, b) => a.number - b.number)
   const filled = new Set(channels.filter((channel) => channel.state !== 'empty').map((channel) => channel.number))
@@ -413,7 +413,7 @@ export function checkChannel(channel: unknown, at: string, errors: string[]): vo
   }
   if (channel.id !== undefined && (typeof channel.id !== 'string' || !CHANNEL_ID.test(channel.id))) errors.push(`${at}.id is not a channel id`)
   const number = channel.number
-  if (typeof number !== 'number' || !Number.isInteger(number) || number < USER_NUMBER_START || number >= USER_NUMBER_LIMIT) errors.push(`${at}.number is not a User Network number`)
+  if (typeof number !== 'number' || !isOwnNumber(number)) errors.push(`${at}.number is not a User Network number`)
   if (typeof channel.name !== 'string' || !channel.name.trim()) errors.push(`${at}.name is missing`)
   if (channel.state !== 'populated' && channel.state !== 'empty') errors.push(`${at}.state must be populated or empty`)
   if (typeof channel.enabled !== 'boolean') errors.push(`${at}.enabled is not true or false`)
@@ -515,7 +515,7 @@ export function validateUserNetworkExport(data: unknown): { ok: true; value: Use
     if (!Array.isArray(data.favourites)) errors.push('favourites is not a list')
     else {
       data.favourites.forEach((number, index) => {
-        if (!(typeof number === 'number' && Number.isInteger(number) && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT)) errors.push(`favourites[${index}] is not a User Network channel number`)
+        if (!(typeof number === 'number' && isOwnNumber(number))) errors.push(`favourites[${index}] is not a User Network channel number`)
       })
       if (new Set(data.favourites).size !== data.favourites.length) errors.push('favourites repeats a channel')
     }
@@ -531,7 +531,7 @@ export function validateUserNetworkExport(data: unknown): { ok: true; value: Use
       ids.add(channel.id)
     }
     const number = channel.number
-    if (typeof number === 'number' && Number.isInteger(number) && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT) {
+    if (typeof number === 'number' && isOwnNumber(number)) {
       if (seen.has(number)) errors.push(`${at}.number ${number} appears twice`)
       else seen.add(number)
     }

@@ -1,4 +1,4 @@
-import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber, USER_NUMBER_START } from '../data/network.ts'
 import { cleanEditorial, cleanFilter, rescanned, SOURCE_MODES, sourceModeOf, type SourceMode } from './channel-curation.ts'
 import { cleanName, keptOrder, widenSources, withPlaylistVideos } from './channel-editor.ts'
 import { canonicalYouTubeUrl, inventoryOf, singleVideoId, type ChannelSource } from './channel-sources.ts'
@@ -127,7 +127,7 @@ export function recordsFromExport(doc: UserNetworkExport, now: number): StoredSo
   const taken = new Set<string>()
   const seen = new Map<string, number>()
   return doc.channels
-    .filter((channel) => channel.number >= USER_NUMBER_START && channel.number < USER_NUMBER_LIMIT)
+    .filter((channel) => isOwnNumber(channel.number))
     .map((channel): StoredSource => {
       const owner = channel.owner && channel.owner !== TVN_OWNER ? { owner: channel.owner } : {}
       const editorial = cleanEditorial(channel.editorial)
@@ -302,7 +302,7 @@ export async function resolveRestored(
 
 /** The whole stored list after a restore: every 1001+ channel replaced by the file's; everything else untouched. */
 export function restoreUserNetwork(existing: readonly StoredSource[], restored: readonly StoredSource[]): StoredSource[] {
-  const userNumber = (record: StoredSource) => record.channelNumber !== null && record.channelNumber >= USER_NUMBER_START && record.channelNumber < USER_NUMBER_LIMIT
+  const userNumber = (record: StoredSource) => isOwnNumber(record.channelNumber)
   const restoredIds = new Set(restored.map((record) => record.id))
   // A record outside 1001+ with the same id as a restored channel (a list kept in the library only) gives way to it.
   const kept = existing.filter((record) => !userNumber(record) && !restoredIds.has(record.id))

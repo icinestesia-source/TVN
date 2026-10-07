@@ -123,6 +123,8 @@ export function AddChannelForm({
   onExport,
   onExportAll,
   onNewChannel,
+  nextLowNumber = null,
+  onNewLowChannel,
   onRestore,
   onFocus,
   inputRef,
@@ -137,6 +139,10 @@ export function AddChannelForm({
   onExportAll?: () => Promise<string>
   /** A new, empty channel, opened in Edit Channel to name and fill with sources. */
   onNewChannel?: () => Promise<void>
+  /** In a network of the viewer's own, the first free channel from 001; null hides "New channel 001". */
+  nextLowNumber?: number | null
+  /** A new, empty channel at `nextLowNumber`, opened in Edit Channel. */
+  onNewLowChannel?: () => Promise<void>
   /** Opens RESTORE: a User Network file saved with EXPORT, replacing the User Network. */
   onRestore?: () => void
   onFocus?: () => void
@@ -255,6 +261,16 @@ export function AddChannelForm({
           New channel…
         </button>
       ) : null}
+      {onNewLowChannel && nextLowNumber !== null ? (
+        <button
+          type="button"
+          className="tune-key"
+          title="A new, empty channel among 001–991"
+          onClick={() => void onNewLowChannel().catch((caught: unknown) => setNote(viewerMessage(caught, 'THE CHANNEL COULD NOT BE MADE')))}
+        >
+          New channel {String(nextLowNumber).padStart(3, '0')}
+        </button>
+      ) : null}
       {note ? (
         <span className="add-channel-note" role="status">
           {note}
@@ -295,6 +311,7 @@ export function SessionImportTools({
   watching = false,
   onImport,
   onRemove = () => {},
+  onMove = () => false,
   onClear = () => {},
   onRename = () => false,
   onWatch = () => {},
@@ -304,6 +321,7 @@ export function SessionImportTools({
   watching?: boolean
   onImport: (files: readonly File[], channelNumber: number) => Promise<string>
   onRemove?: (programmeId: string) => void
+  onMove?: (programmeId: string, to: number) => boolean
   onClear?: (channelNumber: number) => void
   onRename?: (channelNumber: number, name: string) => boolean
   onWatch?: (channelNumber: number) => void
@@ -362,6 +380,8 @@ export function SessionImportTools({
   }
 
   const shown = programmes.slice(0, 200)
+  const [dragging, setDragging] = useState<string | null>(null)
+  const [over, setOver] = useState<number | null>(null)
 
   return (
     <footer className="guide-info guide-tool local-media-tool" aria-label="Media">
@@ -403,10 +423,59 @@ export function SessionImportTools({
         </form>
         {shown.length > 0 ? (
           <ul className="local-media-list" aria-label={`Files on ${channel.name}`}>
-            {shown.map((programme) => (
-              <li key={programme.id}>
+            {shown.map((programme, index) => (
+              <li
+                key={programme.id}
+                className={dragging === programme.id ? 'is-dragging' : over === index && dragging ? 'is-drop' : undefined}
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = 'move'
+                  event.dataTransfer.setData('text/plain', programme.id)
+                  setDragging(programme.id)
+                }}
+                onDragOver={(event) => {
+                  if (!dragging) return
+                  event.preventDefault()
+                  setOver(index)
+                }}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  if (dragging) onMove(dragging, index)
+                  setDragging(null)
+                  setOver(null)
+                }}
+                onDragEnd={() => {
+                  setDragging(null)
+                  setOver(null)
+                }}
+              >
+                <span className="local-media-grip" aria-hidden="true">
+                  ⋮⋮
+                </span>
                 <span className="match-title">{programme.title}</span>
                 <span className="match-time">{formatDuration(programme.durationSeconds)}</span>
+                <button
+                  type="button"
+                  className="local-media-step"
+                  aria-label={`Move ${programme.title} earlier`}
+                  title="Earlier"
+                  disabled={index === 0}
+                  onKeyDown={keepKey}
+                  onClick={() => onMove(programme.id, index - 1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="local-media-step"
+                  aria-label={`Move ${programme.title} later`}
+                  title="Later"
+                  disabled={index === shown.length - 1}
+                  onKeyDown={keepKey}
+                  onClick={() => onMove(programme.id, index + 1)}
+                >
+                  ↓
+                </button>
                 <button type="button" className="local-media-remove" aria-label={`Remove ${programme.title}`} title="Remove" onKeyDown={keepKey} onClick={() => onRemove(programme.id)}>
                   ×
                 </button>

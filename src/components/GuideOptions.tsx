@@ -174,7 +174,7 @@ export function GuideOptions() {
   const quality = useDisplayQuality()
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const users = listChannels().filter((channel) => channel.number >= USER_NUMBER_START && !channel.emptySlot)
+  const users = listChannels().filter((channel) => (channel.number >= USER_NUMBER_START || channel.origin === 'user-import') && !channel.emptySlot)
   const owned = (id: string | undefined) => users.filter((channel) => channel.owner === id).length
 
   const run = async (work: () => Promise<string>) => {

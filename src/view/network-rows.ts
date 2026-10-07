@@ -1,6 +1,6 @@
 import { isOnAir } from '../network/airing.ts'
 import type { StoredSource } from '../services/channels-import.ts'
-import { isUserNumber } from '../services/network-order.ts'
+import { isOwnNumber } from '../data/network.ts'
 import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 import type { Channel } from '../types/channel.ts'
 
@@ -36,7 +36,7 @@ function unloadedRow(source: StoredSource, users: ReadonlySet<string>): Unloaded
 /** Every channel the network holds: those it lists, and stored User channels it cannot list yet, in number order. */
 export function networkRows(listed: readonly Channel[], stored: readonly StoredSource[], users: ReadonlySet<string>): Channel[] {
   const numbers = new Set(listed.map((channel) => channel.number))
-  const pending = stored.filter((source) => isUserNumber(source.channelNumber) && !numbers.has(source.channelNumber)).map((source) => unloadedRow(source, users))
+  const pending = stored.filter((source) => isOwnNumber(source.channelNumber) && !numbers.has(source.channelNumber)).map((source) => unloadedRow(source, users))
   return pending.length ? [...listed, ...pending].sort((a, b) => a.number - b.number) : [...listed]
 }
 

@@ -318,6 +318,28 @@ export function removeSessionProgramme(programmeId: string, nowMs: number): bool
   return true
 }
 
+/**
+ * Moves one file to position `to` in its channel's running order (as the panel lists it). What is on air
+ * keeps playing at the same point: the running order is re-anchored around it.
+ */
+export function moveSessionProgramme(programmeId: string, to: number, nowMs: number): boolean {
+  const holder = sessionHolding(programmeId)
+  if (!holder) return false
+  const [number, existing] = holder
+  const from = existing.programmes.findIndex((programme) => programme.id === programmeId)
+  const target = Math.max(0, Math.min(Math.trunc(to), existing.programmes.length - 1))
+  if (from < 0 || from === target) return false
+  const current = sessionBroadcast(nowMs, number).current
+  const programmes = existing.programmes.slice()
+  const [moved] = programmes.splice(from, 1)
+  programmes.splice(target, 0, moved!)
+  const onAir = programmes.findIndex((programme) => programme.id === current.programme.id)
+  const before = programmes.slice(0, Math.max(0, onAir)).reduce((sum, programme) => sum + programme.durationSeconds * 1000, 0)
+  sessions.set(number, { ...existing, programmes, anchorMs: current.startMs - before })
+  changed()
+  return true
+}
+
 /** Empties a Local Media channel (1000 unless given); its name stays. */
 export function clearSession(number = SESSION_CHANNEL_NUMBER): void {
   const session = sessions.get(number)

@@ -281,6 +281,7 @@ function ScreenEditor() {
           watching
           onImport={tv.importSession}
           onRemove={tv.removeSessionFile}
+          onMove={tv.moveSessionFile}
           onClear={tv.clearLocalChannel}
           onRename={tv.renameLocalChannel}
           onWatch={() => {}}

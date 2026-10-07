@@ -51,7 +51,8 @@ import { parseChannelsExport } from '../services/channels-import.ts'
 import { channelLinksFrom } from '../services/user-network.ts'
 import { USER_NETWORK_FORMAT } from '../services/user-network-export.ts'
 import { CHANNEL_FILE_FORMAT } from '../services/channel-file.ts'
-import { USER_NUMBER_START } from '../data/network.ts'
+import { isLowUserNumber, LOW_USER_FIRST, LOW_USER_LAST, USER_NUMBER_START } from '../data/network.ts'
+import { currentNetworkBase } from '../data/user-overlay.ts'
 import { channelByNumber, listChannels } from '../data/catalogue.ts'
 import {
   floorHalfHour,
@@ -177,6 +178,16 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   // A new channel fills the lowest empty slot before opening a number after the last.
   const nextNumber =
     userChannels.find((channel) => channel.emptySlot)?.number ?? (userNumbers.length > 0 ? Math.max(...userNumbers) + 1 : USER_NUMBER_START)
+  // A network of the viewer's own (NEW USER) has no TVN channels, so its own channels may also start at 001.
+  const nextLowNumber = (() => {
+    if (currentNetworkBase() !== 'new') return null
+    const listed = listChannels()
+    const empty = listed.find((channel) => channel.emptySlot && isLowUserNumber(channel.number))
+    if (empty) return empty.number
+    const used = new Set(listed.map((channel) => channel.number))
+    for (let number = LOW_USER_FIRST; number <= LOW_USER_LAST; number += 1) if (!used.has(number)) return number
+    return null
+  })()
   // The + row (ADD USER CHANNEL) closes the list wherever the whole User Network is listed. It is a control,
   // not a channel: it has no number and allocates nothing until a source is imported.
   const owner = filterUserId(tv.guideFilter) ?? undefined
@@ -274,8 +285,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tv.guideTool])
 
-  const newChannel = async () => {
-    const number = await tv.createEmptyChannel()
+  const newChannel = async (low = false) => {
+    const number = await tv.createEmptyChannel(low)
     tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: number })
   }
   const restoreNetwork = () => tv.dispatch({ type: 'guide-tool', tool: 'network' })
@@ -627,7 +638,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {addRow ? (
             <>
               <p className="guide-empty-note">Your User Network starts at {padChannel(USER_NUMBER_START)} and is kept in this browser.</p>
-              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={newChannel} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
+              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
               {owner ? null : <TestChannelsButton onLoad={tv.loadTestChannels} />}
             </>
           ) : null}
@@ -783,7 +794,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                 </div>
                 {addRow ? (
                   <div className="add-row" style={{ top: tv.visibleChannels.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(200, viewWidth - 16) }}>
-                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={newChannel} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
+                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
                   </div>
                 ) : null}
                 <div className="now-line" style={{ left: nowX }} />
@@ -828,6 +839,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           watching={tv.channel.number === mediaChannel.number}
           onImport={tv.importSession}
           onRemove={tv.removeSessionFile}
+          onMove={tv.moveSessionFile}
           onClear={tv.clearLocalChannel}
           onRename={tv.renameLocalChannel}
           onWatch={(channelNumber) => tv.dispatch({ type: 'tune', channelNumber })}

@@ -139,8 +139,9 @@ describe('STABLE IDENTITY after a renumber', () => {
   })
 
   it('A–Z and RANDOMISE go through the same atomic reorder as a single move, after a confirmation', () => {
-    const body = provider.slice(provider.indexOf('const arrangeUserNetwork'), provider.indexOf('const arrangeUserNetwork') + 900)
-    expect(body).toContain('await reorderUserNetwork(ids)')
+    const body = provider.slice(provider.indexOf('const arrangeUserNetwork'), provider.indexOf('const arrangeUserNetwork') + 1400)
+    expect(body).toContain('await reorderUserNetwork(orderOf(USER_BLOCK))')
+    expect(body).toContain('await reorderUserNetwork(orderOf(LOW_BLOCK), LOW_BLOCK)')
     expect(editor).toContain("'Sort User Network A–Z?'")
     expect(editor).toContain("'Randomise User Network?'")
   })

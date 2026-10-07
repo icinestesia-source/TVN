@@ -1434,13 +1434,45 @@ a.info-creator:focus-visible {
   min-height: 24px;
 }
 
+/* Each file reads as the information bar names a programme (.info-title). */
 .local-media-list .match-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
 }
+
+.local-media-list li[draggable='true'] { cursor: grab; border-top: 2px solid transparent; }
+.local-media-list li.is-dragging { opacity: 0.45; }
+.local-media-list li.is-drop { border-top-color: var(--gold); }
+.local-media-grip { color: var(--muted); font-size: 12px; letter-spacing: -0.15em; user-select: none; }
+
+.local-media-step {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.local-media-step:hover:not(:disabled),
+.local-media-step:focus-visible {
+  border-color: currentColor;
+  color: var(--ink);
+  outline: none;
+}
+
+.local-media-step:disabled { opacity: 0.3; cursor: default; }
 
 .local-media-remove {
   width: 24px;

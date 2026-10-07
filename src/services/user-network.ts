@@ -1,4 +1,4 @@
-import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { emptySlotRecord, firstEmptySlot, type ImportedVideo, type ParsedExport, type StoredSource } from './channels-import.ts'
 import { refreshOrigin, type SourceKind } from './channel-sources.ts'
 
@@ -274,7 +274,7 @@ export function clearUserChannel(
   channelNumber: number,
   now: number,
 ): { sources: StoredSource[]; status: 'cleared' | 'already-empty' | 'missing' } {
-  if (channelNumber < USER_NUMBER_START || channelNumber >= USER_NUMBER_LIMIT) return { sources: existing.map((source) => ({ ...source, videos: source.videos.slice() })), status: 'missing' }
+  if (!isOwnNumber(channelNumber)) return { sources: existing.map((source) => ({ ...source, videos: source.videos.slice() })), status: 'missing' }
   const at = existing.findIndex((source) => source.channelNumber === channelNumber)
   const sources = existing.map((source) => ({ ...source, videos: source.videos.slice() }))
   if (at < 0) return { sources, status: 'missing' }

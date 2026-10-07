@@ -1,4 +1,4 @@
-import { USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber, USER_NUMBER_START } from '../data/network.ts'
 import { isLocalMediaNumber } from '../session/session-channel.ts'
 import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 
@@ -11,6 +11,8 @@ export type EditorScope = 'user' | 'curated' | 'tvn' | 'local'
 
 export function editorScope(channel: { number: number; origin?: string }): EditorScope | null {
   if (channel.origin === 'session') return isLocalMediaNumber(channel.number) ? 'local' : null
+  // The viewer's own channel at 001–991, in a network with the shipped channels cleared.
+  if (channel.origin === 'user-import' && isOwnNumber(channel.number) && channel.number < USER_NUMBER_START) return 'user'
   if (channel.number === TVN_CHANNEL_NUMBER) return channel.origin === 'tvn' ? 'tvn' : null
   if (channel.number >= USER_NUMBER_START) return channel.origin === 'user-import' ? 'user' : null
   if (channel.number >= 1 && channel.number <= 999) return 'curated'

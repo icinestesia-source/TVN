@@ -3,6 +3,7 @@ import { isClosedChannel } from '../director/fit.ts'
 import { channelIsDefined } from './independent/network.ts'
 import type { MediaKind, ProgrammeType } from '../types/programme.ts'
 import { canonicalByNumber, filterIdForCategory } from './canonical.ts'
+import { currentNetworkBase } from './user-overlay.ts'
 
 /** 000 is reserved for TVN's own channel (src/tvn/tvn-channel.ts), never a curated or user channel. */
 export const CHANNEL_ZERO_RESERVED = true
@@ -38,6 +39,22 @@ export const NETWORK_AREAS: readonly NetworkArea[] = [
 /** Imported and hand-built television starts here and is not capped at four digits. */
 export const USER_NUMBER_START = 1001
 export const USER_NUMBER_LIMIT = 100000
+
+/**
+ * With the shipped network cleared (NEW USER), the viewer's own channels may also take 001–991, up to Local
+ * Media. They number and reorder among themselves, apart from 1001+.
+ */
+export const LOW_USER_FIRST = 1
+export const LOW_USER_LAST = 991
+
+export function isLowUserNumber(number: number | null | undefined): number is number {
+  return typeof number === 'number' && Number.isInteger(number) && number >= LOW_USER_FIRST && number <= LOW_USER_LAST
+}
+
+/** A number the viewer's own channels can hold: 1001+, and 001–991 only in a network of their own (NEW USER), where TVN's channels are cleared. */
+export function isOwnNumber(number: number | null | undefined, lowAllowed = currentNetworkBase() === 'new'): number is number {
+  return (lowAllowed && isLowUserNumber(number)) || (typeof number === 'number' && Number.isInteger(number) && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT)
+}
 
 export const GUIDE_FILTERS: readonly { id: string; label: string }[] = [
   { id: 'main', label: 'Main' },

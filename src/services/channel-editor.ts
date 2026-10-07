@@ -1,4 +1,4 @@
-import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber } from '../data/network.ts'
 import {
   cleanEditorial,
   cleanFilter,
@@ -317,7 +317,7 @@ function withEdit(record: StoredSource, edit: ChannelEdit, now: number): StoredS
 
 /** Save one channel's name and sources. Throws if that channel is not a stored user channel. */
 export function applyChannelEdit(all: readonly StoredSource[], channelNumber: number, edit: ChannelEdit, now: number): StoredSource[] {
-  if (!Number.isInteger(channelNumber) || channelNumber < USER_NUMBER_START || channelNumber >= USER_NUMBER_LIMIT) {
+  if (!isOwnNumber(channelNumber)) {
     throw new Error('That channel is no longer in your User Network')
   }
   let found = false

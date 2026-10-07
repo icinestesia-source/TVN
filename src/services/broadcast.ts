@@ -27,6 +27,9 @@ export function scheduleRequest(channel: Channel, nowMs: number): ScheduleReques
   }
 }
 
+/** The viewer's own channel at 001–999 (a NEW USER network): none of TVN's originals, policies or cards for that number apply to it. */
+const ownLowChannel = (channel: Channel) => channel.origin === 'user-import' && channel.number <= 999
+
 /** A re-sourced curated channel schedules its own list plainly, with no TVN card over it. */
 function ownLineup(channel: Channel, nowMs: number): ScheduleRequest<Programme> {
   return { ...scheduleRequest(channel, nowMs), programmes: programmesFor(channel.id) }
@@ -58,7 +61,7 @@ export function broadcast(channel: Channel, nowMs = Date.now()): ScheduleSnapsho
   if (channel.origin === 'session') return sessionBroadcast(nowMs, channel.number)
   const live = liveListing(channel)
   if (live) return liveStreamBroadcast(channel, live, nowMs)
-  if (channel.customLineup) return calculateSchedule(ownLineup(channel, nowMs))
+  if (channel.customLineup || ownLowChannel(channel)) return calculateSchedule(ownLineup(channel, nowMs))
   const cams = camBroadcast(channel, nowMs)
   if (cams) return cams
   if (channel.number <= 999) {
@@ -74,7 +77,7 @@ export function guideSlots(channel: Channel, startMs: number, endMs: number): Gu
   if (channel.origin === 'session') return sessionGuideSlots(startMs, endMs, channel.number)
   const live = liveListing(channel)
   if (live) return liveStreamGuideSlots(live, startMs, endMs)
-  if (channel.customLineup) return slotsOverlapping(ownLineup(channel, startMs), startMs, endMs)
+  if (channel.customLineup || ownLowChannel(channel)) return slotsOverlapping(ownLineup(channel, startMs), startMs, endMs)
   const cams = camGuideSlots(channel, startMs, endMs)
   if (cams) return cams
   if (channel.number <= 999) {

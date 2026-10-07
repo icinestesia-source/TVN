@@ -1,4 +1,4 @@
-import { USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { TVN_OWNER } from '../data/user-network/users.ts'
 import { sourcesOf } from './channel-editor.ts'
 import { allocateUserNumber, firstEmptySlot, type StoredSource } from './channels-import.ts'
@@ -24,7 +24,7 @@ export interface ChannelFile {
   facts?: ManifestCurrent
 }
 
-const userNumber = (number: number | null): number is number => number !== null && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT
+const userNumber = (number: number | null): number is number => isOwnNumber(number)
 
 /** The file for one stored user channel. Reads only. A TVN channel (001–999) has no such file. */
 export function buildChannelFile(record: StoredSource, now: Date, uploaderOf: UploaderOf = () => null): ChannelFile {

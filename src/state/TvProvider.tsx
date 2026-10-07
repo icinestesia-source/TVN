@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { channelByNumber, channels, listChannels, programmesFor, randomChannel, shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
-import { channelMatchesFilter, inFavouriteOrder, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { channelMatchesFilter, inFavouriteOrder, isLowUserNumber, LOW_USER_FIRST, LOW_USER_LAST, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { currentNetworkBase, installCuratedEdits, installUserCatalogue, setNetworkBase, subscribeCatalogue } from '../data/user-overlay.ts'
 import {
   GUIDE_EXTEND_MS,
@@ -100,6 +100,10 @@ import {
   moveTo,
   shuffledOrder,
   userOrder,
+  blockFor,
+  LOW_BLOCK,
+  USER_BLOCK,
+  type NumberBlock,
 } from '../services/network-order.ts'
 import {
   asShortcuts,
@@ -166,6 +170,7 @@ import {
   clearSession,
   hasPicture,
   isLocalMediaNumber,
+  moveSessionProgramme,
   rebaseSession,
   removeSessionProgramme,
   renameLocalChannel,
@@ -2165,6 +2170,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const playSession = useCallback((programmeId: string) => sessionRef.current.play(programmeId), [])
   const importSession = useCallback((files: readonly File[], number: number) => sessionRef.current.import(files, number), [])
   const removeSessionFile = useCallback((programmeId: string) => sessionRef.current.remove(programmeId), [])
+  const moveSessionFile = useCallback((programmeId: string, to: number) => moveSessionProgramme(programmeId, to, Date.now()), [])
   const clearLocalChannel = useCallback((number: number) => sessionRef.current.clear(number), [])
   const renameLocal = useCallback((number: number, name: string) => renameLocalChannel(number, name), [])
 
@@ -2564,14 +2570,26 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }, [installSources])
 
   /** A new, empty 1001+ channel for Edit Channel to fill: the lowest empty slot, or the next number. */
+  /** A new, empty channel: after the User Network (1001+), or with `low` at the first free number from 001 in a network of the viewer's own. */
   const createEmptyChannel = useCallback(
-    async () => {
+    async (low = false) => {
       const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
-      const slot = firstEmptySlot(existing)
-      if (slot?.channelNumber) return slot.channelNumber
-      const taken = existing.flatMap((source) => (source.channelNumber !== null && source.channelNumber >= USER_NUMBER_START ? [source.channelNumber] : []))
-      const number = taken.length ? Math.max(...taken) + 1 : USER_NUMBER_START
-      if (number >= USER_NUMBER_LIMIT) throw new Error('The User Network is full')
+      let number: number
+      if (low) {
+        if (currentNetworkBase() !== 'new') throw new Error('001–991 are the TVN network here')
+        const slot = firstEmptySlot(existing.filter((source) => isLowUserNumber(source.channelNumber)))
+        if (slot?.channelNumber) return slot.channelNumber
+        const used = new Set(existing.map((source) => source.channelNumber))
+        number = LOW_USER_FIRST
+        while (number <= LOW_USER_LAST && used.has(number)) number += 1
+        if (number > LOW_USER_LAST) throw new Error('Channels 001–991 are all in use')
+      } else {
+        const slot = firstEmptySlot(existing.filter((source) => (source.channelNumber ?? 0) >= USER_NUMBER_START))
+        if (slot?.channelNumber) return slot.channelNumber
+        const taken = existing.flatMap((source) => (source.channelNumber !== null && source.channelNumber >= USER_NUMBER_START ? [source.channelNumber] : []))
+        number = taken.length ? Math.max(...taken) + 1 : USER_NUMBER_START
+        if (number >= USER_NUMBER_LIMIT) throw new Error('The User Network is full')
+      }
       const owner = usersRef.current.find((user) => userFilter(user.id) === guideFilter)?.id
       const next = [...existing, { ...emptySlotRecord(number, Date.now()), ...(owner ? { owner } : {}) }]
       await saveStoredSources(next)
@@ -2731,7 +2749,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (!checked.ok) throw new Error(`Not a complete TVN export · ${checked.errors[0]}`)
       // USER only: the User Network and its Favourites; curation, Guides, settings and other Favourites stay as they are.
       if (scope === 'user') {
-        const favourites = checked.value.favourites.filter((number) => number >= USER_NUMBER_START)
+        const favourites = checked.value.favourites.filter((number) => number >= USER_NUMBER_START || (currentNetworkBase() === 'new' && isLowUserNumber(number)))
         return importUserNetwork({ ...checked.value.userNetwork, favourites })
       }
       const restored = await importUserNetwork(checked.value.userNetwork)
@@ -3060,8 +3078,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * playing under its new number.
    */
   const reorderUserNetwork = useCallback(
-    async (ids: readonly string[]) => {
-      const { sources, moves } = renumberUserNetwork(migrateLegacyUserNumbers(await loadStoredSources()).sources, ids)
+    async (ids: readonly string[], block: NumberBlock = USER_BLOCK) => {
+      const { sources, moves } = renumberUserNetwork(migrateLegacyUserNumbers(await loadStoredSources()).sources, ids, block)
       if (moves.size === 0) return 'THE ORDER IS UNCHANGED'
       await saveStoredSources(sources)
       const follow = (number: number) => remapNumber(number, moves)
@@ -3092,12 +3110,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** MOVE TO: one user channel taken out and put in at User position `to`; the rest close up and renumber from 1001. */
   const moveUserChannel = useCallback(
     async (number: number, to: number) => {
-      const order = userOrder(migrateLegacyUserNumbers(await loadStoredSources()).sources)
+      // 001–991 and 1001+ each keep their own run of numbers.
+      const block = blockFor(number)
+      const order = userOrder(migrateLegacyUserNumbers(await loadStoredSources()).sources, block)
       const from = order.find((source) => source.channelNumber === number)
       if (!from) throw new Error('That channel is no longer in your User Network')
-      const target = moveTarget(order, to)
+      const target = moveTarget(order, to, block)
       if ('error' in target) throw new Error(target.error)
-      return reorderUserNetwork(moveTo(order.map((source) => source.id), from.id, target.index))
+      return reorderUserNetwork(moveTo(order.map((source) => source.id), from.id, target.index), block)
     },
     [reorderUserNetwork],
   )
@@ -3107,8 +3127,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
     async (how: 'alphabetical' | 'shuffle') => {
       const sources = migrateLegacyUserNumbers(await loadStoredSources()).sources
       const shown = new Map(listChannels().map((channel) => [channel.id, channel.name]))
-      const ids = how === 'alphabetical' ? alphabeticalOrder(sources, (source) => shown.get(`user-${source.id}`) ?? source.name) : shuffledOrder(userOrder(sources).map((source) => source.id))
-      const done = await reorderUserNetwork(ids)
+      const orderOf = (block: NumberBlock) =>
+        how === 'alphabetical' ? alphabeticalOrder(sources, (source) => shown.get(`user-${source.id}`) ?? source.name, block) : shuffledOrder(userOrder(sources, block).map((source) => source.id))
+      // Channels at 001–991 are arranged among themselves first; 1001+ as before.
+      const low = userOrder(sources, LOW_BLOCK).length > 0 ? await reorderUserNetwork(orderOf(LOW_BLOCK), LOW_BLOCK) : 'THE ORDER IS UNCHANGED'
+      const high = await reorderUserNetwork(orderOf(USER_BLOCK))
+      const done = high === 'THE ORDER IS UNCHANGED' ? low : high
       if (done === 'THE ORDER IS UNCHANGED') return how === 'alphabetical' ? 'THE USER NETWORK IS ALREADY A–Z' : done
       return done.replace('USER NETWORK RENUMBERED', how === 'alphabetical' ? 'USER NETWORK SORTED A–Z' : 'USER NETWORK RANDOMISED')
     },
@@ -3509,6 +3533,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       playSession,
       importSession,
       removeSessionFile,
+      moveSessionFile,
       clearLocalChannel,
       renameLocalChannel: renameLocal,
     }),
@@ -3531,6 +3556,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       playSession,
       importSession,
       removeSessionFile,
+      moveSessionFile,
       clearLocalChannel,
       renameLocal,
       addChannel,
