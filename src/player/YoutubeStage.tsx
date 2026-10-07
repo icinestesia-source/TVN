@@ -7,6 +7,7 @@ import { notePlayback } from './trace.ts'
 import type { LoadResult, PlayerHandle, PlayerLoadRequest, PlayerStatus } from './types.ts'
 import type { YouTubePlayer } from '../types/youtube.ts'
 import { qualityFrame, useDisplayQuality } from '../view/display-quality.ts'
+import { containedBox, leavesEdges, shapedThumbnail, useFillEdges, youtubeAspect } from '../view/fill-edges.ts'
 import { VOLUME_FULL } from './volume.ts'
 
 interface YoutubeStageProps {
@@ -29,20 +30,39 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
   const hostRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const quality = useDisplayQuality()
+  const fill = useFillEdges() && !preview
   const [slotSize, setSlotSize] = useState({ width: 0, height: 0 })
+  const [shownId, setShownId] = useState<string | null>(null)
+  const [shape, setShape] = useState<{ videoId: string; aspect: number | null } | null>(null)
   useEffect(() => {
     const slot = frameRef.current?.parentElement
-    if (!slot || quality === 'auto' || preview || typeof ResizeObserver === 'undefined') return
+    if (!slot || (quality === 'auto' && !fill) || preview || typeof ResizeObserver === 'undefined') return
     const measure = () => setSlotSize({ width: slot.clientWidth, height: slot.clientHeight })
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(slot)
     return () => observer.disconnect()
-  }, [quality, preview])
-  const frame = preview ? null : qualityFrame(quality, slotSize, typeof window === 'undefined' ? 1 : window.devicePixelRatio)
+  }, [quality, preview, fill])
+  useEffect(() => {
+    if (!fill || !shownId) return
+    let live = true
+    void youtubeAspect(shownId).then((aspect) => {
+      if (live) setShape({ videoId: shownId, aspect })
+    })
+    return () => {
+      live = false
+    }
+  }, [fill, shownId])
+  // FILL EDGES: a video that is not the screen's shape plays in a box of its own shape, the blurred picture around it.
+  const aspect = fill && shownId && shape?.videoId === shownId ? shape.aspect : null
+  const box = aspect && leavesEdges(slotSize, aspect) ? containedBox(slotSize, aspect) : null
+  const frame = preview ? null : qualityFrame(quality, box ?? slotSize, typeof window === 'undefined' ? 1 : window.devicePixelRatio)
+  const place: CSSProperties = box ? { left: `${box.left}px`, top: `${box.top}px`, right: 'auto', bottom: 'auto', width: `${box.width}px`, height: `${box.height}px` } : {}
   const frameStyle: CSSProperties | undefined = frame
-    ? { right: 'auto', bottom: 'auto', width: `${frame.width}px`, height: `${frame.height}px`, transform: `scale(${frame.scale})`, transformOrigin: '0 0' }
-    : undefined
+    ? { ...place, right: 'auto', bottom: 'auto', width: `${frame.width}px`, height: `${frame.height}px`, transform: `scale(${frame.scale})`, transformOrigin: '0 0' }
+    : box
+      ? place
+      : undefined
   const ytRef = useRef<YouTubePlayer | null>(null)
   const requestId = useRef(0)
   const loopRef = useRef(false)
@@ -127,6 +147,7 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
     holdRef.current = false
     window.clearInterval(watchRef.current)
     requestedRef.current = request.videoId
+    setShownId(request.videoId || null)
     liveRequestRef.current = Boolean(request.live)
     if (!player) {
       onStatusRef.current('slate', 'player missing')
@@ -319,8 +340,11 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
   }, [])
 
   return (
-    <div className="yt-frame" ref={frameRef} style={frameStyle}>
-      <div className="yt-host" ref={hostRef} />
-    </div>
+    <>
+      {box && shownId ? <div className="fill-backdrop" aria-hidden="true" style={{ backgroundImage: `url(${shapedThumbnail(shownId)})` }} /> : null}
+      <div className="yt-frame" ref={frameRef} style={frameStyle}>
+        <div className="yt-host" ref={hostRef} />
+      </div>
+    </>
   )
 }

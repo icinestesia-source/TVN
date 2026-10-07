@@ -94,6 +94,8 @@ export interface Programme {
   creatorHandle?: string
   /** The creator's channel page, only when the provider's listing named it. */
   creatorUrl?: string
+  /** A feed episode's own page, or failing that its publisher's site, when the feed gave one. */
+  episodeUrl?: string
   /** Presentation caption shown on the card when the programme has no picture. */
   caption?: string
   /** Parent programme block when this item is a child of a compiled running order. */

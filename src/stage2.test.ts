@@ -48,7 +48,7 @@ describe('sparse channel numbers', () => {
     expect(channelByNumber(900)?.name).toBe('News')
     expect(channelByNumber(900)?.mediaKind).toBe('video')
     expect(channelByNumber(950)?.mediaKind).toBe('audio')
-    expect(channelByNumber(999)?.name).toBe('Local Media 8')
+    expect(channelByNumber(999)?.name).toBe('Local Media 9')
     expect(channelByNumber(0)?.origin).toBe('tvn')
     expect(channelByNumber(1000)?.origin).toBe('session')
     const defaults = channels.filter((channel) => channel.number >= 1 && channel.number <= 999)

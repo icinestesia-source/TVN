@@ -1,4 +1,4 @@
-import { adjacentChannel, listChannels, randomChannel } from '../data/catalogue.ts'
+import { adjacentChannel, listChannels, playingLocal, randomChannel } from '../data/catalogue.ts'
 import { channelMatchesFilter, inFavouriteOrder } from '../data/network.ts'
 import { isOnAir } from '../network/airing.ts'
 import type { Channel } from '../types/channel.ts'
@@ -27,9 +27,9 @@ export function universeChannels(universe: ChannelUniverse, channels: readonly C
   return universe.filter === 'favourites' ? inFavouriteOrder(listed, universe.favourites) : listed
 }
 
-/** Channels CH+ and CH- can land on: listed, on air, not an empty User Channel slot and not 1000 Local Media. */
+/** Channels CH+ and CH- can land on: listed, on air, not an empty User Channel slot and not an empty Local Media channel. */
 function steppable(universe: ChannelUniverse): Channel[] {
-  return universeChannels(universe).filter((channel) => channel.enabled && channel.origin !== 'session' && !channel.emptySlot && isOnAir(channel))
+  return universeChannels(universe).filter((channel) => channel.enabled && playingLocal(channel) && !channel.emptySlot && isOnAir(channel))
 }
 
 /**

@@ -9,6 +9,8 @@ import { TimeSlider } from './TimeSlider.tsx'
 
 export function shownDescription(programme: Programme): string | null {
   if (programme.mediaKind === 'audio' && programme.mediaUrl) return null
+  // A clip's own text from its publisher's feed (Odysee, BitChute, Vimeo, archives) is not TVN's to show.
+  if (programme.sourceRef?.startsWith('podcast:')) return null
   const text = programme.description?.trim()
   if (!text || text === programme.title) return null
   if (text === 'No programming available') return null

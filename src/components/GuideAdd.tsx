@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type RefObject } from 'react'
 import { createGuidePress } from '../view/guide-press.ts'
-import { directoryPicker, MEDIA_ACCEPT, pickFolder } from '../session/import.ts'
+import { directoryPicker, filePicker, MEDIA_ACCEPT, pickFiles, pickFolder } from '../session/import.ts'
+import { rememberedChannels, rememberSupported, useRememberMedia, type MediaHandle } from '../session/remembered-media.ts'
 import { LOCAL_NAME_LIMIT, SESSION_CHANNEL } from '../session/session-channel.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
@@ -265,7 +266,7 @@ export function AddChannelForm({
         <button
           type="button"
           className="tune-key"
-          title="A new, empty channel among 001–991"
+          title="A new, empty channel among 001–990"
           onClick={() => void onNewLowChannel().catch((caught: unknown) => setNote(viewerMessage(caught, 'THE CHANNEL COULD NOT BE MADE')))}
         >
           New channel {String(nextLowNumber).padStart(3, '0')}
@@ -301,7 +302,7 @@ export function AddChannelForm({
 }
 
 /**
- * The Guide footer while MEDIA is open, and the editor of a Local Media channel (992–1000): its name, the
+ * The Guide footer while MEDIA is open, and the editor of a Local Media channel (991–1000): its name, the
  * files it holds, more from a folder or files on this device, Watch, and Clear. Added files join the end of
  * its running order and the panel stays open, so one folder after another builds the channel.
  */
@@ -315,16 +316,19 @@ export function SessionImportTools({
   onClear = () => {},
   onRename = () => false,
   onWatch = () => {},
+  onReload,
 }: {
   channel?: Channel
   programmes?: readonly Programme[]
   watching?: boolean
-  onImport: (files: readonly File[], channelNumber: number) => Promise<string>
+  onImport: (files: readonly File[], channelNumber: number, handles?: readonly MediaHandle[]) => Promise<string>
   onRemove?: (programmeId: string) => void
   onMove?: (programmeId: string, to: number) => boolean
   onClear?: (channelNumber: number) => void
   onRename?: (channelNumber: number, name: string) => boolean
   onWatch?: (channelNumber: number) => void
+  /** REMEMBER LOCAL MEDIA: load the channels remembered from an earlier visit. */
+  onReload?: () => Promise<string>
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -335,18 +339,31 @@ export function SessionImportTools({
   const folderInput = useRef<HTMLInputElement>(null)
   const filesInput = useRef<HTMLInputElement>(null)
   const folders = folderSupported()
+  const remember = useRememberMedia() && rememberSupported()
+  const [reloadable, setReloadable] = useState(false)
 
   useEffect(() => {
     folderInput.current?.setAttribute('webkitdirectory', '')
     first.current?.focus()
   }, [])
 
-  const run = async (files: readonly File[] | null) => {
+  useEffect(() => {
+    if (!remember || !onReload) return
+    let live = true
+    void rememberedChannels().then((records) => {
+      if (live) setReloadable(records.length > 0)
+    })
+    return () => {
+      live = false
+    }
+  }, [remember, onReload])
+
+  const run = async (files: readonly File[] | null, handles: readonly MediaHandle[] = []) => {
     if (!files || files.length === 0) return
     setBusy(true)
     setNote('READING…')
     try {
-      setNote((await onImport(files, channel.number)) || null)
+      setNote((await onImport(files, channel.number, handles)) || null)
     } catch (caught) {
       setNote(viewerMessage(caught, 'THOSE FILES COULD NOT BE READ'))
     } finally {
@@ -361,10 +378,39 @@ export function SessionImportTools({
       folderInput.current?.click()
       return
     }
-    const picked = await pickFolder(picker)
+    let root: MediaHandle | null = null
+    const picked = await pickFolder(picker, (handle) => {
+      root = handle as unknown as MediaHandle
+    })
     // A browser that will not show its own folder picker still has the ordinary one.
     if (picked === 'refused') folderInput.current?.click()
-    else await run(picked)
+    else await run(picked, root ? [root] : [])
+  }
+
+  /** With REMEMBER on, the browser's own file picker, so the files can be found again on a later visit. */
+  const chooseFiles = async () => {
+    const picker = remember ? filePicker() : null
+    if (!picker) {
+      filesInput.current?.click()
+      return
+    }
+    const picked = await pickFiles(picker)
+    if (picked === 'refused') filesInput.current?.click()
+    else if (picked) await run(picked.files, picked.handles as unknown as MediaHandle[])
+  }
+
+  const reload = async () => {
+    if (!onReload) return
+    setBusy(true)
+    setNote('RELOADING…')
+    try {
+      setNote((await onReload()) || null)
+      setReloadable(false)
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THE REMEMBERED MEDIA COULD NOT BE LOADED'))
+    } finally {
+      setBusy(false)
+    }
   }
 
   const fromInput = (input: HTMLInputElement) => {
@@ -483,7 +529,11 @@ export function SessionImportTools({
             ))}
           </ul>
         ) : (
-          <p className="guide-tool-note">A channel from video or audio on this device, for this session only. Nothing is uploaded; the name is kept.</p>
+          <p className="guide-tool-note">
+            {remember
+              ? 'A channel from video or audio on this device. Nothing is uploaded; the name is kept, and RELOAD PREVIOUS brings its folders and files back on a later visit.'
+              : 'A channel from video or audio on this device, for this session only. Nothing is uploaded; the name is kept.'}
+          </p>
         )}
         {note ? (
           <p className="guide-tool-status" role="status">
@@ -503,10 +553,15 @@ export function SessionImportTools({
           className={folders ? 'tab' : 'tune-key'}
           disabled={busy}
           onKeyDown={keepKey}
-          onClick={() => filesInput.current?.click()}
+          onClick={() => void chooseFiles()}
         >
           Files
         </button>
+        {reloadable ? (
+          <button type="button" className="tab" disabled={busy} title="Load the Local Media remembered from your last visit" onKeyDown={keepKey} onClick={() => void reload()}>
+            Reload previous
+          </button>
+        ) : null}
         {programmes.length > 0 && !watching ? (
           <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => onWatch(channel.number)}>
             Watch
@@ -804,6 +859,9 @@ export function UserNetworkTools({
   onLoadTest,
   onRemoveStarter,
   onRemoveAll,
+  onExport,
+  onExportAll,
+  onRestore,
 }: {
   userChannels: number
   /** A channel list file (a TVN export or a list of YouTube links) joins 1001+. */
@@ -812,6 +870,12 @@ export function UserNetworkTools({
   onLoadTest: () => Promise<string>
   onRemoveStarter: () => Promise<string>
   onRemoveAll: () => Promise<string>
+  /** Download the User Network, with its Favourites, as a file. */
+  onExport?: () => Promise<string>
+  /** Download everything portable: User Network, curation of 001–999, Favourites and settings. */
+  onExportAll?: () => Promise<string>
+  /** Opens RESTORE: a file saved with EXPORT. */
+  onRestore?: () => void
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -847,7 +911,6 @@ export function UserNetworkTools({
             {userChannels} {userChannels === 1 ? 'channel' : 'channels'}
           </span>
         </p>
-        <p className="guide-tool-note">Kept in this browser. Paste a YouTube channel or video link in the last row, or press NEW CHANNEL there and add its sources in Edit Channel. RESTORE brings back a file saved with EXPORT.</p>
         {note ? (
           <p className="guide-tool-status" role="status">
             {note}
@@ -855,6 +918,14 @@ export function UserNetworkTools({
         ) : null}
       </div>
       <div className="info-actions">
+        {onExport || onExportAll || onRestore ? (
+          <div className="user-tools-row">
+            {onExportAll ? key('Export ALL', () => void run(onExportAll)) : null}
+            {onExport ? key('Export USER', () => void run(onExport)) : null}
+            {onRestore ? key('Restore', onRestore) : null}
+          </div>
+        ) : null}
+        <div className="user-tools-row">
         {confirming === 'all' ? (
           <>
             <span className="remove-ask">Remove all {userChannels} user channels from this browser?</span>
@@ -875,6 +946,7 @@ export function UserNetworkTools({
             {userChannels > 0 ? key('Remove all…', () => setConfirming('all'), 'tab remove-key') : null}
           </>
         )}
+        </div>
       </div>
       <input
         ref={listInput}

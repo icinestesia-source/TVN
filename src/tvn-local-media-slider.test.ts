@@ -55,7 +55,7 @@ describe('the time slider in the information bar', () => {
   })
 })
 
-describe('Local Media 992–1000 in the Guide', () => {
+describe('Local Media 991–1000 in the Guide', () => {
   it('E on a Local Media channel is MEDIA for that channel; MEDIA elsewhere goes to 1000', () => {
     expect(editorScope(channelByNumber(993)!)).toBe('local')
     const channels = LOCAL_MEDIA_NUMBERS.map((number) => channelByNumber(number)!)
@@ -70,8 +70,8 @@ describe('Local Media 992–1000 in the Guide', () => {
     const markup = renderToStaticMarkup(
       createElement(SessionImportTools, { channel: localChannel(994), programmes: sessionProgrammes(994), watching: false, onImport: async () => '' }),
     )
-    expect(markup).toContain('<span>994</span><span>Local Media 3</span>')
-    expect(markup).toMatch(/<input type="text"[^>]*value="Local Media 3"/)
+    expect(markup).toContain('<span>994</span><span>Local Media 4</span>')
+    expect(markup).toMatch(/<input type="text"[^>]*value="Local Media 4"/)
     expect(markup).toContain('aria-label="Remove Holiday"')
     expect(markup).toContain('aria-label="Move Holiday earlier"')
     expect(markup).toContain('aria-label="Move Holiday later"')

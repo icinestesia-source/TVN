@@ -92,7 +92,7 @@ export function FirstRunNotice({
         <a href={YOUTUBE_TERMS} target="_blank" rel="noopener noreferrer">
           YouTube Terms of Service
         </a>
-        . Other programmes may come from direct video, live streams or radio, and Channel 1000, with the Local Media channels from 992,
+        . Other programmes may come from direct video, live streams or radio, and Channel 1000, with the Local Media channels from 991,
         plays media you choose from your own device.
       </p>
       <p>

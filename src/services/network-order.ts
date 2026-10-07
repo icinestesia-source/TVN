@@ -13,7 +13,7 @@ import type { GuideLibrary, ViewingGuide } from './viewing-guides.ts'
 export const isUserNumber = (number: number | null | undefined): number is number =>
   typeof number === 'number' && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT
 
-/** A run of numbers the viewer's channels are ordered within: 1001+, or 001–991 in a network of their own. */
+/** A run of numbers the viewer's channels are ordered within: 1001+, or 001–990 in a network of their own. */
 export interface NumberBlock {
   first: number
   last: number

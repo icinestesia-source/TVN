@@ -5,13 +5,13 @@ import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 /**
  * Which Channel Editor a Guide channel opens. The viewer's own 1001+ channels are theirs outright;
  * curated 001–999 channels are edited as a change kept in this browser, over the shipped channel.
- * 000 TVN opens its own settings ('tvn'); 992–1000 Local Media open MEDIA for that channel ('local').
+ * 000 TVN opens its own settings ('tvn'); 991–1000 Local Media open MEDIA for that channel ('local').
  */
 export type EditorScope = 'user' | 'curated' | 'tvn' | 'local'
 
 export function editorScope(channel: { number: number; origin?: string }): EditorScope | null {
   if (channel.origin === 'session') return isLocalMediaNumber(channel.number) ? 'local' : null
-  // The viewer's own channel at 001–991, in a network with the shipped channels cleared.
+  // The viewer's own channel at 001–990, in a network with the shipped channels cleared.
   if (channel.origin === 'user-import' && isOwnNumber(channel.number) && channel.number < USER_NUMBER_START) return 'user'
   if (channel.number === TVN_CHANNEL_NUMBER) return channel.origin === 'tvn' ? 'tvn' : null
   if (channel.number >= USER_NUMBER_START) return channel.origin === 'user-import' ? 'user' : null

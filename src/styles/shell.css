@@ -340,3 +340,28 @@
   .buffering-title { animation: none; }
   .buffering-dots::after { animation: none; content: '…'; }
 }
+
+/* FILL EDGES: the picture again, enlarged and blurred, where the programme does not cover the screen. */
+.fill-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #000 center / cover no-repeat;
+  filter: blur(28px) brightness(0.55) saturate(1.2);
+  transform: scale(1.15);
+  pointer-events: none;
+}
+
+.fill-backdrop.is-local {
+  z-index: 1;
+}
+
+.fill-backdrop[hidden],
+.stage.is-card .fill-backdrop {
+  display: none;
+}
+
+.local-host.is-filled {
+  background: transparent;
+}

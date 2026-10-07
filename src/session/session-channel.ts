@@ -7,8 +7,8 @@ import type { GuideSlot, ScheduleSnapshot } from '../types/schedule.ts'
 import { readLocalNames, writeLocalName } from './local-names.ts'
 
 export const SESSION_CHANNEL_NUMBER = 1000
-/** 992–1000 are Local Media: channels the viewer fills from files on this device, for this session only. */
-export const LOCAL_MEDIA_FIRST = 992
+/** 991–1000 are Local Media: channels the viewer fills from files on this device, for this session only. */
+export const LOCAL_MEDIA_FIRST = 991
 export const LOCAL_MEDIA_NUMBERS: readonly number[] = Array.from({ length: SESSION_CHANNEL_NUMBER - LOCAL_MEDIA_FIRST + 1 }, (_, index) => LOCAL_MEDIA_FIRST + index)
 const SOURCE_PREFIX = 'local:session-'
 export const LOCAL_NAME_LIMIT = 40
@@ -17,12 +17,12 @@ export function isLocalMediaNumber(number: number): boolean {
   return Number.isInteger(number) && number >= LOCAL_MEDIA_FIRST && number <= SESSION_CHANNEL_NUMBER
 }
 
-/** 1000 is Local Media; 992–999 are Local Media 1 to 8 until the viewer names them. */
+/** 1000 is Local Media; 991–999 are Local Media 1 to 9 until the viewer names them. */
 export function defaultLocalName(number: number): string {
   return number === SESSION_CHANNEL_NUMBER ? 'Local Media' : `Local Media ${number - LOCAL_MEDIA_FIRST + 1}`
 }
 
-/** 1000 keeps its long-standing id; 992–999 have their own, apart from the shipped radio ids they stand over. */
+/** 1000 keeps its long-standing id; 991–999 have their own, apart from the shipped radio ids they stand over. */
 function channelId(number: number): string {
   return number === SESSION_CHANNEL_NUMBER ? `ch-${number}` : `ch-local-${number}`
 }
@@ -135,7 +135,7 @@ function loadNames(): void {
   }
 }
 
-/** The Local Media channel at this number (992–1000). The object only changes when it is renamed. */
+/** The Local Media channel at this number (991–1000). The object only changes when it is renamed. */
 export function localChannel(number: number): Channel {
   loadNames()
   let channel = channels.get(number)
@@ -146,7 +146,7 @@ export function localChannel(number: number): Channel {
   return channel
 }
 
-/** 992–1000 in order; a new list only after a rename. */
+/** 991–1000 in order; a new list only after a rename. */
 export function localChannels(): readonly Channel[] {
   if (!channelList) channelList = LOCAL_MEDIA_NUMBERS.map(localChannel)
   return channelList

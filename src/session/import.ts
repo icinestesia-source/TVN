@@ -242,11 +242,11 @@ export function browserCanPlay(mime: string): boolean {
   return probe.canPlayType(mime) !== '' || mime === 'video/x-matroska' || mime === 'audio/x-matroska' || mime === 'video/quicktime'
 }
 
-interface DirectoryHandleLike {
+export interface DirectoryHandleLike {
   kind: 'directory'
   values(): AsyncIterable<FileHandleLike | DirectoryHandleLike>
 }
-interface FileHandleLike {
+export interface FileHandleLike {
   kind: 'file'
   getFile(): Promise<File>
 }
@@ -280,16 +280,45 @@ export async function filesInDirectory(root: DirectoryHandleLike): Promise<File[
  * The native folder picker. Null when the viewer cancels; 'refused' when the browser will not show it,
  * so the caller can offer its ordinary folder input instead. Cancelling is never an error.
  */
-export async function pickFolder(picker: DirectoryPicker): Promise<File[] | null | 'refused'> {
+export async function pickFolder(picker: DirectoryPicker, onRoot?: (root: DirectoryHandleLike) => void): Promise<File[] | null | 'refused'> {
   let root: DirectoryHandleLike
   try {
     root = await picker({ mode: 'read' })
   } catch (caught) {
     return caught instanceof Error && caught.name === 'AbortError' ? null : 'refused'
   }
+  onRoot?.(root)
   try {
     return await filesInDirectory(root)
   } catch {
     return null
   }
+}
+
+type FilePicker = (options?: { multiple?: boolean }) => Promise<FileHandleLike[]>
+
+export function filePicker(scope: object = window): FilePicker | null {
+  const picker = (scope as { showOpenFilePicker?: FilePicker }).showOpenFilePicker
+  return typeof picker === 'function' ? picker.bind(scope) : null
+}
+
+/** The native file picker, keeping each file's handle. Null when cancelled; 'refused' when the browser will not show it. */
+export async function pickFiles(picker: FilePicker): Promise<{ files: File[]; handles: FileHandleLike[] } | null | 'refused'> {
+  let handles: FileHandleLike[]
+  try {
+    handles = await picker({ multiple: true })
+  } catch (caught) {
+    return caught instanceof Error && caught.name === 'AbortError' ? null : 'refused'
+  }
+  const files: File[] = []
+  const kept: FileHandleLike[] = []
+  for (const handle of handles) {
+    try {
+      files.push(await handle.getFile())
+      kept.push(handle)
+    } catch {
+      // An unreadable file is skipped.
+    }
+  }
+  return { files, handles: kept }
 }

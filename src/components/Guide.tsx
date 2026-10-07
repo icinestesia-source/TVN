@@ -638,7 +638,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {addRow ? (
             <>
               <p className="guide-empty-note">Your User Network starts at {padChannel(USER_NUMBER_START)} and is kept in this browser.</p>
-              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
+              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
               {owner ? null : <TestChannelsButton onLoad={tv.loadTestChannels} />}
             </>
           ) : null}
@@ -794,7 +794,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                 </div>
                 {addRow ? (
                   <div className="add-row" style={{ top: tv.visibleChannels.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(200, viewWidth - 16) }}>
-                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onExport={tv.exportUserNetwork} onExportAll={tv.exportTvn} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onRestore={restoreNetwork} onFocus={openAddRow} inputRef={addInput} />
+                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
                   </div>
                 ) : null}
                 <div className="now-line" style={{ left: nowX }} />
@@ -840,6 +840,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onImport={tv.importSession}
           onRemove={tv.removeSessionFile}
           onMove={tv.moveSessionFile}
+          onReload={tv.reloadLocalMedia}
           onClear={tv.clearLocalChannel}
           onRename={tv.renameLocalChannel}
           onWatch={(channelNumber) => tv.dispatch({ type: 'tune', channelNumber })}
@@ -863,6 +864,9 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onLoadTest={tv.loadTestChannels}
           onRemoveStarter={tv.removeStarterNetwork}
           onRemoveAll={() => tv.removeUserChannels('all')}
+          onExport={tv.exportUserNetwork}
+          onExportAll={tv.exportTvn}
+          onRestore={restoreNetwork}
         />
       ) : sessionMatches.length > 0 ? (
         <SessionMatches channel={focusedChannel ?? SESSION_CHANNEL} matches={sessionMatches} onPlay={tv.playSession} />

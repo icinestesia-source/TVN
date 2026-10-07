@@ -26,11 +26,11 @@ const numbered = (sources: readonly StoredSource[]) => sources.map((source) => `
 afterEach(() => setNetworkBase('tvn', null))
 
 describe('NEW USER: own channels from 001 as well as 1001', () => {
-  it('001–991 are the viewer’s own numbers; 992–1000 stay Local Media', () => {
-    expect([1, 991].every(isLowUserNumber)).toBe(true)
-    expect([0, 992, 1000, 1001].some(isLowUserNumber)).toBe(false)
-    expect([1, 991, 1001, 99_999].every((n) => isOwnNumber(n, true))).toBe(true)
-    expect([992, 999, 1000, 100_000].some((n) => isOwnNumber(n, true))).toBe(false)
+  it('001–990 are the viewer’s own numbers; 991–1000 are Local Media', () => {
+    expect([1, 990].every(isLowUserNumber)).toBe(true)
+    expect([0, 991, 1000, 1001].some(isLowUserNumber)).toBe(false)
+    expect([1, 990, 1001, 99_999].every((n) => isOwnNumber(n, true))).toBe(true)
+    expect([991, 999, 1000, 100_000].some((n) => isOwnNumber(n, true))).toBe(false)
     expect(isOwnNumber(1)).toBe(false)
     setNetworkBase('new', null)
     expect(isOwnNumber(1)).toBe(true)

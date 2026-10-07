@@ -135,7 +135,7 @@ describe('OPTIONS', () => {
 
   it('lays out every setting as a card, users first', () => {
     const cards = [...options.matchAll(/<Card title="([^"]+)"/g)].map((match) => match[1])
-    expect(cards).toEqual(['Users', 'Picture & sound', 'Channel change', 'Display', 'Sleep', 'Guide', 'Random Cycle', 'Information overlay shortcuts', 'Save & restore', 'About'])
+    expect(cards).toEqual(['Users', 'Picture & sound', 'Channel change', 'Display', 'Sleep', 'Local Media', 'Guide', 'Random Cycle', 'Information overlay shortcuts', 'Save & restore', 'About'])
   })
 
   it('deletes a user only after asking what happens to its channels; TVN cannot be deleted', () => {

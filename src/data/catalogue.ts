@@ -5,7 +5,7 @@ import { categoryIdFor } from './network.ts'
 import { isOnAir } from '../network/airing.ts'
 import { curatedEditList, curatedProgrammesFor, currentNetworkBase, userChannelList, userProgrammesFor, type NetworkBase } from './user-overlay.ts'
 import { DEMO_FILMS } from './media.ts'
-import { localChannels, localNumberForId, sessionProgrammes } from '../session/session-channel.ts'
+import { localChannels, localNumberForId, sessionActive, sessionProgrammes } from '../session/session-channel.ts'
 import { TVN_CHANNEL } from '../tvn/tvn-channel.ts'
 
 interface Seed {
@@ -234,13 +234,13 @@ const SEEDS: Seed[] = [
     { picture: false, mediaKind: 'audio', programmeType: 'radio' },
   ),
   seed(
-    991,
-    'Night Music',
+    990,
+    'Night Radio',
     'NIGHT',
     'Radio',
-    'Quiet music through the small hours.',
-    ['After Close', 'Piano', 'A Long Set', 'Dawn Chorus'],
-    [25, 40, 90, 18],
+    'Late talk and quiet music through the small hours.',
+    ['After Close', 'Late Talk', 'Piano', 'A Long Set', 'Night Phone-In', 'Dawn Chorus'],
+    [25, 35, 40, 90, 30, 18],
     { picture: false, mediaKind: 'audio', programmeType: 'radio' },
   ),
   seed(
@@ -394,7 +394,7 @@ function merged(): NonNullable<typeof listed> {
       if (shipped && shipped.origin === 'default' && shipped.id === channel.id) byNumber.set(channel.number, channel)
     }
   }
-  // The reserved positions are TVN's own: 000 TVN, and 992–1000 Local Media in place of the shipped radio there.
+  // The reserved positions are TVN's own: 000 TVN, and 991–1000 Local Media in place of the shipped radio there.
   byNumber.set(TVN_CHANNEL.number, TVN_CHANNEL)
   for (const channel of local) byNumber.set(channel.number, channel)
   listed = { users, curated, base, local, list: [...byNumber.values()].sort((left, right) => left.number - right.number), byNumber }
@@ -439,18 +439,23 @@ export function randomChannel(
   random: () => number = Math.random,
   among: readonly Channel[] = listChannels(),
 ): Channel | undefined {
-  const onAir = among.filter((channel) => channel.enabled && channel.origin !== 'session' && channel.origin !== 'tvn' && !channel.emptySlot && isOnAir(channel))
+  const onAir = among.filter((channel) => channel.enabled && playingLocal(channel) && channel.origin !== 'tvn' && !channel.emptySlot && isOnAir(channel))
   const choices = onAir.length > 1 ? onAir.filter((channel) => channel.number !== current) : onAir
   return choices[Math.floor(random() * choices.length)]
 }
 
+/** Any channel but Local Media, and a Local Media channel once it has files: then it is a channel like the others. */
+export function playingLocal(channel: Pick<Channel, 'origin' | 'number'>): boolean {
+  return channel.origin !== 'session' || sessionActive(channel.number)
+}
+
 /**
  * CH+ / CH- over the whole network, one ring: 000 TVN sits between the User Network (below, by wrapping) and
- * 001 (above). 1000 Local Media is a utility reached by number or MEDIA, never by stepping; stepping from it
- * goes on to its neighbours.
+ * 001 (above). An empty Local Media channel is reached by number or MEDIA, never by stepping; stepping from it
+ * goes on to its neighbours. One with files is stepped to like any other.
  */
 export function adjacentChannel(number: number, delta: number): Channel {
-  const enabled = listChannels().filter((channel) => channel.enabled && channel.origin !== 'session' && !channel.emptySlot && isOnAir(channel))
+  const enabled = listChannels().filter((channel) => channel.enabled && playingLocal(channel) && !channel.emptySlot && isOnAir(channel))
   if (enabled.length === 0) {
     const fallback = listChannels().filter((channel) => channel.enabled)
     const index = fallback.findIndex((channel) => channel.number === number)

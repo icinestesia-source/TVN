@@ -98,7 +98,7 @@ describe('protected and canonical identities', () => {
     expect(channelByNumber(925)?.name).toBe('NBC News NOW')
     expect(channelByNumber(949)?.name).toBe('Information')
     expect(channelByNumber(950)?.name).toBe('Radio One')
-    expect(channelByNumber(999)?.name).toBe('Local Media 8')
+    expect(channelByNumber(999)?.name).toBe('Local Media 9')
   })
 })
 
@@ -177,8 +177,8 @@ describe('guide filters and tuning', () => {
     installUserCatalogue(built.channels, built.programmes)
     const visible = listChannels()
     const defaults = visible.filter((channel) => channel.origin === 'default')
-    // 992–999 are Local Media now, over the shipped radio there.
-    expect(defaults).toHaveLength(991)
+    // 991–999 are Local Media now, over the shipped radio there.
+    expect(defaults).toHaveLength(990)
     const user = visible.filter((channel) => channelMatchesFilter(channel, 'user', []))
     expect(user.map((channel) => channel.number)).toEqual([1001])
     const sport = visible.filter((channel) => channelMatchesFilter(channel, 'sport', []))
@@ -195,8 +195,8 @@ describe('guide filters and tuning', () => {
     expect(news.every((channel) => channel.number >= 900 && channel.number <= 949)).toBe(true)
     expect(news.some((channel) => channel.mediaKind === 'audio')).toBe(false)
     const radio = visible.filter((channel) => channelMatchesFilter(channel, 'radio', []))
-    expect(radio.some((channel) => channel.number === 991)).toBe(true)
-    expect(radio.every((channel) => channel.number >= 950 && channel.number <= 991)).toBe(true)
+    expect(radio.some((channel) => channel.number === 990)).toBe(true)
+    expect(radio.every((channel) => channel.number >= 950 && channel.number <= 990)).toBe(true)
     const starred = visible.filter((channel) => channelMatchesFilter(channel, 'favourites', [301, 1001]))
     expect(starred.map((channel) => channel.number).sort((a, b) => a - b)).toEqual([301, 1001])
   })
@@ -209,7 +209,7 @@ describe('guide filters and tuning', () => {
     expect(channelByNumber(850)?.name).toBe('Live World')
     expect(channelByNumber(920)?.name).toBe('CNN')
     expect(channelByNumber(950)?.name).toBe('Radio One')
-    expect(channelByNumber(999)?.name).toBe('Local Media 8')
+    expect(channelByNumber(999)?.name).toBe('Local Media 9')
     expect(channelByNumber(0)?.origin).toBe('tvn')
     expect(channelByNumber(1000)?.origin).toBe('session')
     const numbers = listChannels().map((channel) => channel.number)
@@ -228,5 +228,15 @@ describe('guide filters and tuning', () => {
     const deep = visibleRowRange(400 * 48, 640, 48, 999, 6)
     expect(deep.start).toBeGreaterThan(300)
     expect(deep.end - deep.start).toBeLessThan(30)
+  })
+})
+
+describe('990 Night Radio', () => {
+  it('990 is Night Radio, carrying Night Music’s schedule, and 991 is Local Media 1', () => {
+    const night = channelByNumber(990)!
+    expect(night.name).toBe('Night Radio')
+    expect(night.mediaKind).toBe('audio')
+    expect(channelByNumber(991)?.name).toBe('Local Media 1')
+    expect(channelByNumber(991)?.origin).toBe('session')
   })
 })

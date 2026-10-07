@@ -1,5 +1,6 @@
 import { createContext, useContext, type RefObject } from 'react'
 import type { StartHold } from '../player/autoplay.ts'
+import type { MediaHandle } from '../session/remembered-media.ts'
 import type { Channel } from '../types/channel.ts'
 import type { TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
@@ -261,8 +262,10 @@ export interface TvContextValue {
   setSourceOverride: (channelNumber: number, videoId: string | null) => void
   /** Play Now on the session channel: this imported programme starts from the beginning. */
   playSession: (programmeId: string) => void
-  /** Adds these files to a Local Media channel (992–1000). Resolves with the viewer-facing outcome ('' if superseded). */
-  importSession: (files: readonly File[], channelNumber: number) => Promise<string>
+  /** Adds these files to a Local Media channel (991–1000). Resolves with the viewer-facing outcome ('' if superseded). */
+  importSession: (files: readonly File[], channelNumber: number, handles?: readonly MediaHandle[]) => Promise<string>
+  /** REMEMBER LOCAL MEDIA: loads every remembered Local Media channel again, as the viewer left it. */
+  reloadLocalMedia: () => Promise<string>
   /** Takes one imported file out of its Local Media channel. */
   removeSessionFile: (programmeId: string) => void
   /** Moves one imported file to this position in its Local Media channel's running order; what is on air carries on. */

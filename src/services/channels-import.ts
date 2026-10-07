@@ -4,6 +4,7 @@ import type { Channel } from '../types/channel.ts'
 import type { Programme, ProgrammeType } from '../types/programme.ts'
 import { reachesArchive, type ChannelEditorial } from './channel-curation.ts'
 import { airingSources, inOrder, inventoryOf, liveStreamOf, refreshOrigin, type ChannelSource, type OrderKind } from './channel-sources.ts'
+import { publicWebPage, siteOf } from '../utils/web-page.ts'
 import type { ArchiveLookup } from './user-archive.ts'
 import { planArchive, runningOrder } from './user-depth.ts'
 import { SCHEDULE_EPOCH_MS } from '../scheduler/epoch.ts'
@@ -277,7 +278,7 @@ export function migrateLegacyUserNumbers(existing: readonly StoredSource[], keep
     }
   }
   const ordered = existing
-    // With the shipped network cleared, 001–991 are the viewer's own and stay where they are.
+    // With the shipped network cleared, 001–990 are the viewer's own and stay where they are.
     .filter((source) => source.channelNumber !== null && source.channelNumber < USER_NUMBER_START && !(keepLow && isLowUserNumber(source.channelNumber)))
     .sort((left, right) => (left.channelNumber ?? 0) - (right.channelNumber ?? 0))
   const renumber = new Map<string, number>()
@@ -551,6 +552,13 @@ export function channelsFromSources(
     channels.push({ ...base, description, ...(own.length > 0 && own.every((video) => video.media && !video.web && video.mediaKind !== 'video') ? { mediaKind: 'audio' as const } : {}) })
 
     const ownIndex = new Map(pool.map((video, index) => [video.id, index + 1]))
+    // A feed episode without a page of its own links to the site its feed is published from.
+    const sites = new Map(
+      (source.channelSources ?? []).flatMap((item) => {
+        const site = item.kind === 'podcast' ? (publicWebPage(item.info?.website) ?? siteOf(item.url)) : undefined
+        return site ? (item.videos ?? []).map((video) => [video.id, site] as const) : []
+      }),
+    )
     const entry = (video: ImportedVideo) => ({ key: video.id, item: { video, earlier: false, programmeId: `${id}-p${ownIndex.get(video.id)}` }, repeat: false })
     // The viewer's own order plays exactly as set, on a loop; otherwise TVN weaves in repeats and earlier uploads.
     const order = ordered
@@ -561,7 +569,7 @@ export function channelsFromSources(
           own.map(entry),
           archive.map((video) => ({ key: video.id, item: { video, earlier: true, programmeId: `${id}-a-${video.id}` }, repeat: false })),
         )
-    const list: Programme[] = order.map(({ item: { video, earlier, programmeId }, repeat }): Programme => video.media ? episodeProgramme(video, repeat ? `${programmeId}-r` : programmeId, id, source.name) : ({
+    const list: Programme[] = order.map(({ item: { video, earlier, programmeId }, repeat }): Programme => video.media ? episodeProgramme(video, repeat ? `${programmeId}-r` : programmeId, id, source.name, sites.get(video.id)) : ({
       id: repeat ? `${programmeId}-r` : programmeId,
       title: video.title,
       description: earlier
@@ -614,9 +622,10 @@ export function poolProgramme(video: ImportedVideo, channelId: string, name: str
 }
 
 /** A podcast or archive episode: its own public audio or video file, played by the browser's media element, never by YouTube. */
-function episodeProgramme(video: ImportedVideo, id: string, channelId: string, name: string): Programme {
+function episodeProgramme(video: ImportedVideo, id: string, channelId: string, name: string, site?: string): Programme {
   if (video.web) return webProgramme(video, id, channelId, name)
   const picture = video.mediaKind === 'video'
+  const episodeUrl = publicWebPage(video.page) ?? site
   return {
     id,
     title: video.title,
@@ -635,6 +644,7 @@ function episodeProgramme(video: ImportedVideo, id: string, channelId: string, n
     sourceRef: `podcast:${video.id}`,
     ...(video.published ? { publishedAt: video.published } : {}),
     creator: name,
+    ...(episodeUrl ? { episodeUrl } : {}),
     playbackMode: 'linear',
   }
 }

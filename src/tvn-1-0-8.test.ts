@@ -292,7 +292,7 @@ describe('EXPORT: the User Network as tvn-user-network-v1', () => {
     expect(storedKindOf('collection')).toBe('collection')
   })
 
-  it('EXPORT sits on the ADD CHANNEL line, after the link box and its IMPORT button, not in the Guide actions', () => {
+  it('EXPORT sits in the User Network panel, above its other buttons, not on the ADD CHANNEL line or in the Guide actions', () => {
     const html = renderToStaticMarkup(createElement(AddChannelForm, { nextNumber: 1055, onAdd: async () => '', onExport: async () => '' }))
     expect(html.indexOf('<input')).toBeLessThan(html.indexOf('>Import</button>'))
     const labels = [...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
@@ -300,7 +300,8 @@ describe('EXPORT: the User Network as tvn-user-network-v1', () => {
     const actions = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
     expect([...actions.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Guide', 'Options', 'Now', 'Add', 'Media'])
     const guide = read('src/components/Guide.tsx')
-    expect(guide.match(/<AddChannelForm [^>]*onExport=\{tv\.exportUserNetwork\}/g)).toHaveLength(2)
+    expect(guide).not.toMatch(/<AddChannelForm [^>]*onExport=/)
+    expect(guide).toMatch(/<UserNetworkTools[\s\S]*?onExport=\{tv\.exportUserNetwork\}/)
     expect(guide).not.toMatch(/<GuideActions[^>]*onExport/)
   })
 })

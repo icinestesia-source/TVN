@@ -8,7 +8,9 @@ import { GUIDE_ZOOM_MAX, GUIDE_ZOOM_MIN, GUIDE_ZOOM_STEP } from '../epg/zoom.ts'
 import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN } from '../state/surf.ts'
 import { useTv } from '../state/tv-context.ts'
+import { rememberSupported, setRememberMedia, useRememberMedia } from '../session/remembered-media.ts'
 import { DISPLAY_QUALITIES, setDisplayQuality, useDisplayQuality } from '../view/display-quality.ts'
+import { setFillEdges, useFillEdges } from '../view/fill-edges.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
 
 /** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
@@ -172,6 +174,8 @@ function UserRow({ user, channels, onStatus }: { user: NetworkUser; channels: nu
 export function GuideOptions() {
   const tv = useTv()
   const quality = useDisplayQuality()
+  const remember = useRememberMedia()
+  const fill = useFillEdges()
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const users = listChannels().filter((channel) => (channel.number >= USER_NUMBER_START || channel.origin === 'user-import') && !channel.emptySlot)
@@ -257,6 +261,8 @@ export function GuideOptions() {
               </button>
             ))}
           </div>
+          <p className="options-note">Where a programme does not cover the screen, such as a Short, fill the edges with its own picture, enlarged and blurred.</p>
+          <Row label="Fill edges">{toggle(fill, ['On', 'Off'], () => setFillEdges(!fill))}</Row>
         </Card>
 
         <Card title="Sleep">
@@ -276,6 +282,17 @@ export function GuideOptions() {
               </button>
             ))}
           </div>
+        </Card>
+
+        <Card title="Local Media">
+          <p className="options-note">
+            {rememberSupported()
+              ? 'Remember the folders and files imported into Local Media, so RELOAD PREVIOUS in MEDIA can load them again on a later visit. Only where they are on this device is kept, never the media; the browser asks again before TVN reads them. Turning this off forgets them.'
+              : 'This browser cannot remember Local Media folders and files between visits. Chrome and Edge can.'}
+          </p>
+          <Row label="Remember imports">
+            {rememberSupported() ? toggle(remember, ['On', 'Off'], () => setRememberMedia(!remember)) : <span className="options-dim">Unavailable</span>}
+          </Row>
         </Card>
 
         <Card title="Guide">

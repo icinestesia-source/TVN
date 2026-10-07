@@ -94,6 +94,48 @@ export function eligibilityKey(edit: Pick<ChannelEdit, 'sources'> & Partial<Chan
   return (hash >>> 0).toString(16).padStart(8, '0')
 }
 
+/** Programme lengths the whole channel is limited to, in seconds; absent ends are open. */
+export interface LengthRange {
+  minSeconds?: number
+  maxSeconds?: number
+}
+
+/** Sources whose programmes have their own lengths: not TVN's programming, a website's slot or a live stream. */
+const lengthLimited = (source: Pick<ChannelSource, 'kind'>) => source.kind !== 'tvn' && source.kind !== 'website' && !isStreamSource(source)
+
+/** The length limits every one of the channel's sources shares; none when they differ or no source has any. */
+export function lengthRangeOf(sources: readonly ChannelSource[]): LengthRange {
+  const limited = sources.filter(lengthLimited)
+  if (limited.length === 0) return {}
+  const { minSeconds, maxSeconds } = limited[0].filter?.include ?? {}
+  const shared = limited.every((source) => source.filter?.include?.minSeconds === minSeconds && source.filter?.include?.maxSeconds === maxSeconds)
+  return shared ? { ...(minSeconds !== undefined ? { minSeconds } : {}), ...(maxSeconds !== undefined ? { maxSeconds } : {}) } : {}
+}
+
+const outside = (seconds: number, range: LengthRange) =>
+  (range.minSeconds !== undefined && seconds < range.minSeconds) || (range.maxSeconds !== undefined && seconds > range.maxSeconds)
+
+/**
+ * The channel limited to programmes of these lengths: each source's filter takes the limits, so what it holds
+ * and every later rescan leave out the rest; TVN's own programmes outside them are left out of the running
+ * order. A programme of unknown length (0) is never judged by it.
+ */
+export function withLengthRange(edit: ChannelEdit, range: LengthRange, tvnRows: readonly { id: string; durationSec: number }[] = []): ChannelEdit {
+  const clean = cleanFilter({ include: range })?.include ?? {}
+  const limits: LengthRange = { minSeconds: clean.minSeconds, maxSeconds: clean.maxSeconds }
+  const sources = edit.sources.map((source) => {
+    if (!lengthLimited(source)) return source
+    const filter = cleanFilter({ ...source.filter, include: { ...source.filter?.include, ...limits } })
+    if (filter) return { ...source, filter }
+    const { filter: _filter, ...rest } = source
+    return rest
+  })
+  const left = new Set(edit.excluded ?? [])
+  const unfit = tvnRows.filter((row) => row.durationSec > 0 && !left.has(row.id) && outside(row.durationSec, limits)).map((row) => row.id)
+  if (unfit.length === 0) return { ...edit, sources }
+  return { ...edit, sources, excluded: [...left, ...unfit], orderKind: edit.orderKind ?? 'manual' }
+}
+
 /** Programmes the channel holds but does not schedule yet: what LOAD or a new source brought in. */
 export function heldIds(sources: readonly ChannelSource[]): Set<string> {
   return new Set(sources.flatMap((source) => (source.videos ?? []).filter((video) => video.pending).map((video) => video.id)))

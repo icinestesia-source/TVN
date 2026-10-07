@@ -4,11 +4,12 @@ import { channelIsDefined } from './independent/network.ts'
 import type { MediaKind, ProgrammeType } from '../types/programme.ts'
 import { canonicalByNumber, filterIdForCategory } from './canonical.ts'
 import { currentNetworkBase } from './user-overlay.ts'
+import { sessionActive } from '../session/session-channel.ts'
 
 /** 000 is reserved for TVN's own channel (src/tvn/tvn-channel.ts), never a curated or user channel. */
 export const CHANNEL_ZERO_RESERVED = true
 
-/** 992–1000 are reserved for Local Media (media from this device), between the network and user television; never allocated. */
+/** 991–1000 are reserved for Local Media (media from this device), between the network and user television; never allocated. */
 export const CHANNEL_THOUSAND_RESERVED = true
 
 export interface NetworkArea {
@@ -32,8 +33,8 @@ export const NETWORK_AREAS: readonly NetworkArea[] = [
   { id: 'specialist', label: 'Specialist', from: 800, to: 849, note: 'Archive and experiment' },
   { id: 'live-world', label: 'Live World', from: 850, to: 879, note: 'Live world and webcams' },
   { id: 'news', label: 'News', from: 900, to: 949, note: 'News and information' },
-  { id: 'radio', label: 'Radio', from: 950, to: 991, note: 'Radio' },
-  { id: 'local', label: 'Local Media', from: 992, to: 1000, note: 'Media from this device, for this session' },
+  { id: 'radio', label: 'Radio', from: 950, to: 990, note: 'Radio' },
+  { id: 'local', label: 'Local Media', from: 991, to: 1000, note: 'Media from this device, for this session' },
 ]
 
 /** Imported and hand-built television starts here and is not capped at four digits. */
@@ -41,17 +42,17 @@ export const USER_NUMBER_START = 1001
 export const USER_NUMBER_LIMIT = 100000
 
 /**
- * With the shipped network cleared (NEW USER), the viewer's own channels may also take 001–991, up to Local
+ * With the shipped network cleared (NEW USER), the viewer's own channels may also take 001–990, up to Local
  * Media. They number and reorder among themselves, apart from 1001+.
  */
 export const LOW_USER_FIRST = 1
-export const LOW_USER_LAST = 991
+export const LOW_USER_LAST = 990
 
 export function isLowUserNumber(number: number | null | undefined): number is number {
   return typeof number === 'number' && Number.isInteger(number) && number >= LOW_USER_FIRST && number <= LOW_USER_LAST
 }
 
-/** A number the viewer's own channels can hold: 1001+, and 001–991 only in a network of their own (NEW USER), where TVN's channels are cleared. */
+/** A number the viewer's own channels can hold: 1001+, and 001–990 only in a network of their own (NEW USER), where TVN's channels are cleared. */
 export function isOwnNumber(number: number | null | undefined, lowAllowed = currentNetworkBase() === 'new'): number is number {
   return (lowAllowed && isLowUserNumber(number)) || (typeof number === 'number' && Number.isInteger(number) && number >= USER_NUMBER_START && number < USER_NUMBER_LIMIT)
 }
@@ -108,7 +109,9 @@ export function channelMatchesFilter(
   favourites: readonly number[],
 ): boolean {
   if (!channel.enabled) return false
-  if (channel.origin === 'session' || channel.origin === 'tvn') return filter === 'all' || (filter === 'favourites' && favourites.includes(channel.number))
+  if (channel.origin === 'tvn') return filter === 'all' || (filter === 'favourites' && favourites.includes(channel.number))
+  // Local Media is always in ALL; once it has files it is one of the viewer's own channels (USER) as well.
+  if (channel.origin === 'session') return filter === 'all' || (filter === 'favourites' && favourites.includes(channel.number)) || (filter === 'user' && sessionActive(channel.number))
   const curated = channel.number < USER_NUMBER_START && channel.origin !== 'user-import' && channel.origin !== 'user-created'
   if (filter === 'dormant') return curated && !isOnAir(channel)
   if (curated && !inNetworkDirectory(channel.number)) return false

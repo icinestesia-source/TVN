@@ -4,11 +4,12 @@ import { mediaLibrary } from '../director/library.ts'
 import type { Programme } from '../types/programme.ts'
 import { loadedRegister, loadRegister } from './load.ts'
 import { EMPTY_REGISTER, libraryItem, sourceIdOf, type SourceRegister } from './provenance.ts'
+import { publicWebPage } from '../utils/web-page.ts'
 
 /** Who made what is on screen, as a record names them: their @handle when one is known, else their name. */
 export interface Attribution {
   text: string
-  /** The creator's own YouTube channel page; absent when no record names it. */
+  /** The creator's own YouTube channel page, or a feed episode's own page; absent when no record names it. */
   url?: string
 }
 
@@ -44,6 +45,7 @@ export function programmeAttribution(
   register: SourceRegister,
   library: readonly MediaItem[] = mediaLibrary(),
 ): Attribution | null {
+  if (programme.mediaUrl && !programme.liveStream) return episodeAttribution(programme.episodeUrl)
   if (!programme.videoId || programme.liveStream || programme.mediaUrl) return null
   const name = programme.creator?.trim()
   if (name) {
@@ -56,6 +58,15 @@ export function programmeAttribution(
   const url = youtubeChannelPage(entry.channelUrl)
   const handle = handleOfChannelPage(entry.channelUrl)
   return { text: handle ? `@${handle}` : entry.name.trim(), ...(url ? { url } : {}) }
+}
+
+/** A feed episode links to its own page, or to the site that publishes it, named by its address. */
+export function episodeAttribution(raw: string | undefined): Attribution | null {
+  const page = publicWebPage(raw)
+  if (!page) return null
+  const url = new URL(page)
+  const site = url.hostname.replace(/^www\./, '')
+  return { text: url.pathname === '/' && !url.search ? site : 'Episode page', url: page }
 }
 
 /** The source register once it has loaded (it is read once per visit); empty until then. */

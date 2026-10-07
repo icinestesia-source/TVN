@@ -382,14 +382,14 @@ describe('tuning around 1000', () => {
     expect(adjacentChannel(1, -1).origin).toBe('tvn')
   })
 
-  it('U: 1001+ keeps its numbers; Local Media 992–1000 stays tunable but CH+/CH- pass over it to 1001', () => {
+  it('U: 1001+ keeps its numbers; Local Media 991–1000 stays tunable but CH+/CH- pass over it to 1001', () => {
     installUserChannels()
     try {
       expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
       expect(adjacentChannel(999, 1).number).toBe(1001)
       expect(adjacentChannel(1000, 1).number).toBe(1001)
       const below = adjacentChannel(1000, -1).number
-      expect(below).toBeLessThan(992)
+      expect(below).toBeLessThan(991)
       expect(adjacentChannel(1001, -1).number).toBe(below)
     } finally {
       installUserCatalogue([], new Map())
@@ -415,13 +415,16 @@ describe('tuning around 1000', () => {
     expect(sessionRefresh(1000, true, true)).toBe('tune')
   })
 
-  it('X: Random never lands on 1000 or 000, with or without imported media', () => {
-    replaceSession([item('Private Film', 90)], T0)
+  it('X: Random never lands on 000 or an empty Local Media channel; one with files is a channel it can choose', () => {
     for (let step = 0; step < 1000; step += 1) {
       const picked = randomChannel(225, () => step / 1000)
       expect(picked?.number).not.toBe(1000)
       expect(picked?.number).not.toBe(0)
     }
+    replaceSession([item('Private Film', 90)], T0)
+    const picks = new Set(Array.from({ length: 1000 }, (_, step) => randomChannel(225, () => step / 1000)?.number))
+    expect(picks.has(1000)).toBe(true)
+    expect(picks.has(0)).toBe(false)
     expect(randomChannel(1000, () => 0)?.number).not.toBe(1000)
   })
 })
@@ -557,16 +560,18 @@ describe('isolation and privacy', () => {
   })
 })
 
-describe('Local Media 992–1000', () => {
-  it('replaces the shipped radio at 992–999 with nine Local Media channels, each its own', () => {
+describe('Local Media 991–1000', () => {
+  it('replaces the shipped radio at 991–999 with ten Local Media channels in all, each its own', () => {
     for (const number of LOCAL_MEDIA_NUMBERS) {
       const channel = channelByNumber(number)!
       expect(channel.origin, `${number}`).toBe('session')
       expect(channel.id).toBe(number === 1000 ? 'ch-1000' : `ch-local-${number}`)
       expect(broadcast(channel, T0).current.programme.title).toBe('Import media')
     }
-    expect(channelByNumber(992)!.name).toBe('Local Media 1')
-    expect(channelByNumber(999)!.name).toBe('Local Media 8')
+    expect(LOCAL_MEDIA_NUMBERS).toHaveLength(10)
+    expect(channelByNumber(991)!.name).toBe('Local Media 1')
+    expect(channelByNumber(992)!.name).toBe('Local Media 2')
+    expect(channelByNumber(999)!.name).toBe('Local Media 9')
     expect(channelByNumber(1000)).toBe(SESSION_CHANNEL)
   })
 
@@ -631,7 +636,7 @@ describe('Local Media 992–1000', () => {
     expect(channelByNumber(997)!.name).toBe('Home Movies')
     expect(localChannel(997).shortName).toBe('HOME MOVIES')
     expect(renameLocalChannel(997, '')).toBe(true)
-    expect(channelByNumber(997)!.name).toBe('Local Media 6')
+    expect(channelByNumber(997)!.name).toBe('Local Media 7')
     expect(renameLocalChannel(225, 'Not mine')).toBe(false)
   })
 })

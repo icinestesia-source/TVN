@@ -997,9 +997,9 @@ span.editor-expand { border-color: transparent; }
 
 .channel-cell.is-watching .ch-number { color: var(--gold); }
 .channel-cell.is-visiting { box-shadow: inset 3px 0 0 rgba(242, 242, 242, 0.35); }
-.channel-cell.is-visiting .ch-name { font-style: italic; }
-
 .channel-cell.is-user .ch-name { color: #d5e4f2; }
+.channel-cell.is-visiting .ch-number,
+.channel-cell.is-visiting .ch-name { color: var(--gold); }
 .channel-cell.is-off-air .ch-number,
 .channel-cell.is-off-air .ch-name { opacity: 0.5; }
 
@@ -2189,8 +2189,17 @@ a.info-creator:focus-visible {
 }
 
 .user-tools > .info-actions {
+  flex-direction: column;
+  align-items: flex-end;
   flex-wrap: nowrap;
   max-width: none;
+}
+
+.user-tools-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
 }
 
 .editor-actions-help {

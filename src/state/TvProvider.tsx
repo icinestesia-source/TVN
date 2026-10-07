@@ -164,13 +164,17 @@ import {
 import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
-import { browserCanPlay, buildSessionItems, commitImport, probeDuration } from '../session/import.ts'
+import { browserCanPlay, buildSessionItems, commitImport, filesInDirectory, probeDuration, type DirectoryHandleLike, type FileHandleLike } from '../session/import.ts'
+import { forgetFlvSource, registerFlvSource, remuxOf } from '../player/flv.ts'
+import { arrangeRemembered, readable, rememberedChannels, rememberHandles, rememberOrder, type MediaHandle } from '../session/remembered-media.ts'
 import {
   SESSION_CHANNEL_NUMBER,
   clearSession,
   hasPicture,
   isLocalMediaNumber,
   moveSessionProgramme,
+  sessionProgrammes,
+  setUrlRevoker,
   rebaseSession,
   removeSessionProgramme,
   renameLocalChannel,
@@ -481,12 +485,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const commitNumericRef = useRef<() => void>(() => {})
   const sessionRef = useRef<{
     play: (programmeId: string) => void
-    import: (files: readonly File[], number: number) => Promise<string>
+    import: (files: readonly File[], number: number, handles?: readonly MediaHandle[]) => Promise<string>
+    reload: () => Promise<string>
     remove: (programmeId: string) => void
     clear: (number: number) => void
   }>({
     play: () => {},
     import: async () => '',
+    reload: async () => '',
     remove: () => {},
     clear: () => {},
   })
@@ -1080,39 +1086,90 @@ export function TvProvider({ children }: { children: ReactNode }) {
     if (!keepGuide) showOverlay('info', INFO_MS)
   }
 
+  const localTitles = (number: number) => sessionProgrammes(number).map((programme) => programme.title)
+  const buildLocal = (files: readonly File[]) => {
+    const token = ++importToken.current
+    return buildSessionItems(files, {
+      canPlay: browserCanPlay,
+      createUrl: (file) => {
+        const url = URL.createObjectURL(file)
+        if (remuxOf(file.name)) registerFlvSource(url, file)
+        return url
+      },
+      revokeUrl: (url) => {
+        URL.revokeObjectURL(url)
+        forgetFlvSource(url)
+      },
+      probe: (url, kind, remux) => probeDuration(url, kind, remux),
+      cancelled: () => token !== importToken.current,
+    })
+  }
+
   sessionRef.current = {
     play(programmeId) {
       const number = sessionNumberFor(programmeId)
       if (number !== null && rebaseSession(programmeId, Date.now())) showSession(number)
     },
-    async import(files, number) {
+    async import(files, number, handles = []) {
       const target = isLocalMediaNumber(number) ? number : SESSION_CHANNEL_NUMBER
-      const token = ++importToken.current
-      const result = await buildSessionItems(files, {
-        canPlay: browserCanPlay,
-        createUrl: (file) => URL.createObjectURL(file),
-        revokeUrl: (url) => URL.revokeObjectURL(url),
-        probe: (url, kind, remux) => probeDuration(url, kind, remux),
-        cancelled: () => token !== importToken.current,
-      })
+      const result = await buildLocal(files)
       const wasEmpty = !sessionActive(target)
       const summary = commitImport(result, Date.now(), target)
       if (result.cancelled || result.items.length === 0) return summary
+      void rememberHandles(target, handles, localTitles(target))
       // Added files join the end of the running order; only a channel that was empty has a new programme on air.
       if (wasEmpty) showSession(target, guideOpenRef.current)
       if (!guideOpenRef.current) flash(summary, 4000)
       return summary
+    },
+    async reload() {
+      const records = await rememberedChannels()
+      if (records.length === 0) return 'NOTHING TO RELOAD'
+      let channels = 0
+      let programmes = 0
+      let refused = 0
+      for (const record of records) {
+        if (!isLocalMediaNumber(record.number)) continue
+        const files: File[] = []
+        for (const handle of record.handles) {
+          if (!(await readable(handle))) {
+            refused += 1
+            continue
+          }
+          try {
+            if (handle.kind === 'directory') files.push(...(await filesInDirectory(handle as unknown as DirectoryHandleLike)))
+            else files.push(await (handle as unknown as FileHandleLike).getFile())
+          } catch {
+            // A folder or file that has moved or gone is passed over.
+          }
+        }
+        if (files.length === 0) continue
+        const result = await buildLocal(files)
+        if (result.cancelled || result.items.length === 0) continue
+        // The channel comes back as the viewer left it, in place of anything it holds now.
+        const items = arrangeRemembered(result.items, record)
+        const wasEmpty = !sessionActive(record.number)
+        clearSession(record.number)
+        commitImport({ ...result, items }, Date.now(), record.number)
+        if (wasEmpty || channelRef.current === record.number) showSession(record.number, true)
+        channels += 1
+        programmes += items.length
+      }
+      if (channels === 0) return refused > 0 ? 'TVN WAS NOT ALLOWED TO READ THOSE FOLDERS' : 'THE REMEMBERED MEDIA COULD NOT BE FOUND'
+      return `RELOADED ${channels} ${channels === 1 ? 'CHANNEL' : 'CHANNELS'} · ${programmes} ${programmes === 1 ? 'PROGRAMME' : 'PROGRAMMES'}`
     },
     remove(programmeId) {
       const number = sessionNumberFor(programmeId)
       if (number === null) return
       const onAir = sessionBroadcast(Date.now(), number).current.programme.id === programmeId
       if (removeSessionProgramme(programmeId, Date.now()) && onAir) showSession(number, true)
+      void rememberOrder(number, localTitles(number))
     },
     clear(number) {
       if (!sessionActive(number)) return
       clearSession(number)
       showSession(number, true)
+      void rememberOrder(number, [])
     },
   }
 
@@ -2166,11 +2223,26 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => subscribeCatalogue(() => setCatalogueVersion((version) => version + 1)), [])
   useEffect(() => subscribeSession(() => setCatalogueVersion((version) => version + 1)), [])
+  useEffect(() => {
+    setUrlRevoker((url) => {
+      URL.revokeObjectURL(url)
+      forgetFlvSource(url)
+    })
+  }, [])
 
   const playSession = useCallback((programmeId: string) => sessionRef.current.play(programmeId), [])
-  const importSession = useCallback((files: readonly File[], number: number) => sessionRef.current.import(files, number), [])
+  const importSession = useCallback(
+    (files: readonly File[], number: number, handles?: readonly MediaHandle[]) => sessionRef.current.import(files, number, handles),
+    [],
+  )
+  const reloadLocalMedia = useCallback(() => sessionRef.current.reload(), [])
   const removeSessionFile = useCallback((programmeId: string) => sessionRef.current.remove(programmeId), [])
-  const moveSessionFile = useCallback((programmeId: string, to: number) => moveSessionProgramme(programmeId, to, Date.now()), [])
+  const moveSessionFile = useCallback((programmeId: string, to: number) => {
+    const number = sessionNumberFor(programmeId)
+    const moved = moveSessionProgramme(programmeId, to, Date.now())
+    if (moved && number !== null) void rememberOrder(number, localTitles(number))
+    return moved
+  }, [])
   const clearLocalChannel = useCallback((number: number) => sessionRef.current.clear(number), [])
   const renameLocal = useCallback((number: number, name: string) => renameLocalChannel(number, name), [])
 
@@ -2576,13 +2648,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
       let number: number
       if (low) {
-        if (currentNetworkBase() !== 'new') throw new Error('001–991 are the TVN network here')
+        if (currentNetworkBase() !== 'new') throw new Error('001–990 are the TVN network here')
         const slot = firstEmptySlot(existing.filter((source) => isLowUserNumber(source.channelNumber)))
         if (slot?.channelNumber) return slot.channelNumber
         const used = new Set(existing.map((source) => source.channelNumber))
         number = LOW_USER_FIRST
         while (number <= LOW_USER_LAST && used.has(number)) number += 1
-        if (number > LOW_USER_LAST) throw new Error('Channels 001–991 are all in use')
+        if (number > LOW_USER_LAST) throw new Error('Channels 001–990 are all in use')
       } else {
         const slot = firstEmptySlot(existing.filter((source) => (source.channelNumber ?? 0) >= USER_NUMBER_START))
         if (slot?.channelNumber) return slot.channelNumber
@@ -3110,7 +3182,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** MOVE TO: one user channel taken out and put in at User position `to`; the rest close up and renumber from 1001. */
   const moveUserChannel = useCallback(
     async (number: number, to: number) => {
-      // 001–991 and 1001+ each keep their own run of numbers.
+      // 001–990 and 1001+ each keep their own run of numbers.
       const block = blockFor(number)
       const order = userOrder(migrateLegacyUserNumbers(await loadStoredSources()).sources, block)
       const from = order.find((source) => source.channelNumber === number)
@@ -3129,7 +3201,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const shown = new Map(listChannels().map((channel) => [channel.id, channel.name]))
       const orderOf = (block: NumberBlock) =>
         how === 'alphabetical' ? alphabeticalOrder(sources, (source) => shown.get(`user-${source.id}`) ?? source.name, block) : shuffledOrder(userOrder(sources, block).map((source) => source.id))
-      // Channels at 001–991 are arranged among themselves first; 1001+ as before.
+      // Channels at 001–990 are arranged among themselves first; 1001+ as before.
       const low = userOrder(sources, LOW_BLOCK).length > 0 ? await reorderUserNetwork(orderOf(LOW_BLOCK), LOW_BLOCK) : 'THE ORDER IS UNCHANGED'
       const high = await reorderUserNetwork(orderOf(USER_BLOCK))
       const done = high === 'THE ORDER IS UNCHANGED' ? low : high
@@ -3534,6 +3606,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importSession,
       removeSessionFile,
       moveSessionFile,
+      reloadLocalMedia,
       clearLocalChannel,
       renameLocalChannel: renameLocal,
     }),
@@ -3557,6 +3630,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importSession,
       removeSessionFile,
       moveSessionFile,
+      reloadLocalMedia,
       clearLocalChannel,
       renameLocal,
       addChannel,

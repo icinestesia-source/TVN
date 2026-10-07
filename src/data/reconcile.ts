@@ -14,7 +14,7 @@ const KEPT_SCHEDULES = new Set<number>([
   ...Array.from({ length: 60 }, (_, index) => index + 1),
   ...PROTECTED_NAMES,
   950,
-  991,
+  990,
   992,
   999,
 ])

@@ -3,7 +3,7 @@ import { loadRegister } from '../credits/load.ts'
 import { watchUrl, type SourceRegister } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
-import { admitted, canLoadMore, eligibilityKey, heldIds, holdNew, withWebsiteSlot, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
+import { admitted, canLoadMore, eligibilityKey, heldIds, holdNew, lengthRangeOf, withLengthRange, withWebsiteSlot, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import type { ChannelExportKind } from '../services/channel-file.ts'
 import { reachesArchive, withSourceDrafts, type SourceDraft } from '../services/channel-curation.ts'
 import type { ImportedVideo } from '../services/channels-import.ts'
@@ -269,6 +269,7 @@ export function ChannelEditor({
   const [confirming, setConfirming] = useState(false)
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set())
   const [notesOpen, setNotesOpen] = useState(false)
+  const [lengthDraft, setLengthDraft] = useState<{ min: string; max: string } | null>(null)
   // Filters set on a source but not applied yet: the editor's RESCAN uses them too.
   const [drafts, setDrafts] = useState<ReadonlyMap<string, SourceDraft>>(new Map())
   // LOAD MORE / LOAD ALL in progress on one source, and how far it has got.
@@ -446,6 +447,65 @@ export function ChannelEditor({
       scheduleSize: whole && whole < airing.length ? whole : undefined,
     })
   }
+  // LENGTH: the shortest and longest programme the channel schedules, in minutes; applying it removes those outside.
+  const lengths = edit ? lengthRangeOf(edit.sources) : {}
+  const asMinutes = (seconds: number | undefined) => (seconds === undefined ? '' : String(Math.round((seconds / 60) * 10) / 10))
+  const shownLength = lengthDraft ?? { min: asMinutes(lengths.minSeconds), max: asMinutes(lengths.maxSeconds) }
+  const lengthChanged = lengthDraft !== null && (lengthDraft.min !== asMinutes(lengths.minSeconds) || lengthDraft.max !== asMinutes(lengths.maxSeconds))
+  const applyLength = () => {
+    if (!edit || !lengthDraft) return
+    const seconds = (text: string) => (text.trim() === '' || !(Number(text) > 0) ? undefined : Number(text) * 60)
+    const tvnRows = tvnLineup ? lineup : mixed ? shippedRows() : []
+    const range = { minSeconds: seconds(lengthDraft.min), maxSeconds: seconds(lengthDraft.max) }
+    const unfit = kept.filter(
+      (video) => video.durationSec > 0 && ((range.minSeconds !== undefined && video.durationSec < range.minSeconds) || (range.maxSeconds !== undefined && video.durationSec > range.maxSeconds)),
+    ).length
+    setLengthDraft(null)
+    change(withLengthRange(edit, range, tvnRows))
+    setNote(unfit > 0 ? `${unfit} ${unfit === 1 ? 'PROGRAMME' : 'PROGRAMMES'} OUTSIDE THAT LENGTH REMOVED · SAVE TO KEEP IT` : 'NOTHING OUTSIDE THAT LENGTH · SAVE TO KEEP IT')
+  }
+  const lengthControl = edit ? (
+    <span className="editor-pool-size editor-length" role="group" aria-label="Programme length">
+      <span>Length</span>
+      <input
+        type="number"
+        min={0}
+        step={1}
+        inputMode="decimal"
+        placeholder="Any"
+        value={shownLength.min}
+        disabled={busy !== null}
+        aria-label="Shortest programme, in minutes"
+        onKeyDown={(event) => {
+          keepKey(event)
+          if (event.key === 'Enter') applyLength()
+        }}
+        onChange={(event) => setLengthDraft({ ...shownLength, min: event.target.value })}
+      />
+      <span>to</span>
+      <input
+        type="number"
+        min={0}
+        step={1}
+        inputMode="decimal"
+        placeholder="Any"
+        value={shownLength.max}
+        disabled={busy !== null}
+        aria-label="Longest programme, in minutes"
+        onKeyDown={(event) => {
+          keepKey(event)
+          if (event.key === 'Enter') applyLength()
+        }}
+        onChange={(event) => setLengthDraft({ ...shownLength, max: event.target.value })}
+      />
+      <span>min</span>
+      {lengthChanged ? (
+        <button type="button" className="tab is-on" disabled={busy !== null} onKeyDown={keepKey} onClick={applyLength}>
+          Apply
+        </button>
+      ) : null}
+    </span>
+  ) : null
   /** RANDOMISE and REBUILD keep their result at once: the scheduler airs exactly the saved order. */
   const keepOrder = (next: ChannelEdit, message: string) => {
     setEdit(next)
@@ -1116,11 +1176,14 @@ export function ChannelEditor({
                 <span className="editor-live">Live</span> A live stream carries this channel, so it has no running order: tune to it to watch it live.
               </p>
             ) : lineup.length === 0 ? (
-              <p className="guide-tool-note">
-                {edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
-                  ? "TVN schedules this channel's own programming. Add a source to set a running order of your own."
-                  : 'No programmes yet. Add a source and rescan.'}
-              </p>
+              <>
+                <p className="guide-tool-note">
+                  {edit.sources.some((source) => source.kind === 'tvn' && source.enabled)
+                    ? "TVN schedules this channel's own programming. Add a source to set a running order of your own."
+                    : 'No programmes yet. Add a source and rescan.'}
+                </p>
+                {lengths.minSeconds !== undefined || lengths.maxSeconds !== undefined ? <div className="editor-pool">{lengthControl}</div> : null}
+              </>
             ) : (
               <>
                 <div className="editor-pool" role="group" aria-label="Programmes">
@@ -1153,6 +1216,7 @@ export function ChannelEditor({
                       ) : null}
                     </label>
                   ) : null}
+                  {lengthControl}
                 </div>
                 <p className="guide-tool-note">
                   {tvnLineup

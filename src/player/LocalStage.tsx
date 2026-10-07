@@ -7,6 +7,7 @@ import { notePlayback } from './trace.ts'
 import type { LocalPlayerHandle } from './routed.ts'
 import type { LoadResult, PlayerStatus } from './types.ts'
 import { boostableUrl, boostGain, elementVolume, VOLUME_FULL } from './volume.ts'
+import { leavesEdges, useFillEdges } from '../view/fill-edges.ts'
 
 const LOAD_TIMEOUT_MS = 10_000
 /** A publisher's file on the web may go this long without sending anything before it counts as failed. */
@@ -14,6 +15,9 @@ const WEB_FILE_TIMEOUT_MS = 30_000
 /** A slow host still sending a large file's index gets this long in all before TVN moves on. */
 const WEB_FILE_LIMIT_MS = 120_000
 const STREAM_TIMEOUT_MS = 15_000
+/** FILL EDGES redraws the blurred surround a few times a second: enough to follow the picture, too few to cost anything. */
+const FILL_FRAME_MS = 200
+const FILL_WIDTH = 64
 
 interface Pending {
   id: number
@@ -53,10 +57,49 @@ export function LocalStage({
   const scaleRef = useRef(1)
   const remuxRef = useRef<Remuxer | null>(null)
   const onStatusRef = useRef(onStatus)
+  const fillRef = useRef<HTMLCanvasElement>(null)
+  const fill = useFillEdges()
 
   useEffect(() => {
     onStatusRef.current = onStatus
   })
+
+  // FILL EDGES: where the picture does not cover the screen, the same picture, enlarged and blurred, behind it.
+  useEffect(() => {
+    const canvas = fillRef.current
+    if (!fill || !shown || !canvas) return
+    const videos = [videoRef.current, ownRef.current]
+    const draw = () => {
+      const video = element()
+      const slot = canvas.parentElement
+      const filled = Boolean(video && slot && video.videoWidth > 0 && leavesEdges({ width: slot.clientWidth, height: slot.clientHeight }, video.videoWidth / video.videoHeight))
+      canvas.hidden = !filled
+      for (const each of videos) each?.classList.toggle('is-filled', filled)
+      if (!filled || !video || !slot) return
+      const height = Math.max(1, Math.round((FILL_WIDTH * slot.clientHeight) / Math.max(1, slot.clientWidth)))
+      if (canvas.width !== FILL_WIDTH || canvas.height !== height) {
+        canvas.width = FILL_WIDTH
+        canvas.height = height
+      }
+      const scale = Math.max(FILL_WIDTH / video.videoWidth, height / video.videoHeight)
+      const width = video.videoWidth * scale
+      const tall = video.videoHeight * scale
+      try {
+        canvas.getContext('2d')?.drawImage(video, (FILL_WIDTH - width) / 2, (height - tall) / 2, width, tall)
+      } catch {
+        // A frame not ready yet is drawn next time.
+      }
+    }
+    draw()
+    const timer = window.setInterval(draw, FILL_FRAME_MS)
+    return () => {
+      window.clearInterval(timer)
+      canvas.hidden = true
+      for (const each of videos) each?.classList.remove('is-filled')
+    }
+    // element() reads refs; the loop follows whichever element is showing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fill, shown])
 
   const settle = (id: number, result: LoadResult) => {
     const pending = pendingRef.current
@@ -293,6 +336,7 @@ export function LocalStage({
 
   return (
     <>
+      <canvas ref={fillRef} className="fill-backdrop is-local" aria-hidden="true" hidden />
       <video ref={videoRef} className="local-host" hidden={!shown || onOwn} playsInline preload="auto" />
       <video ref={ownRef} className="local-host" hidden={!shown || !onOwn} playsInline preload="auto" />
     </>

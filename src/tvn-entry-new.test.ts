@@ -58,7 +58,7 @@ describe('NEW clears the example network for this browser', () => {
     expect(listChannels().some((channel) => channel.number >= 1 && channel.number <= 999)).toBe(true)
     setNetworkBase('new', memoryStore())
     const numbers = listChannels().map((channel) => channel.number)
-    expect(numbers).toEqual([0, 992, 993, 994, 995, 996, 997, 998, 999, 1000])
+    expect(numbers).toEqual([0, 991, 992, 993, 994, 995, 996, 997, 998, 999, 1000])
     expect(channelByNumber(1)).toBeUndefined()
     expect(channelByNumber(0)?.number).toBe(0)
     expect(channelByNumber(1000)?.number).toBe(1000)
@@ -70,7 +70,7 @@ describe('NEW clears the example network for this browser', () => {
     setNetworkBase('new', memoryStore())
     const added = { ...channels[0], id: 'mine', number: 1001, name: 'Mine', origin: 'user-import', enabled: true } as Channel
     installUserCatalogue([added], new Map())
-    expect(listChannels().map((channel) => channel.number)).toEqual([0, 992, 993, 994, 995, 996, 997, 998, 999, 1000, 1001])
+    expect(listChannels().map((channel) => channel.number)).toEqual([0, 991, 992, 993, 994, 995, 996, 997, 998, 999, 1000, 1001])
   })
 
   it('is kept: the next start reads NEW back, and the starter network is never claimed again', () => {
