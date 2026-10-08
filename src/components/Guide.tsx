@@ -146,6 +146,12 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       saveOpenSubChannels(next)
       return next
     })
+  // "+" pressed on a row shows that channel's own rows, not the selected programme's channel.
+  const subsPressed = useRef<number | null>(null)
+  const pressSubs = (channel: Channel) => {
+    subsPressed.current = channel.number
+    toggleSubs(channel.id)
+  }
   const layout = useMemo(() => guideLayout(tv.visibleChannels, openSubs, subChannelsOf), [tv.visibleChannels, openSubs])
   const range = visibleRowRange(scrollTop, viewport, ROW_HEIGHT, layout.length, 6)
   const rows = layout.slice(range.start, range.end)
@@ -491,6 +497,22 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       return
     }
     const grid = gridRef.current
+    const pressed = subsPressed.current
+    if (pressed !== null) {
+      subsPressed.current = null
+      if (!grid) return
+      const index = rowIndexOf(layout, pressed)
+      if (index < 0) return
+      let rows = 1
+      while (layout[index + rows]?.kind === 'sub') rows += 1
+      const rowTop = index * ROW_HEIGHT
+      const blockBottom = Math.min(rowTop + rows * ROW_HEIGHT, rowTop + grid.clientHeight)
+      if (blockBottom > grid.scrollTop + grid.clientHeight) grid.scrollTop = blockBottom - grid.clientHeight
+      if (rowTop < grid.scrollTop) grid.scrollTop = rowTop
+      if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
+      setScrollTop(grid.scrollTop)
+      return
+    }
     if (!grid || !focused) return
     const index = rowIndexOf(layout, focusedChannel?.number ?? Number.NaN)
     const frame = slotFrame(focused.startMs, focused.endMs, startMs, pxPerMinute)
@@ -727,7 +749,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       channel={channel}
                       subChannels={subs}
                       subsOpen={openSubs.has(channel.id)}
-                      onSubs={() => toggleSubs(channel.id)}
+                      onSubs={() => pressSubs(channel)}
                       watching={channel.number === tv.channel.number}
                       visiting={channel.number === tv.guideVisiting}
                       selected={channel.number === tv.guideCursor.channelNumber}
