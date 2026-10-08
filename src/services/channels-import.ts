@@ -37,6 +37,8 @@ export interface ImportedVideo {
   web?: 'website' | 'post'
   /** Brought in by LOAD or a newly added source and held back from the schedule until the channel is rescanned or rebuilt. */
   pending?: true
+  /** A YouTube broadcast that was on air when added: `durationSec` is the slot it is given, and it is always joined live. */
+  live?: true
 }
 
 /** An uploader as a provider listed it: a name, with its channel id and @handle only where the listing gave them. */
@@ -580,13 +582,12 @@ export function channelsFromSources(
         : `${video.title} on ${source.name}. The slot is the video's own duration.`,
       videoId: video.id,
       durationSeconds: video.durationSec,
-      mediaDurationSeconds: video.durationSec,
       thumbnail: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
       channelId: id,
       category: 'User',
       source: 'imported' as const,
       kind: 'programme' as const,
-      programmeType: programmeTypeFor(video.durationSec),
+      ...youTubeTiming(video),
       mediaKind: 'video' as const,
       sourceRef: `youtube:${video.id}`,
       playbackMode: 'linear' as const,
@@ -647,19 +648,23 @@ export function poolProgramme(video: ImportedVideo, channelId: string, name: str
     description: `${video.title} on ${name}. The slot is the video's own duration.`,
     videoId: video.id,
     durationSeconds: video.durationSec,
-    mediaDurationSeconds: video.durationSec,
     thumbnail: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
     channelId,
     category: 'User',
     source: 'imported',
     kind: 'programme',
-    programmeType: programmeTypeFor(video.durationSec),
+    ...youTubeTiming(video),
     mediaKind: 'video',
     sourceRef: `youtube:${video.id}`,
     playbackMode: 'linear',
     ...(video.published ? { publishedAt: video.published } : {}),
     ...creatorFields(video.creator),
   }
+}
+
+/** A YouTube programme's timing: a recording plays from the point its slot has reached, a live broadcast is joined live. */
+function youTubeTiming(video: ImportedVideo): Pick<Programme, 'programmeType' | 'mediaDurationSeconds' | 'playback'> {
+  return video.live ? { programmeType: 'live', playback: 'live' } : { programmeType: programmeTypeFor(video.durationSec), mediaDurationSeconds: video.durationSec }
 }
 
 /** A podcast or archive episode: its own public audio or video file, played by the browser's media element, never by YouTube. */

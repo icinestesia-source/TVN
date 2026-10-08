@@ -331,6 +331,16 @@ describe('STARTUP RACE: the viewer\'s channels win over the starter install', ()
     expect(body.indexOf('await ingestParsed(')).toBeLessThan(body.indexOf('const stored = await loadStoredSources()'))
     expect(body).toContain('if (plan.added.length > 0 && !sameStoredSources(stored, await loadStoredSources())) continue')
     expect(body).toContain("if (!settled) return ''")
-    expect(provider).toContain('if (!channelByNumber(channelRef.current)) requestTune(1)')
+    expect(provider).toContain('if (!channelByNumber(channelRef.current)) requestTune(instead !== undefined && channelByNumber(instead) ? instead : 1)')
+  })
+})
+
+describe('Deleting a channel hands over to its neighbour, never to 001', () => {
+  it('the channel listed above takes its place, or the one below when it was first, for the picture and the Guide alike', () => {
+    const provider = read('src/state/TvProvider.tsx')
+    const body = provider.slice(provider.indexOf('const deleteUserChannel = useCallback'), provider.indexOf('const goneNumbers ='))
+    expect(body).toContain('const near = rows.findLast((channel) => channel.number < number) ?? rows.find((channel) => channel.number > number)')
+    expect(body).toContain('installSources(result.sources, near?.number)')
+    expect(body).toContain('if (guideOpenRef.current && near) focusGuide(near.number, cursorRef.current.timeMs)')
   })
 })

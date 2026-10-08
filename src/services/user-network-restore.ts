@@ -38,7 +38,7 @@ export function readUserNetworkFile(text: string): ReadResult {
 const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
   videos
     .filter((video) => video.id.trim() && video.durationSec >= 0)
-    .map(({ id, title, durationSec, published, creator, year, lists, media, mediaKind, summary, image, page, web, pending }) => ({
+    .map(({ id, title, durationSec, published, creator, year, lists, media, mediaKind, summary, image, page, web, pending, live }) => ({
       id,
       title,
       durationSec,
@@ -53,6 +53,7 @@ const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
       ...(typeof page === 'string' && shareableUrl(page) ? { page: shareableUrl(page) } : {}),
       ...(web === 'website' || web === 'post' ? { web } : {}),
       ...(pending === true ? { pending } : {}),
+      ...(live === true ? { live } : {}),
     }))
 
 /** How far a source has been read, as the file kept it. */

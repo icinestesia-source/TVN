@@ -61,6 +61,8 @@ export interface ExportVideo {
   web?: 'website' | 'post'
   /** Loaded but held back from the schedule until the channel is rescanned or rebuilt. */
   pending?: true
+  /** A YouTube broadcast that was on air when added, given `durationSec` as its slot. */
+  live?: true
 }
 
 export interface ExportSource {
@@ -191,7 +193,7 @@ export function publicMediaAddress(raw: string | undefined): string {
 }
 
 /** A programme as the file keeps it: never whether it was watched, nor a signed or expiring file address. */
-export function exportVideo({ id, title, durationSec, published, creator, year, lists, media, mediaKind, summary, image, page, web, pending }: ImportedVideo): ExportVideo {
+export function exportVideo({ id, title, durationSec, published, creator, year, lists, media, mediaKind, summary, image, page, web, pending, live }: ImportedVideo): ExportVideo {
   const file = web ? '' : publicMediaAddress(media)
   return {
     id,
@@ -208,6 +210,7 @@ export function exportVideo({ id, title, durationSec, published, creator, year, 
     ...(address(page) ? { page: address(page) } : {}),
     ...(web ? { web } : {}),
     ...(pending ? { pending } : {}),
+    ...(live ? { live } : {}),
   }
 }
 

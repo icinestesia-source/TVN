@@ -2410,12 +2410,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  /** Rebuild 1001+ from the stored sources; a removed channel that was on screen hands over to 001. */
-  const installSources = useCallback((sources: readonly StoredSource[]) => {
+  /** Rebuild 1001+ from the stored sources; a removed channel that was on screen hands over to `instead`, or 001. */
+  const installSources = useCallback((sources: readonly StoredSource[], instead?: number) => {
     userEditorialRef.current = new Map(sources.flatMap((source) => (source.channelNumber && source.editorial ? [[source.channelNumber, source.editorial] as const] : [])))
     const built = channelsFromSources(sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
     installUserCatalogue(built.channels, built.programmes, built.subChannels)
-    if (!channelByNumber(channelRef.current)) requestTune(1)
+    if (!channelByNumber(channelRef.current)) requestTune(instead !== undefined && channelByNumber(instead) ? instead : 1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -3277,15 +3277,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const result = deleteStoredUserChannel(migrateLegacyUserNumbers(await loadStoredSources()).sources, number)
       if (result.status === 'missing') throw new Error('That channel is no longer in your User Network')
       const name = channelByNumber(number)?.name ?? `${number}`
+      // The channel listed above the deleted one takes its place, or the one below when it was first.
+      const rows = visibleRef.current.filter((channel) => channel.number !== number)
+      const near = rows.findLast((channel) => channel.number < number) ?? rows.find((channel) => channel.number > number)
       closeGuideTool()
       await saveStoredSources(result.sources)
       forgetChannels(new Set([number]), result.sources)
-      installSources(result.sources)
-      if (guideOpenRef.current) {
-        const rows = visibleRef.current.filter((channel) => channel.number !== number)
-        const near = rows.find((channel) => channel.number > number) ?? rows.findLast((channel) => channel.number < number)
-        if (near) focusGuide(near.number, cursorRef.current.timeMs)
-      }
+      installSources(result.sources, near?.number)
+      if (guideOpenRef.current && near) focusGuide(near.number, cursorRef.current.timeMs)
       return `${name.toUpperCase()} DELETED`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

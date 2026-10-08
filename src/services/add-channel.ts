@@ -55,11 +55,11 @@ function mixOf(raw: unknown): { mix?: { list: string; seed: string } } {
 
 function videosOf(rows: readonly unknown[]): ImportedVideo[] {
   return rows.flatMap((row) => {
-    const { id, title, durationSec, published, creator } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown; published?: unknown; creator?: unknown }
+    const { id, title, durationSec, published, creator, live } = (row ?? {}) as { id?: unknown; title?: unknown; durationSec?: unknown; published?: unknown; creator?: unknown; live?: unknown }
     const day = calendarDate(published)
     const by = videoCreator(creator)
     return typeof id === 'string' && typeof title === 'string' && typeof durationSec === 'number' && durationSec > 0
-      ? [{ id, title, durationSec: Math.round(durationSec), ...(day ? { published: day } : {}), ...(by ? { creator: by } : {}) }]
+      ? [{ id, title, durationSec: Math.round(durationSec), ...(day ? { published: day } : {}), ...(by ? { creator: by } : {}), ...(live === true ? { live } : {}) }]
       : []
   })
 }

@@ -14,7 +14,12 @@ export interface ResolvedVideo {
   published?: string
   /** The channel that uploaded it, as the listing links it: its name, id and @handle where the link carries one. */
   creator?: VideoCreator
+  /** A broadcast on air now, with no length of its own: `durationSec` is the slot it is given, joined live. */
+  live?: true
 }
+
+/** The slot a live broadcast is given in a schedule; it plays live whenever its slot comes round. */
+export const LIVE_SLOT_SECONDS = 60 * 60
 
 export interface VideoCreator {
   name: string
@@ -769,11 +774,12 @@ export function seedFromPage(html: string, id: string): ResolvedVideo | null {
   } catch {
     return null
   }
-  const durationSec = Number(details[3])
+  const live = Number(details[3]) === 0 && /"liveBroadcastDetails":\{"isLiveNow":true/.test(html)
+  const durationSec = live ? LIVE_SLOT_SECONDS : Number(details[3])
   if (!title || durationSec < MIN_SECONDS) return null
   const published = html.match(/"publishDate":"(\d{4}-\d{2}-\d{2})/)?.[1]
   const creator = watchPageCreator(html)
-  return { id, title, durationSec, ...(published ? { published } : {}), ...(creator ? { creator } : {}) }
+  return { id, title, durationSec, ...(published ? { published } : {}), ...(creator ? { creator } : {}), ...(live ? { live: true as const } : {}) }
 }
 
 /** The uploader a watch page names in its player details; the handle only from the owner's own profile address. */
