@@ -286,6 +286,7 @@ function ScreenEditor() {
           onClear={tv.clearLocalChannel}
           onRename={tv.renameLocalChannel}
           onWatch={() => {}}
+          onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
         />
       </div>
     )

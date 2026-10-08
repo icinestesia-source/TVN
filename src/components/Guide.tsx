@@ -844,6 +844,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onClear={tv.clearLocalChannel}
           onRename={tv.renameLocalChannel}
           onWatch={(channelNumber) => tv.dispatch({ type: 'tune', channelNumber })}
+          onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'media' })}
         />
       ) : tool === 'options' || tool === 'editor' ? null : tool === 'users' ? (
         <NewUserTools

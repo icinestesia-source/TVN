@@ -5,6 +5,10 @@ dist-ssr/
 *.tsbuildinfo
 .vite/
 .cache/
+mac-app/TVN.app/
+mac-app/TVN.dmg
+android-app/TVN.apk
+android-app/TVN.apk.idsig
 
 # Environment and credentials. The app needs no key at runtime; acquisition keys live outside the repo.
 .env

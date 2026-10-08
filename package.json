@@ -10,6 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "mac-app": "sh scripts/build-mac-app.sh",
+    "android-app": "sh scripts/build-android-app.sh",
+    "apps": "sh scripts/build-mac-app.sh && sh scripts/build-android-app.sh",
     "harvester": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning harvester/cli.ts"
   },
   "dependencies": {

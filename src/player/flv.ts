@@ -1,4 +1,6 @@
-import { withKeyframeIndex } from './flv-index.ts'
+import type Mpegts from 'mpegts.js'
+import { scanFile, withKeyframeIndex } from './flv-index.ts'
+import { sliceLoader } from './flv-slices.ts'
 
 /** Containers no browser plays itself, which TVN repackages in the page for the media element. */
 export type Remux = 'flv'
@@ -38,6 +40,24 @@ export function forgetFlvSource(url: string): void {
   files.delete(url)
 }
 
+/** Picture codecs the FLV player can repackage: H.264 and HEVC. */
+const PLAYABLE_FLV_VIDEO = new Set([7, 12])
+
+/**
+ * The running time of an FLV picked on this device, read from its own tags rather than by loading it into a
+ * media element, which Safari cannot do for a whole file at once. Null if TVN cannot play it; undefined if the
+ * address is not such a file.
+ */
+export async function localFlvSeconds(url: string, kind: 'video' | 'audio'): Promise<number | null | undefined> {
+  const file = files.get(url)
+  if (!file) return undefined
+  if (!remuxSupported()) return null
+  const scan = await scanFile(file)
+  if (!scan) return null
+  if (kind === 'video' && (scan.videoCodec === null || !PLAYABLE_FLV_VIDEO.has(scan.videoCodec))) return null
+  return Number.isFinite(scan.duration) && scan.duration >= 1 ? scan.duration : null
+}
+
 /**
  * Repackages the FLV at `url` (an object URL or a web address) into the media element. The library is
  * fetched only the first time an FLV plays. `onError` reports a file that cannot be read or decoded.
@@ -54,6 +74,7 @@ export async function attachFlv(video: HTMLMediaElement, url: string, onError: (
   const player = mpegts.createPlayer(
     { type: 'flv', url: playing, isLive: false },
     {
+      ...(source ? { customLoader: sliceLoader(source) as unknown as Mpegts.CustomLoaderConstructor } : {}),
       enableWorker: false,
       seekType: 'range',
       accurateSeek: true,

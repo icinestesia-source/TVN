@@ -164,8 +164,8 @@ import {
 import { currentEntryMode, surfsOnEntry } from './entry.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { commitTuned, emptyUniverseNote, fallForwardTarget, guideRows, randomTarget, stepTarget, type Tuned } from './tuning.ts'
-import { browserCanPlay, buildSessionItems, commitImport, filesInDirectory, probeDuration, type DirectoryHandleLike, type FileHandleLike } from '../session/import.ts'
-import { forgetFlvSource, registerFlvSource, remuxOf } from '../player/flv.ts'
+import { browserCanPlay, buildSessionItems, commitImport, filesInDirectory, probeDuration, sniffRemux, type DirectoryHandleLike, type FileHandleLike } from '../session/import.ts'
+import { forgetFlvSource, registerFlvSource } from '../player/flv.ts'
 import { arrangeRemembered, readable, rememberedChannels, rememberHandles, rememberOrder, type MediaHandle } from '../session/remembered-media.ts'
 import {
   SESSION_CHANNEL_NUMBER,
@@ -1091,11 +1091,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const token = ++importToken.current
     return buildSessionItems(files, {
       canPlay: browserCanPlay,
-      createUrl: (file) => {
+      createUrl: (file, remux) => {
         const url = URL.createObjectURL(file)
-        if (remuxOf(file.name)) registerFlvSource(url, file)
+        if (remux) registerFlvSource(url, file)
         return url
       },
+      sniff: sniffRemux,
       revokeUrl: (url) => {
         URL.revokeObjectURL(url)
         forgetFlvSource(url)

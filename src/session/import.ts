@@ -1,4 +1,4 @@
-import { attachFlv, remuxSupported, type Remux } from '../player/flv.ts'
+import { attachFlv, localFlvSeconds, remuxSupported, type Remux } from '../player/flv.ts'
 import type { MediaKind } from '../types/programme.ts'
 import { appendSession, localChannel, SESSION_CHANNEL_NUMBER, type SessionItem } from './session-channel.ts'
 
@@ -39,6 +39,8 @@ const REMUX_TYPES: Record<string, Remux> = { 'video/x-flv': 'flv', 'video/flv': 
 export const MAX_SCANNED_FILES = 5000
 const PROBE_CONCURRENCY = 4
 const PROBE_TIMEOUT_MS = 15_000
+/** How long a video may go from its length being known to its picture size being known. */
+const PICTURE_SIZE_GRACE_MS = 3_000
 
 /** The accept list for the file picker. */
 export const MEDIA_ACCEPT = ['video/*', 'audio/*', ...[...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS].map((ext) => `.${ext}`)].join(',')
@@ -87,6 +89,16 @@ export function remuxFor(file: LocalFile): Remux | undefined {
   return REMUX_TYPES[mimeOf(file)]
 }
 
+/** An FLV whatever its name says: old downloads are often FLV saved as .mp4. */
+export async function sniffRemux(file: Blob): Promise<Remux | undefined> {
+  try {
+    const head = new Uint8Array(await file.slice(0, 3).arrayBuffer())
+    return head[0] === 0x46 && head[1] === 0x4c && head[2] === 0x56 ? 'flv' : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** The file name without its extension, with underscores read as spaces. The file itself is never renamed. */
 export function titleFromName(name: string): string {
   const base = name.split(/[\\/]/).pop() ?? name
@@ -113,7 +125,9 @@ export function shuffleOnce<T>(items: readonly T[], random: () => number = Math.
 
 export interface ImportDeps<F extends LocalFile> {
   canPlay: (mime: string) => boolean
-  createUrl: (file: F) => string
+  createUrl: (file: F, remux?: Remux) => string
+  /** The repackaging a file's own bytes call for, when its name and type do not say. */
+  sniff?: (file: F) => Promise<Remux | undefined>
   revokeUrl: (url: string) => void
   /** Seconds of playable media, or null when the file cannot be played or measured. */
   probe: (url: string, kind: MediaKind, remux?: Remux) => Promise<number | null>
@@ -149,10 +163,10 @@ export async function buildSessionItems<F extends LocalFile>(files: readonly F[]
       next += 1
       const { file, kind } = candidates[index]
       if (deps.cancelled?.()) return
-      const remux = remuxFor(file)
       let url: string | null = null
       try {
-        url = deps.createUrl(file)
+        const remux = remuxFor(file) ?? (kind === 'video' ? await deps.sniff?.(file) : undefined)
+        url = deps.createUrl(file, remux)
         const seconds = await deps.probe(url, kind, remux)
         if (validDuration(seconds) && !deps.cancelled?.()) {
           accepted[index] = { title: titleFromName(file.name), durationSeconds: seconds, url, kind, ...(remux ? { remux } : {}) }
@@ -193,17 +207,28 @@ export function importSummary(result: Pick<ImportResult, 'items' | 'skipped'>, n
   return result.skipped > 0 ? `${channel} · ${count} · ${result.skipped} SKIPPED` : `${channel} · ${count}`
 }
 
-/** Loads only the file's metadata, locally, and always tears the element down. */
-export function probeDuration(url: string, kind: MediaKind, remux?: Remux, timeoutMs = PROBE_TIMEOUT_MS): Promise<number | null> {
+/** Loads only the file's metadata, locally, and always tears the element down. An FLV from this device is measured from its own tags. */
+export async function probeDuration(url: string, kind: MediaKind, remux?: Remux, timeoutMs = PROBE_TIMEOUT_MS): Promise<number | null> {
+  if (remux === 'flv') {
+    const seconds = await localFlvSeconds(url, kind)
+    if (seconds !== undefined) return seconds
+  }
+  return probeElement(url, kind, remux, timeoutMs)
+}
+
+function probeElement(url: string, kind: MediaKind, remux: Remux | undefined, timeoutMs: number): Promise<number | null> {
   return new Promise((resolve) => {
     const element = document.createElement(kind === 'audio' ? 'audio' : 'video')
     let done = false
     let remuxer: { destroy(): void } | null = null
+    let sizeTimer = 0
     const finish = (seconds: number | null) => {
       if (done) return
       done = true
       window.clearTimeout(timer)
+      window.clearTimeout(sizeTimer)
       element.removeEventListener('loadedmetadata', onMeta)
+      element.removeEventListener('resize', onMeta)
       element.removeEventListener('error', onError)
       remuxer?.destroy()
       element.removeAttribute('src')
@@ -211,8 +236,12 @@ export function probeDuration(url: string, kind: MediaKind, remux?: Remux, timeo
       resolve(seconds)
     }
     const onMeta = () => {
-      // A video whose picture cannot be decoded reports no frame size; it would air as a black screen.
-      if (kind === 'video' && (element as HTMLVideoElement).videoWidth === 0) return finish(null)
+      // A video whose picture cannot be decoded reports no frame size; it would air as a black screen. Safari
+      // gives a repackaged file's length a moment before its size, so the size is waited for briefly.
+      if (kind === 'video' && (element as HTMLVideoElement).videoWidth === 0) {
+        if (!sizeTimer) sizeTimer = window.setTimeout(() => finish(null), PICTURE_SIZE_GRACE_MS)
+        return
+      }
       finish(validDuration(element.duration) ? element.duration : null)
     }
     const onError = () => finish(null)
@@ -220,6 +249,7 @@ export function probeDuration(url: string, kind: MediaKind, remux?: Remux, timeo
     element.preload = 'metadata'
     element.muted = true
     element.addEventListener('loadedmetadata', onMeta)
+    element.addEventListener('resize', onMeta)
     element.addEventListener('error', onError)
     if (!remux) {
       element.src = url

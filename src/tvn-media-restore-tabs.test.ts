@@ -56,7 +56,7 @@ describe('Import Media takes more file types, FLV among them', () => {
   it('the FLV library is loaded only when an FLV plays', () => {
     const flv = read('src/player/flv.ts')
     expect(flv).toContain("await import('mpegts.js')")
-    expect(flv).not.toMatch(/^import .*mpegts/m)
+    expect(flv).not.toMatch(/^import (?!type ).*mpegts/m)
   })
 })
 

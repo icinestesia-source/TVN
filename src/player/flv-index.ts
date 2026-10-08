@@ -21,6 +21,8 @@ export interface FlvScan {
   duration: number
   hasAudio: boolean
   hasVideo: boolean
+  /** The codec id of the first picture tag (7 H.264, 12 HEVC), or null if the file has no pictures. */
+  videoCodec: number | null
 }
 
 type Read = (start: number, end: number) => Promise<Uint8Array>
@@ -64,6 +66,7 @@ export async function scanFlv(read: Read, size: number): Promise<FlvScan | null>
     duration: 0,
     hasAudio: (header[4]! & 4) !== 0,
     hasVideo: (header[4]! & 1) !== 0,
+    videoCodec: null,
   }
   let sequenceHeader = false
   let first = true
@@ -83,6 +86,7 @@ export async function scanFlv(read: Read, size: number): Promise<FlvScan | null>
       const frameType = tag[TAG_HEADER]! >> 4
       const codec = tag[TAG_HEADER]! & 0x0f
       const avc = codec === 7 || codec === 12
+      scan.videoCodec ??= codec
       const packetType = tag[TAG_HEADER + 1]
       // The first entry stands for the codec header; FLV players skip it.
       if (avc && packetType === 0 && !sequenceHeader) {
@@ -160,6 +164,18 @@ export function indexedParts(scan: FlvScan, header: Uint8Array): { head: Uint8Ar
 }
 
 const indexed = new WeakMap<Blob, Promise<Blob>>()
+const scans = new WeakMap<Blob, Promise<FlvScan | null>>()
+
+/** The file's tags, read once however often they are asked for; null if it is not FLV or cannot be read. */
+export function scanFile(file: Blob): Promise<FlvScan | null> {
+  let made = scans.get(file)
+  if (!made) {
+    const read: Read = async (start, end) => new Uint8Array(await file.slice(start, end).arrayBuffer())
+    made = scanFlv(read, file.size).catch(() => null)
+    scans.set(file, made)
+  }
+  return made
+}
 
 /** The file itself if it already has an index or cannot be read as FLV; otherwise the same file with one. */
 export function withKeyframeIndex(file: Blob): Promise<Blob> {
@@ -167,10 +183,9 @@ export function withKeyframeIndex(file: Blob): Promise<Blob> {
   if (!made) {
     made = (async () => {
       try {
-        const read: Read = async (start, end) => new Uint8Array(await file.slice(start, end).arrayBuffer())
-        const scan = await scanFlv(read, file.size)
+        const scan = await scanFile(file)
         if (!scan) return file
-        const parts = indexedParts(scan, await read(0, scan.headerSize))
+        const parts = indexedParts(scan, new Uint8Array(await file.slice(0, scan.headerSize).arrayBuffer()))
         return parts ? new Blob([parts.head, file.slice(parts.bodyStart)], { type: file.type }) : file
       } catch {
         return file

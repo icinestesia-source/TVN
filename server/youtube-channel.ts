@@ -744,6 +744,59 @@ export function watchPageCreator(html: string): VideoCreator | undefined {
   return creatorFrom(name, { browseId: channelId, ...(handle ? { canonicalBaseUrl: `/@${handle}` } : {}) })
 }
 
+/** A video found on its channel's own search page: its title and length as the page lists them. */
+export function videoFromSearchPage(data: unknown, id: string): ResolvedVideo | null {
+  let found: ResolvedVideo | null = null
+  walk(data, (node) => {
+    if (found) return
+    const listed = node.videoRenderer as { videoId?: unknown; title?: unknown; lengthText?: unknown } | undefined
+    if (listed?.videoId !== id) return
+    const title = textOf(listed.title)
+    const durationSec = parseClock(textOf(listed.lengthText))
+    if (title && durationSec >= MIN_SECONDS) found = { id, title, durationSec }
+  })
+  return found
+}
+
+/** A channel address oEmbed gives as a video's author: a YouTube @handle, channel, c/ or user/ page, nothing else. */
+export function authorPage(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'https:' || (url.hostname !== 'www.youtube.com' && url.hostname !== 'youtube.com') || url.search || url.hash) return null
+    return /^\/(@[\w.-]{3,30}|channel\/UC[0-9A-Za-z_-]{22}|c\/[^/]+|user\/[^/]+)$/.test(url.pathname) ? `https://www.youtube.com${url.pathname}` : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * YouTube sometimes withholds a channel's watch pages from a server while still showing them to viewers. The
+ * video's public oEmbed still names its channel, whose own pages are readable, and the channel's search page
+ * lists the video with its title and length.
+ */
+async function withheldVideo(id: string, read: typeof fetch, needVideo: boolean): Promise<{ channelId: string; title: string | null; seed: ResolvedVideo | null } | null> {
+  let author: { author_name?: unknown; author_url?: unknown }
+  try {
+    const response = await read(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}`)
+    if (!response.ok) return null
+    author = (await response.json()) as typeof author
+  } catch {
+    return null
+  }
+  const home = authorPage(author.author_url)
+  if (!home) return null
+  const html = await page(home, read)
+  const channelId = channelIdFromPage(html, 'channel')
+  if (!channelId) return null
+  const title = channelTitleFrom(initialData(html))
+  if (!needVideo) return { channelId, title, seed: null }
+  const listed = videoFromSearchPage(initialData(await page(`${home}/search?query=${encodeURIComponent(id)}`, read)), id)
+  const handle = home.match(/\/@([\w.-]{3,30})$/)?.[1]
+  const creator = creatorFrom(typeof author.author_name === 'string' ? author.author_name : (title ?? undefined), { browseId: channelId, ...(handle ? { canonicalBaseUrl: `/@${handle}` } : {}) })
+  return { channelId, title, seed: listed ? { ...listed, ...(creator ? { creator } : {}) } : null }
+}
+
 async function channelNamed(
   input: Exclude<ChannelInput, { kind: 'playlist' } | { kind: 'mix' }>,
   read: typeof fetch,
@@ -755,6 +808,14 @@ async function channelNamed(
     const html = await page(`https://www.youtube.com/watch?v=${input.id}`, read)
     channelId = channelIdFromPage(html, 'video')
     if (input.mix) seed = seedFromPage(html, input.id)
+    if (!channelId) {
+      const found = await withheldVideo(input.id, read, Boolean(input.mix))
+      if (found) {
+        channelId = found.channelId
+        title = found.title
+        seed = seed ?? found.seed
+      }
+    }
   } else if (input.kind !== 'channel') {
     const html = await page(`https://www.youtube.com${input.kind === 'handle' ? `/@${encodeURIComponent(input.handle)}` : input.path}`, read)
     channelId = channelIdFromPage(html, 'channel')

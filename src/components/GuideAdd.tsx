@@ -317,6 +317,7 @@ export function SessionImportTools({
   onRename = () => false,
   onWatch = () => {},
   onReload,
+  onClose,
 }: {
   channel?: Channel
   programmes?: readonly Programme[]
@@ -329,6 +330,7 @@ export function SessionImportTools({
   onWatch?: (channelNumber: number) => void
   /** REMEMBER LOCAL MEDIA: load the channels remembered from an earlier visit. */
   onReload?: () => Promise<string>
+  onClose?: () => void
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -579,6 +581,11 @@ export function SessionImportTools({
             }}
           >
             Clear
+          </button>
+        ) : null}
+        {onClose ? (
+          <button type="button" className="tab" onKeyDown={keepKey} onClick={onClose}>
+            Close
           </button>
         ) : null}
       </div>
