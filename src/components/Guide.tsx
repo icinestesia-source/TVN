@@ -779,7 +779,6 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                               )
                           : undefined
                       }
-                      onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}
                       expanded={actionsAll}
                       onExpand={toggleActions}
                     />
@@ -994,7 +993,7 @@ type Arrangement = 'latest' | 'az' | 'random'
 const ARRANGEMENTS: readonly { how: Arrangement; mark: string; name: string; about: string }[] = [
   { how: 'latest', mark: '◉', name: 'Latest', about: 'Latest: the very latest programme now, then newest to oldest' },
   { how: 'az', mark: 'AZ', name: 'A to Z', about: 'A to Z: schedule every programme alphabetically' },
-  { how: 'random', mark: '⤮', name: 'Random', about: 'Random: schedule every programme in a random order' },
+  { how: 'random', mark: '⤮', name: 'Random', about: 'Random: put the schedule in a random order; press again for a new one' },
 ]
 
 function ChannelCell({
@@ -1012,7 +1011,6 @@ function ChannelCell({
   arranged,
   busy = false,
   onArrange,
-  onDelete,
   expanded = false,
   onExpand,
   subChannels = 0,
@@ -1041,25 +1039,18 @@ function ChannelCell({
   arranged?: 'az' | 'random'
   /** One of its own actions is in progress. */
   busy?: boolean
-  /** LATEST, A–Z or RANDOM: the one pressed goes on and the others off; pressed when on, the default schedule returns. */
-  onArrange?: (how: Arrangement) => void
-  onDelete?: () => void
+  /** LATEST, A–Z or RANDOM on (the others off), RANDOM shuffling again each time; RESET returns the default schedule. */
+  onArrange?: (how: Arrangement | 'reset') => void
   /** The selected channel shows all of its actions, not just one. */
   expanded?: boolean
   onExpand?: () => void
 }) {
-  const [confirming, setConfirming] = useState(false)
   // Selected and folded: the arrangement that is on, else the star of a favourite or else LATEST; the arrow shows the rest.
   const all = selected && expanded
   const on: Arrangement | null = live ? 'latest' : (arranged ?? null)
   const shows = (how: Arrangement) => onArrange !== undefined && (how === on || (selected && (all || (on === null && how === 'latest' && !favourite))))
   const showStar = selected ? all || favourite || onArrange === undefined : favourite
-  const canExpand = selected && onExpand !== undefined && (onArrange ?? onEdit ?? onDelete) !== undefined
-  useEffect(() => {
-    if (!confirming) return
-    const id = window.setTimeout(() => setConfirming(false), 4000)
-    return () => window.clearTimeout(id)
-  }, [confirming])
+  const canExpand = selected && onExpand !== undefined && (onArrange ?? onEdit) !== undefined
   const act = (action: (() => void) | undefined) => (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
     action?.()
@@ -1130,35 +1121,31 @@ function ChannelCell({
             disabled={busy || !selected}
             onClick={act(() => onArrange?.(how))}
             aria-pressed={on === how}
-            title={on === how ? `${name} is on: press to return to the default schedule` : about}
+            title={on === how ? (how === 'random' ? 'Random is on: press for a new random order' : `${name} is on: press to return to the default schedule`) : about}
           >
             <span aria-hidden="true">{mark}</span>
             <span className="sr">
-              {name} {on === how ? 'off' : 'on'} {padChannel(channel.number)}
+              {name} {on === how ? (how === 'random' ? 'again' : 'off') : 'on'} {padChannel(channel.number)}
             </span>
           </button>
         ) : null,
       )}
+      {all && onArrange ? (
+        <button
+          type="button"
+          className="ch-act ch-arrange ch-reset"
+          disabled={busy || !selected || on === null}
+          onClick={act(() => onArrange('reset'))}
+          title={on === null ? 'Reset: already the default schedule' : 'Reset: back to the default schedule'}
+        >
+          <span aria-hidden="true">↺</span>
+          <span className="sr">Reset the schedule of {padChannel(channel.number)}</span>
+        </button>
+      ) : null}
       {all && onEdit ? (
         <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onEdit)} title="Edit channel">
           <span aria-hidden="true">✎</span>
           <span className="sr">Edit channel {padChannel(channel.number)}</span>
-        </button>
-      ) : null}
-      {all && onDelete ? (
-        <button
-          type="button"
-          className={confirming ? 'ch-act ch-extra ch-delete is-confirm' : 'ch-act ch-extra ch-delete'}
-          disabled={busy}
-          onClick={act(() => {
-            if (!confirming) return setConfirming(true)
-            setConfirming(false)
-            onDelete()
-          })}
-          title={confirming ? `Press again to delete ${padChannel(channel.number)}` : 'Delete channel'}
-        >
-          <span aria-hidden="true">{confirming ? '?' : '✕'}</span>
-          <span className="sr">{confirming ? `Confirm deleting ${padChannel(channel.number)}` : `Delete channel ${padChannel(channel.number)}`}</span>
         </button>
       ) : null}
       {showStar ? (

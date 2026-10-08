@@ -1091,7 +1091,7 @@ span.editor-expand { border-color: transparent; }
 
 .star.is-on { color: var(--gold); }
 
-/* The selected channel's own actions, before its star: LATEST, A–Z and RANDOM (one on at a time), then EDIT and DELETE where there is room. */
+/* The selected channel's own actions, before its star: LATEST, A–Z and RANDOM (one on at a time), RESET, then EDIT where there is room. */
 .ch-act {
   width: 22px;
   flex: none;

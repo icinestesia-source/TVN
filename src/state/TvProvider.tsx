@@ -3118,25 +3118,26 @@ export function TvProvider({ children }: { children: ReactNode }) {
    */
   /**
    * LATEST, A–Z and RANDOM in the Guide: one on at a time. Pressing one arranges the channel that way (LATEST
-   * rescans first, so its very latest programme is on now; RANDOM deals a fresh order each time it is switched
-   * on); pressing the one that is on returns the channel's default schedule. Replayed if watched.
+   * rescans first, so its very latest programme is on now); LATEST and A–Z pressed again, or RESET, return the
+   * channel's default schedule, and RANDOM deals a fresh order every time it is pressed. Replayed if watched.
    */
   const arrangeChannel = useCallback(
-    async (number: number, how: 'latest' | 'az' | 'random') => {
+    async (number: number, how: 'latest' | 'az' | 'random' | 'reset') => {
       const edit = await openChannelEdit(number)
       if (!edit) throw new Error('This channel cannot be arranged here')
       const { review: _review, ...opened } = edit
       const sorted = Boolean(opened.order?.length)
       const on = sorted && opened.orderKind === 'latest' && opened.liveFromMs !== undefined ? 'latest' : sorted && (opened.orderKind === 'az' || opened.orderKind === 'random') ? opened.orderKind : null
-      const name = how === 'latest' ? 'LATEST' : how === 'az' ? 'A–Z' : 'RANDOM'
-      if (on === how) {
+      if (how === 'reset' && on === null) return 'RESET · THIS IS ALREADY THE DEFAULT SCHEDULE'
+      const name = how === 'latest' ? 'LATEST' : how === 'az' ? 'A–Z' : how === 'random' ? 'RANDOM' : 'RESET'
+      if (how === 'reset' || (on === how && how !== 'random')) {
         const before = takeScheduleBeforeLatest(number)
         const restored = before?.order?.length
           ? { ...opened, order: before.order, orderKind: before.orderKind, scheduleSize: before.scheduleSize, liveFromMs: undefined }
           : { ...opened, order: undefined, orderKind: undefined, scheduleSize: undefined, liveFromMs: undefined }
         await saveChannelEdit(number, restored)
         replayIfWatching(number)
-        return `${name} OFF · ${before?.order?.length ? 'YOUR SCHEDULE IS BACK' : 'SCHEDULED BY TVN'}`
+        return `${how === 'reset' ? 'RESET' : `${name} OFF`} · ${before?.order?.length ? 'YOUR SCHEDULE IS BACK' : 'SCHEDULED BY TVN'}`
       }
       const current =
         how === 'latest'
@@ -3152,7 +3153,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (on === null) saveScheduleBeforeLatest(number, { order: opened.order, orderKind: opened.orderKind, scheduleSize: opened.scheduleSize })
       await saveChannelEdit(number, { ...current, order, orderKind: how, liveFromMs: how === 'latest' ? Date.now() : undefined, scheduleSize: undefined })
       replayIfWatching(number)
-      if (how !== 'latest') return `${name} ON · ${how === 'az' ? 'THE SCHEDULE RUNS A TO Z' : 'THE SCHEDULE IS IN A RANDOM ORDER'}`
+      if (how === 'az') return 'A–Z ON · THE SCHEDULE RUNS A TO Z'
+      if (how === 'random') return on === 'random' ? 'RANDOM · SHUFFLED AGAIN' : 'RANDOM ON · THE SCHEDULE IS IN A RANDOM ORDER'
       const first = pool.find((video) => video.id === order[0])
       return `LATEST ON · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
     },
