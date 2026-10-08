@@ -5,7 +5,7 @@ import { canonicalYouTubeUrl, inventoryOf, singleVideoId, type ChannelSource } f
 import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, videoCreator, type ImportedVideo, type StoredSource } from './channels-import.ts'
 import { ADDED_PREFIX } from './user-network.ts'
 import { TVN_OWNER, type NetworkUser } from '../data/user-network/users.ts'
-import { CHANNEL_ID, shareableUrl, storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
+import { CHANNEL_ID, publicMediaAddress, shareableUrl, storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
 
 /**
  * RESTORE (OPTIONS → User Network file, or ADD's footer): a tvn-user-network-v1 file restores the viewer's
@@ -38,7 +38,7 @@ export function readUserNetworkFile(text: string): ReadResult {
 const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
   videos
     .filter((video) => video.id.trim() && video.durationSec >= 0)
-    .map(({ id, title, durationSec, published, creator, year, lists, media, summary, image, page, web, pending }) => ({
+    .map(({ id, title, durationSec, published, creator, year, lists, media, mediaKind, summary, image, page, web, pending }) => ({
       id,
       title,
       durationSec,
@@ -47,6 +47,7 @@ const cleanVideos = (videos: readonly ImportedVideo[] = []): ImportedVideo[] =>
       ...(typeof year === 'number' && Number.isInteger(year) ? { year } : {}),
       ...(Array.isArray(lists) && lists.length ? { lists: lists.filter((list) => typeof list === 'string') } : {}),
       ...((web === 'website' || web === 'post') && typeof media === 'string' && shareableUrl(media) ? { media: shareableUrl(media) } : {}),
+      ...(web === undefined && publicMediaAddress(media) ? { media: publicMediaAddress(media), ...(mediaKind === 'video' ? { mediaKind } : {}) } : {}),
       ...(typeof summary === 'string' && summary ? { summary } : {}),
       ...(typeof image === 'string' && shareableUrl(image) ? { image: shareableUrl(image) } : {}),
       ...(typeof page === 'string' && shareableUrl(page) ? { page: shareableUrl(page) } : {}),
@@ -95,9 +96,14 @@ export function channelSource(source: ExportSource, index: number): ChannelSourc
     return { ...base, kind: 'collection', url: '', ref: source.providerId || source.label, videos: cleanVideos(source.videos), ...readState(source) }
   }
   if (source.sourceType === 'tvn') return { ...base, kind: 'tvn', url: '', ...(source.providerId ? { ref: source.providerId } : {}) }
-  // A podcast's episodes need their media addresses, which the file never holds: they are read again. A website
-  // programme's address is its own public page, so it comes back as it was, and a read of the page refreshes it.
+  // A feed's episodes (a podcast, Odysee, BitChute) come back with the public file addresses the file kept, so
+  // the channel airs at once; an episode whose address was not kept waits for the feed to be read again. A
+  // website programme's address is its own public page, so it comes back as it was.
   const ref = source.providerId ? { ref: source.providerId } : {}
+  if (source.sourceType === 'podcast') {
+    const episodes = cleanVideos(source.videos).filter((video) => video.media && !video.web)
+    return { ...base, kind: 'podcast', url: source.url, ...ref, ...(episodes.length ? { videos: episodes, ...readState(source) } : {}) }
+  }
   if (source.sourceType === 'website') {
     const pages = cleanVideos(source.videos).filter((video) => video.web && video.media)
     return { ...base, kind: 'website', url: source.url, ...ref, ...(source.slotSeconds ? { slotSeconds: source.slotSeconds } : {}), ...(pages.length ? { videos: pages } : {}) }

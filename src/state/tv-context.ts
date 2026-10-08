@@ -191,7 +191,16 @@ export interface TvContextValue {
   /** Add a YouTube channel from a channel or video link as the last user channel (or refresh it if present); `owner` lists it on that user's tab. */
   addChannel: (link: string, owner?: string) => Promise<{ number: number | null; message: string }>
   /** ADD CHANNELS: each YouTube link a channel of its own, in order, on the next free numbers; onProgress hears each one read. */
-  addChannels: (links: readonly string[], owner?: string, onProgress?: (done: number, total: number) => void) => Promise<{ numbers: number[]; message: string }>
+  addChannels: (links: readonly string[], owner?: string, onProgress?: (done: number, total: number) => void) => Promise<{ numbers: number[]; placed: (number | null)[]; message: string }>
+  /** COMBINE: one new channel with each playlist a source of its own, and so a sub-channel of it. */
+  addCombinedChannel: (
+    name: string,
+    playlists: readonly { url: string; title: string }[],
+    owner?: string,
+    onProgress?: (done: number, total: number) => void,
+  ) => Promise<{ number: number; message: string }>
+  /** A sub-channel from the Guide: what it airs now, or a programme picked from its row; its own programmes follow. */
+  playSubChannel: (sub: import('../types/channel.ts').Channel, picked?: { startMs: number; endMs: number; programmeId: string }) => void
   /** What a website, feed or episode archive holds, read before it is added; null for a YouTube link, which adds directly. */
   previewSource: (link: string, onProgress?: (text: string) => void) => Promise<import('../services/podcast-source.ts').FoundFeed | null>
   /** Named users, each a User Network tab after TVN (src/data/user-network/users.ts). */

@@ -48,8 +48,13 @@ export interface ExportVideo {
   creator?: VideoCreator
   year?: number
   lists?: string[]
-  /** A website or post programme's own public page. A recording's media address is never exported: it is read again. */
+  /**
+   * A website or post programme's own public page, or a feed episode's public file (an Odysee, BitChute or
+   * podcast recording). A signed or expiring address is never exported: that episode is read again.
+   */
   media?: string
+  /** That file is video. */
+  mediaKind?: 'video'
   summary?: string
   image?: string
   page?: string
@@ -166,8 +171,28 @@ function sourceTypeOf(source: ChannelSource): ExportSourceType {
 
 const address = (raw: string | undefined) => (raw ? shareableUrl(raw) : '')
 
-/** A programme as the file keeps it: never whether it was watched, nor a recording's media address. */
-export function exportVideo({ id, title, durationSec, published, creator, year, lists, media, summary, image, page, web, pending }: ImportedVideo): ExportVideo {
+/** Query names of a signed, expiring or per-viewer address: such a file address is never kept in a file. */
+const SIGNED_PARAM = /^(?:expires?|exp|e|st|x-amz-.*|x-goog-.*|policy|key-pair-id|hdnts|hdnea|hmac|validfrom|validto|nonce|ttl|cdn_hash|md5|hash)$/i
+
+/**
+ * A feed episode's file address as a file may keep it: a plain public web address, without credentials or
+ * anything signed, expiring or secret-looking in its query. Otherwise empty, and the episode is read again.
+ */
+export function publicMediaAddress(raw: string | undefined): string {
+  if (!raw || raw.length > 2000) return ''
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return ''
+    if (carriesSecret(raw) || [...url.searchParams.keys()].some((name) => SIGNED_PARAM.test(name))) return ''
+    return url.toString()
+  } catch {
+    return ''
+  }
+}
+
+/** A programme as the file keeps it: never whether it was watched, nor a signed or expiring file address. */
+export function exportVideo({ id, title, durationSec, published, creator, year, lists, media, mediaKind, summary, image, page, web, pending }: ImportedVideo): ExportVideo {
+  const file = web ? '' : publicMediaAddress(media)
   return {
     id,
     title,
@@ -177,6 +202,7 @@ export function exportVideo({ id, title, durationSec, published, creator, year, 
     ...(year ? { year } : {}),
     ...(lists?.length ? { lists: [...lists] } : {}),
     ...(web && address(media) ? { media: address(media) } : {}),
+    ...(file ? { media: file, ...(mediaKind === 'video' ? { mediaKind } : {}) } : {}),
     ...(summary ? { summary } : {}),
     ...(address(image) ? { image: address(image) } : {}),
     ...(address(page) ? { page: address(page) } : {}),

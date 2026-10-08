@@ -32,7 +32,7 @@ describe('ADD CHANNELS in the Add row', () => {
 
   it('"Add channels…" follows "New channel…", only where many can be added', () => {
     const form = (many: boolean) =>
-      renderToStaticMarkup(createElement(AddChannelForm, { nextNumber: 1001, onAdd: async () => '', onNewChannel: async () => {}, ...(many ? { onAddMany: async () => '' } : {}) }))
+      renderToStaticMarkup(createElement(AddChannelForm, { nextNumber: 1001, onAdd: async () => '', onNewChannel: async () => {}, ...(many ? { onAddMany: async () => ({ message: '', placed: [] }) } : {}) }))
     const markup = form(true)
     expect(markup).toContain('Add channels…')
     expect(markup.indexOf('Add channels…')).toBeGreaterThan(markup.indexOf('New channel…'))

@@ -4,16 +4,31 @@ import { EMPTY_SITE } from '../app/site.ts'
 
 let userChannels: readonly Channel[] = []
 let userProgrammes = new Map<string, readonly Programme[]>()
+let userSubChannels = new Map<string, readonly Channel[]>()
 const listeners = new Set<() => void>()
 
-/** Replace the imported channel layer. Default channels are never stored here. */
+/**
+ * Replace the imported channel layer. Default channels are never stored here. A channel's sub-channels (one
+ * per source) are kept by its id; their programmes are found by their own ids, like any channel's.
+ */
 export function installUserCatalogue(
   channels: readonly Channel[],
   programmes: ReadonlyMap<string, readonly Programme[]>,
+  subChannels: ReadonlyMap<string, readonly { channel: Channel; programmes: readonly Programme[] }[]> = new Map(),
 ): void {
   userChannels = channels
   userProgrammes = new Map(programmes)
+  userSubChannels = new Map()
+  for (const [id, subs] of subChannels) {
+    userSubChannels.set(id, subs.map((sub) => sub.channel))
+    for (const sub of subs) userProgrammes.set(sub.channel.id, sub.programmes)
+  }
   for (const listener of listeners) listener()
+}
+
+/** A user channel's sub-channels, one per source, when it has two or more; else none. */
+export function subChannelsOf(channelId: string): readonly Channel[] {
+  return userSubChannels.get(channelId) ?? []
 }
 
 let curatedChannels: readonly Channel[] = []

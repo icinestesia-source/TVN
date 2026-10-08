@@ -38,7 +38,7 @@ import { reconcileOriginals, type OriginalSource } from '../services/original-so
 import { channelOriginals } from '../view/channel-provenance.ts'
 import { lookUpFeed, type FoundFeed } from '../services/podcast-source.ts'
 import { guideEndAdvances } from '../view/guide-following.ts'
-import { guideSlots } from '../services/broadcast.ts'
+import { broadcast, guideSlots } from '../services/broadcast.ts'
 import { BUILT_IN_CATALOGUE_ID, bootstrapUserNetwork, PREVIOUS_STARTER_FILES, readStarterNetwork, readStarterTemplate } from '../data/user-network/bootstrap.ts'
 import { claimStarterInstall, setStarterState, starterIds, starterState, withoutStarter } from '../data/user-network/starter.ts'
 import { afterPaint } from './after-paint.ts'
@@ -1259,7 +1259,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         if (user) {
           const sources = await loadStoredSources()
           const built = channelsFromSources(migrateLegacyUserNumbers(sources).sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
-          installUserCatalogue(built.channels, built.programmes)
+          installUserCatalogue(built.channels, built.programmes, built.subChannels)
           loadedKey.current = ''
           syncLive(Date.now())
         }
@@ -1354,9 +1354,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * schedule is untouched, and on the channel already being watched Previous is left alone. Picked from its
    * slot in the schedule, the channel then plays on through the programmes after it until NOW or a tune.
    */
-  const playFromGuide = (target: Channel, programme: Programme, slot?: { startMs: number; endMs: number }) => {
+  const playFromGuide = (target: Channel, programme: Programme, slot?: { startMs: number; endMs: number }, fromSeconds = 0) => {
     if (!guideDrivingRef.current) guideEngine.current.suspend()
-    selectProgramme(target.number, programme, Date.now(), slot && { startMs: slot.startMs, endMs: slot.endMs }, slot && !guideDrivingRef.current && target.origin !== 'tvn' && target.origin !== 'session' ? target : undefined)
+    selectProgramme(target.number, programme, Date.now(), slot && { startMs: slot.startMs, endMs: slot.endMs }, slot && !guideDrivingRef.current && target.origin !== 'tvn' && target.origin !== 'session' ? target : undefined, fromSeconds)
     if (multiviewRef.current !== '1') {
       multiviewRef.current = '1'
       setMultiviewMode('1')
@@ -1389,6 +1389,26 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return null
   }
   const playChannelProgramme = useCallback((channelNumber: number, programmeId: string) => playChannelRef.current(channelNumber, programmeId), [])
+
+  /**
+   * A sub-channel from the Guide: what it airs now, joined where its own clock has it, or a programme picked
+   * from its row. Either way what follows is the sub-channel's next programme, not the channel's.
+   */
+  const playSubChannelRef = useRef<(sub: Channel, picked?: { startMs: number; endMs: number; programmeId: string }) => void>(() => {})
+  playSubChannelRef.current = (sub, picked) => {
+    const now = Date.now()
+    const airing = broadcast(sub, now).current
+    const slot = picked && !(now >= picked.startMs && now < picked.endMs && guideTuneDecision(picked.startMs, picked.endMs, now) === 'tune') ? picked : null
+    if (slot) {
+      const programme = programmesFor(sub.id).find((item) => item.id === slot.programmeId)
+      if (programme && hasPicture(programme)) playFromGuide(sub, programme, slot)
+      else setGuideNote(now < slot.startMs ? 'later' : 'ended')
+      return
+    }
+    if (!hasPicture(airing.programme)) return
+    playFromGuide(sub, airing.programme, { startMs: airing.startMs, endMs: airing.endMs }, (now - airing.startMs) / 1000)
+  }
+  const playSubChannel = useCallback((sub: Channel, picked?: { startMs: number; endMs: number; programmeId: string }) => playSubChannelRef.current(sub, picked), [])
   const playFromGuideRef = useRef(playFromGuide)
   playFromGuideRef.current = playFromGuide
 
@@ -2299,7 +2319,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
           // a first visit, whose starter Favourites wait for the starter channels.
           if (!starterDue && !favouritesSeeded) setFavourites((current) => liveFavourites(current, migrated.sources))
           const built = channelsFromSources(migrated.sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
-          installUserCatalogue(built.channels, built.programmes)
+          installUserCatalogue(built.channels, built.programmes, built.subChannels)
         }
         return independentNetworkLoaded(librarySnapshot().media)
       } finally {
@@ -2377,7 +2397,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (owner) plan.sources = plan.sources.map((source) => (before.has(source.id) ? source : { ...source, owner }))
       await saveStoredSources(plan.sources)
       const built = channelsFromSources(plan.sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
-      installUserCatalogue(built.channels, built.programmes)
+      installUserCatalogue(built.channels, built.programmes, built.subChannels)
       const hours = (parsed.totalSeconds / 3600).toFixed(1)
       const scheduleNote =
         userLibraryMode() === 'off'
@@ -2394,7 +2414,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const installSources = useCallback((sources: readonly StoredSource[]) => {
     userEditorialRef.current = new Map(sources.flatMap((source) => (source.channelNumber && source.editorial ? [[source.channelNumber, source.editorial] as const] : [])))
     const built = channelsFromSources(sources, { refused: refusedVideos(), archive: uploaderArchive, users: userIds() })
-    installUserCatalogue(built.channels, built.programmes)
+    installUserCatalogue(built.channels, built.programmes, built.subChannels)
     if (!channelByNumber(channelRef.current)) requestTune(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -2451,6 +2471,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const addChannels = useCallback(
     async (links: readonly string[], owner?: string, onProgress?: (done: number, total: number) => void) => {
       const numbers: number[] = []
+      const placed: (number | null)[] = links.map(() => null)
       let already = 0
       let unread = 0
       let full = false
@@ -2466,7 +2487,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         )
         let sources = migrateLegacyUserNumbers(await loadStoredSources()).sources
         let changed = false
-        for (const outcome of read) {
+        for (const [offset, outcome] of read.entries()) {
           if (outcome.status === 'rejected') {
             unread += 1
             continue
@@ -2476,6 +2497,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
             full = true
             break
           }
+          placed[start + offset] = result.number
           if (result.status !== 'added' || result.number === null) {
             already += 1
             continue
@@ -2493,8 +2515,54 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const message = `${numbers.length} ${numbers.length === 1 ? 'CHANNEL' : 'CHANNELS'} ADDED${range}${already > 0 ? ` · ${already} ALREADY ON THE GUIDE` : ''}${
         unread > 0 ? ` · ${unread} COULD NOT BE READ` : ''
       }${full ? ' · THE USER NETWORK IS FULL' : ''}`
-      return { numbers, message }
+      return { numbers, placed, message }
     },
+    [installSources],
+  )
+
+  /**
+   * COMBINE: one new channel holding each playlist as a source of its own, so each is a sub-channel of it and
+   * the channel airs them all. The playlists are read first; the channel is made only once something was.
+   */
+  const addCombinedChannel = useCallback(
+    async (name: string, playlists: readonly { url: string; title: string }[], owner?: string, onProgress?: (done: number, total: number) => void) => {
+      const now = Date.now()
+      const wanted: ChannelSource[] = playlists.map((playlist, index) => ({
+        id: `s${index + 1}`,
+        kind: 'youtube',
+        url: playlist.url,
+        label: playlist.title,
+        enabled: true,
+        youtube: 'playlist',
+        status: { state: 'unchecked', checkedAt: 0 },
+      }))
+      const deps = rescanDeps()
+      const read: ChannelSource[] = []
+      for (let start = 0; start < wanted.length; start += ADD_MANY_AT_ONCE) {
+        read.push(...(await rescanSources(wanted.slice(start, start + ADD_MANY_AT_ONCE), deps, now)))
+        onProgress?.(read.length, wanted.length)
+      }
+      const sources = read.filter((source) => (source.videos?.length ?? 0) > 0)
+      if (sources.length === 0) throw new Error('None of those playlists could be read')
+      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      const slot = firstEmptySlot(existing.filter((source) => (source.channelNumber ?? 0) >= USER_NUMBER_START))
+      const taken = existing.flatMap((source) => (source.channelNumber !== null && source.channelNumber >= USER_NUMBER_START ? [source.channelNumber] : []))
+      const number = slot?.channelNumber ?? (taken.length ? Math.max(...taken) + 1 : USER_NUMBER_START)
+      if (number >= USER_NUMBER_LIMIT) throw new Error('The User Network is full')
+      const withSlot = slot ? existing : [...existing, emptySlotRecord(number, now)]
+      const owned = owner ? withSlot.map((record) => (record.channelNumber === number ? { ...record, owner } : record)) : withSlot
+      const label = name.trim() || sources[0].label
+      const next = applyChannelEdit(owned, number, { name: label, sources: widenSources(sources, sourceArchive) }, now)
+      await saveStoredSources(next)
+      installSources(next)
+      const programmes = next.find((record) => record.channelNumber === number)?.videos.length ?? 0
+      const unread = wanted.length - sources.length
+      return {
+        number,
+        message: `${label.toUpperCase()} ADDED ON ${number} · ${sources.length} PLAYLISTS AS SUB-CHANNELS · ${programmes} PROGRAMMES${unread > 0 ? ` · ${unread} COULD NOT BE READ` : ''}`,
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [installSources],
   )
 
@@ -3669,6 +3737,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       applyImport,
       addChannel,
       addChannels,
+      addCombinedChannel,
+      playSubChannel,
       previewSource,
       networkUsers,
       createNetworkUser,
@@ -3734,6 +3804,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       renameLocal,
       addChannel,
       addChannels,
+      addCombinedChannel,
+      playSubChannel,
       previewSource,
       networkUsers,
       createNetworkUser,

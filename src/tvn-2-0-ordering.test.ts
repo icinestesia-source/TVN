@@ -220,7 +220,7 @@ describe('GUIDE and NOW in the header', () => {
     expect(now).toContain('setGuideNowAsk((asked) => asked + 1)')
     const guide = read('src/components/Guide.tsx')
     const centre = guide.slice(guide.indexOf('const nowAsked'), guide.indexOf('const nowAsked') + 900)
-    expect(centre).toContain('centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, tv.visibleChannels.length)')
+    expect(centre).toContain('centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, layout.length)')
     expect(centre).toContain('openScrollLeft(Date.now(), startMs, pxPerMinute, grid.clientWidth)')
   })
 })

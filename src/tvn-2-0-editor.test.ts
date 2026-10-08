@@ -206,7 +206,7 @@ describe('INSTANT and GUIDE wiring', () => {
     expect(centredScrollTop(119, 52, 520, 120)).toBe(120 * 52 - 520)
     expect(centredScrollTop(2, 52, 520, 4)).toBe(0)
     const guide = read('src/components/Guide.tsx')
-    expect(guide).toContain('grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, tv.visibleChannels.length)')
+    expect(guide).toContain('grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, layout.length)')
     expect(provider.match(/guideOpeningZoom\(/g)).toHaveLength(1)
   })
 })

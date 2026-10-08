@@ -52,7 +52,8 @@ import { channelLinksFrom } from '../services/user-network.ts'
 import { USER_NETWORK_FORMAT } from '../services/user-network-export.ts'
 import { CHANNEL_FILE_FORMAT } from '../services/channel-file.ts'
 import { isLowUserNumber, LOW_USER_FIRST, LOW_USER_LAST, USER_NUMBER_START } from '../data/network.ts'
-import { currentNetworkBase } from '../data/user-overlay.ts'
+import { currentNetworkBase, subChannelsOf } from '../data/user-overlay.ts'
+import { guideLayout, loadOpenSubChannels, rowIndexOf, saveOpenSubChannels } from '../view/sub-channels-store.ts'
 import { channelByNumber, listChannels } from '../data/catalogue.ts'
 import {
   floorHalfHour,
@@ -135,16 +136,27 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const ticks = halfHourTicks(startMs, endMs)
   const gridOffset = timeX(floorHalfHour(startMs), startMs, pxPerMinute)
   const nowX = timeX(now, startMs, pxPerMinute)
-  const range = visibleRowRange(scrollTop, viewport, ROW_HEIGHT, tv.visibleChannels.length, 6)
-  const rows = tv.visibleChannels.slice(range.start, range.end)
+  // "+" on a channel with two or more sources lists each source under it as a sub-channel with its own schedule.
+  const [openSubs, setOpenSubs] = useState(loadOpenSubChannels)
+  const toggleSubs = (channelId: string) =>
+    setOpenSubs((current) => {
+      const next = new Set(current)
+      if (next.has(channelId)) next.delete(channelId)
+      else next.add(channelId)
+      saveOpenSubChannels(next)
+      return next
+    })
+  const layout = useMemo(() => guideLayout(tv.visibleChannels, openSubs, subChannelsOf), [tv.visibleChannels, openSubs])
+  const range = visibleRowRange(scrollTop, viewport, ROW_HEIGHT, layout.length, 6)
+  const rows = layout.slice(range.start, range.end)
 
   const slotsById = useMemo(() => {
     const map = new Map<string, GuideSlot<Programme>[]>()
-    for (const channel of tv.visibleChannels.slice(range.start, range.end)) {
-      map.set(channel.id, guideSlots(channel, startMs, endMs))
+    for (const row of layout.slice(range.start, range.end)) {
+      map.set(row.channel.id, guideSlots(row.channel, startMs, endMs))
     }
     return map
-  }, [endMs, range.end, range.start, startMs, tv.visibleChannels])
+  }, [endMs, range.end, range.start, startMs, layout])
 
   const focusedChannel =
     tv.visibleChannels.find((channel) => channel.number === tv.guideCursor.channelNumber) ?? null
@@ -192,7 +204,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   // not a channel: it has no number and allocates nothing until a source is imported.
   const owner = filterUserId(tv.guideFilter) ?? undefined
   const addRow = !searching && (tv.guideFilter === 'all' || tv.guideFilter === 'user' || owner !== undefined)
-  const rowCount = tv.visibleChannels.length + (addRow ? 1 : 0)
+  const rowCount = layout.length + (addRow ? 1 : 0)
   const addInput = useRef<HTMLInputElement>(null)
   // MEDIA, IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
   // GUIDE (the viewer's viewing Guides) stays open while the cursor roams the grid to add to it.
@@ -300,7 +312,16 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const addMany = async (links: readonly string[], onProgress: (done: number, total: number) => void) => {
     const result = await tv.addChannels(links, owner, onProgress)
     if (result.numbers.length > 0) tv.focusGuide(Math.min(...result.numbers), Date.now())
-    return result.message
+    return result
+  }
+
+  /** The combined channel opens with its sub-channels shown, one per playlist. */
+  const combine = async (name: string, playlists: readonly { url: string; title: string }[], onProgress: (done: number, total: number) => void) => {
+    const result = await tv.addCombinedChannel(name, playlists, owner, onProgress)
+    const made = channelByNumber(result.number)
+    if (made && !openSubs.has(made.id)) toggleSubs(made.id)
+    tv.focusGuide(result.number, Date.now())
+    return result
   }
 
   const importList = async (file: File, listOwner = owner) => {
@@ -367,7 +388,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   }
   const sessionMatches = searching && focusedChannel?.origin === 'session' ? searchSession(tv.guideQuery, focusedChannel.number) : []
   const mediaChannel = (tool === 'media' && focusedChannel?.origin === 'session' ? focusedChannel : null) ?? channelByNumber(SESSION_CHANNEL_NUMBER) ?? SESSION_CHANNEL
-  const numbers = useMemo(() => tv.visibleChannels.map((channel) => channel.number), [tv.visibleChannels])
+  const numbers = useMemo(() => layout.map((row) => (row.kind === 'sub' ? row.parent.number : row.channel.number)), [layout])
   const [bandAnchor, setBandAnchor] = useState<{ channelNumber: number; scrollTop: number } | null>(null)
   const viewedNumber = guideViewedChannel(numbers, scrollTop, ROW_HEIGHT, bandAnchor) ?? tv.guideCursor.channelNumber
   const previousBand = guideBandTarget(numbers, viewedNumber, -1, tv.guideQuery)
@@ -384,10 +405,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     const grid = gridRef.current
     if (!grid) return
     grid.scrollLeft = openScrollLeft(Date.now(), startMs, pxPerMinute, grid.clientWidth)
-    const index = tv.visibleChannels.findIndex(
-      (channel) => channel.number === tv.guideCursor.channelNumber,
-    )
-    if (index >= 0) grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, tv.visibleChannels.length)
+    const index = rowIndexOf(layout, tv.guideCursor.channelNumber)
+    if (index >= 0) grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, layout.length)
     if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
     if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
     setScrollTop(grid.scrollTop)
@@ -473,7 +492,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     }
     const grid = gridRef.current
     if (!grid || !focused) return
-    const index = tv.visibleChannels.findIndex((channel) => channel.number === focusedChannel?.number)
+    const index = rowIndexOf(layout, focusedChannel?.number ?? Number.NaN)
     const frame = slotFrame(focused.startMs, focused.endMs, startMs, pxPerMinute)
     const viewRight = grid.scrollLeft + grid.clientWidth
     if (frame.left < grid.scrollLeft + 8) grid.scrollLeft = Math.max(0, frame.left - 24)
@@ -490,7 +509,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
     setScrollTop(grid.scrollTop)
     setScrollLeft(grid.scrollLeft)
-  }, [focused, focusedChannel?.number, pxPerMinute, startMs, tv.guideCursor, tv.visibleChannels])
+  }, [focused, focusedChannel?.number, pxPerMinute, startMs, tv.guideCursor, layout])
 
   // NOW centres the channel playing, with the current time in view as when the Guide opens.
   const nowAsked = useRef(tv.guideNowAsk)
@@ -501,26 +520,26 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     const grid = gridRef.current
     if (!grid) return
     grid.scrollLeft = openScrollLeft(Date.now(), startMs, pxPerMinute, grid.clientWidth)
-    const index = tv.visibleChannels.findIndex((channel) => channel.number === tv.guideCursor.channelNumber)
-    if (index >= 0) grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, tv.visibleChannels.length)
+    const index = rowIndexOf(layout, tv.guideCursor.channelNumber)
+    if (index >= 0) grid.scrollTop = centredScrollTop(index, ROW_HEIGHT, grid.clientHeight, layout.length)
     if (timeRef.current) timeRef.current.scrollLeft = grid.scrollLeft
     if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
     setScrollTop(grid.scrollTop)
     setScrollLeft(grid.scrollLeft)
-  }, [tv.guideNowAsk, tv.guideCursor, tv.visibleChannels, startMs, pxPerMinute])
+  }, [tv.guideNowAsk, tv.guideCursor, layout, startMs, pxPerMinute])
 
   useLayoutEffect(() => {
     const target = bandJump.current
     const grid = gridRef.current
     if (target === null || !grid || target !== tv.guideCursor.channelNumber) return
     bandJump.current = null
-    const index = tv.visibleChannels.findIndex((channel) => channel.number === target)
+    const index = rowIndexOf(layout, target)
     if (index < 0) return
     grid.scrollTop = index * ROW_HEIGHT
     if (channelScrollRef.current) channelScrollRef.current.scrollTop = grid.scrollTop
     setScrollTop(grid.scrollTop)
     setBandAnchor({ channelNumber: target, scrollTop: grid.scrollTop })
-  }, [tv.guideCursor, tv.visibleChannels])
+  }, [tv.guideCursor, layout])
 
   useEffect(() => {
     if (tv.visibleChannels.length === 0) return
@@ -644,7 +663,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {addRow ? (
             <>
               <p className="guide-empty-note">Your User Network starts at {padChannel(USER_NUMBER_START)} and is kept in this browser.</p>
-              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onAddMany={addMany} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
+              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onAddMany={addMany} onCombine={combine} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
               {owner ? null : <TestChannelsButton onLoad={tv.loadTestChannels} />}
             </>
           ) : null}
@@ -698,10 +717,17 @@ export function Guide({ closing = false }: { closing?: boolean }) {
             >
               <div style={{ height: rowCount * ROW_HEIGHT, position: 'relative' }}>
                 <div style={{ transform: `translateY(${range.start * ROW_HEIGHT}px)` }}>
-                  {rows.map((channel) => (
+                  {rows.map((row) => {
+                    const channel = row.channel
+                    if (row.kind === 'sub') return <SubChannelCell key={channel.id} channel={channel} parent={row.parent} onWatch={() => tv.playSubChannel(channel)} />
+                    const subs = subChannelsOf(channel.id).length
+                    return (
                     <ChannelCell
                       key={channel.id}
                       channel={channel}
+                      subChannels={subs}
+                      subsOpen={openSubs.has(channel.id)}
+                      onSubs={() => toggleSubs(channel.id)}
                       watching={channel.number === tv.channel.number}
                       visiting={channel.number === tv.guideVisiting}
                       selected={channel.number === tv.guideCursor.channelNumber}
@@ -725,12 +751,13 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       expanded={actionsAll}
                       onExpand={toggleActions}
                     />
-                  ))}
+                    )
+                  })}
                 </div>
                 {addRow ? (
                   <div
                     className="channel-cell is-user add-cell"
-                    style={{ position: 'absolute', top: tv.visibleChannels.length * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT }}
+                    style={{ position: 'absolute', top: layout.length * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT }}
                   >
                     <button type="button" className="ch-tune" onClick={openAddRow} aria-label={`Add a channel as ${padChannel(nextNumber)}`} data-add-row="">
                       <span className="ch-number">{padChannel(nextNumber)}</span>
@@ -777,11 +804,38 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                 }}
               >
                 <div style={{ transform: `translateY(${range.start * ROW_HEIGHT}px)` }}>
-                  {rows.map((channel) => (
+                  {rows.map((row) => {
+                    const channel = row.channel
+                    const slots = slotsById.get(channel.id) ?? []
+                    if (row.kind === 'sub') {
+                      return (
+                        <ProgrammeRow
+                          key={channel.id}
+                          channel={channel}
+                          sub
+                          slots={slots}
+                          playing={null}
+                          windowStart={startMs}
+                          pxPerMinute={pxPerMinute}
+                          now={now}
+                          scrollLeft={scrollLeft}
+                          viewWidth={viewWidth}
+                          cursorTime={null}
+                          onFocus={(timeMs) => {
+                            const slot = slotContaining(slots, timeMs)
+                            if (slot) tv.playSubChannel(channel, { startMs: slot.startMs, endMs: slot.endMs, programmeId: slot.programme.id })
+                          }}
+                          onActivate={() => {}}
+                          marks={guideMarks}
+                          onMenu={(programme, x, y) => setAddMenu({ channelNumber: row.parent.number, channelName: row.parent.name, programme, x, y })}
+                        />
+                      )
+                    }
+                    return (
                     <ProgrammeRow
                       key={channel.id}
                       channel={channel}
-                      slots={slotsById.get(channel.id) ?? []}
+                      slots={slots}
                       playing={channel.number === tv.channel.number ? playingSlot : null}
                       windowStart={startMs}
                       pxPerMinute={pxPerMinute}
@@ -796,11 +850,12 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       marks={guideMarks}
                       onMenu={(programme, x, y) => setAddMenu({ channelNumber: channel.number, channelName: channel.name, programme, x, y })}
                     />
-                  ))}
+                    )
+                  })}
                 </div>
                 {addRow ? (
-                  <div className="add-row" style={{ top: tv.visibleChannels.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(200, viewWidth - 16) }}>
-                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onAddMany={addMany} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
+                  <div className="add-row" style={{ top: layout.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(200, viewWidth - 16) }}>
+                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onAddMany={addMany} onCombine={combine} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
                   </div>
                 ) : null}
                 <div className="now-line" style={{ left: nowX }} />
@@ -919,8 +974,15 @@ function ChannelCell({
   onDelete,
   expanded = false,
   onExpand,
+  subChannels = 0,
+  subsOpen = false,
+  onSubs,
 }: {
   channel: Channel
+  /** How many sub-channels (one per source) it has; "+" shows and hides them. */
+  subChannels?: number
+  subsOpen?: boolean
+  onSubs?: () => void
   watching: boolean
   /** Watched although the selected tab does not list it: shown here, not part of the tab. */
   visiting: boolean
@@ -991,6 +1053,18 @@ function ChannelCell({
         <span className="ch-number">{padChannel(channel.number)}</span>
         <span className="ch-name">{channel.name}</span>
       </button>
+      {subChannels > 0 && onSubs ? (
+        <button
+          type="button"
+          className={subsOpen ? 'ch-act ch-subs is-open' : 'ch-act ch-subs'}
+          onClick={act(onSubs)}
+          aria-expanded={subsOpen}
+          title={subsOpen ? 'Hide the sub-channels' : `Show its ${subChannels} sub-channels, one for each source`}
+        >
+          <span aria-hidden="true">{subsOpen ? '−' : '+'}</span>
+          <span className="sr">{subsOpen ? `Hide the sub-channels of ${padChannel(channel.number)}` : `Show the ${subChannels} sub-channels of ${padChannel(channel.number)}`}</span>
+        </button>
+      ) : null}
       {canExpand ? (
         <button
           type="button"
@@ -1066,6 +1140,26 @@ function ChannelCell({
   )
 }
 
+/** A sub-channel's name under its channel: pressing it watches what that source airs now, then its next. */
+function SubChannelCell({ channel, parent, onWatch }: { channel: Channel; parent: Channel; onWatch: () => void }) {
+  return (
+    <div className="channel-cell is-user is-sub" style={{ height: ROW_HEIGHT }}>
+      <button
+        type="button"
+        className="ch-tune"
+        onClick={onWatch}
+        title="Watch this sub-channel: what it airs now, then its next programmes"
+        aria-label={`Watch ${channel.name}, a sub-channel of ${padChannel(parent.number)} ${parent.name}`}
+      >
+        <span className="ch-number ch-sub-mark" aria-hidden="true">
+          ↳
+        </span>
+        <span className="ch-name">{channel.name}</span>
+      </button>
+    </div>
+  )
+}
+
 /** The slot the watched channel is playing: the airing one, a picked one's place in the schedule, or none in view. */
 type PlayingSlot = 'airing' | { startMs: number } | null
 
@@ -1083,8 +1177,11 @@ function ProgrammeRow({
   onActivate,
   marks,
   onMenu,
+  sub = false,
 }: {
   channel: Channel
+  /** A sub-channel's row: a press plays the programme on it, and that source's next programmes follow. */
+  sub?: boolean
   slots: readonly GuideSlot<Programme>[]
   /** Only for the channel being watched. */
   playing: PlayingSlot
@@ -1113,7 +1210,7 @@ function ProgrammeRow({
   const leftBound = scrollLeft - 280
   const rightBound = scrollLeft + viewWidth + 280
   return (
-    <div className="prog-row" style={{ height: ROW_HEIGHT }} data-channel={channel.number}>
+    <div className={sub ? 'prog-row is-sub' : 'prog-row'} style={{ height: ROW_HEIGHT }} data-channel={channel.number}>
       {slots.map((slot) => {
         const frame = slotFrame(slot.startMs, slot.endMs, windowStart, pxPerMinute)
         const selected = cursorTime !== null && cursorTime >= slot.startMs && cursorTime < slot.endMs

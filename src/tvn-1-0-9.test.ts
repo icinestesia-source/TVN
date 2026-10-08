@@ -65,10 +65,10 @@ describe('+ Add channel after the last User Network channel', () => {
   const add = guide.slice(guide.indexOf('{addRow ? (\n                  <div\n                    className="channel-cell is-user add-cell"'), guide.indexOf('<div className="guide-grid"'))
 
   it('is the row immediately after the last listed channel: the next number and + Add channel', () => {
-    expect(add).toContain('top: tv.visibleChannels.length * ROW_HEIGHT')
+    expect(add).toContain('top: layout.length * ROW_HEIGHT')
     expect(add).toContain('<span className="ch-number">{padChannel(nextNumber)}</span>')
     expect(add).toContain('<span className="ch-name">+ Add channel</span>')
-    expect(guide).toContain('const rowCount = tv.visibleChannels.length + (addRow ? 1 : 0)')
+    expect(guide).toContain('const rowCount = layout.length + (addRow ? 1 : 0)')
   })
 
   it('opens the existing Add Channel row; there is no second Add Channel', () => {

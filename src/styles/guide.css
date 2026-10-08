@@ -270,6 +270,19 @@
 }
 .add-playlists-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
 .add-playlists-count { flex: none; color: var(--muted); font-size: 12px; }
+.add-playlists-note { color: var(--gold); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.add-playlists-combine { margin-top: 8px; }
+.add-playlists-combine input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #1d4c78;
+  background: rgba(8, 20, 34, 0.92);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
 
 .guide-empty .add-channel {
   justify-content: center;
@@ -1098,6 +1111,13 @@ span.editor-expand { border-color: transparent; }
 /* The narrow arrow that unfolds the selected channel's actions from one button to all of them. */
 .ch-more { width: 12px; font-size: 16px; }
 .ch-more.is-open { color: var(--ink); }
+/* "+" shows a channel's sub-channels (one per source) under it; "−" hides them. */
+.ch-subs { font-size: 18px; font-weight: 700; }
+.ch-subs.is-open { color: var(--gold); }
+.channel-cell.is-sub { background: rgba(6, 16, 28, 0.55); }
+.channel-cell.is-sub .ch-name { font-size: 14px; color: #b9cde0; }
+.ch-sub-mark { font-size: 16px; text-align: right; color: var(--muted); }
+.prog-row.is-sub .prog { border-left-color: rgba(240, 192, 20, 0.35); }
 
 .guide-grid {
   flex: 1;

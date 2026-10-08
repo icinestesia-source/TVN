@@ -6,7 +6,7 @@ import type { PlayerHandle } from './player/types.ts'
 import { vimeoEmbedSrc, vimeoIdOf } from './player/vimeo.ts'
 import { lookUpFeed, sourcePreviewLines } from './services/podcast-source.ts'
 import { addPodcastChannel, addStreamChannel } from './services/user-network.ts'
-import { buildUserNetworkExport, exportSource, serialiseUserNetworkExport } from './services/user-network-export.ts'
+import { buildUserNetworkExport, exportSource, publicMediaAddress, serialiseUserNetworkExport } from './services/user-network-export.ts'
 import { readUserNetworkFile, recordsFromExport, resolveRestored } from './services/user-network-restore.ts'
 import { addRoute, capabilitiesFor, describeSource, identifyUrl, INGEST_MESSAGE, PROVIDERS, UNSAFE_MESSAGE } from './sources/providers.ts'
 import type { Programme } from './types/programme.ts'
@@ -79,28 +79,54 @@ describe('what ADD shows and adds', () => {
     expect(addStreamChannel(first.sources, { url: 'https://cdn.example.net/live.m3u8', title: 'Again', kind: 'video-hls' }, 2)).toMatchObject({ status: 'duplicate', number: first.number })
   })
 
-  it('exports a provider source by its stable public address only, never its programmes’ media', () => {
+  it('exports a provider source with its episodes’ public files, never a signed or expiring one', () => {
     const exported = exportSource(
-      { id: 's1', kind: 'podcast', url: 'https://odysee.com/@Example:1', label: 'Example', enabled: true, videos: [{ id: 'x', title: 'A', durationSec: 60, media: 'https://odysee.com/$/rss/media/a/b/c.mp4' }], status: { state: 'ready', checkedAt: 1 } },
+      {
+        id: 's1',
+        kind: 'podcast',
+        url: 'https://odysee.com/@Example:1',
+        label: 'Example',
+        enabled: true,
+        videos: [
+          { id: 'x', title: 'A', durationSec: 60, media: 'https://odysee.com/$/rss/media/a/b/c.mp4', mediaKind: 'video' },
+          { id: 'y', title: 'B', durationSec: 60, media: 'https://cdn.example.net/b.mp4?Expires=1&Signature=abc' },
+          { id: 'z', title: 'C', durationSec: 60, media: 'https://cdn.example.net/c.mp3?token=abc' },
+        ],
+        status: { state: 'ready', checkedAt: 1 },
+      },
       () => null,
     )
     expect(exported).toMatchObject({ sourceType: 'podcast', url: 'https://odysee.com/@Example:1' })
-    expect(JSON.stringify(exported)).not.toContain('/$/rss/media/')
+    expect(exported.videos).toEqual([
+      { id: 'x', title: 'A', durationSec: 60, media: 'https://odysee.com/$/rss/media/a/b/c.mp4', mediaKind: 'video' },
+      { id: 'y', title: 'B', durationSec: 60 },
+      { id: 'z', title: 'C', durationSec: 60 },
+    ])
+    expect(publicMediaAddress('https://user:pw@cdn.example.net/a.mp4')).toBe('')
+    expect(publicMediaAddress('https://cdn.example.net/a.mp4?X-Amz-Signature=1')).toBe('')
+    expect(publicMediaAddress('https://cdn.example.net/a.mp3?ver=2')).toBe('https://cdn.example.net/a.mp3?ver=2')
   })
 })
 
 describe('Complete Export and Restore', () => {
-  it('carries a provider channel and a live stream channel by address, and reads the provider again on restore', async () => {
+  it('carries a provider channel with its episodes and a live stream channel by address; restore airs them at once, then reads the provider again', async () => {
     const film = { id: 'vimeo-1111111', title: 'First Film', durationSec: 141, published: '2026-09-21', media: 'https://player.vimeo.com/video/1111111', mediaKind: 'video' as const }
     const withFilm = addPodcastChannel([], { feedUrl: 'https://vimeo.com/1111111', website: null, title: 'First Film', episodes: [film] }, 1)
     const withLive = addStreamChannel(withFilm.sources, { url: 'https://cdn.example.net/live.m3u8', title: 'Example Live', kind: 'video-hls' }, 2)
     const text = serialiseUserNetworkExport(buildUserNetworkExport(withLive.sources, new Date(3)))
     expect(text).toContain('"url": "https://vimeo.com/1111111"')
     expect(text).toContain('"sourceType": "video-hls"')
-    expect(text).not.toContain('player.vimeo.com')
+    expect(text).toContain('"media": "https://player.vimeo.com/video/1111111"')
     const file = readUserNetworkFile(text)
     expect(file.ok).toBe(true)
     if (!file.ok) return
+    const offline = async () => {
+      throw new Error('not asked')
+    }
+    const fromFile = await resolveRestored(recordsFromExport(file.value, 4), { resolveYouTube: offline, resolveFeed: offline }, 4, 4, { read: false })
+    const aired = fromFile.records.flatMap((record) => record.channelSources ?? []).find((source) => source.kind === 'podcast')
+    expect(aired?.videos).toEqual([film])
+    expect(fromFile.records.find((record) => record.channelSources?.some((source) => source.kind === 'podcast'))?.videos).toEqual([film])
     const asked: string[] = []
     const resolved = await resolveRestored(recordsFromExport(file.value, 4), {
       resolveYouTube: async () => {

@@ -129,6 +129,7 @@ export function AddChannelForm({
   onNewLowChannel,
   onRestore,
   onAddMany,
+  onCombine,
   listPlaylists = lookUpChannelPlaylists,
   onFocus,
   inputRef,
@@ -149,8 +150,10 @@ export function AddChannelForm({
   onNewLowChannel?: () => Promise<void>
   /** Opens RESTORE: a User Network file saved with EXPORT, replacing the User Network. */
   onRestore?: () => void
-  /** ADD CHANNELS: each playlist link a channel of its own; the answer is a short line for the viewer. */
-  onAddMany?: (links: readonly string[], onProgress: (done: number, total: number) => void) => Promise<string>
+  /** ADD CHANNELS: each playlist link a channel of its own; `placed` is the number each went to, in order. */
+  onAddMany?: (links: readonly string[], onProgress: (done: number, total: number) => void) => Promise<{ message: string; placed: readonly (number | null)[] }>
+  /** COMBINE: the chosen playlists as one channel, each a source of it and so a sub-channel. */
+  onCombine?: (name: string, playlists: readonly { url: string; title: string }[], onProgress: (done: number, total: number) => void) => Promise<{ message: string; number: number }>
   listPlaylists?: typeof lookUpChannelPlaylists
   onFocus?: () => void
   inputRef?: RefObject<HTMLInputElement | null>
@@ -165,6 +168,9 @@ export function AddChannelForm({
   const [asking, setAsking] = useState<string | null>(null)
   const [lists, setLists] = useState<Awaited<ReturnType<typeof lookUpChannelPlaylists>> | null>(null)
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
+  /** Playlists already added from this list, and the channel each went to. */
+  const [added, setAdded] = useState<ReadonlyMap<string, number>>(new Map())
+  const [combineName, setCombineName] = useState('')
 
   const findPlaylists = async (from = link) => {
     if (!onAddMany || busy) return
@@ -185,6 +191,8 @@ export function AddChannelForm({
       }
       setNote(null)
       setLists(found)
+      setAdded(new Map())
+      setCombineName(found.title)
       setPicked(new Set(found.playlists.map((playlist) => playlist.id)))
     } catch (caught) {
       setNote(viewerMessage(caught, 'NO PLAYLISTS COULD BE FOUND'))
@@ -193,18 +201,61 @@ export function AddChannelForm({
     }
   }
 
+  const chosenPlaylists = () => (lists?.playlists ?? []).filter((playlist) => picked.has(playlist.id) && !added.has(playlist.id))
+  const placeAll = (ids: readonly string[], numbers: readonly (number | null)[]) => {
+    setAdded((current) => {
+      const next = new Map(current)
+      ids.forEach((id, index) => {
+        const number = numbers[index]
+        if (number !== null && number !== undefined) next.set(id, number)
+      })
+      return next
+    })
+    setPicked(new Set())
+  }
+
+  /** Each chosen playlist a channel of its own. The list stays open for the rest. */
   const addMany = async () => {
-    if (!onAddMany || !lists) return
-    const chosen = lists.playlists.filter((playlist) => picked.has(playlist.id)).map((playlist) => playlistUrl(playlist.id))
-    if (chosen.length === 0) return
-    setLists(null)
+    const chosen = chosenPlaylists()
+    if (!onAddMany || chosen.length === 0) return
     setBusy(true)
     setNote(`ADDING ${chosen.length} ${chosen.length === 1 ? 'CHANNEL' : 'CHANNELS'}…`)
     try {
-      setNote(await onAddMany(chosen, (done, total) => setNote(`ADDING CHANNELS · ${done} OF ${total} READ`)))
-      setLink('')
+      const result = await onAddMany(
+        chosen.map((playlist) => playlistUrl(playlist.id)),
+        (done, total) => setNote(`ADDING CHANNELS · ${done} OF ${total} READ`),
+      )
+      setNote(result.message)
+      placeAll(
+        chosen.map((playlist) => playlist.id),
+        result.placed,
+      )
     } catch (caught) {
       setNote(viewerMessage(caught, 'THE CHANNELS COULD NOT BE ADDED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** The chosen playlists as one channel, each a sub-channel of it. The list stays open for the rest. */
+  const combine = async () => {
+    const chosen = chosenPlaylists()
+    if (!onCombine || chosen.length === 0) return
+    setBusy(true)
+    setNote(`COMBINING ${chosen.length} PLAYLISTS…`)
+    try {
+      const result = await onCombine(
+        combineName,
+        chosen.map((playlist) => ({ url: playlistUrl(playlist.id), title: playlist.title })),
+        (done, total) => setNote(`COMBINING · ${done} OF ${total} READ`),
+      )
+      setNote(result.message)
+      placeAll(
+        chosen.map((playlist) => playlist.id),
+        chosen.map(() => result.number),
+      )
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THE CHANNEL COULD NOT BE MADE'))
     } finally {
       setBusy(false)
     }
@@ -358,7 +409,7 @@ export function AddChannelForm({
           New channel {String(nextLowNumber).padStart(3, '0')}
         </button>
       ) : null}
-      {note ? (
+      {note && !lists ? (
         <span className="add-channel-note" role="status">
           {note}
         </span>
@@ -384,33 +435,60 @@ export function AddChannelForm({
           <p className="add-preview-text">
             {lists.title ? `${lists.title} · ` : ''}
             {lists.playlists.length} {lists.playlists.length === 1 ? 'playlist' : 'playlists'}
-            {lists.more ? ` (the first ${lists.playlists.length})` : ''}. Each one ticked becomes a channel of its own, named after it.
+            {lists.more ? ` (the first ${lists.playlists.length})` : ''}. Tick playlists, then add each as a channel of its own, or combine them into one
+            channel where each is a sub-channel. The list stays open for the rest.
           </p>
           <ul className="add-playlists-list" aria-label="Playlists">
-            {lists.playlists.map((playlist) => (
-              <li key={playlist.id}>
-                <label className="editor-check">
-                  <input type="checkbox" checked={picked.has(playlist.id)} onChange={() => togglePicked(playlist.id)} />
-                  <span>{playlist.title}</span>
-                </label>
-                {playlist.videos !== null ? <span className="add-playlists-count">{playlist.videos} videos</span> : null}
-              </li>
-            ))}
+            {lists.playlists.map((playlist) => {
+              const on = added.get(playlist.id)
+              return (
+                <li key={playlist.id}>
+                  <label className="editor-check">
+                    <input type="checkbox" checked={on === undefined && picked.has(playlist.id)} disabled={busy || on !== undefined} onChange={() => togglePicked(playlist.id)} />
+                    <span>{playlist.title}</span>
+                  </label>
+                  <span className="add-playlists-count">
+                    {on !== undefined ? `On ${on}` : playlist.videos !== null ? `${playlist.videos} videos` : ''}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
-          <div className="add-preview-actions">
-            <button type="button" className="tab" onClick={() => setPicked(new Set(lists.playlists.map((playlist) => playlist.id)))}>
+          {note ? (
+            <p className="add-preview-text add-playlists-note" role="status">
+              {note}
+            </p>
+          ) : null}
+          <div className="add-preview-actions add-playlists-actions">
+            <button type="button" className="tab" disabled={busy} onClick={() => setPicked(new Set(lists.playlists.filter((playlist) => !added.has(playlist.id)).map((playlist) => playlist.id)))}>
               All
             </button>
-            <button type="button" className="tab" onClick={() => setPicked(new Set())}>
+            <button type="button" className="tab" disabled={busy} onClick={() => setPicked(new Set())}>
               None
             </button>
-            <button type="button" className="tab is-on" disabled={picked.size === 0} onClick={() => void addMany()}>
-              Add {picked.size} {picked.size === 1 ? 'channel' : 'channels'}
+            <button type="button" className="tab is-on" disabled={busy || chosenPlaylists().length === 0} onClick={() => void addMany()}>
+              Add {chosenPlaylists().length} {chosenPlaylists().length === 1 ? 'channel' : 'channels'}
             </button>
-            <button type="button" className="tab" onClick={() => setLists(null)}>
-              Cancel
+            <button type="button" className="tab" disabled={busy || added.size === lists.playlists.length} onClick={() => setLists(null)}>
+              {added.size > 0 ? 'Done' : 'Cancel'}
             </button>
           </div>
+          {onCombine ? (
+            <div className="add-preview-actions add-playlists-combine">
+              <input
+                type="text"
+                value={combineName}
+                maxLength={80}
+                placeholder="Name of the combined channel"
+                aria-label="Name of the combined channel"
+                disabled={busy}
+                onChange={(event) => setCombineName(event.target.value)}
+              />
+              <button type="button" className="tab is-on" disabled={busy || chosenPlaylists().length < 2} onClick={() => void combine()}>
+                Combine {chosenPlaylists().length} into one channel
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {preview ? (

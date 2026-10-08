@@ -3,7 +3,7 @@ import { currentNetworkBase } from '../data/user-overlay.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme, ProgrammeType } from '../types/programme.ts'
 import { reachesArchive, type ChannelEditorial } from './channel-curation.ts'
-import { airingSources, inOrder, inventoryOf, liveStreamOf, refreshOrigin, type ChannelSource, type OrderKind } from './channel-sources.ts'
+import { airingSources, inOrder, inventoryOf, isStreamSource, liveStreamOf, refreshOrigin, type ChannelSource, type OrderKind } from './channel-sources.ts'
 import { publicWebPage, siteOf } from '../utils/web-page.ts'
 import type { ArchiveLookup } from './user-archive.ts'
 import { planArchive, runningOrder } from './user-depth.ts'
@@ -464,9 +464,12 @@ export function channelsFromSources(
 ): {
   channels: Channel[]
   programmes: Map<string, Programme[]>
+  /** By channel id: each source of a channel with two or more, as a sub-channel of its own. */
+  subChannels: Map<string, SubChannel[]>
 } {
   const channels: Channel[] = []
   const programmes = new Map<string, Programme[]>()
+  const subChannels = new Map<string, SubChannel[]>()
   const refused = options.refused ?? new Set<string>()
   const playable = (videos: readonly ImportedVideo[]) => videos.filter((video) => !refused.has(video.id))
 
@@ -591,9 +594,47 @@ export function channelsFromSources(
       ...creatorFields(video.creator),
     }))
     programmes.set(id, list)
+    if (source.channelSources) {
+      const firsts = order.flatMap((entry, index) => (entry.repeat || entry.item.earlier ? [] : [{ videoId: entry.item.video.id, programme: list[index] }]))
+      const subs = subChannelsOf({ ...base, description }, source.channelSources, firsts)
+      if (subs.length > 0) subChannels.set(id, subs)
+    }
   }
 
-  return { channels, programmes }
+  return { channels, programmes, subChannels }
+}
+
+/** One source of a channel shown on its own: the channel's programmes from that source, on a clock of its own. */
+export interface SubChannel {
+  channel: Channel
+  programmes: Programme[]
+}
+
+/** The id of a channel's sub-channel for one of its sources. */
+export const subChannelId = (channelId: string, sourceId: string) => `${channelId}~${sourceId}`
+
+/**
+ * Each enabled scheduled source of a channel with two or more that air something: the channel's own programmes
+ * from that source, once each, in the channel's order. A sub-channel keeps the channel's number; it is listed
+ * under it, never tuned by number.
+ */
+function subChannelsOf(channel: Channel, sources: readonly ChannelSource[], own: readonly { videoId: string; programme: Programme }[]): SubChannel[] {
+  const parts = airingSources(sources)
+    .filter((item) => item.enabled && !isStreamSource(item))
+    .map((item) => {
+      const ids = new Set(inventoryOf([item]).map((video) => video.id))
+      return { item, programmes: own.filter((entry) => ids.has(entry.videoId)).map((entry) => entry.programme) }
+    })
+    .filter((part) => part.programmes.length > 0)
+  if (parts.length < 2) return []
+  return parts.map(({ item, programmes }) => {
+    const id = subChannelId(channel.id, item.id)
+    const name = item.label.trim() || channel.name
+    return {
+      channel: { ...channel, id, name, description: `${name}, one of the sources of ${channel.name}: ${programmes.length} programmes on a clock of its own.`, phaseOffsetSeconds: phaseFor(id) },
+      programmes,
+    }
+  })
 }
 
 /** One of a channel's programmes on its own, off the schedule: what LATEST plays when the newest is not scheduled. */
