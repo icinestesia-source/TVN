@@ -181,6 +181,8 @@ export function sourceStatusText(source: ChannelSource, siblings: readonly Chann
     return `${what} · interactive · ${slot ? `${Math.round(slot / 60)} min slot` : 'no slot yet'}`
   }
   if (state === 'failed') return 'Resolution failed'
+  if (state === 'unavailable' && singleVideoId(source)) return 'YouTube single video · cannot play outside YouTube (its publisher’s choice, or not on air)'
+  if (state === 'unavailable' && source.kind === 'youtube') return 'YouTube · cannot play outside YouTube (its publisher’s choice)'
   if (state === 'unavailable') return 'Unavailable'
   if (state === 'unsupported') return 'This browser cannot play this stream'
   const matching = source.filter ? ` · ${eligibleOf(source).length} match the filter` : ''

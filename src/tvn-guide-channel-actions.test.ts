@@ -146,28 +146,30 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(sorted.liveFromMs).toBeUndefined()
   })
 
-  it('offers LATEST FIRST, EDIT, RELOAD and DELETE on the selected channel, before its star', () => {
+  it('offers LATEST, A–Z and RANDOM, then EDIT and DELETE on the selected channel, before its star', () => {
     const guide = read('src/components/Guide.tsx')
     const cell = guide.slice(guide.indexOf('function ChannelCell('), guide.indexOf('/** The slot the watched channel is playing'))
     const at = (marker: string) => cell.indexOf(marker)
     expect(at("'ch-act ch-more")).toBeGreaterThan(0)
-    expect(at("'ch-act ch-more")).toBeLessThan(at("'ch-act ch-latest"))
-    expect(at("'ch-act ch-latest")).toBeGreaterThan(0)
-    expect(at("'ch-act ch-latest")).toBeLessThan(at('title="Edit channel"'))
-    expect(at('title="Edit channel"')).toBeLessThan(at('title="Reload: rescan'))
-    expect(at('title="Reload: rescan')).toBeLessThan(at("'ch-act ch-extra ch-delete"))
+    expect(at("'ch-act ch-more")).toBeLessThan(at('{ARRANGEMENTS.map('))
+    expect(at('{ARRANGEMENTS.map(')).toBeLessThan(at('title="Edit channel"'))
+    expect(at('title="Edit channel"')).toBeLessThan(at("'ch-act ch-extra ch-delete"))
     expect(at("'ch-act ch-extra ch-delete")).toBeLessThan(at("className={favourite ? 'star is-on' : 'star'}"))
+    expect(guide).toMatch(/how: 'latest', mark: '◉'[\s\S]*how: 'az', mark: 'AZ'[\s\S]*how: 'random', mark: '⤮'/)
     expect(cell).toContain('const all = selected && expanded')
-    expect(cell).toContain('const showLatest = onLatest !== undefined && (selected ? all || !favourite : live)')
-    expect(cell).toContain('const showStar = selected ? all || favourite || onLatest === undefined : favourite')
+    expect(cell).toContain("const on: Arrangement | null = live ? 'latest' : (arranged ?? null)")
+    expect(cell).toContain("const shows = (how: Arrangement) => onArrange !== undefined && (how === on || (selected && (all || (on === null && how === 'latest' && !favourite))))")
+    expect(cell).toContain('const showStar = selected ? all || favourite || onArrange === undefined : favourite')
+    expect(cell).toContain('aria-pressed={on === how}')
     expect(cell).toContain('{all && onEdit ? (')
-    expect(cell).toContain('{all && onReload ? (')
+    expect(cell).not.toContain('onReload')
     expect(cell).toContain('{all && onDelete ? (')
     expect(cell).toContain('{showStar ? (')
     expect(cell).toContain("title={all ? 'Show one button' : 'Show all buttons'}")
     expect(guide).toContain('expanded={actionsAll}')
     expect(guide).toContain('onExpand={toggleActions}')
     expect(read('src/styles/guide.css')).toContain('  .channel-cell.is-selected .star,\n  .channel-cell .star.is-on { display: block; }')
+    expect(read('src/styles/guide.css')).toContain('.ch-arrange.is-on,\n.ch-arrange.is-on:disabled { color: var(--gold); opacity: 1; }')
     expect(cell).toContain('if (!confirming) return setConfirming(true)')
     expect(guide).toContain("onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}")
     expect(read('src/styles/guide.css')).toContain('  .channel-cell .star { display: none; }\n  .channel-cell .ch-extra { display: none; }')
@@ -182,20 +184,35 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(loadGuideActionsAll(store)).toBe(false)
   })
 
-  it('LATEST is a switch: on schedules newest first from the very latest now, off brings the schedule back', () => {
+  it('LATEST, A–Z and RANDOM are switches, one on at a time: on arranges the channel, off brings its default schedule back', () => {
     const provider = read('src/state/TvProvider.tsx')
-    const latest = provider.slice(provider.indexOf('const latestFirst = useCallback('), provider.indexOf('const reloadChannel = useCallback('))
-    expect(latest).toContain("if (opened.orderKind === 'latest' && opened.liveFromMs !== undefined && opened.order?.length) {")
-    expect(latest).toContain('const before = takeScheduleBeforeLatest(number)')
-    expect(latest).toContain('const current = await rescanChannelEdit(number, opened).then(')
-    expect(latest).toContain('const order = latestVideos(pool).map((video) => video.id)')
-    expect(latest).toContain('saveScheduleBeforeLatest(number, { order: opened.order, orderKind: opened.orderKind, scheduleSize: opened.scheduleSize })')
-    expect(latest).toContain("orderKind: 'latest', liveFromMs: Date.now()")
-    expect(latest).not.toContain('playFromGuideRef')
+    const arrange = provider.slice(provider.indexOf('const arrangeChannel = useCallback('), provider.indexOf('const reloadChannel = useCallback('))
+    expect(arrange).toContain("const on = sorted && opened.orderKind === 'latest' && opened.liveFromMs !== undefined ? 'latest' : sorted && (opened.orderKind === 'az' || opened.orderKind === 'random') ? opened.orderKind : null")
+    expect(arrange).toContain('if (on === how) {')
+    expect(arrange).toContain('const before = takeScheduleBeforeLatest(number)')
+    expect(arrange).toContain('? await rescanChannelEdit(number, opened).then(')
+    expect(arrange).toContain("const order = (how === 'latest' ? latestVideos(pool) : how === 'az' ? alphabeticalVideos(pool) : shuffledVideos(pool)).map((video) => video.id)")
+    expect(arrange).toContain('if (on === null) saveScheduleBeforeLatest(number, { order: opened.order, orderKind: opened.orderKind, scheduleSize: opened.scheduleSize })')
+    expect(arrange).toContain("orderKind: how, liveFromMs: how === 'latest' ? Date.now() : undefined")
+    expect(arrange).toContain("const latestFirst = useCallback((number: number) => arrangeChannel(number, 'latest'), [arrangeChannel])")
+    expect(arrange).not.toContain('playFromGuideRef')
     const guide = read('src/components/Guide.tsx')
-    expect(guide).toContain("channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' }))")
+    expect(guide).toContain('(number) => tv.arrangeChannel(number, how),')
+    expect(guide).toContain("how === 'latest' && channel.liveFromMs === undefined ? () => tv.dispatch({ type: 'cancel' }) : undefined,")
     expect(guide).toContain('live={channel.liveFromMs !== undefined}')
-    expect(guide).toContain('aria-pressed={live}')
+    expect(guide).toContain('arranged={channel.arranged}')
+  })
+
+  it('marks a channel sorted A–Z or put in a random order, so its switch shows on', () => {
+    const stored = record([youtube(videos)])
+    const ids = videos.map((video) => video.id)
+    for (const kind of ['az', 'random'] as const) {
+      const saved = applyChannelEdit([stored], 1001, { ...editOf(stored), order: ids, orderKind: kind }, now)[0]
+      expect(channelsFromSources([saved]).channels[0].arranged).toBe(kind)
+    }
+    const manual = applyChannelEdit([stored], 1001, { ...editOf(stored), order: ids, orderKind: 'manual' }, now)[0]
+    expect(channelsFromSources([manual]).channels[0].arranged).toBeUndefined()
+    expect(channelsFromSources([stored]).channels[0].arranged).toBeUndefined()
   })
 
   it('remembers the schedule before LATEST once, per channel, and never a latest order', () => {
@@ -208,9 +225,14 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(takeScheduleBeforeLatest(7, store)).toBeNull()
     expect(takeScheduleBeforeLatest(8, store)).toEqual({})
     expect(takeScheduleBeforeLatest(9, store)).toEqual({})
+    // A–Z and RANDOM are switches too, never the default to return to.
+    saveScheduleBeforeLatest(10, { order: ['a'], orderKind: 'az' }, store)
+    saveScheduleBeforeLatest(11, { order: ['a'], orderKind: 'random' }, store)
+    expect(takeScheduleBeforeLatest(10, store)).toEqual({})
+    expect(takeScheduleBeforeLatest(11, store)).toEqual({})
   })
 
-  it('RELOAD rescans and schedules the channel again; only an order arranged by hand is kept', () => {
+  it('RELOAD (no longer a Guide button) rescans and schedules the channel again; only an order arranged by hand is kept', () => {
     const provider = read('src/state/TvProvider.tsx')
     const reload = provider.slice(provider.indexOf('const reloadChannel = useCallback('), provider.indexOf('const loadMoreChannelSource = useCallback('))
     expect(reload).toContain('const result = await rescanChannelEdit(number, current)')
@@ -219,7 +241,6 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(reload).toContain('liveFromMs: undefined')
     expect(reload).toContain("if (kind === 'latest' && next.liveFromMs !== undefined) {")
     expect(reload).toContain('replayIfWatching(number)')
-    expect(read('src/components/Guide.tsx')).toContain('title="Reload: rescan the channel and schedule it again"')
   })
 
   it('picks the newest programme as scheduled, builds it when the schedule leaves it out, and falls back to the newest dated', () => {

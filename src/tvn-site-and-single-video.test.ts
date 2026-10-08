@@ -79,4 +79,20 @@ describe('Add Source: YouTube single video', () => {
     expect(again.videos?.map((video) => video.id)).toEqual(['dQw4w9WgXcQ'])
     expect(exportSource(read, () => null).url).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
   })
+
+  it('says a video its publisher keeps on YouTube cannot play here, and keeps "Resolution failed" for a lookup that failed', async () => {
+    const source = newSource([], 'https://www.youtube.com/watch?v=K2gBg7jjhIc', 'youtube-single')
+    const outcome = async (resolveYouTube: RescanDeps['resolveYouTube']) => (await rescanSources([source], deps({ resolveYouTube }), 1))[0]
+    const refused = await outcome(async () => {
+      throw new Error('That video’s publisher does not allow it to play outside YouTube')
+    })
+    expect(refused.status?.state).toBe('unavailable')
+    expect(sourceStatusText(refused)).toBe('YouTube single video · cannot play outside YouTube (its publisher’s choice, or not on air)')
+    const left = await outcome(async () => ({ channelId: 'UCx', title: 'Uploader', videos: [{ id: 'other000000', title: 'Another', durationSec: 300 }] }))
+    expect(left.status?.state).toBe('unavailable')
+    const failed = await outcome(async () => {
+      throw new Error('TVN could not reach its channel lookup')
+    })
+    expect(sourceStatusText(failed)).toBe('Resolution failed')
+  })
 })

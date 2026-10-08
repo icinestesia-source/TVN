@@ -394,6 +394,11 @@ export async function rescanSources(sources: readonly ChannelSource[], deps: Res
   return admitted(await rescanEach(sources, deps, now))
 }
 
+/** Read, but refused by its publisher: a video kept on YouTube, which trying again will not change. */
+function refusedByPublisher(caught: unknown): boolean {
+  return caught instanceof Error && /does not allow it to play outside YouTube/.test(caught.message)
+}
+
 function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: number): Promise<ChannelSource[]> {
   return Promise.all(
     sources.map(async (original): Promise<ChannelSource> => {
@@ -407,10 +412,10 @@ function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: nu
           // YouTube's Mix of a video leads with that video, read from its own page and checked as embeddable.
           const found = await deps.resolveYouTube(`${singleVideoUrl(single)}&list=RD${single}`)
           const video = found.videos.find((item) => item.id === single)
-          if (!video) throw new Error('not embeddable')
+          if (!video) return { ...source, status: { state: 'unavailable', playable: 0, checkedAt: now } }
           return { ...source, label: source.label || video.title, videos: [{ ...video }], status: { state: 'ready', playable: 1, checkedAt: now } }
-        } catch {
-          return { ...source, status: { state: 'failed', playable: 0, checkedAt: now } }
+        } catch (caught) {
+          return { ...source, status: { state: refusedByPublisher(caught) ? 'unavailable' : 'failed', playable: 0, checkedAt: now } }
         }
       }
       if (source.kind === 'collection') {
@@ -443,8 +448,8 @@ function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: nu
             label: found.title || source.label,
             status: { state: 'ready', playable: videos.length, checkedAt: now },
           }
-        } catch {
-          return { ...source, status: { state: 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
+        } catch (caught) {
+          return { ...source, status: { state: refusedByPublisher(caught) ? 'unavailable' : 'failed', playable: source.videos?.length ?? 0, checkedAt: now } }
         }
       }
       if (source.kind === 'podcast') {

@@ -767,8 +767,18 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       }
                       live={channel.liveFromMs !== undefined}
                       busy={channelBusy === channel.number}
-                      onLatest={editorScope(channel) && channel.origin !== 'session' ? () => channelAction(channel.number, tv.latestFirst, () => tv.dispatch({ type: 'cancel' })) : undefined}
-                      onReload={editorScope(channel) && channel.origin !== 'session' ? () => channelAction(channel.number, tv.reloadChannel) : undefined}
+                      arranged={channel.arranged}
+                      onArrange={
+                        editorScope(channel) && channel.origin !== 'session'
+                          ? (how) =>
+                              channelAction(
+                                channel.number,
+                                (number) => tv.arrangeChannel(number, how),
+                                // LATEST switched on goes to its very latest programme; the others stay in the Guide to show the new schedule.
+                                how === 'latest' && channel.liveFromMs === undefined ? () => tv.dispatch({ type: 'cancel' }) : undefined,
+                              )
+                          : undefined
+                      }
                       onDelete={editorScope(channel) === 'user' ? () => channelAction(channel.number, tv.deleteUserChannel) : undefined}
                       expanded={actionsAll}
                       onExpand={toggleActions}
@@ -978,6 +988,15 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   )
 }
 
+type Arrangement = 'latest' | 'az' | 'random'
+
+/** The Guide's three ways to arrange a channel's schedule, one on at a time. */
+const ARRANGEMENTS: readonly { how: Arrangement; mark: string; name: string; about: string }[] = [
+  { how: 'latest', mark: '◉', name: 'Latest', about: 'Latest: the very latest programme now, then newest to oldest' },
+  { how: 'az', mark: 'AZ', name: 'A to Z', about: 'A to Z: schedule every programme alphabetically' },
+  { how: 'random', mark: '⤮', name: 'Random', about: 'Random: schedule every programme in a random order' },
+]
+
 function ChannelCell({
   channel,
   watching,
@@ -990,9 +1009,9 @@ function ChannelCell({
   onEdit,
   onFavourite,
   live = false,
+  arranged,
   busy = false,
-  onLatest,
-  onReload,
+  onArrange,
   onDelete,
   expanded = false,
   onExpand,
@@ -1018,21 +1037,24 @@ function ChannelCell({
   onFavourite: () => void
   /** The channel plays latest first, live. */
   live?: boolean
+  /** Its schedule is sorted A to Z, or in a random order. */
+  arranged?: 'az' | 'random'
   /** One of its own actions is in progress. */
   busy?: boolean
-  onLatest?: () => void
-  onReload?: () => void
+  /** LATEST, A–Z or RANDOM: the one pressed goes on and the others off; pressed when on, the default schedule returns. */
+  onArrange?: (how: Arrangement) => void
   onDelete?: () => void
   /** The selected channel shows all of its actions, not just one. */
   expanded?: boolean
   onExpand?: () => void
 }) {
   const [confirming, setConfirming] = useState(false)
-  // Selected and folded: one action, the star of a favourite or else LATEST FIRST; the arrow shows the rest.
+  // Selected and folded: the arrangement that is on, else the star of a favourite or else LATEST; the arrow shows the rest.
   const all = selected && expanded
-  const showLatest = onLatest !== undefined && (selected ? all || !favourite : live)
-  const showStar = selected ? all || favourite || onLatest === undefined : favourite
-  const canExpand = selected && onExpand !== undefined && (onLatest ?? onEdit ?? onReload ?? onDelete) !== undefined
+  const on: Arrangement | null = live ? 'latest' : (arranged ?? null)
+  const shows = (how: Arrangement) => onArrange !== undefined && (how === on || (selected && (all || (on === null && how === 'latest' && !favourite))))
+  const showStar = selected ? all || favourite || onArrange === undefined : favourite
+  const canExpand = selected && onExpand !== undefined && (onArrange ?? onEdit ?? onDelete) !== undefined
   useEffect(() => {
     if (!confirming) return
     const id = window.setTimeout(() => setConfirming(false), 4000)
@@ -1099,31 +1121,28 @@ function ChannelCell({
           <span className="sr">{all ? 'Show one button' : 'Show all buttons'}</span>
         </button>
       ) : null}
-      {showLatest ? (
-        <button
-          type="button"
-          className={live ? 'ch-act ch-latest is-on' : 'ch-act ch-latest'}
-          disabled={busy || !selected}
-          onClick={act(onLatest)}
-          aria-pressed={live}
-          title={live ? 'Latest is on: press to return to the normal schedule' : 'Latest: schedule every programme newest first, the very latest now'}
-        >
-          <span aria-hidden="true">◉</span>
-          <span className="sr">
-            {live ? 'Latest off' : 'Latest on'} {padChannel(channel.number)}
-          </span>
-        </button>
-      ) : null}
+      {ARRANGEMENTS.map(({ how, mark, name, about }) =>
+        shows(how) ? (
+          <button
+            key={how}
+            type="button"
+            className={`ch-act ch-arrange ch-${how}${on === how ? ' is-on' : ''}`}
+            disabled={busy || !selected}
+            onClick={act(() => onArrange?.(how))}
+            aria-pressed={on === how}
+            title={on === how ? `${name} is on: press to return to the default schedule` : about}
+          >
+            <span aria-hidden="true">{mark}</span>
+            <span className="sr">
+              {name} {on === how ? 'off' : 'on'} {padChannel(channel.number)}
+            </span>
+          </button>
+        ) : null,
+      )}
       {all && onEdit ? (
         <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onEdit)} title="Edit channel">
           <span aria-hidden="true">✎</span>
           <span className="sr">Edit channel {padChannel(channel.number)}</span>
-        </button>
-      ) : null}
-      {all && onReload ? (
-        <button type="button" className="ch-act ch-extra" disabled={busy} onClick={act(onReload)} title="Reload: rescan the channel and schedule it again">
-          <span aria-hidden="true">↻</span>
-          <span className="sr">Reload channel {padChannel(channel.number)}</span>
         </button>
       ) : null}
       {all && onDelete ? (

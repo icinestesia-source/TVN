@@ -320,7 +320,7 @@ function fromSources(
   original = false,
 ): { channel: Channel; programmes: Programme[] } {
   const built = channelsFromSources(
-    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: [...own], runningOrder: edit.order, ...(edit.order?.length && edit.scheduleSize ? { scheduleSize: edit.scheduleSize } : {}), ...(edit.liveFromMs ? { liveFromMs: edit.liveFromMs } : {}) }],
+    [{ id: `tvn-${shipped.number}`, name, videos: inventoryOf(own), channelNumber: shipped.number, inLibrary: false, automatic: true, updatedAt: edit.savedAt, channelSources: [...own], runningOrder: edit.order, ...(edit.orderKind ? { orderKind: edit.orderKind } : {}), ...(edit.order?.length && edit.scheduleSize ? { scheduleSize: edit.scheduleSize } : {}), ...(edit.liveFromMs ? { liveFromMs: edit.liveFromMs } : {}) }],
     { refused },
   )
   const made = built.channels[0]
@@ -334,6 +334,7 @@ function fromSources(
       playbackType: made.playbackType,
       liveSinceMs: made.liveSinceMs,
       ...(edit.liveFromMs && edit.order?.length ? { phaseOffsetSeconds: made.phaseOffsetSeconds, liveFromMs: edit.liveFromMs } : {}),
+      ...(made.arranged ? { arranged: made.arranged } : {}),
       customLineup: true,
     },
     programmes,

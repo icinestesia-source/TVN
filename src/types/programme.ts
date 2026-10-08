@@ -96,6 +96,8 @@ export interface Programme {
   creatorUrl?: string
   /** A feed episode's own page, or failing that its publisher's site, when the feed gave one. */
   episodeUrl?: string
+  /** A feed episode's publisher's own website, which names it (@site.com) while it links to the episode's page. */
+  siteUrl?: string
   /** Presentation caption shown on the card when the programme has no picture. */
   caption?: string
   /** Parent programme block when this item is a child of a compiled running order. */

@@ -15,6 +15,8 @@ describe('A YouTube live broadcast named by its watch page', () => {
     expect(seedFromPage(page('0', true), LIVE)).toEqual({ id: LIVE, title: 'LIVE: Breaking News and Top Stories on CBS News 24/7', durationSec: LIVE_SLOT_SECONDS, live: true })
     expect(seedFromPage(page('0', false), LIVE)).toBeNull()
     expect(seedFromPage(page('1800', false), LIVE)).not.toHaveProperty('live')
+    // A 24/7 stream whose page counts the years it has been on air is still live, in its hour slot.
+    expect(seedFromPage(page('121601512', true), LIVE)).toMatchObject({ durationSec: LIVE_SLOT_SECONDS, live: true })
   })
 
 })

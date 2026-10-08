@@ -501,6 +501,7 @@ export function channelsFromSources(
       scheduleMode: 'loop',
       phaseOffsetSeconds: source.liveFromMs && (source.runningOrder?.length ?? 0) > 0 ? livePhase(source.liveFromMs) : phaseFor(source.id),
       ...(source.liveFromMs && (source.runningOrder?.length ?? 0) > 0 ? { liveFromMs: source.liveFromMs } : {}),
+      ...((source.runningOrder?.length ?? 0) > 0 && (source.orderKind === 'az' || source.orderKind === 'random') ? { arranged: source.orderKind } : {}),
       ...(source.owner && (!options.users || options.users.has(source.owner)) ? { owner: source.owner } : {}),
     }
 
@@ -672,6 +673,7 @@ function episodeProgramme(video: ImportedVideo, id: string, channelId: string, n
   if (video.web) return webProgramme(video, id, channelId, name)
   const picture = video.mediaKind === 'video'
   const episodeUrl = publicWebPage(video.page) ?? site
+  const siteUrl = publicWebPage(site)
   return {
     id,
     title: video.title,
@@ -691,6 +693,7 @@ function episodeProgramme(video: ImportedVideo, id: string, channelId: string, n
     ...(video.published ? { publishedAt: video.published } : {}),
     creator: name,
     ...(episodeUrl ? { episodeUrl } : {}),
+    ...(siteUrl ? { siteUrl } : {}),
     playbackMode: 'linear',
   }
 }

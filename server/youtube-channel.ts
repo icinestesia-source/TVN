@@ -734,14 +734,19 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   const list = await readPlaylist(uploads, read, pages)
   const title = named.title ?? channelTitleFrom(list.data)
   const listed = schedulable(list.videos)
+  // A channel that only broadcasts live lists nothing to schedule; the video named still plays on its own.
+  if (listed.length === 0 && named.seed) {
+    if (!(await embeddable(named.seed.id, read))) throw new ChannelError(422, EMBED_REFUSED)
+    return { channelId, sourceType: 'youtube-channel', title: title ?? channelId, videos: [named.seed], ...(input.kind === 'video' && input.mix ? { mix: { list: input.mix, seed: named.seed.id } } : {}), scanned: 0, refused: 0, pages: list.pages }
+  }
   if (listed.length === 0) throw new ChannelError(404, 'That channel has no videos TVN can schedule')
+  const seed = input.kind === 'video' && input.mix && named.seed && (await embeddable(named.seed.id, read)) ? named.seed : null
 
   const [{ videos, refused, taken }, days, older] = await Promise.all([
     embeddableVideos(listed, read, keep),
     readFeedDates(`channel_id=${channelId}`, read),
     readPlaylistDates(channelId, read),
   ])
-  const seed = input.kind === 'video' && input.mix && named.seed && (await embeddable(named.seed.id, read)) ? named.seed : null
   if (videos.length === 0 && !seed) throw new ChannelError(422, 'That channel does not allow its videos to play outside YouTube')
   const count = listedCountFrom(list.data)
   const next = cursorAfter(uploads, list, taken)
@@ -761,6 +766,9 @@ export async function resolveChannel(raw: string, read: typeof fetch = fetch, op
   }
 }
 
+/** A video named on its own whose publisher has switched off playback outside YouTube. */
+export const EMBED_REFUSED = 'That video’s publisher does not allow it to play outside YouTube'
+
 /** What a Mix link holds when its own list cannot be read. */
 const MIX_UNLISTED = 'A YouTube Mix is made fresh for each viewer and cannot be listed; paste one of its videos instead'
 
@@ -774,7 +782,8 @@ export function seedFromPage(html: string, id: string): ResolvedVideo | null {
   } catch {
     return null
   }
-  const live = Number(details[3]) === 0 && /"liveBroadcastDetails":\{"isLiveNow":true/.test(html)
+  // On air now, whatever length the page gives (none, or the time since a 24/7 stream began).
+  const live = /"liveBroadcastDetails":\{"isLiveNow":true/.test(html)
   const durationSec = live ? LIVE_SLOT_SECONDS : Number(details[3])
   if (!title || durationSec < MIN_SECONDS) return null
   const published = html.match(/"publishDate":"(\d{4}-\d{2}-\d{2})/)?.[1]
@@ -860,7 +869,7 @@ async function channelNamed(
   if (input.kind === 'video') {
     const html = await page(`https://www.youtube.com/watch?v=${input.id}`, read)
     channelId = channelIdFromPage(html, 'video')
-    if (input.mix) seed = seedFromPage(html, input.id)
+    seed = seedFromPage(html, input.id)
     if (!channelId) {
       const found = await withheldVideo(input.id, read, Boolean(input.mix))
       if (found) {

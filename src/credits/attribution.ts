@@ -45,7 +45,7 @@ export function programmeAttribution(
   register: SourceRegister,
   library: readonly MediaItem[] = mediaLibrary(),
 ): Attribution | null {
-  if (programme.mediaUrl && !programme.liveStream) return episodeAttribution(programme.episodeUrl)
+  if (programme.mediaUrl && !programme.liveStream) return episodeAttribution(programme.episodeUrl, programme.siteUrl)
   if (!programme.videoId || programme.liveStream || programme.mediaUrl) return null
   const name = programme.creator?.trim()
   if (name) {
@@ -60,13 +60,12 @@ export function programmeAttribution(
   return { text: handle ? `@${handle}` : entry.name.trim(), ...(url ? { url } : {}) }
 }
 
-/** A feed episode links to its own page, or to the site that publishes it, named by its address. */
-export function episodeAttribution(raw: string | undefined): Attribution | null {
-  const page = publicWebPage(raw)
+/** A feed episode is named by its publisher's website (@site.com) and links to its own page, or to that site. */
+export function episodeAttribution(raw: string | undefined, website?: string): Attribution | null {
+  const page = publicWebPage(raw) ?? publicWebPage(website)
   if (!page) return null
-  const url = new URL(page)
-  const site = url.hostname.replace(/^www\./, '')
-  return { text: url.pathname === '/' && !url.search ? site : 'LINK', url: page }
+  const site = new URL(publicWebPage(website) ?? page).hostname.replace(/^www\./, '')
+  return { text: `@${site}`, url: page }
 }
 
 /** The source register once it has loaded (it is read once per visit); empty until then. */

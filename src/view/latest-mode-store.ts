@@ -1,6 +1,6 @@
 /**
- * LATEST in the Guide is a switch: on, a channel is scheduled newest first from its very latest programme;
- * off, the schedule it had before returns. What it had before is kept here, in this browser, per channel.
+ * LATEST, A–Z and RANDOM in the Guide are switches, one on at a time: on, a channel is scheduled that way;
+ * off, its default schedule returns. That default (its own order, or TVN's) is kept here, in this browser, per channel.
  */
 import type { OrderKind } from '../services/channel-sources.ts'
 
@@ -43,7 +43,7 @@ function writeAll(all: Record<string, ScheduleBeforeLatest>, store: Store | null
 function cleaned(value: ScheduleBeforeLatest | undefined): ScheduleBeforeLatest | null {
   if (!value || typeof value !== 'object') return null
   const order = Array.isArray(value.order) ? value.order.filter((id): id is string => typeof id === 'string') : []
-  if (order.length === 0 || value.orderKind === 'latest') return {}
+  if (order.length === 0 || value.orderKind === 'latest' || value.orderKind === 'az' || value.orderKind === 'random') return {}
   return {
     order,
     ...(typeof value.orderKind === 'string' ? { orderKind: value.orderKind } : {}),

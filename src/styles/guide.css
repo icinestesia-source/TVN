@@ -1091,7 +1091,7 @@ span.editor-expand { border-color: transparent; }
 
 .star.is-on { color: var(--gold); }
 
-/* The selected channel's own actions, before its star: LATEST FIRST, then EDIT, RELOAD and DELETE where there is room. */
+/* The selected channel's own actions, before its star: LATEST, A–Z and RANDOM (one on at a time), then EDIT and DELETE where there is room. */
 .ch-act {
   width: 22px;
   flex: none;
@@ -1105,8 +1105,10 @@ span.editor-expand { border-color: transparent; }
 .ch-act:hover:not(:disabled),
 .ch-act:focus-visible { color: var(--ink); }
 .ch-act:disabled { opacity: 0.55; }
-.ch-latest.is-on,
-.ch-latest.is-on:disabled { color: var(--gold); opacity: 1; }
+.ch-arrange.is-on,
+.ch-arrange.is-on:disabled { color: var(--gold); opacity: 1; }
+.ch-az { font-size: 9px; font-weight: 700; letter-spacing: -0.02em; }
+.ch-random { font-size: 15px; }
 .ch-delete.is-confirm { color: var(--danger); font-weight: 700; }
 /* The narrow arrow that unfolds the selected channel's actions from one button to all of them. */
 .ch-more { width: 12px; font-size: 16px; }

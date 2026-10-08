@@ -3116,36 +3116,50 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * LATEST in the Guide, a switch. On: the sources are read again for anything new, and the whole channel is
    * scheduled newest first, its very latest programme on air now. Off: the schedule it had before returns.
    */
-  const latestFirst = useCallback(
-    async (number: number) => {
+  /**
+   * LATEST, A–Z and RANDOM in the Guide: one on at a time. Pressing one arranges the channel that way (LATEST
+   * rescans first, so its very latest programme is on now; RANDOM deals a fresh order each time it is switched
+   * on); pressing the one that is on returns the channel's default schedule. Replayed if watched.
+   */
+  const arrangeChannel = useCallback(
+    async (number: number, how: 'latest' | 'az' | 'random') => {
       const edit = await openChannelEdit(number)
       if (!edit) throw new Error('This channel cannot be arranged here')
       const { review: _review, ...opened } = edit
-      if (opened.orderKind === 'latest' && opened.liveFromMs !== undefined && opened.order?.length) {
+      const sorted = Boolean(opened.order?.length)
+      const on = sorted && opened.orderKind === 'latest' && opened.liveFromMs !== undefined ? 'latest' : sorted && (opened.orderKind === 'az' || opened.orderKind === 'random') ? opened.orderKind : null
+      const name = how === 'latest' ? 'LATEST' : how === 'az' ? 'A–Z' : 'RANDOM'
+      if (on === how) {
         const before = takeScheduleBeforeLatest(number)
         const restored = before?.order?.length
           ? { ...opened, order: before.order, orderKind: before.orderKind, scheduleSize: before.scheduleSize, liveFromMs: undefined }
           : { ...opened, order: undefined, orderKind: undefined, scheduleSize: undefined, liveFromMs: undefined }
         await saveChannelEdit(number, restored)
         replayIfWatching(number)
-        return before?.order?.length ? 'LATEST OFF · THE SCHEDULE IS BACK' : 'LATEST OFF · SCHEDULED BY TVN'
+        return `${name} OFF · ${before?.order?.length ? 'YOUR SCHEDULE IS BACK' : 'SCHEDULED BY TVN'}`
       }
-      const current = await rescanChannelEdit(number, opened).then(
-        (result) => result.edit,
-        () => opened,
-      )
+      const current =
+        how === 'latest'
+          ? await rescanChannelEdit(number, opened).then(
+            (result) => result.edit,
+            () => opened,
+          )
+          : opened
       const pool = inventoryOf(airingSources(current.sources))
-      if (pool.length === 0) throw new Error("TVN schedules this channel's own programming: add a source to play it latest first")
-      const order = latestVideos(pool).map((video) => video.id)
-      saveScheduleBeforeLatest(number, { order: opened.order, orderKind: opened.orderKind, scheduleSize: opened.scheduleSize })
-      await saveChannelEdit(number, { ...current, order, orderKind: 'latest', liveFromMs: Date.now(), scheduleSize: undefined })
+      if (pool.length === 0) throw new Error(`TVN schedules this channel's own programming: add a source to arrange it ${name}`)
+      const order = (how === 'latest' ? latestVideos(pool) : how === 'az' ? alphabeticalVideos(pool) : shuffledVideos(pool)).map((video) => video.id)
+      // The default to come back to is what the channel had before any of the three was on.
+      if (on === null) saveScheduleBeforeLatest(number, { order: opened.order, orderKind: opened.orderKind, scheduleSize: opened.scheduleSize })
+      await saveChannelEdit(number, { ...current, order, orderKind: how, liveFromMs: how === 'latest' ? Date.now() : undefined, scheduleSize: undefined })
       replayIfWatching(number)
+      if (how !== 'latest') return `${name} ON · ${how === 'az' ? 'THE SCHEDULE RUNS A TO Z' : 'THE SCHEDULE IS IN A RANDOM ORDER'}`
       const first = pool.find((video) => video.id === order[0])
       return `LATEST ON · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [openChannelEdit, rescanChannelEdit, saveChannelEdit],
   )
+  const latestFirst = useCallback((number: number) => arrangeChannel(number, 'latest'), [arrangeChannel])
 
   /**
    * RELOAD in the Guide: the channel rescanned and scheduled again. A running order arranged by hand is kept,
@@ -3760,6 +3774,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       acquireChannelSource,
       canLoadChannelSource,
       latestFirst,
+      arrangeChannel,
       reloadChannel,
       exportChannelFile,
       importChannelFile,
@@ -3786,6 +3801,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       acquireChannelSource,
       canLoadChannelSource,
       latestFirst,
+      arrangeChannel,
       reloadChannel,
       exportChannelFile,
       importChannelFile,

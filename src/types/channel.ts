@@ -63,6 +63,8 @@ export interface Channel {
   customLineup?: boolean
   /** Latest first, live: the newest programme went to air at this moment, the rest following newest to oldest. */
   liveFromMs?: number
+  /** The viewer had its schedule sorted A to Z, or put in a random order; absent, its own default order. */
+  arranged?: 'az' | 'random'
   /** A cleared 1001+ slot: it keeps its number and can be filled again, but has nothing to air. */
   emptySlot?: boolean
 }
