@@ -7,6 +7,7 @@ import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
 import type { UserNetworkExport } from '../services/user-network-export.ts'
 import { sourcePreviewLines, type FoundFeed } from '../services/podcast-source.ts'
+import { isPlaylistsLink, isYouTubeChannelLink, lookUpChannelPlaylists, playlistUrl } from '../services/add-channel.ts'
 import { readRestoreFile, type TvnExport } from '../services/tvn-export.ts'
 import type { GuideTool } from '../types/input.ts'
 import { USER_NAME_MAX } from '../data/user-network/users.ts'
@@ -127,6 +128,8 @@ export function AddChannelForm({
   nextLowNumber = null,
   onNewLowChannel,
   onRestore,
+  onAddMany,
+  listPlaylists = lookUpChannelPlaylists,
   onFocus,
   inputRef,
 }: {
@@ -146,6 +149,9 @@ export function AddChannelForm({
   onNewLowChannel?: () => Promise<void>
   /** Opens RESTORE: a User Network file saved with EXPORT, replacing the User Network. */
   onRestore?: () => void
+  /** ADD CHANNELS: each playlist link a channel of its own; the answer is a short line for the viewer. */
+  onAddMany?: (links: readonly string[], onProgress: (done: number, total: number) => void) => Promise<string>
+  listPlaylists?: typeof lookUpChannelPlaylists
   onFocus?: () => void
   inputRef?: RefObject<HTMLInputElement | null>
 }) {
@@ -155,6 +161,62 @@ export function AddChannelForm({
   const [exporting, setExporting] = useState<'all' | 'user' | null>(null)
   const [exported, setExported] = useState<'all' | 'user' | null>(null)
   const [preview, setPreview] = useState<FoundFeed | null>(null)
+  /** A channel's Playlists tab given to IMPORT: one channel, or one per playlist? */
+  const [asking, setAsking] = useState<string | null>(null)
+  const [lists, setLists] = useState<Awaited<ReturnType<typeof lookUpChannelPlaylists>> | null>(null)
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
+
+  const findPlaylists = async (from = link) => {
+    if (!onAddMany || busy) return
+    setAsking(null)
+    setPreview(null)
+    if (!isYouTubeChannelLink(from)) {
+      setNote('PASTE A YOUTUBE CHANNEL OR ITS /PLAYLISTS LINK, THEN ADD CHANNELS')
+      inputRef?.current?.focus()
+      return
+    }
+    setBusy(true)
+    setNote('FINDING PLAYLISTS…')
+    try {
+      const found = await listPlaylists(from)
+      if (found.playlists.length === 0) {
+        setNote(`${found.title || 'THAT CHANNEL'} LISTS NO PLAYLISTS`.toUpperCase())
+        return
+      }
+      setNote(null)
+      setLists(found)
+      setPicked(new Set(found.playlists.map((playlist) => playlist.id)))
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'NO PLAYLISTS COULD BE FOUND'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const addMany = async () => {
+    if (!onAddMany || !lists) return
+    const chosen = lists.playlists.filter((playlist) => picked.has(playlist.id)).map((playlist) => playlistUrl(playlist.id))
+    if (chosen.length === 0) return
+    setLists(null)
+    setBusy(true)
+    setNote(`ADDING ${chosen.length} ${chosen.length === 1 ? 'CHANNEL' : 'CHANNELS'}…`)
+    try {
+      setNote(await onAddMany(chosen, (done, total) => setNote(`ADDING CHANNELS · ${done} OF ${total} READ`)))
+      setLink('')
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THE CHANNELS COULD NOT BE ADDED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const togglePicked = (id: string) =>
+    setPicked((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   const runExport = (which: 'all' | 'user') => {
     const work = which === 'all' ? onExportAll : onExport
@@ -188,9 +250,22 @@ export function AddChannelForm({
     }
   }
 
-  const submit = async (event: FormEvent | KeyboardEvent<HTMLInputElement>) => {
+  const submit = (event: FormEvent | KeyboardEvent<HTMLInputElement>) => {
     event.preventDefault()
+    return importLink()
+  }
+
+  /** IMPORT; `single` once the viewer has chosen one channel for a channel's Playlists tab. */
+  const importLink = async (single = false) => {
     if (!link.trim() || busy) return
+    setAsking(null)
+    if (!single && onAddMany && isPlaylistsLink(link)) {
+      setPreview(null)
+      setLists(null)
+      setNote(null)
+      setAsking(link.trim())
+      return
+    }
     if (!onPreview) return add()
     setBusy(true)
     setPreview(null)
@@ -262,6 +337,17 @@ export function AddChannelForm({
           New channel…
         </button>
       ) : null}
+      {onAddMany ? (
+        <button
+          type="button"
+          className="tune-key"
+          title="A channel for each playlist of a YouTube channel: paste the channel or its /playlists link first"
+          disabled={busy}
+          onClick={() => void findPlaylists()}
+        >
+          Add channels…
+        </button>
+      ) : null}
       {onNewLowChannel && nextLowNumber !== null ? (
         <button
           type="button"
@@ -276,6 +362,56 @@ export function AddChannelForm({
         <span className="add-channel-note" role="status">
           {note}
         </span>
+      ) : null}
+      {asking ? (
+        <div className="add-preview" role="dialog" aria-label="One channel or one per playlist?">
+          <p className="add-preview-text">This link lists a YouTube channel’s playlists. Add the channel as one channel, or make a channel of each playlist?</p>
+          <div className="add-preview-actions">
+            <button type="button" className="tab is-on" disabled={busy} onClick={() => void findPlaylists(asking)}>
+              A channel per playlist
+            </button>
+            <button type="button" className="tab" disabled={busy} onClick={() => void importLink(true)}>
+              One channel
+            </button>
+            <button type="button" className="tab" disabled={busy} onClick={() => setAsking(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {lists ? (
+        <div className="add-preview add-playlists" role="dialog" aria-label="Playlists to add as channels">
+          <p className="add-preview-text">
+            {lists.title ? `${lists.title} · ` : ''}
+            {lists.playlists.length} {lists.playlists.length === 1 ? 'playlist' : 'playlists'}
+            {lists.more ? ` (the first ${lists.playlists.length})` : ''}. Each one ticked becomes a channel of its own, named after it.
+          </p>
+          <ul className="add-playlists-list" aria-label="Playlists">
+            {lists.playlists.map((playlist) => (
+              <li key={playlist.id}>
+                <label className="editor-check">
+                  <input type="checkbox" checked={picked.has(playlist.id)} onChange={() => togglePicked(playlist.id)} />
+                  <span>{playlist.title}</span>
+                </label>
+                {playlist.videos !== null ? <span className="add-playlists-count">{playlist.videos} videos</span> : null}
+              </li>
+            ))}
+          </ul>
+          <div className="add-preview-actions">
+            <button type="button" className="tab" onClick={() => setPicked(new Set(lists.playlists.map((playlist) => playlist.id)))}>
+              All
+            </button>
+            <button type="button" className="tab" onClick={() => setPicked(new Set())}>
+              None
+            </button>
+            <button type="button" className="tab is-on" disabled={picked.size === 0} onClick={() => void addMany()}>
+              Add {picked.size} {picked.size === 1 ? 'channel' : 'channels'}
+            </button>
+            <button type="button" className="tab" onClick={() => setLists(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
       ) : null}
       {preview ? (
         <div className="add-preview" role="dialog" aria-label="What TVN found">

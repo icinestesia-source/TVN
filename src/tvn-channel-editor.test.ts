@@ -569,7 +569,7 @@ describe('existing Guide interactions', () => {
     expect(commandFromKey('Backspace', plain, false)).toEqual({ type: 'digit-back' })
     expect(guide).toContain('<GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />')
     expect(guide).toMatch(/<SessionImportTools[\s\S]*?onImport=\{tv\.importSession\}/)
-    expect(guide).toContain('<AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />')
+    expect(guide).toContain('<AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onAddMany={addMany} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />')
     // EXPORT ALL, EXPORT USER and RESTORE sit in the User Network panel, above its other buttons.
     expect(guide).toMatch(/<UserNetworkTools[\s\S]*?onExport=\{tv\.exportUserNetwork\}[\s\S]*?onExportAll=\{tv\.exportTvn\}[\s\S]*?onRestore=\{restoreNetwork\}/)
     expect(guide).toContain('onActivate={() => tv.activateGuide()}')

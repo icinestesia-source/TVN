@@ -297,6 +297,12 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     return result.message
   }
 
+  const addMany = async (links: readonly string[], onProgress: (done: number, total: number) => void) => {
+    const result = await tv.addChannels(links, owner, onProgress)
+    if (result.numbers.length > 0) tv.focusGuide(Math.min(...result.numbers), Date.now())
+    return result.message
+  }
+
   const importList = async (file: File, listOwner = owner) => {
     const text = await file.text()
     if (text.includes(USER_NETWORK_FORMAT)) throw new Error('A User Network file: use OPTIONS then RESTORE to restore it')
@@ -638,7 +644,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           {addRow ? (
             <>
               <p className="guide-empty-note">Your User Network starts at {padChannel(USER_NUMBER_START)} and is kept in this browser.</p>
-              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
+              <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onAddMany={addMany} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
               {owner ? null : <TestChannelsButton onLoad={tv.loadTestChannels} />}
             </>
           ) : null}
@@ -794,7 +800,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                 </div>
                 {addRow ? (
                   <div className="add-row" style={{ top: tv.visibleChannels.length * ROW_HEIGHT, height: ROW_HEIGHT, left: scrollLeft + 8, width: Math.max(200, viewWidth - 16) }}>
-                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
+                    <AddChannelForm nextNumber={nextNumber} onAdd={addLink} onPreview={tv.previewSource} onAddMany={addMany} onNewChannel={() => newChannel()} nextLowNumber={nextLowNumber} onNewLowChannel={() => newChannel(true)} onFocus={openAddRow} inputRef={addInput} />
                   </div>
                 ) : null}
                 <div className="now-line" style={{ left: nowX }} />

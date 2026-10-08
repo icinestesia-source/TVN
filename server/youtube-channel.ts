@@ -112,6 +112,8 @@ const WIDE_KEEP = 400
 export const PAGE_LIMIT = { recent: 1, wide: 5 } as const
 /** Playlists looked at, and confirmed one by one, when discovering a channel's playlists. */
 const DISCOVER_LIMIT = 30
+/** ADD CHANNELS: the most playlists listed from a channel's Playlists tab, and the tab pages read for them (about 30 each). */
+export const LIST_PLAYLISTS = { limit: 200, pages: 8 } as const
 const CONCURRENCY = 8
 const HEADERS = {
   'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36',
@@ -263,6 +265,21 @@ export function continuationOf(data: unknown): string | null {
   walk(data, (node) => {
     const command = node.continuationCommand as { token?: unknown } | undefined
     if (typeof command?.token === 'string') token = command.token
+  })
+  return token
+}
+
+/** The continuation of a Playlists tab's own grid: the one listed beside its playlists, not another section's. */
+export function playlistGridContinuationOf(data: unknown): string | null {
+  let token: string | null = null
+  walk(data, (node) => {
+    if (token) return
+    for (const list of [node.items, node.continuationItems]) {
+      if (!Array.isArray(list) || !list.some((item) => item?.lockupViewModel || item?.gridPlaylistRenderer)) continue
+      const more = list.find((item) => item?.continuationItemRenderer)?.continuationItemRenderer as { continuationEndpoint?: { continuationCommand?: { token?: unknown } } } | undefined
+      const found = more?.continuationEndpoint?.continuationCommand?.token
+      if (typeof found === 'string') token = found
+    }
   })
   return token
 }
@@ -483,6 +500,36 @@ export async function discoverPlaylists(raw: string, read: typeof fetch = fetch)
   )
   playlists.sort((a, b) => listed.findIndex((item) => item.id === a.id) - listed.findIndex((item) => item.id === b.id))
   return { channelId, title, playlists }
+}
+
+/**
+ * Every playlist on a channel's Playlists tab, in its order, following the tab's own continuation, for
+ * ADD CHANNELS to make a channel of each. Nothing is confirmed one by one and nothing is added here.
+ */
+export async function listChannelPlaylists(
+  raw: string,
+  read: typeof fetch = fetch,
+): Promise<{ channelId: string; title: string; playlists: { id: string; title: string; videos: number | null }[]; more: boolean }> {
+  const input = parseChannelInput(raw)
+  if (!input || input.kind === 'playlist' || input.kind === 'mix') throw new ChannelError(400, 'Playlists are listed from a YouTube channel or @handle')
+  const channelId = await channelIdOf(input, read)
+  const html = await page(`https://www.youtube.com/channel/${channelId}/playlists`, read)
+  const data = initialData(html)
+  const title = channelTitleFrom(data) ?? channelId
+  const playlists = playlistsFromChannelPage(data)
+  const seen = new Set(playlists.map((item) => item.id))
+  const version = html.match(/"INNERTUBE_CLIENT_VERSION":"([^"]+)"/)?.[1] ?? '2.20260101.00.00'
+  let token = playlistGridContinuationOf(data)
+  for (let pages = 1; token && pages < LIST_PLAYLISTS.pages && playlists.length < LIST_PLAYLISTS.limit; pages += 1) {
+    const next = await continued(token, version, read)
+    if (!next) break
+    const fresh = playlistsFromChannelPage(next).filter((item) => !seen.has(item.id))
+    if (fresh.length === 0) break
+    for (const item of fresh) seen.add(item.id)
+    playlists.push(...fresh)
+    token = playlistGridContinuationOf(next)
+  }
+  return { channelId, title, playlists: playlists.slice(0, LIST_PLAYLISTS.limit), more: Boolean(token) || playlists.length > LIST_PLAYLISTS.limit }
 }
 
 async function page(url: string, read: typeof fetch): Promise<string> {
@@ -875,6 +922,7 @@ export async function handleChannelRequest(url: URL, read: typeof fetch = fetch)
   try {
     const mode = url.searchParams.get('mode')
     if (mode === 'playlists') return { status: 200, body: await discoverPlaylists(link, read) }
+    if (mode === 'list-playlists') return { status: 200, body: await listChannelPlaylists(link, read) }
     return { status: 200, body: await resolveChannel(link, read, { wide: mode === 'archive' || mode === 'all' }) }
   } catch (error) {
     if (error instanceof ChannelError) return { status: error.status, body: { error: error.message } }

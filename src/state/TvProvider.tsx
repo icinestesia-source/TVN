@@ -244,6 +244,8 @@ import {
 } from './tv-context.ts'
 
 const INFO_MS = 6000
+/** ADD CHANNELS reads this many playlists at once, then saves them as channels before reading more. */
+const ADD_MANY_AT_ONCE = 6
 const VOLUME_MS = 1200
 /** How long after the press that released held sound a MUTE from that same press still means sound on. */
 const SOUND_RELEASE_MS = 1500
@@ -2446,6 +2448,56 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources],
   )
 
+  const addChannels = useCallback(
+    async (links: readonly string[], owner?: string, onProgress?: (done: number, total: number) => void) => {
+      const numbers: number[] = []
+      let already = 0
+      let unread = 0
+      let full = false
+      let done = 0
+      for (let start = 0; start < links.length && !full; start += ADD_MANY_AT_ONCE) {
+        const batch = links.slice(start, start + ADD_MANY_AT_ONCE)
+        const read = await Promise.allSettled(
+          batch.map((link) =>
+            lookUpChannel(link).finally(() => {
+              onProgress?.(++done, links.length)
+            }),
+          ),
+        )
+        let sources = migrateLegacyUserNumbers(await loadStoredSources()).sources
+        let changed = false
+        for (const outcome of read) {
+          if (outcome.status === 'rejected') {
+            unread += 1
+            continue
+          }
+          const result = addChannelSource(sources, outcome.value, Date.now(), uploaderIdFor)
+          if (result.status === 'full') {
+            full = true
+            break
+          }
+          if (result.status !== 'added' || result.number === null) {
+            already += 1
+            continue
+          }
+          sources = owner ? result.sources.map((source) => (source.channelNumber === result.number ? { ...source, owner } : source)) : result.sources
+          numbers.push(result.number)
+          changed = true
+        }
+        if (changed) {
+          await saveStoredSources(sources)
+          installSources(sources)
+        }
+      }
+      const range = numbers.length === 0 ? '' : numbers.length === 1 ? ` ON ${numbers[0]}` : ` ON ${Math.min(...numbers)}–${Math.max(...numbers)}`
+      const message = `${numbers.length} ${numbers.length === 1 ? 'CHANNEL' : 'CHANNELS'} ADDED${range}${already > 0 ? ` · ${already} ALREADY ON THE GUIDE` : ''}${
+        unread > 0 ? ` · ${unread} COULD NOT BE READ` : ''
+      }${full ? ' · THE USER NETWORK IS FULL' : ''}`
+      return { numbers, message }
+    },
+    [installSources],
+  )
+
   const createNetworkUser = useCallback(
     (name: string, closePanel = false) => {
       const next = addUser(usersRef.current, name, Date.now())
@@ -3616,6 +3668,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       extendGuide,
       applyImport,
       addChannel,
+      addChannels,
       previewSource,
       networkUsers,
       createNetworkUser,
@@ -3680,6 +3733,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       clearLocalChannel,
       renameLocal,
       addChannel,
+      addChannels,
       previewSource,
       networkUsers,
       createNetworkUser,

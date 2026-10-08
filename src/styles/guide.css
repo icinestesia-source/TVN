@@ -257,6 +257,19 @@
 .add-preview dt { color: var(--gold); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
 .add-preview dd { margin: 0; font-size: 14px; }
 .add-preview-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.add-preview-text { margin: 0 0 12px; font-size: 14px; line-height: 1.4; }
+.add-playlists { width: min(640px, 94vw); }
+.add-playlists-list {
+  display: grid;
+  gap: 4px;
+  max-height: min(50vh, 420px);
+  margin: 0 0 12px;
+  padding: 0 4px 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.add-playlists-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+.add-playlists-count { flex: none; color: var(--muted); font-size: 12px; }
 
 .guide-empty .add-channel {
   justify-content: center;

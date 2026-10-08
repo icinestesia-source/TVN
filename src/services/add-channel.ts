@@ -93,6 +93,37 @@ export async function lookUpBatch(cursor: string, read: typeof fetch = fetch, si
 
 export const playlistUrl = (id: string) => `https://www.youtube.com/playlist?list=${id}`
 
+/** A YouTube channel's Playlists tab: ADD CHANNELS, or IMPORT asking one channel or one per playlist. */
+export function isPlaylistsLink(link: string): boolean {
+  return /^(https?:\/\/)?(www\.|m\.)?youtube\.com\/(@[\w.-]+|channel\/UC[\w-]{22}|c\/[^/?#]+|user\/[^/?#]+)\/playlists\/?([?#].*)?$/i.test(link.trim())
+}
+
+/** A YouTube channel or @handle, by which ADD CHANNELS may list its playlists. */
+export function isYouTubeChannelLink(link: string): boolean {
+  const text = link.trim()
+  return /^@[\w.-]{3,}$/.test(text) || /^UC[\w-]{22}$/.test(text) || /^(https?:\/\/)?(www\.|m\.)?youtube\.com\/(@[\w.-]+|channel\/UC[\w-]{22}|c\/[^/?#]+|user\/[^/?#]+)(\/[\w-]*)?\/?([?#].*)?$/i.test(text)
+}
+
+/** Every playlist on a YouTube channel's Playlists tab, in its order, for ADD CHANNELS. Nothing is added. */
+export async function lookUpChannelPlaylists(
+  link: string,
+  read: typeof fetch = fetch,
+): Promise<{ title: string; playlists: { id: string; title: string; videos: number | null }[]; more: boolean }> {
+  let response: Response
+  try {
+    response = await read(`${CHANNEL_API}?url=${encodeURIComponent(link.trim())}&mode=list-playlists`)
+  } catch {
+    throw new Error('TVN could not reach its channel lookup')
+  }
+  const body = (await response.json().catch(() => null)) as { error?: unknown; title?: unknown; playlists?: unknown; more?: unknown } | null
+  if (!response.ok || !body || !Array.isArray(body.playlists)) throw new Error(typeof body?.error === 'string' ? body.error : 'No playlists were found')
+  const playlists = body.playlists.flatMap((row) => {
+    const { id, title, videos } = (row ?? {}) as Record<string, unknown>
+    return typeof id === 'string' && typeof title === 'string' ? [{ id, title, videos: typeof videos === 'number' ? videos : null }] : []
+  })
+  return { title: typeof body.title === 'string' ? body.title : '', playlists, more: body.more === true }
+}
+
 /** A playlist a YouTube channel lists; `official` when that channel's own header owns it. */
 export interface PlaylistFound {
   id: string
