@@ -144,8 +144,8 @@ describe('USER exports carry their Favourites; RESTORE offers ALL or USER', () =
 
   it('ALL restores everything; USER only the User Network with its Favourites', () => {
     const provider = read('src/state/TvProvider.tsx')
-    expect(provider).toContain("async (document: TvnExport, scope: 'all' | 'user' = 'all') =>")
-    expect(provider).toContain('return importUserNetwork({ ...checked.value.userNetwork, favourites })')
+    expect(provider).toContain("async (document: TvnExport, scope: 'all' | 'user' = 'all', onProgress?: (note: string) => void) =>")
+    expect(provider).toContain('return importUserNetwork({ ...checked.value.userNetwork, favourites }, onProgress)')
     const add = read('src/components/GuideAdd.tsx')
     for (const label of ["'Restore ALL'", "'Restore USER only'", "'Restore USER'", "'Export ALL'", "'Export USER'"]) expect(add).toContain(label)
     const options = read('src/components/GuideOptions.tsx')

@@ -1,8 +1,12 @@
 import AppKit
 import WebKit
 
+#if FULL
+let home: URL = Bundle.main.resourceURL.flatMap { SiteServer.start(root: $0.appendingPathComponent("site")) } ?? URL(string: "https://tvn.lol/")!
+#else
 let home = URL(string: "https://tvn.lol/")!
-let siteHosts: Set<String> = ["tvn.lol", "www.tvn.lol"]
+#endif
+let siteHosts: Set<String> = [home.host ?? "tvn.lol", "tvn.lol", "www.tvn.lol"]
 let offlinePage = """
 <!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:grid;place-items:center;background:#000;color:#c9d3dc;font:16px -apple-system,sans-serif">
 <div style="text-align:center">TVN needs an internet connection.<br><br><a href="https://tvn.lol/" style="color:#e8c35a">TRY AGAIN</a></div></body>

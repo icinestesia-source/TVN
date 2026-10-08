@@ -23,6 +23,7 @@ import android.webkit.WebMessage;
 import android.webkit.WebMessagePort;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -30,10 +31,17 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
 import org.json.JSONObject;
 
-/** TVN in a full-screen web view: https://tvn.lol, with file picking, EXPORT saving and full-screen video. */
+/**
+ * TVN in a full-screen web view: https://tvn.lol, with file picking, EXPORT saving and full-screen video. TVN Full
+ * carries the whole site in its assets and answers tvn.lol from them, so the page keeps its real address (YouTube
+ * embeds need it) and opens without a connection; only adding a YouTube channel or podcast goes to tvn.lol.
+ */
 public class MainActivity extends Activity {
   private static final String HOME = "https://tvn.lol/";
   private static final String SITE = "tvn.lol";
@@ -66,6 +74,7 @@ public class MainActivity extends Activity {
   private WebChromeClient.CustomViewCallback fullscreenDone;
   private ValueCallback<Uri[]> picked;
   private WebMessagePort[] ports;
+  private boolean full;
 
   @Override
   protected void onCreate(Bundle saved) {
@@ -78,6 +87,7 @@ public class MainActivity extends Activity {
     root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     setContentView(root);
     immersive();
+    full = bundled("index.html") != null;
 
     WebSettings settings = web.getSettings();
     settings.setJavaScriptEnabled(true);
@@ -99,6 +109,26 @@ public class MainActivity extends Activity {
         if (ownPage(url)) return false;
         openOutside(url);
         return true;
+      }
+
+      @Override
+      public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+        if (!full || !"GET".equals(request.getMethod())) return null;
+        Uri url = request.getUrl();
+        String host = url.getHost();
+        if (!"https".equals(url.getScheme()) || host == null || !(host.equals(SITE) || host.equals("www." + SITE))) return null;
+        String path = url.getPath() == null || url.getPath().isEmpty() ? "/" : url.getPath();
+        if (path.startsWith("/api/")) return null;
+        String name = path.equals("/") ? "index.html" : path.substring(1);
+        InputStream body = name.contains("..") ? null : bundled(name);
+        if (body == null) {
+          name = "index.html";
+          body = bundled(name);
+        }
+        String type = typeOf(name);
+        WebResourceResponse response = new WebResourceResponse(type, type.startsWith("text/") || type.endsWith("json") ? "utf-8" : null, body);
+        response.setResponseHeaders(Collections.singletonMap("Cache-Control", "no-cache"));
+        return response;
       }
 
       @Override
@@ -151,6 +181,37 @@ public class MainActivity extends Activity {
 
     if (saved != null) web.restoreState(saved);
     else web.loadUrl(HOME);
+  }
+
+  /** A file of the site carried in the app, or null. */
+  private InputStream bundled(String name) {
+    try {
+      return getAssets().open("site/" + name);
+    } catch (IOException missing) {
+      return null;
+    }
+  }
+
+  private static String typeOf(String name) {
+    String ext = name.substring(name.lastIndexOf('.') + 1).toLowerCase();
+    switch (ext) {
+      case "html": return "text/html";
+      case "js": case "mjs": return "text/javascript";
+      case "css": return "text/css";
+      case "json": case "map": return "application/json";
+      case "webmanifest": return "application/manifest+json";
+      case "svg": return "image/svg+xml";
+      case "png": return "image/png";
+      case "jpg": case "jpeg": return "image/jpeg";
+      case "webp": return "image/webp";
+      case "gif": return "image/gif";
+      case "ico": return "image/x-icon";
+      case "woff2": return "font/woff2";
+      case "woff": return "font/woff";
+      case "ttf": return "font/ttf";
+      case "txt": return "text/plain";
+      default: return "application/octet-stream";
+    }
   }
 
   private static boolean ownPage(Uri url) {

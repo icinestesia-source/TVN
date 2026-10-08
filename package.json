@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "mac-app": "sh scripts/build-mac-app.sh",
     "android-app": "sh scripts/build-android-app.sh",
-    "apps": "sh scripts/build-mac-app.sh && sh scripts/build-android-app.sh",
+    "mac-app:full": "sh scripts/build-mac-app.sh full",
+    "android-app:full": "sh scripts/build-android-app.sh full",
+    "apps": "sh scripts/build-mac-app.sh && sh scripts/build-android-app.sh && sh scripts/build-mac-app.sh full && sh scripts/build-android-app.sh full",
     "harvester": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning harvester/cli.ts"
   },
   "dependencies": {

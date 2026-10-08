@@ -734,8 +734,8 @@ export function UserNetworkImportTools({
   onApplyComplete,
 }: {
   userChannels: number
-  onApply: (document: UserNetworkExport) => Promise<string>
-  onApplyComplete: (document: TvnExport, scope: 'all' | 'user') => Promise<string>
+  onApply: (document: UserNetworkExport, onProgress: (note: string) => void) => Promise<string>
+  onApplyComplete: (document: TvnExport, scope: 'all' | 'user', onProgress: (note: string) => void) => Promise<string>
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -779,9 +779,13 @@ export function UserNetworkImportTools({
     const chosen = pending
     setPending(null)
     setBusy(true)
-    setNote(chosen.kind === 'complete' && scope === 'all' ? 'RESTORING ALL…' : 'RESTORING USER NETWORK…')
+    const restoring = chosen.kind === 'complete' && scope === 'all' ? 'RESTORING ALL…' : 'RESTORING USER NETWORK…'
+    setNote(restoring)
+    let done: string | null = null
+    const progress = (update: string) => setNote(`${done ?? restoring} · ${update}`)
     try {
-      setNote(chosen.kind === 'complete' ? await onApplyComplete(chosen.document, scope) : await onApply(chosen.document))
+      done = chosen.kind === 'complete' ? await onApplyComplete(chosen.document, scope, progress) : await onApply(chosen.document, progress)
+      setNote(done)
     } catch (caught) {
       setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE IMPORTED'))
     } finally {

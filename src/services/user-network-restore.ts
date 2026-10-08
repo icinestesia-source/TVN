@@ -196,6 +196,13 @@ function youTubeSourcesOf(record: StoredSource): ChannelSource[] {
   return [{ id: 's1', kind: 'youtube', url: canonicalYouTubeUrl({ ref, url: '', youtube }), label: record.name, enabled: true, ref, youtube }]
 }
 
+export interface RestoreOptions {
+  /** False: build the channels from the file alone, reading nothing; each source keeps what the file holds. */
+  read?: boolean
+  /** Each finished read, out of all of them. */
+  onProgress?: (done: number, total: number) => void
+}
+
 /**
  * Read every enabled YouTube source again through TVN's keyless lookup, a few at a time. A source that
  * cannot be read stays in its channel, marked failed and without programmes, so the channel keeps its
@@ -206,7 +213,9 @@ export async function resolveRestored(
   deps: RestoreDeps,
   now: number,
   parallel = 4,
+  options: RestoreOptions = {},
 ): Promise<{ records: StoredSource[]; failed: number }> {
+  const reading = options.read !== false
   // One lookup per address and mode, and one per playlist a filter names, however many channels share them.
   const lookups = new Map<string, { url: string; mode: SourceMode; feed?: boolean; page?: boolean }>()
   for (const record of records) {
@@ -218,9 +227,10 @@ export async function resolveRestored(
       for (const id of source.filter?.include?.playlists ?? []) lookups.set(playlistKey(id), { url: `https://www.youtube.com/playlist?list=${id}`, mode: 'all' })
     }
   }
-  const jobs = [...lookups]
+  const jobs = reading ? [...lookups] : []
   const found = new Map<string, readonly ImportedVideo[] | null>()
   let next = 0
+  let done = 0
   const worker = async () => {
     while (next < jobs.length) {
       const [key, { url, mode, feed, page }] = jobs[next++]
@@ -237,6 +247,8 @@ export async function resolveRestored(
         found.set(key, read.videos)
       } catch {
         found.set(key, null)
+      } finally {
+        options.onProgress?.(++done, jobs.length)
       }
     }
   }
@@ -248,8 +260,9 @@ export async function resolveRestored(
     const wanted = youTubeSourcesOf(record)
     const curated = record.channelSources?.some((source) => source.filter?.include?.playlists?.length || sourceModeOf(source) !== 'recent' || source.kind === 'podcast' || source.kind === 'website') ?? false
     if (wanted.length === 0 && !curated) return record
+    if (!reading && !record.channelSources) return record
     const read = (source: ChannelSource) => found.get(lookupKey(source)) ?? null
-    failed += wanted.filter((source) => read(source) === null).length
+    if (reading) failed += wanted.filter((source) => read(source) === null).length
     const order = (sources: readonly ChannelSource[]) => keptOrder(sources, record.runningOrder) ?? record.runningOrder
     if (!record.channelSources) {
       // What the file held stays; a fresh read only adds to it and brings its dates.
@@ -265,6 +278,13 @@ export async function resolveRestored(
       return { ...record, videos, ...(runningOrder?.length ? { runningOrder } : {}) }
     }
     const readSources = record.channelSources.map((source): ChannelSource => {
+      if (!reading) {
+        if (source.kind === 'website') {
+          const { slotSeconds, ...rest } = source as ChannelSource & { slotSeconds?: number }
+          return slotSeconds ? { ...rest, videos: (source.videos ?? []).map((video) => ({ ...video, durationSec: slotSeconds })) } : rest
+        }
+        return source.kind === 'collection' && source.enabled ? { ...source, videos: withPlaylistVideos(source.videos ?? [], []) } : source
+      }
       if (source.enabled && source.kind === 'podcast') {
         const episodes = found.get(feedKey(source)) ?? null
         if (episodes === null) failed += 1

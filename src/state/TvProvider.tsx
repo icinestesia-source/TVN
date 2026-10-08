@@ -2765,11 +2765,52 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return { target, scope, shipped: shipped as NonNullable<typeof shipped> }
   }
 
-  /** Replace the User Network with a validated export the viewer has confirmed; 001–999 and 000 are not touched. */
+  const restoreRun = useRef(0)
+
+  /**
+   * Read a just-restored network's sources again and bring in what changed. A channel the viewer has touched
+   * since the restore, or a later restore, wins: only records still exactly as restored are replaced.
+   */
+  const refreshRestored = useCallback(
+    async (records: readonly StoredSource[], restored: readonly StoredSource[], run: number, onProgress?: (note: string) => void) => {
+      const current = () => run === restoreRun.current
+      const fresh = await resolveRestored(records, restoreDeps, Date.now(), 4, {
+        onProgress: (done, total) => {
+          if (current()) onProgress?.(`UPDATING SOURCES · ${done} OF ${total}`)
+        },
+      })
+      if (!current()) return
+      const asRestored = new Map(restored.map((record) => [record.id, JSON.stringify(record)]))
+      const updates = new Map(fresh.records.map((record) => [record.id, record]))
+      const stored = await loadStoredSources()
+      if (!current()) return
+      let changed = false
+      const next = stored.map((record) => {
+        const update = updates.get(record.id)
+        if (!update || asRestored.get(record.id) !== JSON.stringify(record)) return record
+        changed = true
+        return update
+      })
+      if (changed) {
+        await saveStoredSources(next)
+        if (!current()) return
+        installSources(next)
+      }
+      onProgress?.(`SOURCES UPDATED${fresh.failed > 0 ? ` · ${fresh.failed} ${fresh.failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : ''}`)
+    },
+    [installSources],
+  )
+
+  /**
+   * Replace the User Network with a validated export the viewer has confirmed; 001–999 and 000 are not touched.
+   * The channels come back at once from what the file holds; their sources are read again afterwards.
+   */
   const importUserNetwork = useCallback(
-    async (document: UserNetworkExport) => {
+    async (document: UserNetworkExport, onProgress?: (note: string) => void) => {
       const now = Date.now()
-      const resolved = await resolveRestored(recordsFromExport(document, now), restoreDeps, now)
+      const run = ++restoreRun.current
+      const records = recordsFromExport(document, now)
+      const resolved = await resolveRestored(records, restoreDeps, now, 4, { read: false })
       const next = restoreUserNetwork(await loadStoredSources(), resolved.records)
       await saveStoredSources(next)
       if (starterState() === 'pending') setStarterState('installed')
@@ -2778,15 +2819,16 @@ export function TvProvider({ children }: { children: ReactNode }) {
       commitUsers(users)
       setGuideFilter((current) => (current.startsWith('user:') && !users.some((user) => userFilter(user.id) === current) ? 'user' : current))
       installSources(next)
+      void refreshRestored(records, resolved.records, run, onProgress).catch(() => {
+        if (run === restoreRun.current) onProgress?.('SOURCES COULD NOT BE UPDATED')
+      })
       const count = resolved.records.length
       const empty = resolved.records.filter((record) => record.emptySlot).length
       return `USER NETWORK IMPORTED · ${count} ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${empty > 0 ? ` · ${empty} EMPTY` : ''}${
         users.length > 0 ? ` · ${users.length} ${users.length === 1 ? 'USER' : 'USERS'}` : ''
-      }${document.favourites ? ` · ${document.favourites.length} ${document.favourites.length === 1 ? 'FAVOURITE' : 'FAVOURITES'}` : ''}${
-        resolved.failed > 0 ? ` · ${resolved.failed} ${resolved.failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : ''
-      }`
+      }${document.favourites ? ` · ${document.favourites.length} ${document.favourites.length === 1 ? 'FAVOURITE' : 'FAVOURITES'}` : ''}`
     },
-    [installSources],
+    [installSources, refreshRestored],
   )
 
   /**
@@ -2820,15 +2862,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * Network is restored next, and only once that has succeeded do Favourites and settings follow.
    */
   const importTvn = useCallback(
-    async (document: TvnExport, scope: 'all' | 'user' = 'all') => {
+    async (document: TvnExport, scope: 'all' | 'user' = 'all', onProgress?: (note: string) => void) => {
       const checked = validateTvnExport(document)
       if (!checked.ok) throw new Error(`Not a complete TVN export · ${checked.errors[0]}`)
       // USER only: the User Network and its Favourites; curation, Guides, settings and other Favourites stay as they are.
       if (scope === 'user') {
         const favourites = checked.value.favourites.filter((number) => number >= USER_NUMBER_START || (currentNetworkBase() === 'new' && isLowUserNumber(number)))
-        return importUserNetwork({ ...checked.value.userNetwork, favourites })
+        return importUserNetwork({ ...checked.value.userNetwork, favourites }, onProgress)
       }
-      const restored = await importUserNetwork(checked.value.userNetwork)
+      const restored = await importUserNetwork(checked.value.userNetwork, onProgress)
       const central = checked.value.central ? await restoreCentralCuration(checked.value.central) : ''
       const guides = checked.value.guides
       if (guides) setGuideLibrary(libraryFrom(guides))

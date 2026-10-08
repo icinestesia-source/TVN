@@ -216,12 +216,13 @@ export interface TvContextValue {
   /** Download the User Network (1001+) as tvn-user-network-v1 JSON. Reads only: nothing is changed. */
   exportUserNetwork: () => Promise<string>
   /** Replace the User Network (1001+) with a validated, confirmed tvn-user-network-v1 document. */
-  importUserNetwork: (document: import('../services/user-network-export.ts').UserNetworkExport) => Promise<string>
+  /** onProgress hears how the sources read after the restore are going. */
+  importUserNetwork: (document: import('../services/user-network-export.ts').UserNetworkExport, onProgress?: (note: string) => void) => Promise<string>
   /** COMPLETE TVN EXPORT (tvn-export-v1): the User Network, Favourites and portable settings in one file. */
   exportTvn: () => Promise<string>
   /** Restores a confirmed complete export; a file that fails validation changes nothing. */
   /** ALL restores everything the file holds; USER only its User Network and that network's Favourites. */
-  importTvn: (document: import('../services/tvn-export.ts').TvnExport, scope?: 'all' | 'user') => Promise<string>
+  importTvn: (document: import('../services/tvn-export.ts').TvnExport, scope?: 'all' | 'user', onProgress?: (note: string) => void) => Promise<string>
   /**
    * The Channel Editor, for one channel at a time. A 1001+ channel is read from and saved to the User
    * Network; a curated channel's change is kept in this browser, over the shipped channel.
