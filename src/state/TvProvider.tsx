@@ -124,7 +124,8 @@ import type { Programme } from '../types/programme.ts'
 import type { GuideTool, ScheduleAction, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, padChannel, sleep } from '../utils/time.ts'
-import { bookmarkFor, toggleBookmark } from '../view/bookmarks-store.ts'
+import { bookmarkFor, toggleBookmark, type Bookmark } from '../view/bookmarks-store.ts'
+import { addClipsChannel, clipVideo } from '../services/bookmark-channel.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, loadSurfUntilEnd, saveSurfOn, saveSurfRange, saveSurfUntilEnd, surfDelayMs, surfUntilEndMs, type SurfRange } from './surf.ts'
 import {
@@ -2079,7 +2080,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
           break
         }
         const on = toggleBookmark(bookmarkFor(target, programme))
-        flash(on ? `📜 BOOKMARKED · ${programme.title}` : `BOOKMARK REMOVED · ${programme.title}`, 1600)
+        flash(on ? `♥\uFE0E BOOKMARKED · ${programme.title}` : `BOOKMARK REMOVED · ${programme.title}`, 1600)
         break
       }
       case 'debug':
@@ -2531,6 +2532,34 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const mix = found.mix ? ' · YOUTUBE MIX: SEED VIDEO KEPT, THEN ITS CHANNEL · THE MIX ITSELF CANNOT BE LISTED' : ''
       return { number: result.number, message: `${found.title} ${verb} ON ${result.number} · ${found.videos.length} VIDEOS${mix}` }
     },
+    [installSources],
+  )
+
+  const createBookmarkChannel = useCallback(
+    async (name: string, bookmarks: readonly Bookmark[]) => {
+      // A bookmark saved before clips were kept is looked up on its channel, if the clip is still there.
+      const videos = bookmarks.flatMap((bookmark) => {
+        if (bookmark.video) return [bookmark.video]
+        const channel = channelByNumber(bookmark.channelNumber)
+        const programme = channel ? programmesFor(channel.id).find((item) => item.videoId === bookmark.programmeId || item.id === bookmark.programmeId) : undefined
+        const video = programme ? clipVideo(programme) : null
+        return video ? [video] : []
+      })
+      const existing = migrateLegacyUserNumbers(await loadStoredSources()).sources
+      const result = addClipsChannel(existing, { name, videos }, Date.now())
+      if (result.status === 'empty') throw new Error('NONE OF THOSE CLIPS CAN BE MADE INTO A CHANNEL')
+      if (result.status === 'full') throw new Error('The User Network is full')
+      await saveStoredSources(result.sources)
+      installSources(result.sources)
+      const made = result.sources.find((source) => source.channelNumber === result.number)
+      const count = made?.videos.length ?? videos.length
+      const left = bookmarks.length - count
+      if (result.number !== null) requestTune(result.number)
+      const message = `${made?.name ?? name} CREATED ON ${result.number} · ${count} PROGRAMME${count === 1 ? '' : 'S'}${left > 0 ? ` · ${left} LEFT OUT (NO LONGER AVAILABLE, OR ALREADY IN)` : ''}`
+      flash(message, 4000)
+      return { number: result.number, message }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [installSources],
   )
 
@@ -3872,6 +3901,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       applyImport,
       addChannel,
       addChannels,
+      createBookmarkChannel,
       addCombinedChannel,
       playSubChannel,
       previewSource,
@@ -3941,6 +3971,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       renameLocal,
       addChannel,
       addChannels,
+      createBookmarkChannel,
       addCombinedChannel,
       playSubChannel,
       previewSource,

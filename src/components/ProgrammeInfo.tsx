@@ -122,7 +122,7 @@ export function ProgrammeInfo({
               toggleBookmark(clip)
             }}
           >
-            📜
+            {marked ? '♥\uFE0E' : '♡'}
           </button>
         ) : null}
       </div>

@@ -104,8 +104,8 @@ export function commandFromKey(
     case 'r':
     case 'R':
       return { type: 'schedule', action: 'random' }
-    case 'x':
-    case 'X':
+    case 'q':
+    case 'Q':
       return { type: 'schedule', action: 'reload' }
     case 'l':
     case 'L':
@@ -126,6 +126,8 @@ export function commandFromKey(
       return { type: 'hints' }
     case 'Home':
       return { type: 'guide-now' }
+    case 'x':
+    case 'X':
     case 'ContextMenu':
       return { type: 'guide-tool', tool: 'edit' }
     // The unshifted keys: in the Guide they zoom the timeline, over the picture they set the volume.

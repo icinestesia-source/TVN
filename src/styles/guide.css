@@ -1419,10 +1419,10 @@ a.info-creator:focus-visible {
 .info-star:focus-visible { color: var(--gold); }
 .info-title-line { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; }
 .info-title-line > .info-title { min-width: 0; }
-.info-bookmark { font-size: 14px; filter: saturate(0.35); opacity: 0.7; }
-.info-bookmark.is-on,
+.info-bookmark { font-size: 1.05em; }
+.info-bookmark.is-on { color: var(--gold); }
 .info-bookmark:hover,
-.info-bookmark:focus-visible { filter: none; opacity: 1; }
+.info-bookmark:focus-visible { color: var(--gold); }
 
 /* The date stays whole beside the title, however the title wraps. */
 .info-date {
@@ -1876,23 +1876,28 @@ a.info-creator:focus-visible {
   .ch-name { font-size: 11px; }
 }
 
-/* 📜 Bookmarks: the clips the viewer bookmarked, one row each. */
+/* ♡ Bookmarks: the clips the viewer bookmarked, one row each. */
 .tabs .guide-bookmarks { min-width: 0; padding: 0 8px; font-size: 16px; letter-spacing: 0; }
 .bookmark-list { display: flex; flex-direction: column; max-width: 980px; margin: 0; padding: 0; list-style: none; background: #0b1c30; }
 .bookmark-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 16em) auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 16em) auto auto auto;
   align-items: center;
   gap: 4px 14px;
   min-height: 36px;
   padding: 2px 8px;
   border-top: 1px solid rgba(29, 76, 120, 0.45);
 }
+.bookmark-row.is-picked { background: rgba(29, 76, 120, 0.35); }
+.bookmark-pick { width: 16px; height: 16px; margin: 0; accent-color: var(--gold); cursor: pointer; }
+.bookmark-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 980px; margin: 0 0 8px; }
+.bookmark-actions .remove-ask { color: var(--ink); font-size: 14px; }
+.bookmark-name { flex: 0 1 22em; min-width: 10em; height: 30px; padding: 0 8px; border: 1px solid rgba(29, 76, 120, 0.9); background: #07121f; color: var(--ink); font: inherit; }
 .bookmark-title { min-width: 0; overflow: hidden; color: var(--ink); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .bookmark-channel,
 .bookmark-length { min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
-  .bookmark-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .bookmark-row { grid-template-columns: auto minmax(0, 1fr) auto auto; }
   .bookmark-channel, .bookmark-length { grid-row: 2; }
 }
 

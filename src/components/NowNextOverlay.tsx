@@ -12,7 +12,7 @@ import { followingInfo } from '../view/guide-following.ts'
 
 /**
  * INFO: the Guide's information bar over the picture, for what the channel is showing now and next,
- * with the same actions. A right-click or a hold anywhere on it but its buttons (or the menu key) edits the channel, as in the Guide.
+ * with the same actions. A right-click or a hold anywhere on it but its buttons (or X) edits the channel, as in the Guide.
  */
 export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
   const now = useClock(1000)

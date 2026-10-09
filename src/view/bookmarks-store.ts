@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
+import { clipVideo, readClipVideo } from '../services/bookmark-channel.ts'
+import type { ImportedVideo } from '../services/channels-import.ts'
 
 /** The viewer's bookmarked clips, kept in this browser. */
 export const BOOKMARKS_KEY = 'tvn.bookmarks.v1'
@@ -16,6 +18,8 @@ export interface Bookmark {
   title: string
   durationSeconds: number
   savedAt: number
+  /** What the clip plays, as saved: a channel can be made of it even after its own channel has moved on. */
+  video?: ImportedVideo
 }
 
 type Store = Pick<Storage, 'getItem' | 'setItem'>
@@ -32,8 +36,9 @@ export function bookmarkKey(channelNumber: number, programmeId: string): string 
   return `${channelNumber}:${programmeId}`
 }
 
-export function bookmarkFor(channel: Pick<Channel, 'number' | 'name'>, programme: Pick<Programme, 'id' | 'videoId' | 'title' | 'durationSeconds'>, now = Date.now()): Bookmark {
+export function bookmarkFor(channel: Pick<Channel, 'number' | 'name'>, programme: Programme, now = Date.now()): Bookmark {
   const programmeId = programme.videoId ?? programme.id
+  const video = clipVideo(programme)
   return {
     key: bookmarkKey(channel.number, programmeId),
     channelNumber: channel.number,
@@ -42,6 +47,7 @@ export function bookmarkFor(channel: Pick<Channel, 'number' | 'name'>, programme
     title: programme.title,
     durationSeconds: programme.durationSeconds,
     savedAt: now,
+    ...(video ? { video } : {}),
   }
 }
 
@@ -62,7 +68,14 @@ const isBookmark = (value: unknown): value is Bookmark => {
 export function readBookmarks(store: Store | null = browserStore()): Bookmark[] {
   try {
     const parsed: unknown = JSON.parse(store?.getItem(BOOKMARKS_KEY) ?? '[]')
-    return Array.isArray(parsed) ? parsed.filter(isBookmark).slice(0, MAX_BOOKMARKS) : []
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter(isBookmark)
+      .slice(0, MAX_BOOKMARKS)
+      .map(({ video, ...rest }) => {
+        const clip = readClipVideo(video)
+        return clip ? { ...rest, video: clip } : rest
+      })
   } catch {
     return []
   }
@@ -101,6 +114,13 @@ export function toggleBookmark(item: Bookmark): boolean {
 
 export function removeBookmark(key: string): void {
   save(bookmarks().filter((saved) => saved.key !== key))
+}
+
+/** Removes the bookmarks named, or every one of them. */
+export function removeBookmarks(keys: readonly string[] | 'all'): void {
+  if (keys === 'all') return save([])
+  const gone = new Set(keys)
+  save(bookmarks().filter((saved) => !gone.has(saved.key)))
 }
 
 export function isBookmarked(key: string): boolean {

@@ -6,6 +6,8 @@ import { ProgrammeInfo } from './components/ProgrammeInfo.tsx'
 import { commandFromKey } from './input/keyboard.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
+import { addClipsChannel, clipVideo } from './services/bookmark-channel.ts'
+import type { StoredSource } from './services/channels-import.ts'
 import { BOOKMARKS_KEY, bookmarkFor, MAX_BOOKMARKS, readBookmarks, toggledBookmarks } from './view/bookmarks-store.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
@@ -22,15 +24,16 @@ describe('KEYS: I Add, U Media, E Export ALL, O Options, D Bookmark', () => {
       expect(commandFromKey('O', plain, guideOpen)).toEqual({ type: 'guide-tool', tool: 'options' })
       expect(commandFromKey('d', plain, guideOpen)).toEqual({ type: 'bookmark' })
     }
-    // Edit Channel keeps the menu key, a right-click and a hold.
-    expect(commandFromKey('ContextMenu', plain, false)).toEqual({ type: 'guide-tool', tool: 'edit' })
+    // X opens Edit Channel, as do the menu key, a right-click and a hold; Q reloads the schedule.
+    for (const key of ['x', 'X', 'ContextMenu']) expect(commandFromKey(key, plain, false)).toEqual({ type: 'guide-tool', tool: 'edit' })
+    expect(commandFromKey('q', plain, true)).toEqual({ type: 'schedule', action: 'reload' })
   })
 
   it('the keyboard on the welcome screen and the hints say so', () => {
     const keys = read('src/legal/entry-keys.ts')
-    for (const label of ["letter('I', 'Add')", "letter('U', 'Media')", "letter('E', 'Export ALL')", "letter('O', 'Options')", "letter('D', 'Bookmark')"]) expect(keys).toContain(label)
+    for (const label of ["letter('X', 'Edit')", "letter('Q', 'Reload')", "letter('I', 'Add')", "letter('U', 'Media')", "letter('E', 'Export ALL')", "letter('O', 'Options')", "letter('D', 'Bookmark')"]) expect(keys).toContain(label)
     const hints = read('src/components/Hints.tsx')
-    for (const part of ['D Bookmark', 'I Add · U Media', 'E Export ALL · O Options']) expect(hints).toContain(part)
+    for (const part of ['X Edit · R Refresh · Q Reload', 'D Bookmark', 'I Add · U Media', 'E Export ALL · O Options']) expect(hints).toContain(part)
   })
 })
 
@@ -47,7 +50,16 @@ describe('B and N: the channels remembered, then the channel keys', () => {
 describe('BOOKMARKS: clips kept to play again', () => {
   it('one bookmark per clip on a channel, newest first, on and off again', () => {
     const clip = bookmarkFor(channel, programme, 1000)
-    expect(clip).toEqual({ key: '42:YrZyJuaBfKA', channelNumber: 42, channelName: 'Science', programmeId: 'YrZyJuaBfKA', title: 'A Clip', durationSeconds: 600, savedAt: 1000 })
+    expect(clip).toEqual({
+      key: '42:YrZyJuaBfKA',
+      channelNumber: 42,
+      channelName: 'Science',
+      programmeId: 'YrZyJuaBfKA',
+      title: 'A Clip',
+      durationSeconds: 600,
+      savedAt: 1000,
+      video: { id: 'YrZyJuaBfKA', title: 'A Clip', durationSec: 600 },
+    })
     const other = bookmarkFor(channel, { ...programme, videoId: 'other', title: 'B' }, 2000)
     const both = toggledBookmarks(toggledBookmarks([], clip), other)
     expect(both.map((item) => item.title)).toEqual(['B', 'A Clip'])
@@ -70,7 +82,7 @@ describe('BOOKMARKS: clips kept to play again', () => {
     expect(bookmark).toContain('const on = toggleBookmark(bookmarkFor(target, programme))')
   })
 
-  it('a 📜 tab after FAV opens the Bookmarks section, each clip with PLAY and REMOVE', () => {
+  it('a ♡ tab after FAV opens the Bookmarks section, each clip with PLAY and REMOVE', () => {
     const guide = read('src/components/Guide.tsx')
     expect(guide.indexOf('            Fav\n')).toBeLessThan(guide.indexOf("tv.dispatch({ type: 'guide-tool', tool: 'bookmarks' })"))
     expect(guide).toContain(") : tool === 'bookmarks' ? (\n        <BookmarksPanel />")
@@ -91,8 +103,9 @@ describe('INFORMATION OVERLAY: a star after the channel name, a bookmark after t
     expect(markup()).not.toContain('info-star')
   })
 
-  it('the bookmark follows the clip title', () => {
-    expect(markup()).toMatch(/<div class="info-title-line"><h2 class="info-title">A Clip<\/h2><button type="button" class="info-bookmark" aria-pressed="false" aria-label="Bookmark this clip"[^>]*>📜<\/button><\/div>/)
+  it('the bookmark follows the clip title: ♡, and a filled heart once bookmarked', () => {
+    expect(read('src/components/ProgrammeInfo.tsx')).toContain("{marked ? '♥\\uFE0E' : '♡'}")
+    expect(markup()).toMatch(/<div class="info-title-line"><h2 class="info-title">A Clip<\/h2><button type="button" class="info-bookmark" aria-pressed="false" aria-label="Bookmark this clip"[^>]*>♡<\/button><\/div>/)
   })
 
   it('the next clip’s title, not the NEXT label, plays it when pressed', () => {
@@ -124,5 +137,53 @@ describe('EDIT CHANNEL stands on the information overlay, which stays up beneath
     const guide = read('src/components/Guide.tsx')
     expect(guide).toMatch(/onPlay=\{tv\.playChannelProgramme\}\s*\/>\s*\{programmePanel\}\s*<\/>/)
     expect(read('src/styles/guide.css')).toContain('.guide > .guide-info.guide-editor { flex: 0 1 auto; min-height: 0;')
+  })
+})
+
+describe('BOOKMARKS → a channel of the chosen clips, aired as listed', () => {
+  const episode = { ...programme, id: 'ch-p3', videoId: null, mediaUrl: 'https://rumble.com/hls-vod/AbC123xyz/playlist.m3u8', mediaKind: 'video', sourceRef: 'podcast:rumble-v7795nq', thumbnail: 'https://hugh.cdn.rumble.cloud/x.jpg', episodeUrl: 'https://rumble.com/v7795nq-a.html', publishedAt: '2026-03-17' } as Programme
+
+  it('keeps what each clip plays: a YouTube id, or a public file or page; never a local file', () => {
+    expect(clipVideo(programme)).toEqual({ id: 'YrZyJuaBfKA', title: 'A Clip', durationSec: 600 })
+    expect(clipVideo(episode)).toEqual({
+      id: 'rumble-v7795nq',
+      title: 'A Clip',
+      durationSec: 600,
+      published: '2026-03-17',
+      media: 'https://rumble.com/hls-vod/AbC123xyz/playlist.m3u8',
+      mediaKind: 'video',
+      image: 'https://hugh.cdn.rumble.cloud/x.jpg',
+      page: 'https://rumble.com/v7795nq-a.html',
+    })
+    expect(clipVideo({ ...episode, mediaUrl: 'blob:http://localhost/123' })).toBeNull()
+    expect(clipVideo({ ...programme, liveStream: { url: 'https://x/live.m3u8' } } as unknown as Programme)).toBeNull()
+  })
+
+  it('a saved clip comes back only when well formed and public', () => {
+    const good = bookmarkFor(channel, episode, 1)
+    const bad = { ...bookmarkFor(channel, programme, 2), key: '42:other', video: { id: 'x', title: 'X', durationSec: 5, media: 'javascript:alert(1)' } }
+    const read = readBookmarks({ getItem: () => JSON.stringify([good, bad]), setItem: () => {} })
+    expect(read[0].video?.media).toBe('https://rumble.com/hls-vod/AbC123xyz/playlist.m3u8')
+    expect(read[1]).not.toHaveProperty('video')
+  })
+
+  it('makes one collection on the next free number, in the order given, each clip once', () => {
+    const videos = [clipVideo(episode)!, clipVideo(programme)!, clipVideo(programme)!]
+    const made = addClipsChannel([], { name: '  Picks  ', videos }, 5000)
+    expect(made.status).toBe('added')
+    const record = made.sources.find((source) => source.channelNumber === made.number) as StoredSource
+    expect(record).toMatchObject({ name: 'Picks', runningOrder: ['rumble-v7795nq', 'YrZyJuaBfKA'], orderKind: 'manual' })
+    expect(record.channelSources).toEqual([expect.objectContaining({ kind: 'collection', label: 'Picks', enabled: true, status: { state: 'ready', playable: 2, checkedAt: 5000 } })])
+    expect(addClipsChannel([], { name: 'None', videos: [] }, 1).status).toBe('empty')
+  })
+
+  it('the Bookmarks tab: a tick box by every clip, CREATE CHANNEL ticks them all, and removal of the ticked or all', () => {
+    const panel = read('src/components/BookmarksPanel.tsx')
+    expect(panel).toContain('<input type="checkbox" className="bookmark-pick" checked={picked.has(bookmark.key)}')
+    expect(panel).toContain('setPicked(new Set(bookmarks.map((bookmark) => bookmark.key)))')
+    expect(panel).toContain('await tv.createBookmarkChannel(name, chosen)')
+    expect(panel).toContain("removeBookmarks(chosen.map((bookmark) => bookmark.key))")
+    expect(panel).toContain("removeBookmarks('all')")
+    for (const label of ['Create Channel', 'Remove selected', 'Remove all', 'Yes, remove all']) expect(panel).toContain(label)
   })
 })

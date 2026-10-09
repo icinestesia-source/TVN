@@ -424,8 +424,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // OPTIONS, the Network Editor (or a filter with nothing in it) take the listings away; they come back where they were.
-  const gridShown = tool !== 'options' && !networkShown && tv.visibleChannels.length > 0
+  // OPTIONS, BOOKMARKS, the Network Editor (or a filter with nothing in it) take the listings away; they come back where they were.
+  const gridShown = tool !== 'options' && tool !== 'bookmarks' && !networkShown && tv.visibleChannels.length > 0
   const gridHidden = useRef(false)
   useLayoutEffect(() => {
     if (!gridShown) {
@@ -687,7 +687,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
             title="Bookmarks: the clips you bookmarked (D)"
             onClick={() => tv.dispatch({ type: 'guide-tool', tool: 'bookmarks' })}
           >
-            📜
+            ♡
           </button>
         </div>
         <GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />

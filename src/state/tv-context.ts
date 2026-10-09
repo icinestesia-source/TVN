@@ -2,6 +2,7 @@ import { createContext, useContext, type RefObject } from 'react'
 import type { StartHold } from '../player/autoplay.ts'
 import type { MediaHandle } from '../session/remembered-media.ts'
 import type { Channel } from '../types/channel.ts'
+import type { Bookmark } from '../view/bookmarks-store.ts'
 import type { TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import type { GuideMode } from '../view/guide-mode.ts'
@@ -192,6 +193,8 @@ export interface TvContextValue {
   addChannel: (link: string, owner?: string) => Promise<{ number: number | null; message: string }>
   /** ADD CHANNELS: each YouTube link a channel of its own, in order, on the next free numbers; onProgress hears each one read. */
   addChannels: (links: readonly string[], owner?: string, onProgress?: (done: number, total: number) => void) => Promise<{ numbers: number[]; placed: (number | null)[]; message: string }>
+  /** The chosen bookmarked clips as a new channel, aired in the order given; tunes to it. */
+  createBookmarkChannel: (name: string, bookmarks: readonly Bookmark[]) => Promise<{ number: number | null; message: string }>
   /** COMBINE: one new channel with each playlist a source of its own, and so a sub-channel of it. */
   addCombinedChannel: (
     name: string,

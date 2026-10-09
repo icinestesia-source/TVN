@@ -6,7 +6,7 @@ export type ScheduleAction = 'random' | 'reload' | 'latest' | 'az'
 
 /**
  * Guide actions that happen inside the Guide: MEDIA at 1000 Local Media, IMPORT (a User Network file) and ADD
- * at the foot of the User Network, and EDIT, the Channel Editor for one channel (right-click, long-press, or the menu key).
+ * at the foot of the User Network, and EDIT, the Channel Editor for one channel (X, right-click, long-press, or the menu key).
  */
 export type GuideTool = 'media' | 'network' | 'add' | 'edit' | 'users' | 'options' | 'guides' | 'editor' | 'bookmarks'
 

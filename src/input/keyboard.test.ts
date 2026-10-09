@@ -43,7 +43,8 @@ describe('commandFromKey', () => {
       expect(commandFromKey('o', plain, guideOpen)).toEqual({ type: 'guide-tool', tool: 'options' })
       expect(commandFromKey('d', plain, guideOpen)).toEqual({ type: 'bookmark' })
       expect(commandFromKey('r', plain, guideOpen)).toEqual({ type: 'schedule', action: 'random' })
-      expect(commandFromKey('X', plain, guideOpen)).toEqual({ type: 'schedule', action: 'reload' })
+      expect(commandFromKey('Q', plain, guideOpen)).toEqual({ type: 'schedule', action: 'reload' })
+      expect(commandFromKey('x', plain, guideOpen)).toEqual({ type: 'guide-tool', tool: 'edit' })
       expect(commandFromKey('l', plain, guideOpen)).toEqual({ type: 'schedule', action: 'latest' })
       expect(commandFromKey('z', plain, guideOpen)).toEqual({ type: 'schedule', action: 'az' })
     }
