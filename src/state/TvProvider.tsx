@@ -55,7 +55,7 @@ import {
 } from '../services/channels-import.ts'
 import { lookUpBatch, lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
-import { applyChannelEdit, canLoadMore, editOf, eligibilityKey, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
+import { admitted, applyChannelEdit, canLoadMore, editOf, eligibilityKey, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
@@ -481,6 +481,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const dispatchRef = useRef<(command: TvCommand) => void>(() => {})
   /** A schedule key (R, X, L, Z) is at work; another waits for it. */
   const scheduleBusyRef = useRef(false)
+  /** Playlists just added, read to their end one channel after another. */
+  const readWholeRef = useRef<(number: number) => void>(() => {})
+  const playlistQueue = useRef<Promise<void>>(Promise.resolve())
   const toggleSurfScopeRef = useRef<() => void>(() => {})
   /** The website or post on screen when TVN paused, and how far into its slot. */
   const pausedWebRef = useRef<{ channelNumber: number; programme: Programme; elapsedSeconds: number; slot: { startMs: number; endMs: number } } | null>(null)
@@ -2491,6 +2494,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       }
       await saveStoredSources(result.sources)
       installSources(result.sources)
+      if (found.sourceType === 'youtube-playlist' && result.number !== null) readWholeRef.current(result.number)
       const verb = result.status === 'updated' ? 'UPDATED' : 'ADDED'
       const mix = found.mix ? ' · YOUTUBE MIX: SEED VIDEO KEPT, THEN ITS CHANNEL · THE MIX ITSELF CANNOT BE LISTED' : ''
       return { number: result.number, message: `${found.title} ${verb} ON ${result.number} · ${found.videos.length} VIDEOS${mix}` }
@@ -2506,6 +2510,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       let unread = 0
       let full = false
       let done = 0
+      const playlists: number[] = []
       for (let start = 0; start < links.length && !full; start += ADD_MANY_AT_ONCE) {
         const batch = links.slice(start, start + ADD_MANY_AT_ONCE)
         const read = await Promise.allSettled(
@@ -2534,12 +2539,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
           }
           sources = owner ? result.sources.map((source) => (source.channelNumber === result.number ? { ...source, owner } : source)) : result.sources
           numbers.push(result.number)
+          if (outcome.value.sourceType === 'youtube-playlist') playlists.push(result.number)
           changed = true
         }
         if (changed) {
           await saveStoredSources(sources)
           installSources(sources)
         }
+        for (const number of playlists.splice(0)) readWholeRef.current(number)
       }
       const range = numbers.length === 0 ? '' : numbers.length === 1 ? ` ON ${numbers[0]}` : ` ON ${Math.min(...numbers)}–${Math.max(...numbers)}`
       const message = `${numbers.length} ${numbers.length === 1 ? 'CHANNEL' : 'CHANNELS'} ADDED${range}${already > 0 ? ` · ${already} ALREADY ON THE GUIDE` : ''}${
@@ -2585,6 +2592,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const next = applyChannelEdit(owned, number, { name: label, sources: widenSources(sources, sourceArchive) }, now)
       await saveStoredSources(next)
       installSources(next)
+      readWholeRef.current(number)
       const programmes = next.find((record) => record.channelNumber === number)?.videos.length ?? 0
       const unread = wanted.length - sources.length
       return {
@@ -3243,6 +3251,56 @@ export function TvProvider({ children }: { children: ReactNode }) {
       ),
     [],
   )
+
+  /**
+   * A playlist added is read to its end (up to the ceiling) in the background, one channel and one page at a time,
+   * and every programme found is scheduled. What the viewer changed meanwhile stays: only the playlists read are merged.
+   */
+  const readWholePlaylists = async (number: number) => {
+    const stored = async () => migrateLegacyUserNumbers(await loadStoredSources()).sources
+    const record = (await stored()).find((item) => item.channelNumber === number)
+    const wanted = record ? editOf(record).sources.filter((source) => source.kind === 'youtube' && source.youtube === 'playlist' && canLoadMore(source)) : []
+    if (wanted.length === 0) return
+    const read = new Map<string, ChannelSource>()
+    for (const source of wanted) {
+      const found = await loadMoreChannelSource(source, { all: true }).catch(() => null)
+      if (found) read.set(source.id, found)
+    }
+    if (read.size === 0) return
+    const all = await stored()
+    const latest = all.find((item) => item.channelNumber === number)
+    if (!latest) return
+    const current = editOf(latest)
+    let loaded = 0
+    let listed = 0
+    const sources = current.sources.map((source) => {
+      const found = read.get(source.id)
+      if (!found || source.kind !== 'youtube' || source.url !== found.url) return source
+      const ids = new Set((found.videos ?? []).map((video) => video.id))
+      const videos = [...(found.videos ?? []), ...(source.videos ?? []).filter((video) => !ids.has(video.id))]
+      loaded += videos.length
+      listed += found.listed ?? videos.length
+      const { more: _more, complete: _complete, listed: _listed, ...rest } = source
+      return {
+        ...rest,
+        videos,
+        deep: true,
+        ...(found.listed !== undefined ? { listed: found.listed } : {}),
+        ...(found.more ? { more: found.more } : {}),
+        ...(found.complete ? { complete: true } : {}),
+        status: { state: 'ready' as const, playable: videos.length, checkedAt: Date.now() },
+      }
+    })
+    if (loaded === 0) return
+    const next = { ...current, sources: admitted(sources) }
+    const saved = applyChannelEdit(all, number, { ...next, sources: widenSources(next.sources, sourceArchive), compiled: eligibilityKey(next) }, Date.now())
+    await saveStoredSources(saved)
+    installSources(saved)
+    flash(`${padChannel(number)} · WHOLE PLAYLIST READ · ${loaded} OF ${listed} PROGRAMMES SCHEDULED`, 2600)
+  }
+  readWholeRef.current = (number: number) => {
+    playlistQueue.current = playlistQueue.current.then(() => readWholePlaylists(number)).catch(() => {})
+  }
 
   const canLoadChannelSource = useCallback((source: ChannelSource) => canLoadMore(source, source.kind === 'collection' && !!source.ref && uploaderIdFor(source.ref) !== null), [])
 

@@ -198,7 +198,7 @@ function SourceDepth({
       <span className="editor-depth-count" role={loading ? 'status' : undefined}>
         {loading
           ? `Loading · ${loading.loaded}${listed ? ` of ${listed}` : ''} loaded…`
-          : `${held} loaded${listed ? ` · ${listed} listed` : ''}${source.complete ? ' · whole source read' : ''}`}
+          : `${held} loaded${listed ? ` · ${listed} listed` : ''}${source.complete && !canLoad ? ' · whole source read' : ''}`}
       </span>
       {loading ? (
         <button type="button" className="tab" onKeyDown={keepKey} onClick={onStop}>
@@ -693,10 +693,29 @@ export function ChannelEditor({
    * A new source's first programmes, read straight away and saved as available. On a channel already on air
    * they wait for RESCAN to be scheduled; the running order playing now is left as it is.
    */
+  const readToEnd = async (source: ChannelSource, read: NonNullable<typeof onLoadMore>) => {
+    const stop = new AbortController()
+    stopRef.current = stop
+    setLoading({ id: source.id, loaded: source.videos?.length ?? 0, listed: source.listed, all: true })
+    try {
+      return await read(source, {
+        all: true,
+        signal: stop.signal,
+        onProgress: (loaded, listed) => setLoading((current) => (current ? { ...current, loaded, listed } : current)),
+      })
+    } catch {
+      return source
+    } finally {
+      stopRef.current = null
+      setLoading(null)
+    }
+  }
   const acquire = (base: ChannelEdit, source: ChannelSource) => {
     if (!onAcquire) return
     void run('add', async () => {
-      const found = await onAcquire(source)
+      const first = await onAcquire(source)
+      // A playlist is read to its end straight away; STOP keeps what has arrived.
+      const found = first.kind === 'youtube' && first.youtube === 'playlist' && loadableSource(first) && onLoadMore ? await readToEnd(first, onLoadMore) : first
       const count = found.videos?.length ?? 0
       const read = found.status?.state === 'ready' || count > 0
       const arrived = holding ? holdNew({ ...source, videos: [] }, found) : found

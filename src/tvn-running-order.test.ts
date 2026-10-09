@@ -52,7 +52,7 @@ describe('the running order', () => {
   it('plays exactly in the viewer order, on a loop, without TVN repeats', () => {
     const list = videos('alpha', 8)
     const automatic = channelsFromSources([record(list)]).programmes.get('user-yt:UCaaaa000000000000000001')!
-    expect(automatic.length).toBeGreaterThan(list.length)
+    expect(idsOf(automatic)).toEqual(list.map((video) => video.id))
     const order = [list[5], list[1], list[7], list[0], list[2], list[3], list[4], list[6]].map((video) => video.id)
     const ordered = channelsFromSources([{ ...record(list), runningOrder: order }])
     expect(idsOf(ordered.programmes.get('user-yt:UCaaaa000000000000000001')!)).toEqual(order)

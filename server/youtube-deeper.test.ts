@@ -87,6 +87,19 @@ describe('deeper keyless enumeration', () => {
   it('finds the continuation token, the playlist owner and a channel’s playlists', () => {
     expect(continuationOf({ a: [video('x0000000001'), more('tok')] })).toBe('tok')
     expect(continuationOf({ a: [video('x0000000001')] })).toBeNull()
+    // A playlist page also ends its section list with a continuation of its own, which lists no videos.
+    const page = {
+      content: {
+        sectionListRenderer: {
+          contents: [
+            { itemSectionRenderer: { contents: [video('x0000000001'), video('x0000000002'), more('videos')] } },
+            more('section'),
+          ],
+        },
+      },
+    }
+    expect(continuationOf(page)).toBe('videos')
+    expect(continuationOf({ onResponseReceivedActions: [{ appendContinuationItemsAction: { continuationItems: [video('x0000000003'), more('next')] } }] })).toBe('next')
     expect(playlistOwnerFrom(header(ARTIST))).toBe(ARTIST)
     expect(playlistOwnerFrom({ contents: [] })).toBeNull()
     const listed = playlistsFromChannelPage({

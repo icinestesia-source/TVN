@@ -266,12 +266,35 @@ export function channelTitleFrom(data: unknown): string | null {
 
 /** The continuation token a listing ends with, if the list goes on. */
 export function continuationOf(data: unknown): string | null {
-  let token: string | null = null
+  // A playlist page carries more than one continuation; only the one listed among its videos reads on through them.
+  let listed: string | null = null
+  let any: string | null = null
+  const tokenOf = (item: unknown): string | null => {
+    let token: string | null = null
+    walk(item, (node) => {
+      const command = node.continuationCommand as { token?: unknown } | undefined
+      if (!token && typeof command?.token === 'string') token = command.token
+    })
+    return token
+  }
+  const isVideo = (item: unknown) => {
+    const node = item as { playlistVideoRenderer?: unknown; lockupViewModel?: { contentType?: unknown } } | null
+    return Boolean(node?.playlistVideoRenderer) || node?.lockupViewModel?.contentType === 'LOCKUP_CONTENT_TYPE_VIDEO'
+  }
   walk(data, (node) => {
     const command = node.continuationCommand as { token?: unknown } | undefined
-    if (typeof command?.token === 'string') token = command.token
+    if (typeof command?.token === 'string') any = command.token
+    if (listed) return
+    for (const list of [node.contents, node.continuationItems, node.items]) {
+      if (!Array.isArray(list) || !list.some(isVideo)) continue
+      const tail = list.filter((item) => !isVideo(item)).map(tokenOf).find((token) => token !== null)
+      if (tail) {
+        listed = tail
+        return
+      }
+    }
   })
-  return token
+  return listed ?? any
 }
 
 /** The continuation of a Playlists tab's own grid: the one listed beside its playlists, not another section's. */

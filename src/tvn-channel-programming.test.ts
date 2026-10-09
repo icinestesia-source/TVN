@@ -79,6 +79,10 @@ describe('a source deeper than its first 60 programmes', () => {
     expect(progress.at(-1)).toBe(742)
     expect(progress.length).toBeGreaterThan(5)
     expect(canLoadMore(all)).toBe(false)
+    // A read that stopped early (100 of 449, marked whole) reads on; one short only by what cannot play stays whole.
+    const cut = { ...all, videos: all.videos!.slice(0, 100), listed: 449 }
+    expect(canLoadMore(cut)).toBe(true)
+    expect(canLoadMore({ ...cut, videos: all.videos!.slice(0, 420) })).toBe(false)
   })
 
   it('STOP keeps what has arrived and leaves the rest to load later', async () => {

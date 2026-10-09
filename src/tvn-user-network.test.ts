@@ -133,11 +133,12 @@ describe('User Network depth', () => {
     expect(picked).toEqual([...picked].sort((left, right) => left - right))
   })
 
-  it('gives recent material a larger share of a deep channel', () => {
+  it('airs every programme of a deep channel once a cycle: nothing repeats until everything has played', () => {
     const { programmes, source } = channel(built.channels.find((entry) => entry.name === 'NBA on ESPN')!.number)
     const count = (id: string) => programmes.filter((programme) => programme.videoId === id).length
-    expect(count(source.videos[0].id)).toBe(2)
+    expect(count(source.videos[0].id)).toBe(1)
     expect(count(source.videos[source.videos.length - 1].id)).toBe(1)
+    expect(new Set(programmes.map((programme) => programme.videoId)).size).toBe(programmes.length)
   })
 
   it('keeps every older playable video of a collection in rotation', () => {

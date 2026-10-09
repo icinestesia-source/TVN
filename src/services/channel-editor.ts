@@ -511,7 +511,10 @@ export interface LoadMoreOptions {
 
 /** Whether a source can be read further than it has been; an imported list only when its uploader is known. */
 export function canLoadMore(source: ChannelSource, uploaderKnown = false): boolean {
-  if (!source.enabled || source.complete || (source.videos?.length ?? 0) >= MAX_SOURCE_VIDEOS) return false
+  const held = source.videos?.length ?? 0
+  // Marked read to the end while holding well short of what YouTube lists: an earlier read stopped early, so it reads on.
+  const cutShort = source.kind === 'youtube' && source.listed !== undefined && held < source.listed * 0.9
+  if (!source.enabled || (source.complete && !cutShort) || held >= MAX_SOURCE_VIDEOS) return false
   return source.kind === 'youtube' || (source.kind === 'podcast' && !source.deep) || (source.kind === 'collection' && uploaderKnown)
 }
 

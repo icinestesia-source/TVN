@@ -100,29 +100,9 @@ function separate<T>(order: OrderEntry<T>[]): OrderEntry<T>[] {
 }
 
 /**
- * The channel's loop. Its own videos stay newest first and the newest quarter of them airs twice a
- * cycle; earlier uploads are spread between them. Nothing airs back to back while an alternative exists.
+ * The channel's loop. Its own videos stay newest first, earlier uploads spread between them, and every
+ * programme airs once a cycle: nothing repeats until everything has played.
  */
 export function runningOrder<T>(own: readonly OrderEntry<T>[], archive: readonly OrderEntry<T>[]): OrderEntry<T>[] {
-  const base = own.length >= archive.length ? weave(own, archive) : weave(archive, own)
-  const distinct = own.length + archive.length
-  if (distinct < 4) return separate(base)
-  const recent = own.slice(0, Math.max(1, Math.ceil(own.length / 4))).map((entry) => ({ ...entry, repeat: true }))
-  // Each second airing goes half a cycle (by running time) after the first, so the two never sit close together.
-  const out = base.slice()
-  const seconds = (entry: OrderEntry<T>) => {
-    const item = entry.item as { video?: { durationSec?: number } }
-    return item.video?.durationSec ?? 1
-  }
-  for (const extra of recent) {
-    const first = out.findIndex((entry) => entry.key === extra.key)
-    const total = out.reduce((sum, entry) => sum + seconds(entry), 0)
-    let at = first
-    for (let walked = 0; walked < total / 2; ) {
-      walked += seconds(out[at % out.length])
-      at += 1
-    }
-    out.splice(at % out.length || out.length, 0, extra)
-  }
-  return separate(out)
+  return separate(own.length >= archive.length ? weave(own, archive) : weave(archive, own))
 }
