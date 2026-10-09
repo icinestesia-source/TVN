@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { advancing, confirmStart, soundHeld, soundRefused, START_HOLD_COPY, type StartHold } from './player/autoplay.ts'
+import { advancing, confirmStart, soundHeld, soundRefused, type StartHold } from './player/autoplay.ts'
 import type { PlayerHandle } from './player/types.ts'
 import { DEFAULT_PREFERENCES } from './services/preferences.ts'
 
@@ -50,11 +50,11 @@ describe('the first programme really starts', () => {
     expect(soundBlocked.calls).toEqual(['mute', 'play'])
   })
 
-  it('when nothing may start, TVN asks for a key or tap instead of looking broken', async () => {
+  it('a first clip slow to move even muted is left to play on, sound held, with no PRESS ANY KEY over it', async () => {
     const blocked = fakePlayer(() => false)
-    expect(await confirmStart(blocked.player, () => true, blocked.wait)).toBe('picture')
-    expect(START_HOLD_COPY.picture).toBe('Press any key or tap to start')
-    expect(Object.keys(START_HOLD_COPY)).toEqual(['picture'])
+    expect(await confirmStart(blocked.player, () => true, blocked.wait)).toBe('sound')
+    expect(blocked.calls).toEqual(['mute', 'play'])
+    expect(read('src/player/autoplay.ts')).not.toMatch(/'picture'|press any key/i)
   })
 
   it('stops if the viewer has already tuned, paused or left single view: their interaction allows sound', async () => {
@@ -126,10 +126,9 @@ describe('startup activates the selected channel', () => {
     expect(boot.match(/startCheckRef\.current = false/g)?.length).toBe(2)
   })
 
-  it('asks for a key or tap only when the picture is held; held sound shows as Muted, with no message', () => {
+  it('never asks for a key or tap over the picture; held sound shows as Muted, with no message', () => {
     const screen = read('src/app/TvScreen.tsx')
-    expect(screen).toContain("{tv.startHold === 'picture' && !tv.paused ? <div className=\"paused-bug\" role=\"status\">{START_HOLD_COPY.picture}</div> : null}")
-    expect(screen).not.toMatch(/press any key or tap for sound|Sound off/)
+    expect(screen).not.toMatch(/startHold|START_HOLD_COPY|press any key|Sound off/i)
     expect(read('src/state/TvProvider.tsx')).toContain("muted: muted || startHold === 'sound',")
   })
 

@@ -92,6 +92,8 @@ export interface ExportSource {
   slotSeconds?: number
   /** Programmes (video ids) the viewer deleted from the schedule. Absent in older files: none. */
   removed?: string[]
+  /** The source's share of the channel's airtime, in percent. Absent: an equal part of what is left. */
+  share?: number
 }
 
 export interface ExportChannel {
@@ -242,6 +244,7 @@ export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): Exp
     ...(filter ? { filter } : {}),
     ...(mode !== 'recent' ? { mode } : {}),
     ...(source.removed?.length ? { removed: [...source.removed] } : {}),
+    ...(typeof source.share === 'number' ? { share: source.share } : {}),
   }
   if (source.kind === 'youtube') return { ...base, url: shareableUrl(canonicalYouTubeUrl(source)), ...heldVideos(source) }
   if (source.kind === 'collection' && singleVideoId(source)) return { ...base, url: source.url, ...heldVideos(source) }
@@ -494,6 +497,9 @@ export function checkSources(sources: readonly unknown[], at: string, errors: st
     for (const name of ['complete', 'deep'] as const) if (source[name] !== undefined && typeof source[name] !== 'boolean') errors.push(`${where}.${name} is not true or false`)
     if (source.removed !== undefined && !(Array.isArray(source.removed) && source.removed.length <= MAX_LIST_VIDEOS && source.removed.every((id) => typeof id === 'string'))) {
       errors.push(`${where}.removed is not a list of programme ids`)
+    }
+    if (source.share !== undefined && !(typeof source.share === 'number' && Number.isInteger(source.share) && source.share >= 0 && source.share <= 100)) {
+      errors.push(`${where}.share is not a percentage`)
     }
     checkFilter(source.filter, `${where}.filter`, errors)
     if (source.mode !== undefined && !SOURCE_MODES.includes(source.mode as SourceMode)) errors.push(`${where}.mode must be recent, archive or all`)

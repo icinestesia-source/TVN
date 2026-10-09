@@ -33,7 +33,7 @@ import { PlaylistDiscovery } from './PlaylistDiscovery.tsx'
 import { playlistUrl } from '../services/add-channel.ts'
 import { addedFromOriginal, originalsToRead, withOriginalOverride } from '../services/original-sources.ts'
 import { addedContributions, addedSourceLabels, channelOriginals, contributionsOf, contributionText, originalLineup } from '../view/channel-provenance.ts'
-import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
+import { alphabeticalVideos, latestVideos, rebuiltVideos, sharedVideos, shuffledVideos, sourceShares } from '../view/programme-order.ts'
 
 /** Rows drawn at once in a long list; the rest are a press away, so a deep source never slows the editor. */
 const ROW_LIMIT = 200
@@ -277,6 +277,10 @@ export function ChannelEditor({
   // LOAD across every source that can give more: which source it is on, and the available count it started from and has reached.
   const [batch, setBatch] = useState<{ step: number; of: number; from: number; reached: number } | null>(null)
   const stopRef = useRef<AbortController | null>(null)
+  // RESCAN CHANNEL's later steps, LOAD MORE then RESCHEDULE, and what each step reported.
+  const [rescanStepState, setRescanStep] = useState<'load' | 'shuffle' | 'done' | null>(null)
+  const rescanNotes = useRef<string[]>([])
+  const rescanStepRef = useRef<() => void>(() => {})
   const [allRows, setAllRows] = useState<ReadonlySet<string>>(new Set())
   const now = useClock(30_000)
   const rootRef = useRef<HTMLElement>(null)
@@ -410,6 +414,51 @@ export function ChannelEditor({
   const held = edit ? heldIds(edit.sources) : new Set<string>()
   const kept = lineup.filter((video) => !left.has(video.id))
   const airing = held.size ? kept.filter((video) => !held.has(video.id)) : kept
+  // SHARE: which source each programme comes from, and the part of the airtime each source is given.
+  const sourceIdOf = new Map<string, string>()
+  for (const source of edit?.sources ?? []) {
+    if (!source.enabled || isStreamSource(source)) continue
+    for (const video of source.videos ?? []) if (!sourceIdOf.has(video.id)) sourceIdOf.set(video.id, source.id)
+  }
+  const shareKeyOf = (video: ListedVideo) => (video.original ? (tvnSource?.id ?? 'tvn') : (sourceIdOf.get(video.id) ?? ''))
+  const shareKeys = edit && !tvnLineup && !liveStreamOf(edit.sources) ? [...new Set(kept.map(shareKeyOf))].filter((key) => key !== '') : []
+  const shareSet = new Map(
+    (edit?.sources ?? []).flatMap((source) => (shareKeys.includes(source.id) && typeof source.share === 'number' ? [[source.id, source.share] as const] : [])),
+  )
+  const sharing = shareKeys.length > 1 && shareSet.size > 0
+  const shares = shareKeys.length > 1 ? sourceShares(shareKeys, shareSet) : null
+  const setShare = (id: string, text: string) => {
+    if (!edit) return
+    const value = text.trim() === '' || !Number.isFinite(Number(text)) ? undefined : Math.min(100, Math.max(0, Math.round(Number(text))))
+    const sources = edit.sources.map((source): ChannelSource => {
+      if (source.id !== id) return source
+      const { share: _share, ...rest } = source
+      return value === undefined ? rest : { ...rest, share: value }
+    })
+    const anyShare = sources.some((source) => typeof source.share === 'number')
+    change({ ...edit, sources, ...(anyShare ? {} : { scheduleSize: undefined }) })
+    setNote(anyShare ? 'SHARE SET · RESCHEDULE OR RESCAN TO APPLY IT · SAVE TO KEEP IT' : 'SHARES CLEARED · RESCHEDULE TO MIX THE SOURCES EVENLY AGAIN')
+  }
+  const shareControl = (source: ChannelSource) =>
+    shares && shareKeys.includes(source.id) ? (
+      <span className="editor-pool-size editor-share" role="group" aria-label={`Share of the schedule for ${source.kind === 'tvn' ? 'TVN original' : sourceTitle(source)}`}>
+        <span>Share</span>
+        <input
+          type="number"
+          min={0}
+          max={100}
+          step={5}
+          inputMode="numeric"
+          placeholder={`Auto ${Math.round(shares.get(source.id) ?? 0)}`}
+          value={source.share ?? ''}
+          disabled={busy !== null}
+          aria-label="Share of the airtime, in percent; empty for an equal part of the rest"
+          onKeyDown={keepKey}
+          onChange={(event) => setShare(source.id, event.target.value)}
+        />
+        <span>%{typeof source.share === 'number' ? ` · airs ${Math.round(shares.get(source.id) ?? 0)}%` : ''}</span>
+      </span>
+    ) : null
   const availableOf = (of: ChannelEdit) =>
     new Set([
       ...of.sources.filter((source) => source.enabled && !isStreamSource(source)).flatMap((source) => (source.videos ?? []).map((video) => video.id)),
@@ -520,19 +569,39 @@ export function ChannelEditor({
     const head = shuffledVideos(ids.slice(0, scheduled))
     keepOrder({ ...edit, order: withLeft([...head, ...ids.slice(scheduled)]), orderKind: 'random' }, `RANDOMISED · ${scheduled} SCHEDULED PROGRAMMES IN A NEW ORDER · SAVED`)
   }
+  /** The order drawn by the sources' shares, and how many of it are scheduled; null while no share is set. */
+  const sharedOrder = () => {
+    if (!sharing) return null
+    const drawn = sharedVideos(kept, shareKeyOf, shareSet)
+    const short = drawn.short ? edit?.sources.find((source) => source.id === drawn.short) : undefined
+    const name = short ? (short.kind === 'tvn' ? 'TVN ORIGINAL' : sourceTitle(short).toUpperCase()) : null
+    return {
+      ids: drawn.videos.map((video) => video.id),
+      size: drawn.scheduled < kept.length ? drawn.scheduled : undefined,
+      limit: name ? ` · ${name} HAS TOO FEW PROGRAMMES FOR A LONGER SCHEDULE AT THESE SHARES · LOAD MORE FROM IT OR LOWER ITS SHARE` : '',
+    }
+  }
   /** REBUILD compiles the channel as it stands: held programmes join, drawn into the new order with the rest. */
   const rebuild = () => {
     if (!edit) return
-    const ids = rebuiltVideos(kept).map((video) => video.id)
+    const shared = sharedOrder()
+    const ids = shared ? shared.ids : rebuiltVideos(kept).map((video) => video.id)
     const sources = admitted(edit.sources)
-    const next = { ...edit, sources, order: withLeft(ids), orderKind: 'rebuilt' as const }
-    const size = scheduleSize ?? kept.length
-    keepOrder({ ...next, compiled: eligibilityKey(next) }, `REBUILT FROM ${kept.length} ELIGIBLE · ${size} SCHEDULED · SAVED`)
+    const next = { ...edit, sources, order: withLeft(ids), orderKind: 'rebuilt' as const, ...(shared ? { scheduleSize: shared.size } : {}) }
+    const size = shared ? (shared.size ?? kept.length) : (scheduleSize ?? kept.length)
+    keepOrder({ ...next, compiled: eligibilityKey(next) }, `REBUILT FROM ${kept.length} ELIGIBLE · ${size} SCHEDULED${shared ? ` BY SOURCE SHARE${shared.limit}` : ''} · SAVED`)
   }
   /** RESCHEDULE puts the channel's scheduled programmes in a new random order and keeps it; nothing is fetched. */
   const canReschedule = edit !== null && airing.length > 1 && !liveStreamOf(edit.sources)
   const reschedule = () => {
     if (!edit || !canReschedule) return
+    const shared = sharedOrder()
+    if (shared) {
+      const next = { ...edit, sources: admitted(edit.sources), order: withLeft(shared.ids), orderKind: 'random' as const, scheduleSize: shared.size }
+      const size = shared.size ?? kept.length
+      keepOrder({ ...next, compiled: eligibilityKey(next) }, `RESCHEDULED · ${size} PROGRAMMES BY SOURCE SHARE, IN A NEW RANDOM ORDER${shared.limit} · SAVED`)
+      return
+    }
     const ids = airing.map((video) => video.id)
     const head = shuffledVideos(ids.slice(0, scheduled))
     const next = { ...edit, sources: admitted(edit.sources), order: withLeft([...head, ...ids.slice(scheduled)]), orderKind: 'random' as const }
@@ -670,18 +739,44 @@ export function ChannelEditor({
       else next.delete(id)
       return next
     })
-  /** Rescans with every source's mode and filter as set now, applied ones and drafts alike. */
-  const rescan = (base: ChannelEdit, extra?: ReadonlyMap<string, SourceDraft>) => {
+  /**
+   * Rescans with every source's mode and filter as set now, applied ones and drafts alike. RESCAN CHANNEL then
+   * goes on to LOAD MORE and RESCHEDULE, each on the next render so it works from the rescanned channel.
+   */
+  const rescan = (base: ChannelEdit, extra?: ReadonlyMap<string, SourceDraft>, whole = false) => {
     const all = new Map([...drafts, ...(extra ?? [])])
     const next = all.size > 0 ? { ...base, sources: withSourceDrafts(base.sources, all) } : base
     if (all.size > 0) setEdit(next)
+    rescanNotes.current = []
     void run('rescan', async () => {
       const result = await onRescan(number, next)
       setEdit(result.edit)
       setDrafts(new Map())
+      if (whole) setRescanStep('load')
       return result.message
     })
   }
+  const rescanStep = () => {
+    if (busy !== null || !rescanStepState || !edit) return
+    if (note) rescanNotes.current.push(note)
+    const stopped = note?.startsWith('STOPPED') ?? false
+    if (rescanStepState === 'load' && !stopped && batchSize > 0) {
+      setRescanStep('shuffle')
+      loadBatch()
+      return
+    }
+    if (rescanStepState !== 'done' && !stopped && canReschedule) {
+      setRescanStep('done')
+      reschedule()
+      return
+    }
+    setRescanStep(null)
+    setNote(rescanNotes.current.join(' · '))
+  }
+  useEffect(() => {
+    rescanStepRef.current = rescanStep
+  })
+  useEffect(() => rescanStepRef.current(), [busy, rescanStepState])
 
   const run = async (label: string, work: () => Promise<string>) => {
     setBusy(label)
@@ -828,20 +923,29 @@ export function ChannelEditor({
             <button
               type="button"
               className={dirty ? 'tab is-dirty' : 'tab'}
-              disabled={busy !== null}
+              disabled={busy !== null || rescanStepState !== null}
               onKeyDown={keepKey}
-              title={
+              title={[
                 drafts.size > 0
                   ? 'Rescans with the filter changes not applied yet'
                   : held.size > 0
                     ? `${held.size} loaded ${held.size === 1 ? 'programme waits' : 'programmes wait'} for RESCAN to be scheduled`
                     : dirty
                       ? 'Sources or filters have changed since the last rescan'
-                      : undefined
-              }
-              onClick={() => rescan(edit)}
+                      : null,
+                'Reads every source again, loads the next batch from each, then reschedules the channel in a new random order',
+              ]
+                .filter(Boolean)
+                .join('. ')}
+              onClick={() => rescan(edit, undefined, true)}
             >
-              {busy === 'rescan' ? 'Rescanning…' : drafts.size > 0 ? 'Apply filters & rescan *' : dirty ? 'Rescan channel *' : 'Rescan channel'}
+              {busy === 'rescan' || rescanStepState !== null
+                ? 'Rescanning…'
+                : drafts.size > 0
+                  ? 'Apply filters & rescan *'
+                  : dirty
+                    ? 'Rescan channel *'
+                    : 'Rescan channel'}
             </button>
             <button type="button" className="tune-key" disabled={busy !== null} onKeyDown={keepKey} onClick={() => void run('save', () => onSave(number, edit))}>
               {busy === 'save' ? 'Saving…' : 'Save'}
@@ -863,7 +967,7 @@ export function ChannelEditor({
         <p className="editor-actions-help" role="note">
           RESCHEDULE shuffles the channel&apos;s schedule into a new random order. LOAD MORE reads the next batch from every source
           {scope === 'curated' ? ", reading TVN's original sources again from their publishers," : ''} and schedules it at once. RESCAN
-          CHANNEL reads every source again from the start, with its mode and filter.
+          CHANNEL does it all: it reads every source again from the start, with its mode and filter, loads more from them, and reschedules.
         </p>
       ) : null}
       {note ? (
@@ -950,6 +1054,7 @@ export function ChannelEditor({
                       </label>
                       <span className="editor-source-status">{sourceStatusText(source, edit.sources)}</span>
                       <span className="editor-source-remove" aria-hidden="true" />
+                      {shareControl(source)}
                       <OriginalSources
                         originals={originals}
                         overrides={edit.originals}
@@ -1028,6 +1133,7 @@ export function ChannelEditor({
                       Remove
                     </button>
                   )}
+                  {shareControl(source)}
                   {(source.kind === 'youtube' || source.kind === 'podcast' || source.kind === 'collection') && (source.videos?.length ?? 0) > 0 ? (
                     <SourceDepth
                       source={source}

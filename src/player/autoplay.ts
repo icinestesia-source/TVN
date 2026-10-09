@@ -1,15 +1,10 @@
 import type { PlayerHandle } from './types.ts'
 
 /**
- * What the browser held back when TVN started: 'sound' when the picture plays muted and waits for the
- * viewer before sound is allowed, 'picture' when nothing may start until the viewer interacts.
+ * What the browser held back when TVN started: 'sound' while the picture plays muted and waits for the viewer
+ * before sound is allowed. Held sound needs no words: it shows as Muted, and UNMUTE or any key or tap brings it.
  */
-export type StartHold = 'sound' | 'picture' | null
-
-/** Held sound needs no words: it shows as Muted, and UNMUTE or any key or tap brings it. */
-export const START_HOLD_COPY: Record<'picture', string> = {
-  picture: 'Press any key or tap to start',
-}
+export type StartHold = 'sound' | null
 
 type Wait = (ms: number) => Promise<void>
 
@@ -40,10 +35,12 @@ export async function confirmStart(
   if (moving || interacted()) return null
   player.setAudible(false, 0, true)
   player.play()
-  const muted = await advancing(player, wait)
+  // Muted and still not moving is a slow first clip as often as a refusal: it is left to play on, with no
+  // message over it, and the viewer's first key or tap brings the sound either way.
+  await advancing(player, wait)
   if (!current()) return unproven()
   if (interacted()) return null
-  return muted ? 'sound' : 'picture'
+  return 'sound'
 }
 
 /**

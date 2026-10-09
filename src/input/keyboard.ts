@@ -64,9 +64,11 @@ export function commandFromKey(
       return { type: 'mute' }
     case '/':
       return { type: 'multiview' }
-    case ',':
+    case 'b':
+    case 'B':
       return { type: 'history-back' }
-    case '.':
+    case 'n':
+    case 'N':
       return { type: 'history-forward' }
     case 'u':
     case 'U':
@@ -111,11 +113,9 @@ export function commandFromKey(
     case 't':
     case 'T':
       return { type: 'surf' }
-    case 'b':
-    case 'B':
+    case ',':
       return { type: 'step', direction: -1 }
-    case 'n':
-    case 'N':
+    case '.':
       return { type: 'step', direction: 1 }
     case 'h':
     case 'H':

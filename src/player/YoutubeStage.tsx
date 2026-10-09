@@ -20,6 +20,8 @@ interface YoutubeStageProps {
   captions?: boolean
 }
 
+const RESUME_DELAYS_MS = [300, 1200, 4000]
+
 interface QueuedLoad {
   id: number
   request: PlayerLoadRequest
@@ -79,6 +81,31 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
   const executeRef = useRef<(id: number, request: PlayerLoadRequest) => void>(() => {})
   const captionsRef = useRef<CaptionController | null>(null)
   captionsRef.current ??= new CaptionController(captions)
+  const resumeRef = useRef(0)
+  const unpausedRef = useRef(0)
+  const resumeIfStrayRef = useRef<() => void>(() => {})
+  const resumeSoonRef = useRef<() => void>(() => {})
+
+  // The picture shown again (the Guide closing, a resize, the tab coming back) picks up a stray pause at once.
+  useEffect(() => {
+    // The YouTube API replaces the host with its iframe, so the frame around it is what is watched.
+    const host = frameRef.current
+    const resume = () => {
+      unpausedRef.current = 0
+      resumeIfStrayRef.current()
+    }
+    const observer = host && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resume) : null
+    if (host) observer?.observe(host)
+    const visible = () => {
+      if (document.visibilityState === 'visible') resume()
+    }
+    document.addEventListener('visibilitychange', visible)
+    return () => {
+      observer?.disconnect()
+      document.removeEventListener('visibilitychange', visible)
+      window.clearTimeout(resumeRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     onReadyRef.current = onReady
@@ -132,6 +159,30 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
     notePlayback({ actualVideoId: actual, lastError: null })
     finish(id, 'playing')
   }
+
+  /**
+   * A pause TVN did not ask for (Safari pauses a video while the Guide covers it) would leave YouTube's own
+   * play button over the picture for good: the programme carries on instead, retried a few times and again
+   * whenever the picture is laid out anew.
+   */
+  const resumeSoon = () => {
+    window.clearTimeout(resumeRef.current)
+    if (unpausedRef.current >= RESUME_DELAYS_MS.length) return
+    resumeRef.current = window.setTimeout(() => {
+      unpausedRef.current += 1
+      resumeIfStray()
+      if (ytRef.current?.getPlayerState?.() === 2 && !holdRef.current) resumeSoon()
+    }, RESUME_DELAYS_MS[unpausedRef.current])
+  }
+  const resumeIfStray = () => {
+    const player = ytRef.current
+    if (!player || holdRef.current || !requestedRef.current || player.getPlayerState?.() !== 2) return
+    player.playVideo()
+  }
+  useEffect(() => {
+    resumeIfStrayRef.current = resumeIfStray
+    resumeSoonRef.current = resumeSoon
+  })
 
   const reportPlaying = (player: YouTubePlayer) => {
     const data = player.getVideoData?.() as { video_id?: string; isLive?: boolean } | undefined
@@ -291,7 +342,11 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
                 notePlayback({ playerState: 'buffering' })
                 onStatusRef.current('buffering')
               }
-              if (event.data === 2) onStatusRef.current('paused')
+              if (event.data === 2) {
+                onStatusRef.current('paused')
+                if (!holdRef.current) resumeSoonRef.current()
+              }
+              if (event.data === 1) unpausedRef.current = 0
               if (event.data === 5) notePlayback({ playerState: 'cued', lastCue: requestedRef.current })
               if (event.data === 1) captionsRef.current!.videoPlaying(event.target)
               if (event.data === 1 || event.data === 5) {

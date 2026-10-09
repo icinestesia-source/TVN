@@ -85,6 +85,7 @@ export function channelSource(source: ExportSource, index: number): ChannelSourc
     ...(source.info ? { info: structuredClone(source.info) } : {}),
     ...curation,
     ...(removed.length ? { removed } : {}),
+    ...(typeof source.share === 'number' && Number.isInteger(source.share) && source.share >= 0 && source.share <= 100 ? { share: source.share } : {}),
   }
   if (source.sourceType === 'youtube-channel' || source.sourceType === 'youtube-playlist') {
     const ref = source.providerId || youTubeRef(source.url)

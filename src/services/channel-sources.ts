@@ -76,6 +76,8 @@ export interface ChannelSource {
   deep?: boolean
   /** Programmes (video ids) the viewer deleted from the schedule: never eligible again, whatever a rescan or LOAD reads. */
   removed?: string[]
+  /** The source's share of the channel's airtime, in percent, applied when the channel is rescheduled. Absent: an equal part of what is left. */
+  share?: number
 }
 
 interface SourceType {

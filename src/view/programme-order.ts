@@ -46,6 +46,72 @@ export function rebuiltVideos<T extends { from?: string }>(videos: readonly T[],
   return out
 }
 
+/** A programme of unknown length counts as this long when sources share the airtime. */
+const UNKNOWN_LENGTH_SEC = 600
+
+/**
+ * Each source's share of the airtime, in percent, from the shares the viewer set: a source left unset takes an
+ * equal part of what the set ones leave, and the shares are scaled to total 100. Sources at 0 are not scheduled.
+ */
+export function sourceShares(keys: readonly string[], set: ReadonlyMap<string, number>): Map<string, number> {
+  const given = keys.filter((key) => set.has(key))
+  const rest = keys.filter((key) => !set.has(key))
+  const used = given.reduce((sum, key) => sum + Math.max(0, set.get(key) ?? 0), 0)
+  const each = rest.length ? Math.max(0, 100 - used) / rest.length : 0
+  const raw = new Map(keys.map((key) => [key, set.has(key) ? Math.max(0, set.get(key) ?? 0) : each]))
+  const total = [...raw.values()].reduce((sum, value) => sum + value, 0)
+  return new Map(keys.map((key) => [key, total > 0 ? ((raw.get(key) ?? 0) / total) * 100 : 0]))
+}
+
+/**
+ * A running order that airs each source for its share of the time. Each source's programmes are shuffled, then
+ * the source furthest behind its share airs next, by programme length. The schedule stops where a shared source
+ * runs out, so the mix holds all the way round the loop; `scheduled` is how many programmes that is, and the rest
+ * follow, eligible but not scheduled. `short` is the source that ran out while others still had programmes.
+ */
+export function sharedVideos<T extends { durationSec?: number }>(
+  videos: readonly T[],
+  sourceOf: (video: T) => string,
+  set: ReadonlyMap<string, number>,
+  random: () => number = Math.random,
+): { videos: T[]; scheduled: number; short?: string } {
+  const bySource = new Map<string, T[]>()
+  for (const video of videos) {
+    const key = sourceOf(video)
+    bySource.set(key, [...(bySource.get(key) ?? []), video])
+  }
+  const keys = shuffledVideos([...bySource.keys()], random)
+  const shares = sourceShares(keys, set)
+  const queues = new Map(keys.map((key) => [key, shuffledVideos(bySource.get(key) ?? [], random)]))
+  const airing = keys.filter((key) => (shares.get(key) ?? 0) > 0)
+  if (airing.length === 0) return { videos: shuffledVideos(videos, random), scheduled: videos.length }
+  const known = videos.map((video) => video.durationSec ?? 0).filter((seconds) => seconds > 0)
+  const typical = known.length ? known.reduce((sum, seconds) => sum + seconds, 0) / known.length : UNKNOWN_LENGTH_SEC
+  const length = (video: T) => (video.durationSec && video.durationSec > 0 ? video.durationSec : typical)
+  const aired = new Map(airing.map((key) => [key, 0]))
+  const taken = new Map(keys.map((key) => [key, 0]))
+  const out: T[] = []
+  let short: string | undefined
+  for (;;) {
+    const next = airing.reduce((best, key) => ((aired.get(key) ?? 0) / (shares.get(key) ?? 1) < (aired.get(best) ?? 0) / (shares.get(best) ?? 1) ? key : best))
+    const queue = queues.get(next) ?? []
+    const at = taken.get(next) ?? 0
+    if (at >= queue.length) {
+      if (airing.some((key) => (taken.get(key) ?? 0) < (queues.get(key)?.length ?? 0))) short = next
+      break
+    }
+    out.push(queue[at])
+    taken.set(next, at + 1)
+    aired.set(next, (aired.get(next) ?? 0) + length(queue[at]))
+  }
+  const scheduled = out.length
+  const left = keys.map((key) => (queues.get(key) ?? []).slice(taken.get(key) ?? 0))
+  for (let round = 0; left.some((queue) => round < queue.length); round += 1) {
+    for (const queue of left) if (round < queue.length) out.push(queue[round])
+  }
+  return { videos: out, scheduled, ...(short !== undefined ? { short } : {}) }
+}
+
 /** Newest first by upload day; programmes with no known day follow, and ties keep their order. */
 export function latestVideos<T extends OrderedVideo>(videos: readonly T[]): T[] {
   const day = (video: T) => (video.published && DAY.test(video.published) ? video.published : null)

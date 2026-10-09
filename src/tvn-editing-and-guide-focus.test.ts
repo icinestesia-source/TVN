@@ -73,8 +73,8 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
       ['A', 'Fav'],
       ['S', 'Subs'],
       ['V', 'Info'],
-      [',', 'Prev'],
-      ['.', 'Next'],
+      [',', 'Prev prog'],
+      ['.', 'Next prog'],
       ['/', 'Multi'],
       ['-', 'Zoom out'],
       ['=', 'Zoom in'],
@@ -87,8 +87,8 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
       ['U', 'Add'],
       ['I', 'Media'],
       ['O', 'Export ALL'],
-      ['B', 'Prev prog'],
-      ['N', 'Next prog'],
+      ['B', 'Prev'],
+      ['N', 'Next'],
       ['Home', 'Now'],
     ]) {
       expect(html).toContain(`<kbd>${key}</kbd><span>${label}</span>`)
@@ -101,7 +101,7 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
     const expected: Record<string, string> = {
       Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'guide-tool', r: 'schedule', t: 'surf', y: 'user-channels',
       u: 'guide-tool', i: 'media', o: 'export-all', p: 'play-pause', a: 'favourite', s: 'subtitles', f: 'fullscreen', g: 'guide', h: 'hints', l: 'schedule', Enter: 'confirm',
-      z: 'schedule', x: 'schedule', c: 'guide-cycle', v: 'info', b: 'step', n: 'step', m: 'mute', ',': 'history-back', '.': 'history-forward', '/': 'multiview', ' ': 'random-channel',
+      z: 'schedule', x: 'schedule', c: 'guide-cycle', v: 'info', b: 'history-back', n: 'history-forward', m: 'mute', ',': 'step', '.': 'step', '/': 'multiview', ' ': 'random-channel',
       Home: 'guide-now', PageUp: 'channel-up', PageDown: 'channel-down', ArrowUp: 'channel-up', ArrowDown: 'channel-down', ArrowLeft: 'volume-down', ArrowRight: 'volume-up',
     }
     for (const item of [...KEYBOARD_ROWS.flat(), ...KEYBOARD_NAV]) {

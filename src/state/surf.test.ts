@@ -45,12 +45,12 @@ describe('TVN surf range', () => {
     expect(provider).toContain('const [surfing, setSurfing] = useState(() => surfsOnEntry(currentEntryMode()))')
   })
 
-  it('T switches surfing like the TVN button, in or out of the Guide; B and N are Prev and Next', () => {
+  it('T switches surfing like the TVN button, in or out of the Guide; comma and full stop are programme Prev and Next', () => {
     const plain = { meta: false, ctrl: false, alt: false }
     expect(commandFromKey('t', plain, false)).toEqual({ type: 'surf' })
     expect(commandFromKey('T', plain, true)).toEqual({ type: 'surf' })
-    expect(commandFromKey('b', plain, false)).toEqual({ type: 'step', direction: -1 })
-    expect(commandFromKey('N', plain, true)).toEqual({ type: 'step', direction: 1 })
+    expect(commandFromKey(',', plain, false)).toEqual({ type: 'step', direction: -1 })
+    expect(commandFromKey('.', plain, true)).toEqual({ type: 'step', direction: 1 })
     expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(/case 'surf':\s*toggleSurf\(\)/)
     expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(
       /case 'step':\s*if \(guideOpenRef\.current\) stepGuideTime\(command\.direction\)\s*else if \(multiviewRef\.current === '1'\) screenStep\(command\.direction\)/,
