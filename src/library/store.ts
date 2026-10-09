@@ -122,6 +122,8 @@ function requestAll<T>(store: IDBObjectStore): Promise<T[]> {
   return readAllPaged<T>(store, 'Could not read the media library')
 }
 
+const LIBRARY_WRITE_BATCH = 250
+
 const idbWriter: LibraryWriter = {
   async read() {
     if (typeof indexedDB === 'undefined') return { media: [], sources: [] }
@@ -151,9 +153,19 @@ const idbWriter: LibraryWriter = {
         const sourceStore = tx.objectStore('sources')
         mediaStore.clear()
         sourceStore.clear()
-        for (const item of snapshot.media) mediaStore.put(item)
         for (const source of snapshot.sources) sourceStore.put(source)
         tx.objectStore('sessions').put(snapshot.session)
+        // Thousands of puts in one task hold the main thread for seconds (a channel change waits behind them), so
+        // each batch is queued from the last one's success: still one transaction, with input and paint between.
+        const items = snapshot.media
+        let at = 0
+        const queue = () => {
+          const end = Math.min(items.length, at + LIBRARY_WRITE_BATCH)
+          let last: IDBRequest | null = null
+          for (; at < end; at += 1) last = mediaStore.put(items[at])
+          if (last && at < items.length) last.onsuccess = queue
+        }
+        queue()
         tx.oncomplete = () => resolve()
         tx.onerror = () => reject(tx.error ?? new Error('Could not save the media library'))
       })

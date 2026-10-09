@@ -123,6 +123,9 @@
   to { visibility: visible; }
 }
 
+/* A card due at once paints in the same frame as the static: a held first frame would show the static alone. */
+.fx-card.is-immediate { animation: none; }
+
 .fx-card-face.static-ident {
   position: static;
   transform: none;

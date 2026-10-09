@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { webmSeconds } from './media-probe.ts'
 import { resolveFeed } from './podcast-feed.ts'
-import { firstVariant, isSignedUrl, readMediaPlaylist } from './url-sources.ts'
+import { firstVariant, isSignedUrl, readMediaPlaylist, resolveUrlSource } from './url-sources.ts'
 import { refusal } from './web-read.ts'
 
 type Route = (url: string, init?: RequestInit) => Response | null
@@ -120,6 +120,38 @@ describe('direct media, HLS and DASH, by what the server says they are', () => {
     const radio = await resolveFeed('https://ice.example.net/groove-128', reader(() => body('ID3', 'audio/mpeg', { 'icy-name': 'Groove' })))
     expect(radio).toMatchObject({ provider: 'direct', form: 'live', title: 'Groove', live: { media: 'audio', format: 'direct' } })
     await expect(resolveFeed('https://cdn.example.net/film.mp4', reader(() => body('x', 'video/mp4', { 'content-length': '1000' })))).rejects.toThrow(/cannot send part of a file/)
+  })
+
+  const parse = () => {
+    throw new Error('not a feed')
+  }
+
+  it('keeps a radio station by the address given, even when it redirects each listener to a signed node', async () => {
+    const node = 'https://node7.example.net/STATION.mp3?token=abc'
+    const read = (async () => Object.defineProperty(body('ID3', 'audio/mpeg', { 'icy-name': 'Station FM' }), 'url', { value: node })) as unknown as typeof fetch
+    const radio = await resolveUrlSource(new URL('https://radio.example.net/api/livestream-redirect/STATION.mp3'), read, 60, parse, async () => null)
+    expect(radio).toMatchObject({ form: 'live', title: 'Station FM', feedUrl: 'https://radio.example.net/api/livestream-redirect/STATION.mp3', live: { url: 'https://radio.example.net/api/livestream-redirect/STATION.mp3', media: 'audio', format: 'direct' } })
+    expect(JSON.stringify(radio)).not.toContain('token')
+    const file = (async () => Object.defineProperty(body('x', 'video/mp4', { 'content-range': 'bytes 0-0/1000' }, 206), 'url', { value: 'https://cdn.example.net/film.mp4?Signature=abc' })) as unknown as typeof fetch
+    await expect(resolveUrlSource(new URL('https://cdn.example.net/film'), file, 60, parse, async () => null)).rejects.toThrow(/signed, expiring link/)
+  })
+
+  it('reads a station whose server answers in a way fetch refuses, by following its redirects and reading the reply head', async () => {
+    const start = 'https://stream.example.de/tomorrowland/mp3-128/'
+    const node = 'https://edge.example.net/station-mp3-128?sABC=1'
+    const read = (async (url: string | URL, init?: RequestInit) => {
+      if (init?.redirect === 'manual' && String(url) === start) return new Response(null, { status: 302, headers: { location: node } })
+      throw new TypeError('fetch failed')
+    }) as typeof fetch
+    const peeked: string[] = []
+    const radio = await resolveUrlSource(new URL(start), read, 60, parse, async (url) => {
+      peeked.push(url.toString())
+      return { type: 'audio/mpeg', name: '', icy: false }
+    })
+    expect(peeked).toEqual([node])
+    expect(radio).toMatchObject({ form: 'live', title: 'tomorrowland', feedUrl: start, live: { url: start, media: 'audio', format: 'direct' } })
+    expect(await resolveUrlSource(new URL(start), read, 60, parse, async () => null)).toBeNull()
+    expect(await resolveUrlSource(new URL(start), read, 60, parse, async () => ({ type: 'text/html', name: '', icy: false }))).toBeNull()
   })
 })
 

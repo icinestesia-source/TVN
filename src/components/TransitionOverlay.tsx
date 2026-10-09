@@ -41,10 +41,10 @@ function channelIdentity(channelNumber: number, now: number): CardIdentity {
   }
 }
 
-function TitleCard({ settings, identity }: { settings: TransitionSettings; identity: CardIdentity }) {
+function TitleCard({ settings, identity, immediate }: { settings: TransitionSettings; identity: CardIdentity; immediate: boolean }) {
   const { card } = settings
   return (
-    <div className={`fx-card at-${card.position} panel-${card.panel} type-${card.type}`}>
+    <div className={`fx-card at-${card.position} panel-${card.panel} type-${card.type}${immediate ? ' is-immediate' : ''}`}>
       <div className="fx-card-face static-ident">
         {card.number ? <p className="static-number">{identity.number}</p> : null}
         {card.name ? <p className="static-name">{identity.name}</p> : null}
@@ -110,7 +110,7 @@ export function TransitionOverlay({
       ) : null}
       {definition.effect === 'flash' ? <div className="fx-flash-light" /> : null}
       {tint ? <div className="fx-tint" /> : null}
-      {timing.cardAtMs !== null && !revealing ? <TitleCard settings={settings} identity={identity} /> : null}
+      {timing.cardAtMs !== null && !revealing ? <TitleCard settings={settings} identity={identity} immediate={timing.cardAtMs === 0} /> : null}
     </div>
   )
 }

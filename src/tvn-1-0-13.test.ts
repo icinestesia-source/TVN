@@ -410,7 +410,9 @@ describe('refused programmes', () => {
 
   it('a viewer tune or PLAYING ends the recovery; the recovery’s own tune keeps it', () => {
     const request = between(provider, 'const requestTune = ', 'notePress(target.number)')
-    expect(request).toMatch(/if \(!autoTuneRef\.current\) recoveryRef\.current = null/)
+    expect(request).toMatch(/const byViewer = !autoTuneRef\.current\s*if \(byViewer\) recoveryRef\.current = null/)
+    // The viewer's own change also ends the start, so it is presented with its static and title card.
+    expect(request).toMatch(/if \(byViewer && phaseRef\.current === 'ready' && !startupSettledRef\.current\) \{\s*startupSettledRef\.current = true\s*setStartupSettled\(true\)/)
     const status = between(provider, 'const onPlayerStatus = useCallback', '}, [syncLive, refreshAfterFailure])')
     expect(status).toMatch(/recoveryRef\.current = null/)
     const recover = between(provider, 'recoverRef.current = (channelNumber, cause) =>', 'const resumeViewing')

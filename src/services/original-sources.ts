@@ -130,6 +130,28 @@ export function originalChannelSource(source: OriginalSource, override?: Origina
   }
 }
 
+const PUBLISHER_ON_YOUTUBE = /^https?:\/\/(?:www\.|m\.)?youtube\.com\/(?:@[\w.-]+|channel\/UC[\w-]{22}|c\/[^/?#]+|user\/[^/?#]+)\/?$/i
+const sameAddress = (a: string, b: string) => a.trim().replace(/\/+$/, '').toLowerCase() === b.trim().replace(/\/+$/, '').toLowerCase()
+
+/**
+ * The original sources LOAD MORE can read again from their publisher: registered YouTube channels the viewer has
+ * not switched off and no added source carries yet (by address, name or resolved identity).
+ */
+export function originalsToRead(originals: readonly OriginalSource[], sources: readonly ChannelSource[], overrides?: readonly OriginalOverride[]): OriginalSource[] {
+  const carried = sources.filter((source) => source.kind === 'youtube')
+  return originals.filter((original) => {
+    if (!original.registered || !original.url || !PUBLISHER_ON_YOUTUBE.test(original.url)) return false
+    if (overrides?.some((item) => item.ref === original.ref && !item.enabled)) return false
+    const name = original.name.trim().toLowerCase()
+    return !carried.some((source) => sameAddress(source.url, original.url ?? '') || (name !== '' && source.label.trim().toLowerCase() === name))
+  })
+}
+
+/** An original source as a new added source read from its publisher, keeping the viewer's filter on it. */
+export function addedFromOriginal(original: OriginalSource, source: ChannelSource, override?: OriginalOverride): ChannelSource {
+  return { ...source, label: original.name, ...(override?.filter && canFilter(original) ? { filter: override.filter } : {}) }
+}
+
 export interface Contribution {
   programmes: number
   seconds: number

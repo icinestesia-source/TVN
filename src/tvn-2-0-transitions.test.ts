@@ -169,6 +169,13 @@ describe('the transition registry', () => {
     expect(html).toContain('--card-opacity:0.6')
     expect(html).toContain('--card-zoom:1.3')
   })
+
+  it('a card due at once is drawn in the same frame as the static; a later one waits for its moment', () => {
+    const render = (patch: Partial<TransitionSettings>) => renderToStaticMarkup(createElement(TransitionOverlay, { settings: style(patch), identity: SAMPLE }))
+    expect(render({ id: 'tv-tune' })).toContain('fx-card at-centre panel-box type-tvn is-immediate')
+    expect(render({ id: 'analogue' })).not.toContain('is-immediate')
+    expect(readFileSync('src/styles/overlays.css', 'utf8')).toMatch(/\.fx-card\.is-immediate \{ animation: none; \}/)
+  })
 })
 
 describe('OPTIONS → Channel change', () => {

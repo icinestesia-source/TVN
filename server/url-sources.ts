@@ -1,3 +1,5 @@
+import { connect as tcpConnect } from 'node:net'
+import { connect as tlsConnect } from 'node:tls'
 import { measureMedia } from './media-probe.ts'
 import { attr, dayOf, FeedError, fetchText, field, fnv, publicFeedUrl, refusal, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 import type { FeedEpisode, ResolvedFeed } from './podcast-feed.ts'
@@ -274,13 +276,73 @@ export interface Probe {
 
 const PROBE_BYTES = 4096
 
+const stationName = (value: string | null): string => (value ?? '').replace(/[^ -~\u00a0-\uffff]|[<>]/g, '').trim().slice(0, 80)
+
+/** The type, station name and Icecast headers a radio server's 200 reply gives, or null for anything else. */
+export type IcyPeek = (url: URL) => Promise<{ type: string; name: string; icy: boolean } | null>
+
+/**
+ * Fetch refuses a SHOUTcast "ICY 200 OK" status line, and a status line ended by a bare newline, as malformed
+ * HTTP; radio servers send both, so the reply's head is read over a plain socket instead.
+ */
+export const icyPeek: IcyPeek = (url) =>
+  new Promise((resolve) => {
+    const secure = url.protocol === 'https:'
+    const port = Number(url.port) || (secure ? 443 : 80)
+    const socket = secure ? tlsConnect({ host: url.hostname, port, servername: url.hostname }) : tcpConnect({ host: url.hostname, port })
+    let got = ''
+    const done = (value: { type: string; name: string; icy: boolean } | null) => {
+      socket.destroy()
+      resolve(value)
+    }
+    socket.setTimeout(TIMEOUT_MS, () => done(null))
+    socket.on('error', () => done(null))
+    socket.once(secure ? 'secureConnect' : 'connect', () => {
+      socket.write(`GET ${url.pathname}${url.search} HTTP/1.0\r\nHost: ${url.host}\r\nUser-Agent: ${USER_AGENT}\r\nIcy-MetaData: 0\r\n\r\n`)
+    })
+    socket.on('data', (chunk: Buffer) => {
+      got += chunk.toString('latin1')
+      const end = got.search(/\r?\n\r?\n/)
+      if (end < 0 && got.length < PROBE_BYTES) return
+      const [status, ...lines] = got.slice(0, end < 0 ? PROBE_BYTES : end).split(/\r?\n/)
+      if (!/^(?:ICY|HTTP\/1\.[01]) 200\b/i.test(status)) return done(null)
+      const header = (name: string) => lines.find((line) => line.toLowerCase().startsWith(`${name}:`))?.slice(name.length + 1).trim() ?? ''
+      const icy = status.toUpperCase().startsWith('ICY') || lines.some((line) => /^icy-/i.test(line))
+      done({ type: header('content-type').toLowerCase().split(';')[0].trim(), name: header('icy-name'), icy })
+    })
+  })
+
+/** Follows an address's redirects by hand to the server fetch could not read, and asks it whether it is a SHOUTcast stream. */
+async function icyProbe(raw: string, read: typeof fetch, peek: IcyPeek): Promise<Probe | null> {
+  let url = publicFeedUrl(raw)
+  for (let hop = 0; url && hop < 5; hop += 1) {
+    let response: Response
+    try {
+      response = await read(url.toString(), { headers: { 'user-agent': USER_AGENT }, redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) })
+    } catch (error) {
+      if (error instanceof Error && /timeout|abort/i.test(error.name)) return null
+      const icy = await peek(url)
+      if (!icy || !(icy.icy || /^(?:audio|video)\//.test(icy.type))) return null
+      const ext = url.pathname.match(/\.([a-z0-9]{2,5})$/i)?.[1]?.toLowerCase() ?? ''
+      const type = /^(?:audio|video)\//.test(icy.type) ? icy.type : (MEDIA_EXT[ext] ?? 'audio/mpeg')
+      return { url: raw, type, length: 0, ranged: false, icy: true, icyName: stationName(icy.name), head: '' }
+    }
+    await response.body?.cancel().catch(() => undefined)
+    const next = response.status >= 300 && response.status < 400 ? response.headers.get('location') : null
+    if (!next) return null
+    url = publicFeedUrl(next, url.toString())
+  }
+  return null
+}
+
 /** The first few kilobytes of an address and what its server says it is; the rest is never downloaded. */
-export async function probeUrl(raw: string, read: typeof fetch): Promise<Probe | null> {
+export async function probeUrl(raw: string, read: typeof fetch, peek: IcyPeek = icyPeek): Promise<Probe | null> {
   let response: Response
   try {
     response = await read(raw, { headers: { 'user-agent': USER_AGENT, range: `bytes=0-${PROBE_BYTES - 1}` }, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) })
-  } catch {
-    return null
+  } catch (error) {
+    if (error instanceof Error && /timeout|abort/i.test(error.name)) return null
+    return icyProbe(raw, read, peek)
   }
   const refused = refusal(response, 'That address')
   if (refused) throw refused
@@ -293,7 +355,7 @@ export async function probeUrl(raw: string, read: typeof fetch): Promise<Probe |
   const length = Number(total ?? (response.status === 200 ? response.headers.get('content-length') : 0)) || 0
   const ranged = response.status === 206 || (response.headers.get('accept-ranges') ?? '').toLowerCase() === 'bytes'
   const icy = [...response.headers.keys()].some((name) => name.toLowerCase().startsWith('icy-'))
-  const icyName = (response.headers.get('icy-name') ?? '').replace(/[^ -~\u00a0-\uffff]|[<>]/g, '').trim().slice(0, 80)
+  const icyName = stationName(response.headers.get('icy-name'))
   let head = ''
   if (response.body) {
     const reader = response.body.getReader()
@@ -355,10 +417,13 @@ export function firstVariant(body: string, base: string): { url: string; audioOn
   return url ? { url: url.toString(), audioOnly } : null
 }
 
+const GENERIC_SEGMENT = /^(?:index|master|playlist|manifest|live|stream|chunklist|listen|(?:mp3|aac|aacp|ogg|opus|flac|hls|hifi|lofi|high|low)?[-_ ]?\d*k?)$/i
+
 const nameOf = (url: URL): string => {
-  const file = decodeURIComponent(url.pathname.split('/').filter(Boolean).pop() ?? '').replace(/\.[a-z0-9]{2,5}$/i, '')
+  const segments = url.pathname.split('/').filter(Boolean).map((segment) => decodeURIComponent(segment).replace(/\.[a-z0-9]{2,5}$/i, ''))
+  const file = segments.reverse().find((segment) => !GENERIC_SEGMENT.test(segment))
   const host = url.hostname.replace(/^www\./, '')
-  return file && !/^(?:index|master|playlist|manifest|live|stream|chunklist)$/i.test(file) ? `${file.replace(/[_-]+/g, ' ').slice(0, 80)}` : host
+  return file ? `${file.replace(/[_-]+/g, ' ').slice(0, 80)}` : host
 }
 
 async function hlsSource(probe: Probe, read: typeof fetch): Promise<ResolvedFeed> {
@@ -382,17 +447,26 @@ async function hlsSource(probe: Probe, read: typeof fetch): Promise<ResolvedFeed
  * A direct file, an HLS stream or a DASH manifest, by what the server says it is (the extension only breaks
  * a tie for a server that calls everything octet-stream). Null when the address is a page or a feed.
  */
-async function mediaSource(start: URL, read: typeof fetch): Promise<ResolvedFeed | null> {
-  const probe = await probeUrl(start.toString(), read)
+async function mediaSource(start: URL, read: typeof fetch, peek: IcyPeek): Promise<ResolvedFeed | null> {
+  const probe = await probeUrl(start.toString(), read, peek)
   if (!probe) return null
   const url = new URL(probe.url)
-  if (isSignedUrl(url) || isSignedUrl(start)) {
-    if (probe.type.startsWith('text/html') || /xml/.test(probe.type)) return null
-    throw new FeedError(400, 'That is a signed, expiring link: paste the permanent public address instead')
+  const page = probe.type.startsWith('text/html') || /xml/.test(probe.type)
+  const signed = new FeedError(400, 'That is a signed, expiring link: paste the permanent public address instead')
+  if (isSignedUrl(start)) {
+    if (page) return null
+    throw signed
   }
+  // A radio station's public address often redirects to a signed node for each listener; only a live stream is
+  // kept by the address it was given, so the signed one is never stored.
+  const signedOnArrival = isSignedUrl(url)
+  if (signedOnArrival && page) return null
   const ext = url.pathname.match(/\.([a-z0-9]{2,5})$/i)?.[1]?.toLowerCase() ?? ''
   const vague = !probe.type || probe.type === 'application/octet-stream' || probe.type === 'binary/octet-stream'
-  if (HLS_TYPE.test(probe.type) || /^#EXTM3U/.test(probe.head.trimStart()) || (vague && ext === 'm3u8')) return hlsSource(probe, read)
+  if (HLS_TYPE.test(probe.type) || /^#EXTM3U/.test(probe.head.trimStart()) || (vague && ext === 'm3u8')) {
+    if (signedOnArrival) throw signed
+    return hlsSource(probe, read)
+  }
   if (DASH_TYPE.test(probe.type) || /<MPD\b/.test(probe.head) || (vague && ext === 'mpd')) {
     throw new FeedError(415, "DASH (.mpd) streams are not supported yet: use the stream's HLS (.m3u8) address")
   }
@@ -402,8 +476,10 @@ async function mediaSource(start: URL, read: typeof fetch): Promise<ResolvedFeed
   const title = probe.icyName || nameOf(url)
   // A stream has no end to measure: Icecast says so, as does sound with no size that cannot be read in parts.
   if (probe.icy || (media === 'audio' && !probe.length && !probe.ranged)) {
-    return { feedUrl: probe.url, website: null, title, description: '', episodes: [], listed: 0, unplayable: 0, shape: 'feed', via: 'address', provider: 'direct', form: 'live', live: { url: probe.url, media, format: 'direct' } }
+    const address = start.toString()
+    return { feedUrl: address, website: null, title, description: '', episodes: [], listed: 0, unplayable: 0, shape: 'feed', via: 'address', provider: 'direct', form: 'live', live: { url: address, media, format: 'direct' } }
   }
+  if (signedOnArrival) throw signed
   if (!probe.ranged) throw new FeedError(422, "That file's server cannot send part of a file, so TVN could not join it mid-programme")
   const measured = await measureMedia(probe.url, type, read).catch(() => null)
   if (measured && 'locked' in measured) throw new FeedError(403, 'That file needs a sign-in or subscription, which TVN does not use')
@@ -412,11 +488,11 @@ async function mediaSource(start: URL, read: typeof fetch): Promise<ResolvedFeed
 }
 
 /** A known video provider's address, or a direct file or stream; null for a page or feed the podcast reader takes. */
-export async function resolveUrlSource(start: URL, read: typeof fetch, keep: number, parse: ParseFeed): Promise<ResolvedFeed | null> {
+export async function resolveUrlSource(start: URL, read: typeof fetch, keep: number, parse: ParseFeed, peek: IcyPeek = icyPeek): Promise<ResolvedFeed | null> {
   const host = start.hostname.toLowerCase()
   if (VIMEO_HOST.test(host)) return vimeo(start, read, keep)
   if (ODYSEE_HOST.test(host)) return odysee(start, read, keep, parse)
   if (BITCHUTE_HOST.test(host)) return bitchute(start, read, keep)
   if (isXHost(host)) return resolveXPost(start, read)
-  return mediaSource(start, read)
+  return mediaSource(start, read, peek)
 }

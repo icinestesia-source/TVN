@@ -631,7 +631,7 @@ describe('one information bar, in the Guide and over the picture', () => {
 })
 
 describe('Edit Channel toolbar', () => {
-  it('runs REFRESH to CLOSE across the top, before the channel itself, and keeps it there while the editor scrolls', () => {
+  it('runs RESCHEDULE to CLOSE across the top, before the channel itself, and keeps it there while the editor scrolls', () => {
     const editor = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
     expect(editor.indexOf('editor-actions editor-toolbar')).toBeLessThan(editor.indexOf('<div className="info-main">'))
     expect(readFileSync('src/styles/guide.css', 'utf8')).toMatch(/\.guide-editor > \.editor-toolbar \{\s*grid-column: 1 \/ -1;\s*position: sticky;/)

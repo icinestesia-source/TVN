@@ -31,7 +31,7 @@ import { SourceDetails } from './SourceDetails.tsx'
 import { OriginalSources } from './OriginalSources.tsx'
 import { PlaylistDiscovery } from './PlaylistDiscovery.tsx'
 import { playlistUrl } from '../services/add-channel.ts'
-import { withOriginalOverride } from '../services/original-sources.ts'
+import { addedFromOriginal, originalsToRead, withOriginalOverride } from '../services/original-sources.ts'
 import { addedContributions, addedSourceLabels, channelOriginals, contributionsOf, contributionText, originalLineup } from '../view/channel-provenance.ts'
 import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
 
@@ -529,12 +529,14 @@ export function ChannelEditor({
     const size = scheduleSize ?? kept.length
     keepOrder({ ...next, compiled: eligibilityKey(next) }, `REBUILT FROM ${kept.length} ELIGIBLE · ${size} SCHEDULED · SAVED`)
   }
-  /** REFRESH rebuilds the schedule from what the sources already hold; nothing is fetched. */
-  const refresh = () => {
-    if (!edit) return
-    if (ownOrder && !tvnLineup) return rebuild()
-    const next = { ...edit, sources: admitted(edit.sources) }
-    keepOrder({ ...next, compiled: eligibilityKey(next) }, `SCHEDULE REBUILT FROM ${kept.length} ELIGIBLE · SAVED`)
+  /** RESCHEDULE puts the channel's scheduled programmes in a new random order and keeps it; nothing is fetched. */
+  const canReschedule = edit !== null && airing.length > 1 && !liveStreamOf(edit.sources)
+  const reschedule = () => {
+    if (!edit || !canReschedule) return
+    const ids = airing.map((video) => video.id)
+    const head = shuffledVideos(ids.slice(0, scheduled))
+    const next = { ...edit, sources: admitted(edit.sources), order: withLeft([...head, ...ids.slice(scheduled)]), orderKind: 'random' as const }
+    keepOrder({ ...next, compiled: eligibilityKey(next) }, `RESCHEDULED · ${scheduled} PROGRAMMES IN A NEW RANDOM ORDER · SAVED`)
   }
   const loadMore = (source: ChannelSource, all: boolean) => {
     if (!edit || !onLoadMore) return
@@ -570,24 +572,53 @@ export function ChannelEditor({
   // Sources LOAD can read further: enabled, not yet read to the end.
   const loadableSource = (source: ChannelSource) => onLoadMore !== undefined && (canLoad ? canLoad(source) : canLoadMore(source))
   const loadable = edit ? edit.sources.filter(loadableSource) : []
+  // A TVN channel's original publishers, read again so their newer and further programmes can be loaded too.
+  const toRead = edit && onAcquire && onLoadMore && scope === 'curated' ? originalsToRead(originals, edit.sources, edit.originals) : []
+  const batchSize = toRead.length + loadable.length
   /**
-   * LOAD MORE: one more batch from every enabled source that has more, one source after another. What arrives
-   * joins the schedule as soon as the batch is in, after any running order of the viewer's own.
+   * LOAD MORE: one more batch from every enabled source that has more, one source after another. On a TVN
+   * channel it first reads each original publisher again as an added source. What arrives joins the schedule
+   * as soon as the batch is in, after any running order of the viewer's own.
    */
   const loadBatch = () => {
-    if (!edit || !onLoadMore || loadable.length === 0) return
+    if (!edit || !onLoadMore || batchSize === 0) return
     const stop = new AbortController()
     stopRef.current = stop
     const from = available
-    setBatch({ step: 1, of: loadable.length, from, reached: from })
+    setBatch({ step: 1, of: batchSize, from, reached: from })
     void run('load', async () => {
       let next = edit
       let failed = 0
+      let reread = 0
+      const unread: string[] = []
+      const listed = new Set(lineup.map((video) => video.id))
+      const fresh = new Set<string>()
+      for (const [index, original] of toRead.entries()) {
+        if (stop.signal.aborted || !onAcquire || !original.url) break
+        setBatch({ step: index + 1, of: batchSize, from, reached: from + fresh.size })
+        try {
+          const made = addedFromOriginal(original, newSource(next.sources, original.url, 'youtube'), next.originals?.find((item) => item.ref === original.ref))
+          const read = await onAcquire(made)
+          const already = read.ref !== undefined && next.sources.some((item) => item.kind === 'youtube' && item.ref === read.ref)
+          if (already) continue
+          if ((read.videos?.length ?? 0) === 0) {
+            unread.push(original.name)
+            continue
+          }
+          next = { ...next, sources: [...next.sources, { ...read, label: original.name }] }
+          reread += 1
+          for (const video of read.videos ?? []) if (!listed.has(video.id)) fresh.add(video.id)
+          setEdit(next)
+        } catch {
+          unread.push(original.name)
+        }
+      }
+      const loopFrom = availableOf(next)
       for (const [index, source] of loadable.entries()) {
         if (stop.signal.aborted) break
         const base = availableOf(next)
         const start = source.videos?.length ?? 0
-        setBatch({ step: index + 1, of: loadable.length, from, reached: base })
+        setBatch({ step: toRead.length + index + 1, of: batchSize, from, reached: base })
         setLoading({ id: source.id, loaded: start, listed: source.listed, all: false })
         try {
           const found = await onLoadMore(source, {
@@ -605,18 +636,22 @@ export function ChannelEditor({
         }
       }
       const reached = availableOf(next)
-      const gained = reached > from
-      if (gained) {
+      const more = reached - loopFrom
+      const gained = more > 0 || fresh.size > 0
+      if (gained || reread > 0) {
         const loaded = { ...next, sources: admitted(next.sources) }
         const scheduledNow = { ...loaded, compiled: eligibilityKey(loaded) }
         await onSave(number, scheduledNow)
         setEdit(scheduledNow)
       }
+      const total = from + fresh.size + Math.max(0, more)
       return [
         stop.signal.aborted ? 'STOPPED' : null,
-        gained ? `LOADED · ${from} → ${reached} AVAILABLE` : 'NOTHING NEW',
+        reread ? `${reread} TVN ${reread === 1 ? 'SOURCE' : 'SOURCES'} READ AGAIN` : null,
+        gained ? `LOADED · ${from} → ${total} AVAILABLE` : 'NOTHING NEW',
+        unread.length ? `${unread.join(', ').toUpperCase()} COULD NOT BE READ FROM ${unread.length === 1 ? 'ITS PUBLISHER' : 'THEIR PUBLISHERS'}` : null,
         failed ? `${failed} ${failed === 1 ? 'SOURCE' : 'SOURCES'} COULD NOT BE READ` : null,
-        gained ? 'SCHEDULED · SAVED' : null,
+        gained ? 'SCHEDULED · SAVED' : reread > 0 ? 'SAVED' : null,
       ]
         .filter(Boolean)
         .join(' · ')
@@ -754,12 +789,12 @@ export function ChannelEditor({
             <button
               type="button"
               className="tab"
-              disabled={busy !== null}
+              disabled={busy !== null || !canReschedule}
               onKeyDown={keepKey}
-              title="Rebuild the schedule from the programmes already loaded; nothing is fetched"
-              onClick={refresh}
+              title={canReschedule ? "Shuffle this channel's schedule into a new random order, and keep it; nothing is fetched" : 'A live stream or a single programme has no order to shuffle'}
+              onClick={reschedule}
             >
-              {busy === 'order' ? 'Refreshing…' : 'Refresh'}
+              {busy === 'order' ? 'Rescheduling…' : 'Reschedule'}
             </button>
             {onLoadMore ? (
               batch ? (
@@ -775,12 +810,14 @@ export function ChannelEditor({
                 <button
                   type="button"
                   className="tab"
-                  disabled={busy !== null || loadable.length === 0}
+                  disabled={busy !== null || batchSize === 0}
                   onKeyDown={keepKey}
                   title={
-                    loadable.length === 0
+                    batchSize === 0
                       ? 'Every enabled source is read as far as it goes'
-                      : `Read the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more, and schedule it`
+                      : toRead.length > 0
+                        ? `Read TVN's ${toRead.length === 1 ? 'original source' : `${toRead.length} original sources`} again from the publisher${loadable.length ? `, then the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more` : ''}, and schedule it`
+                        : `Read the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more, and schedule it`
                   }
                   onClick={loadBatch}
                 >
@@ -824,8 +861,9 @@ export function ChannelEditor({
       </div>
       {edit ? (
         <p className="editor-actions-help" role="note">
-          REFRESH rebuilds the schedule from the programmes already loaded. LOAD MORE reads the next batch from every source and
-          schedules it at once. RESCAN CHANNEL reads every source again from the start, with its mode and filter.
+          RESCHEDULE shuffles the channel&apos;s schedule into a new random order. LOAD MORE reads the next batch from every source
+          {scope === 'curated' ? ", reading TVN's original sources again from their publishers," : ''} and schedules it at once. RESCAN
+          CHANNEL reads every source again from the start, with its mode and filter.
         </p>
       ) : null}
       {note ? (

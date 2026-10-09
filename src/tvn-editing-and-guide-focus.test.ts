@@ -295,10 +295,10 @@ describe('CHANNEL EDITOR: what the viewer sees', () => {
     if (tvn.includes('editor-order-kind')) expect(tvn).toMatch(/editor-order-kind[^>]*>TVN&#x27;s own</)
   })
 
-  it('puts REFRESH, then LOAD MORE, immediately before RESCAN, explains all three, and RESCAN is plain while nothing waits for it', () => {
+  it('puts RESCHEDULE, then LOAD MORE, immediately before RESCAN, explains all three, and RESCAN is plain while nothing waits for it', () => {
     const html = render({ name: 'Alpha', sources: [youtube(first)] })
-    expect(html).toMatch(/<button type="button" class="tab"[^>]*>Refresh<\/button><button type="button" class="tab"[^>]*>Load more<\/button><button type="button" class="tab"[^>]*>Rescan channel<\/button>/)
-    expect(html).toMatch(/class="editor-actions-help"[^>]*>REFRESH rebuilds the schedule[^<]*LOAD MORE[^<]*RESCAN CHANNEL/)
+    expect(html).toMatch(/<button type="button" class="tab"[^>]*>Reschedule<\/button><button type="button" class="tab"[^>]*>Load more<\/button><button type="button" class="tab"[^>]*>Rescan channel<\/button>/)
+    expect(html).toMatch(/class="editor-actions-help"[^>]*>RESCHEDULE shuffles the channel&#x27;s schedule[^<]*LOAD MORE[^<]*RESCAN[\s\S]*?CHANNEL/)
     expect(html).not.toContain('is-dirty')
   })
 

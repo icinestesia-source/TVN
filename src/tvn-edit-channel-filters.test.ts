@@ -41,7 +41,7 @@ describe('Edit Channel: shortest and longest length', () => {
   })
 })
 
-describe('Edit Channel: LOAD MORE schedules what it loads; REFRESH rebuilds the schedule', () => {
+describe('Edit Channel: LOAD MORE schedules what it loads; RESCHEDULE shuffles the schedule', () => {
   const editor = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
 
   it('LOAD MORE no longer holds new programmes back for RESCAN', () => {
@@ -51,10 +51,19 @@ describe('Edit Channel: LOAD MORE schedules what it loads; REFRESH rebuilds the 
     expect(batch).toContain('compiled: eligibilityKey(loaded)')
   })
 
-  it('REFRESH fetches nothing: it admits what is held and recompiles, or rebuilds a running order of the viewer\'s own', () => {
-    const refresh = editor.slice(editor.indexOf('const refresh = () => {'), editor.indexOf('const loadMore = ('))
-    expect(refresh).toContain('if (ownOrder && !tvnLineup) return rebuild()')
-    expect(refresh).not.toContain('onLoadMore')
-    expect(refresh).not.toContain('onRescan')
+  it('RESCHEDULE fetches nothing: it shuffles what is scheduled into a new random order and saves it', () => {
+    const reschedule = editor.slice(editor.indexOf('const reschedule = () => {'), editor.indexOf('const loadMore = ('))
+    expect(reschedule).toContain('shuffledVideos(')
+    expect(reschedule).toContain("orderKind: 'random'")
+    expect(reschedule).toContain('keepOrder(')
+    expect(reschedule).not.toContain('onLoadMore')
+    expect(reschedule).not.toContain('onRescan')
+  })
+
+  it('LOAD MORE on a TVN channel reads its original publishers again before the next batch', () => {
+    const batch = editor.slice(editor.indexOf('const loadBatch = () => {'), editor.indexOf('const noteDraft'))
+    expect(batch.indexOf('toRead.entries()')).toBeGreaterThan(-1)
+    expect(batch.indexOf('toRead.entries()')).toBeLessThan(batch.indexOf('loadable.entries()'))
+    expect(batch).toContain('onAcquire(made)')
   })
 })

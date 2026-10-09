@@ -923,8 +923,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
     if (!keepPick) clearManual()
     if (!guideDrivingRef.current) guideEngine.current.suspend()
-    if (!autoTuneRef.current) recoveryRef.current = null
+    const byViewer = !autoTuneRef.current
+    if (byViewer) recoveryRef.current = null
     autoTuneRef.current = false
+    // The viewer's own change ends the start: the logo gives way at once, and the change gets its static and
+    // title card instead of waiting behind the first channel's picture.
+    if (byViewer && phaseRef.current === 'ready' && !startupSettledRef.current) {
+      startupSettledRef.current = true
+      setStartupSettled(true)
+    }
     recoveryDue.current = null
     notePress(target.number)
     closeScreenEdit(true)
