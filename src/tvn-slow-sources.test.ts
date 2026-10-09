@@ -45,6 +45,8 @@ describe('a buffering title for slow sources', () => {
   it('names where the programme is coming from', () => {
     expect(sourceHostLabel('https://player.odycdn.com/v6/streams/x.mp4')).toBe('Odysee')
     expect(sourceHostLabel('https://odysee.com/@a:1/b:2')).toBe('Odysee')
+    expect(sourceHostLabel('https://rumble.com/hls-vod/abc/playlist.m3u8')).toBe('Rumble')
+    expect(sourceHostLabel('https://hugh.cdn.rumble.cloud/video/a.mp4')).toBe('Rumble')
     expect(sourceHostLabel('https://www.example.org/file.mp4')).toBe('example.org')
     expect(sourceHostLabel('not a url')).toBeNull()
   })

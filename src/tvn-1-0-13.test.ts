@@ -233,7 +233,10 @@ describe('the selected tab is the surfing universe', () => {
     const previous = between(provider, "case 'last-channel': {", "case 'confirm':")
     expect(previous).toMatch(/requestTune\(previous\)/)
     expect(previous).toMatch(/requestTune\(step\.channelNumber\)/)
-    expect(previous).not.toMatch(/guideFilter|favourites|stepTarget|universe/)
+    // Only with nothing remembered that way does B or N fall back to the channel keys, over the selected tab.
+    const remembered = previous.slice(0, previous.indexOf('// Nothing remembered that way'))
+    expect(remembered).not.toMatch(/guideFilter|favourites|stepTarget|universe/)
+    expect(previous).toMatch(/const target = stepTarget\(tuned\(\), pending, delta, \{ filter: guideFilter, favourites \}\)/)
   })
 })
 

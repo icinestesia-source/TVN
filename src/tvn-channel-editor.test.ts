@@ -129,9 +129,9 @@ describe('opening the Channel Editor from the Guide', () => {
   })
 
   it('keyboard, remote and gamepad reach it without a permanent Edit button', () => {
-    expect(commandFromKey('e', plain, true)).toEqual({ type: 'guide-tool', tool: 'edit' })
     expect(commandFromKey('ContextMenu', plain, true)).toEqual({ type: 'guide-tool', tool: 'edit' })
-    expect(commandFromKey('e', plain, false)).toEqual({ type: 'guide-tool', tool: 'edit' })
+    expect(commandFromKey('ContextMenu', plain, false)).toEqual({ type: 'guide-tool', tool: 'edit' })
+    expect(commandFromKey('e', plain, true)).toEqual({ type: 'export-all' })
     expect(commandFromKey('Enter', plain, true)).toEqual({ type: 'confirm' })
     const pad = { buttons: Array.from({ length: 17 }, (_, index) => ({ pressed: index === 3 })), axes: [0, 0] }
     expect(commandFromGamepad(pad, new Set(), true).command).toEqual({ type: 'guide-tool', tool: 'edit' })
@@ -564,7 +564,7 @@ describe('existing Guide interactions', () => {
     expect(actions).toMatch(/>Options<[\s\S]*>Now<[\s\S]*>Add<[\s\S]*>Media</)
     expect(actions).not.toMatch(/>Import</)
     expect(commandFromKey('Home', plain, true)).toEqual({ type: 'guide-now' })
-    expect(commandFromKey('i', plain, false)).toEqual({ type: 'media' })
+    expect(commandFromKey('u', plain, false)).toEqual({ type: 'media' })
     expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
     expect(commandFromKey('Backspace', plain, false)).toEqual({ type: 'digit-back' })
     expect(guide).toContain('<GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />')
@@ -613,12 +613,12 @@ describe('one information bar, in the Guide and over the picture', () => {
     expect(radio).not.toContain('to edit')
   })
 
-  it('over the picture, a right-click, a hold or E opens the Channel Editor where the bar sits', () => {
+  it('over the picture, a right-click, a hold or the menu key opens the Channel Editor, standing on the INFO bar', () => {
     expect(overlay).toContain("useEditPress(editable ? () => tv.dispatch({ type: 'guide-tool', tool: 'edit' }) : undefined)")
     expect(overlay).toContain('{...handlers}')
     const press = readFileSync('src/components/use-edit-press.ts', 'utf8')
     expect(press).toMatch(/onContextMenu: \(event: MouseEvent<HTMLElement>\) => \{\s*if \(!editRef\.current \|\| inPad\(event\.target\)\) return\s*event\.preventDefault\(\)\s*press\.opened\(\)\s*editRef\.current\(\)/)
-    expect(screen).toContain('{tv.screenEdit !== null ? <ScreenEditor /> : info ? <NowNextOverlay')
+    expect(screen).toMatch(/\{tv\.screenEdit !== null \? \(\s*<div className="screen-edit-stack">\s*<ScreenEditor \/>\s*<NowNextOverlay \/>\s*<\/div>/)
     expect(provider).toContain("if (kind === 'edit' && !guideOpenRef.current) {")
     expect(provider).toContain('if (screenEditRef.current !== null && !SCREEN_EDIT_COMMANDS.has(command.type)) return')
     expect(provider).toContain('else if (screenEditRef.current !== null) closeScreenEdit()')

@@ -12,7 +12,7 @@ import { followingInfo } from '../view/guide-following.ts'
 
 /**
  * INFO: the Guide's information bar over the picture, for what the channel is showing now and next,
- * with the same actions. A right-click or a hold anywhere on it but its buttons (or E) edits the channel, as in the Guide.
+ * with the same actions. A right-click or a hold anywhere on it but its buttons (or the menu key) edits the channel, as in the Guide.
  */
 export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
   const now = useClock(1000)
@@ -51,10 +51,11 @@ export function NowNextOverlay({ leaving = false }: { leaving?: boolean }) {
         startMs={current.startMs}
         endMs={current.endMs}
         now={now}
-        next={stream ? undefined : { title: next.programme.title, startMs: next.startMs, endMs: next.endMs }}
+        next={stream ? undefined : { title: next.programme.title, startMs: next.startMs, endMs: next.endMs, ...(steps && hasPicture(next.programme) ? { onPlay: () => tv.screenStep(1) } : {}) }}
         picked={manualAiring(channel.number, now) !== null}
-        following={following}
+        following={following ? { ...following, onNext: () => tv.guideStep(1) } : null}
         onSeek={tv.multiviewMode === '1' && seekable(channel, current.programme) ? tv.screenSeek : undefined}
+        favourite={{ on: tv.favourites.includes(channel.number), onToggle: () => tv.dispatch({ type: 'favourite', channelNumber: channel.number }) }}
       />
       <InfoActions
         key={channel.number}

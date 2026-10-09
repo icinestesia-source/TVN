@@ -70,8 +70,8 @@ export function commandFromKey(
     case 'n':
     case 'N':
       return { type: 'history-forward' }
-    case 'u':
-    case 'U':
+    case 'i':
+    case 'I':
       return { type: 'guide-tool', tool: 'add' }
     case 'f':
     case 'F':
@@ -84,13 +84,16 @@ export function commandFromKey(
       return { type: 'subtitles' }
     case 'd':
     case 'D':
-      return { type: 'debug' }
-    case 'i':
-    case 'I':
+      return { type: 'bookmark' }
+    case 'u':
+    case 'U':
       return { type: 'media' }
+    case 'e':
+    case 'E':
+      return { type: 'export-all' }
     case 'o':
     case 'O':
-      return { type: 'export-all' }
+      return { type: 'guide-tool', tool: 'options' }
     case 'y':
     case 'Y':
       return { type: 'user-channels' }
@@ -123,8 +126,6 @@ export function commandFromKey(
       return { type: 'hints' }
     case 'Home':
       return { type: 'guide-now' }
-    case 'e':
-    case 'E':
     case 'ContextMenu':
       return { type: 'guide-tool', tool: 'edit' }
     // The unshifted keys: in the Guide they zoom the timeline, over the picture they set the volume.

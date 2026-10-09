@@ -8,12 +8,12 @@ import { isXHost, resolveXPost } from './web-programmes.ts'
 /**
  * Public video sources beyond podcasts and websites, each read the way its publisher offers it to anyone:
  * Vimeo through its oEmbed record and public RSS, Odysee and BitChute through their public RSS and the plain
- * media each one links, and a direct file or HLS stream by what the server says it is. Nothing here signs in,
+ * media each one links, Rumble through its channel pages' own video lists and their public HLS playlists or files, and a direct file or HLS stream by what the server says it is. Nothing here signs in,
  * decodes a protected stream or keeps an expiring signed address: a source is stored by its stable public
  * address and read again from it.
  */
 
-export type SourceProvider = 'vimeo' | 'odysee' | 'bitchute' | 'rss' | 'archive' | 'hls' | 'direct' | 'website' | 'x'
+export type SourceProvider = 'vimeo' | 'odysee' | 'bitchute' | 'rumble' | 'rss' | 'archive' | 'hls' | 'direct' | 'website' | 'x'
 export type SourceForm = 'video' | 'collection' | 'live'
 
 export interface LiveSource {
@@ -38,6 +38,7 @@ export function isSignedUrl(url: URL): boolean {
 const VIMEO_HOST = /^(?:www\.|player\.)?vimeo\.com$/i
 const ODYSEE_HOST = /^(?:www\.)?odysee\.com$/i
 const BITCHUTE_HOST = /^(?:www\.|api\.|old\.)?bitchute\.com$/i
+const RUMBLE_HOST = /^(?:www\.)?rumble\.com$/i
 
 const VIMEO_PAGES = new Set(['showcase', 'album', 'event', 'ondemand', 'live', 'groups', 'categories', 'search', 'watch', 'upload', 'features', 'blog', 'help', 'join', 'log_in', 'manage', 'settings', 'stock', 'solutions', 'enterprise', 'pricing', 'create'])
 
@@ -256,6 +257,138 @@ async function bitchute(url: URL, read: typeof fetch, keep: number): Promise<Res
     shape: 'feed',
     via: 'address',
     provider: 'bitchute',
+    form: 'collection',
+  }
+}
+
+// --- Rumble ----------------------------------------------------------------------------------------------
+
+const RUMBLE_PAGE_SIZE = 25
+const RUMBLE_MAX_PAGES = 8
+const RUMBLE_PLAYLIST = /^https:\/\/rumble\.com\/hls-vod\/[\w-]{6,40}\/playlist\.m3u8$/
+
+const record = (value: unknown): Record<string, unknown> => (value && typeof value === 'object' ? (value as Record<string, unknown>) : {})
+
+const RUMBLE_FILE_HOST = /(?:^|\.)rumble\.cloud$/i
+const RUMBLE_FILE_HEIGHT = 720
+
+/**
+ * What Rumble plays a video from: its public HLS playlist when it lists one, or else (older videos, whose
+ * playlist is empty) the plain public MP4 nearest 720p. Never a signed address.
+ */
+function rumbleMedia(videos: readonly unknown[]): { media: string; type: 'video/hls' | 'video/mp4' } | null {
+  const list = videos.map(record)
+  const playlist = list.map((item) => text(item.url)).find((url) => RUMBLE_PLAYLIST.test(url))
+  if (playlist) return { media: playlist, type: 'video/hls' }
+  const files = list
+    .map((item) => ({ url: publicFeedUrl(text(item.url)), height: Number(item.res) || 0 }))
+    .filter((file): file is { url: URL; height: number } => file.url !== null && file.url.protocol === 'https:' && RUMBLE_FILE_HOST.test(file.url.hostname) && /\.mp4$/i.test(file.url.pathname) && !isSignedUrl(file.url) && file.url.search === '')
+  if (files.length === 0) return null
+  const within = files.filter((file) => file.height <= RUMBLE_FILE_HEIGHT).sort((a, b) => b.height - a.height)
+  const best = within[0] ?? [...files].sort((a, b) => a.height - b.height)[0]
+  return { media: best.url.toString(), type: 'video/mp4' }
+}
+
+/** The videos a Rumble channel page lists in its own grid: public, free, finished, and this channel's. */
+export function rumbleGrid(html: string, channelUrl: string): { listed: number; episodes: FeedEpisode[]; name: string } {
+  const block = html.match(/<rum-videos-grid>\s*<script type="application\/json">([\s\S]*?)<\/script>/i)?.[1]
+  let items: unknown[] = []
+  try {
+    items = block ? ((record(JSON.parse(block)).items as unknown[]) ?? []) : []
+  } catch {
+    items = []
+  }
+  const own = items.map(record).filter((item) => item.object_type === 'video' && text(record(item.by).url).toLowerCase() === channelUrl.toLowerCase())
+  let name = ''
+  const episodes: FeedEpisode[] = []
+  for (const item of own) {
+    name ||= text(record(item.by).name)
+    const found = rumbleMedia(Array.isArray(item.videos) ? item.videos : [])
+    const id = text(item.permalink_id)
+    const durationSec = Math.round(Number(item.duration) || 0)
+    const page = publicFeedUrl(text(item.url))
+    const playable = item.visibility === 'public' && item.availability == null && item.is_age_restricted !== true && item.live !== true && item.live_placeholder !== true && item.is_short !== true
+    if (!playable || !found || !/^v[0-9a-z]{3,12}$/.test(id) || durationSec <= 0 || !page || page.hostname !== 'rumble.com') continue
+    const published = dayOf(text(item.upload_date))
+    const image = web(item.thumb)
+    episodes.push({
+      id: `rumble-${id}`,
+      title: text(item.title).slice(0, 200) || `Rumble ${id}`,
+      durationSec,
+      ...(published ? { published } : {}),
+      ...found,
+      page: page.toString(),
+      ...(image ? { image } : {}),
+    })
+  }
+  return { listed: own.length, episodes, name }
+}
+
+async function rumbleVideo(url: URL, read: typeof fetch): Promise<ResolvedFeed> {
+  const page = `https://rumble.com${url.pathname}`
+  const oembed = await json(`https://rumble.com/api/Media/oembed.json?url=${encodeURIComponent(page)}`, read)
+  const embed = text(oembed?.html).match(/rumble\.com\/embed\/(v[0-9a-z]{3,12})\//)?.[1] ?? url.pathname.match(/^\/embed\/(v[0-9a-z]{3,12})/)?.[1]
+  const player = embed ? await json(`https://rumble.com/embedJS/u3/?request=video&ver=2&v=${embed}`, read) : null
+  const files = Object.entries(record(record(player?.ua).mp4)).map(([height, file]) => ({ url: record(file).url, res: Number(height) }))
+  const found = player ? rumbleMedia([record(record(player.u).hls), ...files, { url: record(record(player.u).mp4).url, res: Number(record(record(record(player.u).mp4).meta).h) }]) : null
+  if (!player || !found) throw new FeedError(404, 'That Rumble video is private, removed, or has no public stream TVN can play')
+  const durationSec = Math.round(Number(player.duration) || 0)
+  if (Number(player.live) || durationSec <= 0) throw new FeedError(422, 'That Rumble video is a live stream or has no length TVN can schedule')
+  const link = text(player.l)
+  const address = /^\/v[0-9a-z]+[\w-]*\.html$/.test(link) ? `https://rumble.com${link}` : page
+  const published = dayOf(text(player.pubDate))
+  const image = web(player.i)
+  return one(
+    address,
+    'rumble',
+    {
+      id: `rumble-${address.match(/\/(v[0-9a-z]{3,12})(?:-|\.html)/)?.[1] ?? embed}`,
+      title: (text(player.title) || text(oembed?.title)).replace(/\s+/g, ' ').slice(0, 200) || 'Rumble video',
+      durationSec,
+      ...(published ? { published } : {}),
+      ...found,
+      page: address,
+      ...(image ? { image } : {}),
+    },
+    web(record(player.author).url) ?? web(oembed?.author_url) ?? null,
+  )
+}
+
+async function rumble(url: URL, read: typeof fetch, keep: number): Promise<ResolvedFeed> {
+  const parts = url.pathname.split('/').filter(Boolean)
+  if (/^v[0-9a-z]+[\w-]*\.html$/i.test(parts[0] ?? '') || parts[0] === 'embed') return rumbleVideo(url, read)
+  const kind = parts[0] === 'c' || parts[0] === 'user' ? parts[0] : null
+  const name = kind && /^[\w-]{2,64}$/.test(parts[1] ?? '') ? parts[1] : null
+  if (!kind || !name) throw new FeedError(422, 'TVN reads public Rumble channels and videos; that Rumble page is neither')
+  const channelUrl = `https://rumble.com/${kind}/${name}`
+  const episodes: FeedEpisode[] = []
+  let listed = 0
+  let title = ''
+  const pages = Math.min(RUMBLE_MAX_PAGES, Math.max(1, Math.ceil(keep / RUMBLE_PAGE_SIZE)))
+  for (let n = 1; n <= pages && episodes.length < keep; n++) {
+    const page = await fetchText(`${channelUrl}/videos${n > 1 ? `?page=${n}` : ''}`, read).catch((error: unknown) => {
+      if (n === 1) throw error
+      return null
+    })
+    if (!page) break
+    const grid = rumbleGrid(page.text, channelUrl)
+    title ||= grid.name
+    listed += grid.listed
+    episodes.push(...grid.episodes)
+    if (grid.listed < RUMBLE_PAGE_SIZE) break
+  }
+  if (episodes.length === 0) throw new FeedError(422, 'That Rumble channel lists no public videos TVN can play')
+  return {
+    feedUrl: channelUrl,
+    website: channelUrl,
+    title: title || name,
+    description: '',
+    episodes: episodes.slice(0, keep),
+    listed,
+    unplayable: listed - episodes.length,
+    shape: 'feed',
+    via: 'address',
+    provider: 'rumble',
     form: 'collection',
   }
 }
@@ -493,6 +626,7 @@ export async function resolveUrlSource(start: URL, read: typeof fetch, keep: num
   if (VIMEO_HOST.test(host)) return vimeo(start, read, keep)
   if (ODYSEE_HOST.test(host)) return odysee(start, read, keep, parse)
   if (BITCHUTE_HOST.test(host)) return bitchute(start, read, keep)
+  if (RUMBLE_HOST.test(host)) return rumble(start, read, keep)
   if (isXHost(host)) return resolveXPost(start, read)
   return mediaSource(start, read, peek)
 }

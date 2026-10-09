@@ -84,9 +84,11 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
       ['X', 'Reload'],
       ['L', 'Latest'],
       ['Z', 'A to Z'],
-      ['U', 'Add'],
-      ['I', 'Media'],
-      ['O', 'Export ALL'],
+      ['I', 'Add'],
+      ['U', 'Media'],
+      ['E', 'Export ALL'],
+      ['O', 'Options'],
+      ['D', 'Bookmark'],
       ['B', 'Prev'],
       ['N', 'Next'],
       ['Home', 'Now'],
@@ -99,8 +101,8 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
 
   it('invents nothing: every key marked is one TVN binds, to what its label says', () => {
     const expected: Record<string, string> = {
-      Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'guide-tool', r: 'schedule', t: 'surf', y: 'user-channels',
-      u: 'guide-tool', i: 'media', o: 'export-all', p: 'play-pause', a: 'favourite', s: 'subtitles', f: 'fullscreen', g: 'guide', h: 'hints', l: 'schedule', Enter: 'confirm',
+      Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'export-all', d: 'bookmark', r: 'schedule', t: 'surf', y: 'user-channels',
+      u: 'media', i: 'guide-tool', o: 'guide-tool', p: 'play-pause', a: 'favourite', s: 'subtitles', f: 'fullscreen', g: 'guide', h: 'hints', l: 'schedule', Enter: 'confirm',
       z: 'schedule', x: 'schedule', c: 'guide-cycle', v: 'info', b: 'history-back', n: 'history-forward', m: 'mute', ',': 'step', '.': 'step', '/': 'multiview', ' ': 'random-channel',
       Home: 'guide-now', PageUp: 'channel-up', PageDown: 'channel-down', ArrowUp: 'channel-up', ArrowDown: 'channel-down', ArrowLeft: 'volume-down', ArrowRight: 'volume-up',
     }

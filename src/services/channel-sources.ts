@@ -288,6 +288,7 @@ export type SourceChoice =
   | 'vimeo'
   | 'odysee'
   | 'bitchute'
+  | 'rumble'
   | 'video-hls'
   | 'audio-hls'
   | 'video'
@@ -307,6 +308,7 @@ export const SOURCE_CHOICES: readonly { value: SourceChoice; label: string }[] =
   { value: 'vimeo', label: 'Vimeo' },
   { value: 'odysee', label: 'Odysee' },
   { value: 'bitchute', label: 'BitChute' },
+  { value: 'rumble', label: 'Rumble' },
   { value: 'video-hls', label: 'HLS live video' },
   { value: 'audio-hls', label: 'HLS live audio' },
   { value: 'video', label: 'Live video stream' },
@@ -318,6 +320,7 @@ const PROVIDER_HOSTS: Partial<Record<SourceChoice, [RegExp, string]>> = {
   vimeo: [/^(?:www\.|player\.)?vimeo\.com$/i, 'Vimeo'],
   odysee: [/^(?:www\.)?odysee\.com$/i, 'Odysee'],
   bitchute: [/^(?:www\.|api\.|old\.)?bitchute\.com$/i, 'BitChute'],
+  rumble: [/^(?:www\.)?rumble\.com$/i, 'Rumble'],
 }
 
 /** The one video a YouTube address names (watch, youtu.be, shorts, live, embed), or null. */

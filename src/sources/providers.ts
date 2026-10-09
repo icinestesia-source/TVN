@@ -6,7 +6,7 @@ import { classifySourceUrl, webAddress } from '../services/channel-sources.ts'
  * what the address actually serves. Unsafe schemes and broadcast ingest addresses never leave the browser.
  */
 
-export type ProviderId = 'youtube' | 'vimeo' | 'odysee' | 'bitchute' | 'rss' | 'archive' | 'hls' | 'dash' | 'direct' | 'website' | 'x' | 'unknown'
+export type ProviderId = 'youtube' | 'vimeo' | 'odysee' | 'bitchute' | 'rumble' | 'rss' | 'archive' | 'hls' | 'dash' | 'direct' | 'website' | 'x' | 'unknown'
 export type SourceForm = 'video' | 'collection' | 'live'
 
 export interface Capabilities {
@@ -68,6 +68,7 @@ export const PROVIDERS: Readonly<Record<ProviderId, Provider>> = {
   },
   odysee: { id: 'odysee', label: 'Odysee', forms: ['video', 'collection'], capabilities: { ...ELEMENT, canEnumerate: true, canReadMetadata: true, canReadPublishedDate: true } },
   bitchute: { id: 'bitchute', label: 'BitChute', forms: ['video', 'collection'], capabilities: { ...ELEMENT, canEnumerate: true, canReadMetadata: true, canReadPublishedDate: true } },
+  rumble: { id: 'rumble', label: 'Rumble', forms: ['video', 'collection'], capabilities: { ...ELEMENT, canEnumerate: true, canReadMetadata: true, canReadPublishedDate: true } },
   rss: { id: 'rss', label: 'RSS', forms: ['collection'], capabilities: { ...ELEMENT, canEnumerate: true, canReadMetadata: true, canReadPublishedDate: true } },
   archive: { id: 'archive', label: 'Website', forms: ['collection'], capabilities: { ...ELEMENT, canEnumerate: true, canReadMetadata: true, canReadPublishedDate: true } },
   hls: { id: 'hls', label: 'HLS', forms: ['video', 'live'], capabilities: { ...ELEMENT, canDetectLive: true } },
@@ -97,6 +98,7 @@ const HOSTS: readonly [RegExp, ProviderId][] = [
   [/^(?:www\.|player\.)?vimeo\.com$/i, 'vimeo'],
   [/^(?:www\.)?odysee\.com$/i, 'odysee'],
   [/^(?:www\.|api\.|old\.)?bitchute\.com$/i, 'bitchute'],
+  [/^(?:www\.)?rumble\.com$/i, 'rumble'],
   [/^(?:www\.|mobile\.)?(?:x|twitter)\.com$/i, 'x'],
 ]
 

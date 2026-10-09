@@ -166,7 +166,7 @@ describe('INFORMATION OVERLAY: the creator after the channel name', () => {
     const html = markup({ ...base, ...creatorFields({ name: 'Tom Scott', channelId: TOM, handle: 'TomScottGo' }) })
     expect(html).toContain('<a class="info-creator" href="https://www.youtube.com/@TomScottGo" target="_blank" rel="noopener noreferrer">@TomScottGo</a>')
     expect(html.indexOf('Science')).toBeLessThan(html.indexOf('@TomScottGo'))
-    expect(html).toMatch(/<span>Science<\/span><a class="info-creator"[^>]*>@TomScottGo<\/a><\/p><h2 class="info-title">Video<\/h2>/)
+    expect(html).toMatch(/<span>Science<\/span><a class="info-creator"[^>]*>@TomScottGo<\/a><\/p><div class="info-title-line"><h2 class="info-title">Video<\/h2>/)
     expect(html).not.toMatch(/<p class="info-kicker"[^>]*onclick|<a[^>]*class="info-kicker"/i)
   })
 

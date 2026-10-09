@@ -317,7 +317,7 @@ describe('MULTI: the information bar follows the selected window', () => {
     expect(move).toMatch(commitThenInfo)
     expect(move).not.toMatch(/multiviewRef\.current = |setMultiviewMode/)
     expect(read('src/components/BroadcastTile.tsx')).toContain("onClick={() => tv.dispatch({ type: 'focus-tile', index })}")
-    expect(read('src/app/TvScreen.tsx')).toContain('info ? <NowNextOverlay leaving={info === \'closing\'} /> : null')
+    expect(read('src/app/TvScreen.tsx')).toMatch(/\) : info \? \(\s*<NowNextOverlay leaving=\{info === 'closing'\} \/>\s*\) : null\}/)
   })
 
   const overlayFor = (channel: Channel) => {
@@ -329,6 +329,7 @@ describe('MULTI: the information bar follows the selected window', () => {
       remoteOpen: false,
       surfing: false,
       subtitles: false,
+      favourites: [],
       infoShortcuts: DEFAULT_SHORTCUTS,
       dispatch: () => {},
       holdInfo: () => {},
@@ -336,7 +337,7 @@ describe('MULTI: the information bar follows the selected window', () => {
     } as unknown as TvContextValue
     return renderToStaticMarkup(createElement(TvContext.Provider, { value }, createElement(NowNextOverlay)))
   }
-  const kicker = (html: string) => (html.match(/<p class="info-kicker">([\s\S]*?)<\/p>/)?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const kicker = (html: string) => (html.match(/<p class="info-kicker">([\s\S]*?)<\/p>/)?.[1] ?? '').replace(/<button class="info-star[\s\S]*?<\/button>|<button type="button" class="info-star[\s\S]*?<\/button>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
   const decode = (text: string) => text.replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
   const title = (html: string) => decode(html.match(/<h2 class="info-title"[^>]*>([^<]*)</)?.[1] ?? '')
 

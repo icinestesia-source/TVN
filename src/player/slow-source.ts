@@ -18,7 +18,7 @@ const HOST_LABELS: readonly [RegExp, string][] = [
   [/(?:^|\.)bitchute\.com$/i, 'BitChute'],
   [/(?:^|\.)(?:vimeo\.com|vimeocdn\.com)$/i, 'Vimeo'],
   [/(?:^|\.)archive\.org$/i, 'Internet Archive'],
-  [/(?:^|\.)rumble\.com$/i, 'Rumble'],
+  [/(?:^|\.)(?:rumble\.com|rumble\.cloud)$/i, 'Rumble'],
 ]
 
 /** Who is sending the programme, named for the viewer: a known provider, else the address's own host. */

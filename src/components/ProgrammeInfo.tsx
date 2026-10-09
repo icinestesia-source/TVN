@@ -5,6 +5,8 @@ import type { Programme } from '../types/programme.ts'
 import { playbackLabel } from '../view/playback-label.ts'
 import { programmeDate } from '../view/programme-date.ts'
 import { formatDuration, formatElapsed, formatRange, padChannel } from '../utils/time.ts'
+import { hasPicture } from '../session/session-channel.ts'
+import { bookmarkFor, toggleBookmark, useBookmarks } from '../view/bookmarks-store.ts'
 import { TimeSlider } from './TimeSlider.tsx'
 
 export function shownDescription(programme: Programme): string | null {
@@ -40,6 +42,7 @@ export function ProgrammeInfo({
   picked = false,
   following = null,
   onSeek,
+  favourite,
 }: {
   channel: Channel
   programme: Programme
@@ -47,15 +50,19 @@ export function ProgrammeInfo({
   endMs: number
   now: number
   alert?: boolean
-  next?: { title: string; startMs: number; endMs: number }
+  /** What follows; `onPlay` makes its title a button that moves on to it now. */
+  next?: { title: string; startMs: number; endMs: number; onPlay?: () => void }
   /** Playing because the viewer chose it in the Guide, not because it is on air. */
   picked?: boolean
   /** A viewing Guide chose it: green rather than gold, and Next is the Guide's next item (null when it is the last). */
-  following?: { next: { title: string; channelNumber: number } | null } | null
+  following?: { next: { title: string; channelNumber: number } | null; onNext?: () => void } | null
   /** Over the picture: clicking the time opens a slider to move through the programme. */
   onSeek?: (seconds: number) => void
+  /** The channel's star: whether it is a favourite, and the press that changes it. */
+  favourite?: { on: boolean; onToggle: () => void }
 }) {
   const [sliding, setSliding] = useState(false)
+  const bookmarks = useBookmarks()
   const stream = programme.liveStream !== undefined
   const live = now >= startMs && now < endMs
   const later = now < startMs
@@ -67,6 +74,8 @@ export function ProgrammeInfo({
   const status = picked || following || stream || live ? null : later ? 'Later' : 'Already broadcast'
   const register = useSourceRegister()
   const by = programmeAttribution(programme, register)
+  const clip = !stream && hasPicture(programme) ? bookmarkFor(channel, programme) : null
+  const marked = clip !== null && bookmarks.some((saved) => saved.key === clip.key)
 
   return (
     <div className="info-main">
@@ -74,6 +83,21 @@ export function ProgrammeInfo({
         {label ? <span className="info-net">{label}</span> : null}
         <span>{padChannel(channel.number)}</span>
         <span>{channel.name}</span>
+        {favourite ? (
+          <button
+            type="button"
+            className={favourite.on ? 'info-star is-on' : 'info-star'}
+            aria-pressed={favourite.on}
+            aria-label={favourite.on ? 'Remove this channel from Favourites' : 'Add this channel to Favourites'}
+            title={favourite.on ? 'Favourite channel (A)' : 'Add to Favourites (A)'}
+            onClick={(event) => {
+              event.stopPropagation()
+              favourite.onToggle()
+            }}
+          >
+            {favourite.on ? '★' : '☆'}
+          </button>
+        ) : null}
         {by ? (
           by.url ? (
             <a className="info-creator" href={by.url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
@@ -84,7 +108,24 @@ export function ProgrammeInfo({
           )
         ) : null}
       </p>
-      <h2 className="info-title">{programme.title}</h2>
+      <div className="info-title-line">
+        <h2 className="info-title">{programme.title}</h2>
+        {clip ? (
+          <button
+            type="button"
+            className={marked ? 'info-bookmark is-on' : 'info-bookmark'}
+            aria-pressed={marked}
+            aria-label={marked ? "Remove this clip's bookmark" : 'Bookmark this clip'}
+            title={marked ? 'Bookmarked (D)' : 'Bookmark this clip (D)'}
+            onClick={(event) => {
+              event.stopPropagation()
+              toggleBookmark(clip)
+            }}
+          >
+            📜
+          </button>
+        ) : null}
+      </div>
       {programme.relay ? (
         <p className="info-relay">
           On {padChannel(programme.relay.channelNumber)}
@@ -125,16 +166,34 @@ export function ProgrammeInfo({
       {following ? (
         <p className="info-next">
           <span className="info-net is-following">Guide next</span>
-          <span className="info-next-title">{following.next ? following.next.title : 'End of Guide · back to Now'}</span>
+          {following.next ? <NextTitle title={following.next.title} onPlay={following.onNext} /> : <span className="info-next-title">End of Guide · back to Now</span>}
           {following.next ? <span className="info-next-time">{padChannel(following.next.channelNumber)}</span> : null}
         </p>
       ) : next && !stream ? (
         <p className="info-next">
           <span className="info-net">Next</span>
-          <span className="info-next-title">{next.title}</span>
+          <NextTitle title={next.title} onPlay={next.onPlay} />
           <span className="info-next-time">{formatRange(next.startMs, next.endMs)}</span>
         </p>
       ) : null}
     </div>
+  )
+}
+
+/** The next clip's title, which plays it at once when there is a way to. */
+function NextTitle({ title, onPlay }: { title: string; onPlay?: () => void }) {
+  if (!onPlay) return <span className="info-next-title">{title}</span>
+  return (
+    <button
+      type="button"
+      className="info-next-title is-playable"
+      title="Play this next"
+      onClick={(event) => {
+        event.stopPropagation()
+        onPlay()
+      }}
+    >
+      {title}
+    </button>
   )
 }

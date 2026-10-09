@@ -20,6 +20,7 @@ describe('identifying an address before anything is read', () => {
     expect(identifyUrl('https://vimeo.com/1228694119')).toMatchObject({ route: 'reader', provider: 'vimeo' })
     expect(identifyUrl('odysee.com/@Odysee:8')).toMatchObject({ route: 'reader', provider: 'odysee' })
     expect(identifyUrl('https://www.bitchute.com/channel/bitchute/')).toMatchObject({ route: 'reader', provider: 'bitchute' })
+    expect(identifyUrl('https://rumble.com/c/c-296012/videos')).toMatchObject({ route: 'reader', provider: 'rumble' })
     expect(identifyUrl('https://cdn.example.net/live.m3u8')).toMatchObject({ route: 'reader', provider: 'unknown' })
     expect(identifyUrl('radio.example.net:8000/stream')).toMatchObject({ route: 'reader' })
   })

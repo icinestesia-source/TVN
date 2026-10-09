@@ -154,7 +154,7 @@ describe('Edit Channel running order', () => {
 describe('shortcut hints', () => {
   it('read M Mute, / Multi, comma and full stop, U Add and − = Guide zoom, and no M Multi or K', () => {
     const text = read('src/components/Hints.tsx')
-    for (const part of ['M Mute', '/ Multi', 'B N Prev/Next', ', . Programme', 'U Add', '− = Guide zoom']) expect(text).toContain(part)
+    for (const part of ['M Mute', '/ Multi', 'B N Prev/Next', ', . Programme', 'I Add', '− = Guide zoom']) expect(text).toContain(part)
     expect(text).not.toContain('M Multi')
     expect(text).not.toMatch(/\bK\b/)
   })

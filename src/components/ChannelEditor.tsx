@@ -215,7 +215,7 @@ function SourceDepth({
 
 /**
  * The Channel Editor: one channel's name and sources, opened from the Guide by right-click, a long press
- * or E. It sits where the Guide's information bar is and closes back into it.
+ * or the menu key. It stands on the information bar, rising out of it, and closes back into it.
  */
 export function ChannelEditor({
   channel,

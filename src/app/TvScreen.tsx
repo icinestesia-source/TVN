@@ -151,7 +151,14 @@ export function TvScreen() {
           <ChannelTransition key={layer.presentation.session} settings={layer.presentation.settings} channelNumber={layer.presentation.cardNumber ?? layer.number} revealing={layer.revealing} />
         ) : null}
         {tv.credits ? <CreditsRoll /> : null}
-        {tv.screenEdit !== null ? <ScreenEditor /> : info ? <NowNextOverlay leaving={info === 'closing'} /> : null}
+        {tv.screenEdit !== null ? (
+          <div className="screen-edit-stack">
+            <ScreenEditor />
+            <NowNextOverlay />
+          </div>
+        ) : info ? (
+          <NowNextOverlay leaving={info === 'closing'} />
+        ) : null}
         {tv.overlay === 'volume' ? <VolumeOsd volume={tv.volume} muted={tv.muted} /> : null}
         {tv.numeric ? <NumericEntry digits={tv.numeric} /> : null}
         {tv.notice ? <div className="notice">{tv.notice}</div> : null}

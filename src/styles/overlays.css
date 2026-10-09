@@ -475,6 +475,36 @@
 .info-bar.screen-editor { padding: 0; }
 .info-bar.screen-editor .guide-editor { border: 1px solid #1d4c78; }
 
+/* Edit Channel over the picture stands on the INFO bar, which stays up beneath it, and grows only as tall as it needs. */
+.screen-edit-stack {
+  position: fixed;
+  top: var(--safe);
+  left: var(--safe);
+  right: var(--info-right);
+  bottom: var(--info-bottom);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+.screen-edit-stack > * { pointer-events: auto; }
+.screen-edit-stack > .info-bar {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  flex: none;
+  animation: none;
+}
+.screen-edit-stack > .info-bar.screen-editor {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.screen-edit-stack > .info-bar.screen-editor > .guide-info { flex: 0 1 auto; min-height: 0; max-height: none; }
+
 .info-bar.is-leaving {
   pointer-events: none;
   animation: info-bar-out 320ms ease-in forwards;
@@ -532,6 +562,24 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+button.info-next-title.is-playable {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.info-next-title.is-playable:hover,
+button.info-next-title.is-playable:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .info-next-time {

@@ -88,6 +88,116 @@ describe('Odysee and BitChute through their public feeds', () => {
   })
 })
 
+describe('Rumble through its channel pages and public HLS playlists', () => {
+  const by = (channel: string) => ({ type: 'channel', url: `https://rumble.com/c/${channel}`, name: channel === 'example-cast' ? 'Example Cast' : 'Someone Else' })
+  const video = (id: string, extra: Record<string, unknown> = {}) => ({
+    object_type: 'video',
+    videos: [{ url: `https://rumble.com/hls-vod/Eid${id}xyz/playlist.m3u8`, type: 'hls' }],
+    url: `https://rumble.com/${id}-a-clip.html`,
+    by: by('example-cast'),
+    is_age_restricted: false,
+    id: 1,
+    title: `Clip ${id}`,
+    duration: 600,
+    thumb: 'https://hugh.cdn.rumble.cloud/video/x.jpg',
+    upload_date: '2026-03-17T20:20:57+00:00',
+    is_short: false,
+    live: false,
+    live_placeholder: false,
+    visibility: 'public',
+    availability: null,
+    permalink_id: id,
+    ...extra,
+  })
+  const page = (items: unknown[]) => `<html><rum-videos-grid>\n<script type="application/json">\n${JSON.stringify({ items })}</script></rum-videos-grid></html>`
+  const PAGE_ONE = page([
+    video('v7795nq'),
+    video('v1live', { live: true }),
+    video('v1prem', { availability: 'premium' }),
+    video('v1aged', { is_age_restricted: true }),
+    video('v1short', { is_short: true }),
+    video('v1other', { by: by('someone-else') }),
+    video('v1sign', { videos: [{ url: 'https://hugh.cdn.rumble.cloud/video/a.mp4?token=abc', type: 'mp4' }] }),
+    video('v1file', { videos: [1080, 720, 480].map((res) => ({ url: `https://hugh.cdn.rumble.cloud/video/b${res}.mp4`, type: 'mp4', res })) }),
+  ])
+
+  it('reads a channel’s own public, free, finished videos and stores each one’s stable HLS playlist', async () => {
+    const seen: string[] = []
+    const route: Route = (url) => {
+      seen.push(url)
+      return url === 'https://rumble.com/c/example-cast/videos' ? body(PAGE_ONE, 'text/html') : null
+    }
+    for (const address of ['https://rumble.com/c/example-cast/videos', 'https://rumble.com/c/example-cast', 'https://www.rumble.com/c/example-cast/livestreams']) {
+      const found = await resolveFeed(address, reader(route))
+      expect(found).toMatchObject({ provider: 'rumble', form: 'collection', feedUrl: 'https://rumble.com/c/example-cast', title: 'Example Cast', listed: 7, unplayable: 5 })
+      expect(found.episodes[1]).toMatchObject({ id: 'rumble-v1file', media: 'https://hugh.cdn.rumble.cloud/video/b720.mp4', type: 'video/mp4' })
+      expect(found.episodes.slice(0, 1)).toEqual([
+        {
+          id: 'rumble-v7795nq',
+          title: 'Clip v7795nq',
+          durationSec: 600,
+          published: '2026-03-17',
+          media: 'https://rumble.com/hls-vod/Eidv7795nqxyz/playlist.m3u8',
+          type: 'video/hls',
+          page: 'https://rumble.com/v7795nq-a-clip.html',
+          image: 'https://hugh.cdn.rumble.cloud/video/x.jpg',
+        },
+      ])
+      expect(JSON.stringify(found)).not.toContain('token=')
+    }
+    expect(seen.every((url) => url === 'https://rumble.com/c/example-cast/videos')).toBe(true)
+  })
+
+  it('pages through a long channel only as far as the videos TVN keeps', async () => {
+    const user = { type: 'user', url: 'https://rumble.com/user/example-cast', name: 'Example Cast' }
+    const full = (n: number) => page(Array.from({ length: 25 }, (_, i) => video(`v${n}a${i.toString(36)}`, { by: user })))
+    const seen: string[] = []
+    const route: Route = (url) => {
+      seen.push(url)
+      if (url === 'https://rumble.com/user/example-cast/videos') return body(full(1), 'text/html')
+      if (url === 'https://rumble.com/user/example-cast/videos?page=2') return body(full(2), 'text/html')
+      return null
+    }
+    const found = await resolveUrlSource(new URL('https://rumble.com/user/example-cast/videos'), reader(route), 40, () => {
+      throw new Error('no feed')
+    })
+    expect(found?.episodes).toHaveLength(40)
+    expect(seen).toEqual(['https://rumble.com/user/example-cast/videos', 'https://rumble.com/user/example-cast/videos?page=2'])
+  })
+
+  it('reads one video through its oEmbed record and public player record', async () => {
+    const route: Route = (url) => {
+      if (url.startsWith('https://rumble.com/api/Media/oembed.json?url=')) return body(JSON.stringify({ title: 'One Clip', html: '<iframe src="https://rumble.com/embed/v74fqyk/"></iframe>', author_url: 'https://rumble.com/c/example-cast' }), 'application/json')
+      if (url === 'https://rumble.com/embedJS/u3/?request=video&ver=2&v=v74fqyk') {
+        return body(JSON.stringify({ title: 'One  Clip', duration: 463, pubDate: '2026-03-04T16:58:27+00:00', i: 'https://hugh.cdn.rumble.cloud/video/y.jpg', l: '/v76meys-one-clip.html', live: 0, author: { url: 'https://rumble.com/c/example-cast' }, u: { hls: { url: 'https://rumble.com/hls-vod/27NPbo630Mg/playlist.m3u8' } } }), 'application/json')
+      }
+      return null
+    }
+    const found = await resolveFeed('https://rumble.com/v76meys-one-clip.html', reader(route))
+    expect(found).toMatchObject({ provider: 'rumble', form: 'video', feedUrl: 'https://rumble.com/v76meys-one-clip.html', website: 'https://rumble.com/c/example-cast', title: 'One Clip' })
+    expect(found.episodes).toEqual([expect.objectContaining({ id: 'rumble-v76meys', durationSec: 463, published: '2026-03-04', media: 'https://rumble.com/hls-vod/27NPbo630Mg/playlist.m3u8', type: 'video/hls' })])
+  })
+
+  it('plays an older video, which has no HLS playlist, from its public MP4 nearest 720p', async () => {
+    const route: Route = (url) => {
+      if (url.startsWith('https://rumble.com/api/Media/oembed.json?url=')) return body(JSON.stringify({ title: 'Old Clip', html: '<iframe src="https://rumble.com/embed/v6p159m/"></iframe>' }), 'application/json')
+      if (url === 'https://rumble.com/embedJS/u3/?request=video&ver=2&v=v6p159m') {
+        const file = (res: number) => ({ url: `https://hugh.cdn.rumble.cloud/video/old${res}.mp4`, meta: { h: res } })
+        return body(JSON.stringify({ title: 'Old Clip', duration: 4824, l: '/v6r8qae-old-clip.html', live: 0, u: { mp4: file(480) }, ua: { mp4: { 360: file(360), 480: file(480), 720: file(720), 1080: file(1080) } } }), 'application/json')
+      }
+      return null
+    }
+    const found = await resolveFeed('https://rumble.com/v6r8qae-old-clip.html', reader(route))
+    expect(found.episodes[0]).toMatchObject({ id: 'rumble-v6r8qae', media: 'https://hugh.cdn.rumble.cloud/video/old720.mp4', type: 'video/mp4' })
+  })
+
+  it('refuses Rumble pages that are neither a channel nor a video, and channels with nothing playable', async () => {
+    const route: Route = (url) => (url === 'https://rumble.com/c/empty/videos' ? body(page([video('v1live', { live: true })]), 'text/html') : null)
+    await expect(resolveFeed('https://rumble.com/browse', reader(route))).rejects.toThrow(/neither/)
+    await expect(resolveFeed('https://rumble.com/c/empty', reader(route))).rejects.toThrow(/no public videos/)
+  })
+})
+
 describe('direct media, HLS and DASH, by what the server says they are', () => {
   const MASTER = '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=640x360,CODECS="avc1.4d401e,mp4a.40.2"\nlow/index.m3u8\n'
   const VOD = '#EXTM3U\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXTINF:10.0,\na.ts\n#EXTINF:10.0,\nb.ts\n#EXTINF:15.5,\nc.ts\n#EXT-X-ENDLIST\n'

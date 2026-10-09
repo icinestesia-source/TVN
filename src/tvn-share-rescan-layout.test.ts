@@ -113,7 +113,6 @@ describe('EDIT CHANNEL rises out of the information bar, as the Guide does', () 
   it('rises from the top of the bar and grows to the Guide’s height only when it needs to', () => {
     expect(css).toMatch(/\.guide-info\.guide-editor \{\s*max-height: 100%;[\s\S]{0,120}animation: editor-rise/)
     expect(css).toMatch(/@keyframes editor-rise \{\s*from \{ clip-path: inset\(calc\(100% - var\(--info-h, 96px\)\) 0 0 0\); \}/)
-    expect(css).toContain('.info-bar.screen-editor > .guide-editor { max-height: calc(100vh - var(--safe) - var(--info-bottom));')
     expect(css).not.toContain('max-height: min(62vh, 560px)')
   })
 

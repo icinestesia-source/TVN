@@ -105,7 +105,7 @@ describe('the time line', () => {
     expect(line(start + 3_600_000)).toContain('>Already broadcast</span>')
     const credited = line(start + 60_000, { creator: 'Maker', programmeType: 'documentary', tags: ['Bulletin'] } as Partial<Programme>)
     expect(credited.match(/Maker/g)).toHaveLength(1)
-    expect(credited).toMatch(/<p class="info-kicker">.*<span class="info-creator">Maker<\/span><\/p><h2 class="info-title">/)
+    expect(credited).toMatch(/<p class="info-kicker">.*<span class="info-creator">Maker<\/span><\/p><div class="info-title-line"><h2 class="info-title">/)
     expect(credited).not.toMatch(/documentary|info-meta/)
     expect(credited.match(/Bulletin/g)).toHaveLength(1)
     expect(readFileSync('src/styles/guide.css', 'utf8')).not.toMatch(/\.info-meta|\.info-sep/)

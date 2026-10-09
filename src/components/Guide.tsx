@@ -36,6 +36,7 @@ import { TvnChannelPanel } from './TvnChannelPanel.tsx'
 import { channelActions, cornerActions, type ChannelActions, type CornerActions } from '../view/info-shortcuts.ts'
 import { historyActions, InfoActions, type HistoryActions } from './InfoActions.tsx'
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
+import { BookmarksPanel } from './BookmarksPanel.tsx'
 import { GuideOptions } from './GuideOptions.tsx'
 import { loadGuideActionsAll, saveGuideActionsAll } from '../view/guide-actions-store.ts'
 import { NetworkEditor } from './NetworkEditor.tsx'
@@ -606,6 +607,24 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     }
   }
 
+  // The programme's information bar: the Guide's foot, and beneath the Channel Editor while it is open.
+  const programmePanel = (
+    <ProgrammePanel
+      channel={focusedChannel}
+      slot={focused}
+      next={followingSlot}
+      now={now}
+      note={tv.guideNote}
+      onPrev={precedingSlot ? () => tv.dispatch({ type: 'nav', direction: 'left' }) : undefined}
+      onNext={followingSlot ? () => tv.dispatch({ type: 'nav', direction: 'right' }) : undefined}
+      history={historyActions(tv)}
+      corners={cornerActions(tv)}
+      channels={channelActions(tv)}
+      following={tv.guideRun?.state === 'active'}
+      onEdit={focusedChannel && editScope ? () => tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: focusedChannel.number }) : undefined}
+    />
+  )
+
   return (
     <section
       ref={sectionRef}
@@ -660,6 +679,16 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           >
             Fav
           </button>
+          <button
+            type="button"
+            className={tool === 'bookmarks' ? 'tab guide-bookmarks is-on' : 'tab guide-bookmarks'}
+            aria-pressed={tool === 'bookmarks'}
+            aria-label="Bookmarks"
+            title="Bookmarks: the clips you bookmarked (D)"
+            onClick={() => tv.dispatch({ type: 'guide-tool', tool: 'bookmarks' })}
+          >
+            📜
+          </button>
         </div>
         <GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />
         <GuideActions
@@ -677,6 +706,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 
       {tool === 'options' ? (
         <GuideOptions />
+      ) : tool === 'bookmarks' ? (
+        <BookmarksPanel />
       ) : networkShown ? (
         <NetworkEditor onEdit={editFromNetwork} />
       ) : tv.visibleChannels.length === 0 ? (
@@ -907,6 +938,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       ) : tool === 'edit' && focusedChannel && editScope === 'tvn' ? (
         <TvnChannelPanel onChooseAnother={tv.chooseAnotherTvn} onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })} />
       ) : tool === 'edit' && focusedChannel && editScope && editScope !== 'local' ? (
+        <>
         <ChannelEditor
           key={focusedChannel.number}
           channel={focusedChannel}
@@ -923,6 +955,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           archiveOf={tv.sourceArchive}
           onPlay={tv.playChannelProgramme}
         />
+        {programmePanel}
+        </>
       ) : tool === 'media' ? (
         <SessionImportTools
           key={mediaChannel.number}
@@ -938,7 +972,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onWatch={(channelNumber) => tv.dispatch({ type: 'tune', channelNumber })}
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'media' })}
         />
-      ) : tool === 'options' || tool === 'editor' ? null : tool === 'users' ? (
+      ) : tool === 'options' || tool === 'editor' || tool === 'bookmarks' ? null : tool === 'users' ? (
         <NewUserTools
           name={newUserName}
           note={newUserNote}
@@ -964,24 +998,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
       ) : sessionMatches.length > 0 ? (
         <SessionMatches channel={focusedChannel ?? SESSION_CHANNEL} matches={sessionMatches} onPlay={tv.playSession} />
       ) : (
-        <ProgrammePanel
-          channel={focusedChannel}
-          slot={focused}
-          next={followingSlot}
-          now={now}
-          note={tv.guideNote}
-          onPrev={precedingSlot ? () => tv.dispatch({ type: 'nav', direction: 'left' }) : undefined}
-          onNext={followingSlot ? () => tv.dispatch({ type: 'nav', direction: 'right' }) : undefined}
-          history={historyActions(tv)}
-          corners={cornerActions(tv)}
-          channels={channelActions(tv)}
-          following={tv.guideRun?.state === 'active'}
-          onEdit={
-            focusedChannel && editScope
-              ? () => tv.dispatch({ type: 'guide-tool', tool: 'edit', channelNumber: focusedChannel.number })
-              : undefined
-          }
-        />
+        programmePanel
       )}
     </section>
   )
@@ -1371,6 +1388,7 @@ function ProgrammePanel({
   /** An active Guide controls what plays next: the GUIDE key shows it here too. */
   following?: boolean
 }) {
+  const tv = useTv()
   const { handlers } = useEditPress(onEdit)
   if (!channel || !slot) {
     return (
@@ -1394,6 +1412,7 @@ function ProgrammePanel({
         now={now}
         alert={alert}
         next={next ? { title: next.programme.title, startMs: next.startMs, endMs: next.endMs } : undefined}
+        favourite={{ on: tv.favourites.includes(channel.number), onToggle: () => tv.dispatch({ type: 'favourite', channelNumber: channel.number }) }}
       />
       <InfoActions
         key={channel.number}

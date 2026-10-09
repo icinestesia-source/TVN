@@ -38,7 +38,7 @@ export interface FoundFeed {
   live?: { url: string; media: 'video' | 'audio'; format: 'hls' | 'direct' }
 }
 
-const READER_PROVIDERS: readonly ProviderId[] = ['vimeo', 'odysee', 'bitchute', 'hls', 'direct', 'website', 'x']
+const READER_PROVIDERS: readonly ProviderId[] = ['vimeo', 'odysee', 'bitchute', 'rumble', 'hls', 'direct', 'website', 'x']
 
 const httpsUrl = (raw: unknown): string | null => {
   if (typeof raw !== 'string') return null

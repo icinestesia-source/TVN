@@ -59,7 +59,10 @@ describe('CHANNEL ZERO and the creator line', () => {
   it('keeps the creator after the channel name, on the first line', () => {
     const info = read('src/components/ProgrammeInfo.tsx')
     expect(info.indexOf('<span>{channel.name}</span>')).toBeLessThan(info.indexOf('className="info-creator"'))
-    expect(info.indexOf('className="info-creator"')).toBeLessThan(info.indexOf('</p>\n      <h2 className="info-title">'))
+    expect(info.indexOf('className="info-creator"')).toBeLessThan(info.indexOf('</p>\n      <div className="info-title-line">\n        <h2 className="info-title">'))
+    // The channel's star sits between its name and the creator.
+    expect(info.indexOf('<span>{channel.name}</span>')).toBeLessThan(info.indexOf("className={favourite.on ? 'info-star is-on' : 'info-star'}"))
+    expect(info.indexOf("className={favourite.on ? 'info-star is-on' : 'info-star'}")).toBeLessThan(info.indexOf('className="info-creator"'))
     expect(info).not.toContain('info-headline')
   })
 })

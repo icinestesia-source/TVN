@@ -124,6 +124,7 @@ import type { Programme } from '../types/programme.ts'
 import type { GuideTool, ScheduleAction, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, padChannel, sleep } from '../utils/time.ts'
+import { bookmarkFor, toggleBookmark } from '../view/bookmarks-store.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, loadSurfUntilEnd, saveSurfOn, saveSurfRange, saveSurfUntilEnd, surfDelayMs, surfUntilEndMs, type SurfRange } from './surf.ts'
 import {
@@ -298,6 +299,8 @@ const SCREEN_EDIT_COMMANDS: ReadonlySet<TvCommand['type']> = new Set([
   'play-pause',
   'fullscreen',
   'debug',
+  'bookmark',
+  'favourite',
 ])
 
 
@@ -860,7 +863,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
    */
   const openGuideTool = (kind: GuideTool, channelNumber?: number) => {
     if (kind === 'edit' && !guideOpenRef.current) {
-      // Over the picture: E, a right-click or a hold on the information bar edits the channel being watched.
+      // Over the picture: the menu key, a right-click or a hold on the information bar edits the channel being watched.
       if (screenEditRef.current !== null) {
         closeScreenEdit()
         return
@@ -909,7 +912,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   panelOpenRef.current = () => {
     const held = guideToolRef.current
     if (held?.kind === 'guides' || held?.kind === 'editor') return held.kind
-    return held && (held.kind === 'users' || held.kind === 'options') && held.cursor === cursorRef.current ? held.kind : null
+    return held && (held.kind === 'users' || held.kind === 'options' || held.kind === 'bookmarks') && held.cursor === cursorRef.current ? held.kind : null
   }
 
   /** Every channel change comes through here and leaves a Guide pick behind, unless it is the tune that plays one. */
@@ -1832,10 +1835,18 @@ export function TvProvider({ children }: { children: ReactNode }) {
         // Pressed again before the last one settled, it steps on from where that one was heading.
         const aimed = tuningRef.current ? historyAimRef.current : null
         const from = aimed !== null ? { ...historyRef.current, index: aimed } : historyRef.current
-        const step = historyStep(from, command.type === 'history-back' ? -1 : 1)
-        if (!step || !channelByNumber(step.channelNumber)) break
-        historyNavRef.current = step.index
-        requestTune(step.channelNumber)
+        const delta = command.type === 'history-back' ? -1 : 1
+        const step = historyStep(from, delta)
+        if (step && channelByNumber(step.channelNumber)) {
+          historyNavRef.current = step.index
+          requestTune(step.channelNumber)
+          break
+        }
+        // Nothing remembered that way: N goes up a channel, and B down one, as the channel keys do.
+        const pending = tuningRef.current ? pendingNumberRef.current : null
+        const target = stepTarget(tuned(), pending, delta, { filter: guideFilter, favourites })
+        if (target === null) flash(emptyUniverseNote(guideFilter))
+        else requestTune(target)
         break
       }
       case 'confirm':
@@ -2055,6 +2066,20 @@ export function TvProvider({ children }: { children: ReactNode }) {
         )
         // A (or the remote) says what it did; a star pressed in the Guide shows it in place.
         if (command.channelNumber === undefined) flash(adding ? `★ FAVOURITE · ${padChannel(number)}` : `☆ FAVOURITE REMOVED · ${padChannel(number)}`, 1400)
+        break
+      }
+      case 'bookmark': {
+        // The clip selected in the Guide, or the one on screen.
+        const number = guideOpenRef.current ? cursorRef.current.channelNumber : channelRef.current
+        const target = channelByNumber(number)
+        if (!target) break
+        const { programme } = onScreen(target, guideOpenRef.current ? cursorRef.current.timeMs : Date.now()).current
+        if (programme.liveStream !== undefined || !hasPicture(programme)) {
+          flash('NOTHING TO BOOKMARK HERE', 1400)
+          break
+        }
+        const on = toggleBookmark(bookmarkFor(target, programme))
+        flash(on ? `📜 BOOKMARKED · ${programme.title}` : `BOOKMARK REMOVED · ${programme.title}`, 1600)
         break
       }
       case 'debug':

@@ -6,9 +6,9 @@ export type ScheduleAction = 'random' | 'reload' | 'latest' | 'az'
 
 /**
  * Guide actions that happen inside the Guide: MEDIA at 1000 Local Media, IMPORT (a User Network file) and ADD
- * at the foot of the User Network, and EDIT, the Channel Editor for one channel (right-click, long-press, or E).
+ * at the foot of the User Network, and EDIT, the Channel Editor for one channel (right-click, long-press, or the menu key).
  */
-export type GuideTool = 'media' | 'network' | 'add' | 'edit' | 'users' | 'options' | 'guides' | 'editor'
+export type GuideTool = 'media' | 'network' | 'add' | 'edit' | 'users' | 'options' | 'guides' | 'editor' | 'bookmarks'
 
 /**
  * Commands a keyboard, on-screen remote, or future gamepad can emit.
@@ -40,7 +40,7 @@ export type TvCommand =
   | { type: 'focus-tile'; index: number }
   | { type: 'tune'; channelNumber: number }
   | { type: 'user-channels' }
-  /** I: MEDIA, 1000 Local Media imported from files on this device. */
+  /** U: MEDIA, 1000 Local Media imported from files on this device. */
   | { type: 'media' }
   | { type: 'guide-tool'; tool: GuideTool; channelNumber?: number }
   | { type: 'remote' }
@@ -58,6 +58,8 @@ export type TvCommand =
   | { type: 'volume-down' }
   | { type: 'fullscreen' }
   | { type: 'favourite'; channelNumber?: number }
+  /** D: the clip on screen (or selected in the Guide) bookmarked, or its bookmark removed. */
+  | { type: 'bookmark' }
   | { type: 'debug' }
   | { type: 'guide-filter'; filter?: GuideFilter }
   /** C: the next of the Guide's tabs, All → the User Network → each named user → Favourites → All. */
@@ -67,7 +69,7 @@ export type TvCommand =
    * each press, L LATEST and Z A to Z on and off, as the Guide's buttons do, and X RELOAD its sources and schedule again.
    */
   | { type: 'schedule'; action: ScheduleAction; channelNumber?: number }
-  /** O: Export ALL, downloaded at once. */
+  /** E: Export ALL, downloaded at once. */
   | { type: 'export-all' }
   | { type: 'guide-now' }
   /** = zooms the Guide's timeline in (wider programmes, less time), - zooms it out. */

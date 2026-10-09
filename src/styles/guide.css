@@ -333,7 +333,8 @@
   align-items: start;
   animation: editor-rise 340ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
-.info-bar.screen-editor > .guide-editor { max-height: calc(100vh - var(--safe) - var(--info-bottom)); max-height: calc(100dvh - var(--safe) - var(--info-bottom)); }
+/* In the Guide it stands on the programme's information bar, which stays beneath it. */
+.guide > .guide-info.guide-editor { flex: 0 1 auto; min-height: 0; border-bottom: 1px solid #1d4c78; }
 .guide-editor .editor-lineup { max-height: max(220px, calc(100vh - var(--safe) - var(--info-bottom) - 260px)); max-height: max(220px, calc(100dvh - var(--safe) - var(--info-bottom) - 260px)); }
 
 @keyframes editor-rise {
@@ -1399,6 +1400,30 @@ a.info-creator:focus-visible {
   font-size: clamp(22px, 2.4vw, 28px);
 }
 
+/* The channel's star after its name, and the clip's bookmark after its title: plain marks that light when on. */
+.info-star,
+.info-bookmark {
+  flex: none;
+  min-width: 0;
+  height: auto;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+.info-star.is-on { color: var(--gold); }
+.info-star:hover,
+.info-star:focus-visible { color: var(--gold); }
+.info-title-line { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; }
+.info-title-line > .info-title { min-width: 0; }
+.info-bookmark { font-size: 14px; filter: saturate(0.35); opacity: 0.7; }
+.info-bookmark.is-on,
+.info-bookmark:hover,
+.info-bookmark:focus-visible { filter: none; opacity: 1; }
+
 /* The date stays whole beside the title, however the title wraps. */
 .info-date {
   color: var(--muted);
@@ -1849,6 +1874,26 @@ a.info-creator:focus-visible {
   .ch-head { padding: 0 6px; }
   .ch-number { width: 4.2ch; font-size: 15px; }
   .ch-name { font-size: 11px; }
+}
+
+/* 📜 Bookmarks: the clips the viewer bookmarked, one row each. */
+.tabs .guide-bookmarks { min-width: 0; padding: 0 8px; font-size: 16px; letter-spacing: 0; }
+.bookmark-list { display: flex; flex-direction: column; max-width: 980px; margin: 0; padding: 0; list-style: none; background: #0b1c30; }
+.bookmark-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 16em) auto auto auto;
+  align-items: center;
+  gap: 4px 14px;
+  min-height: 36px;
+  padding: 2px 8px;
+  border-top: 1px solid rgba(29, 76, 120, 0.45);
+}
+.bookmark-title { min-width: 0; overflow: hidden; color: var(--ink); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.bookmark-channel,
+.bookmark-length { min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .bookmark-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .bookmark-channel, .bookmark-length { grid-row: 2; }
 }
 
 /* OPTIONS: users and settings, laid out as cards in the Guide's own colours. */
