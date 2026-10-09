@@ -71,14 +71,14 @@ describe('guide search', () => {
     expect(searchGuideChannels(guideRows('favourites', favourites), 'news')).toEqual([])
   })
 
-  it('leaves R and digits to the search box instead of the television', () => {
-    expect(commandFromKey('r', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'guide-cycle' })
+  it('leaves C and digits to the search box instead of the television', () => {
+    expect(commandFromKey('c', { meta: false, ctrl: false, alt: false }, false)).toEqual({ type: 'guide-cycle' })
     for (const guideOpen of [true, false]) {
-      expect(commandFromKeyEvent(key('r', 'INPUT'), guideOpen)).toBeNull()
-      expect(commandFromKeyEvent(key('R', 'INPUT'), guideOpen)).toBeNull()
+      expect(commandFromKeyEvent(key('c', 'INPUT'), guideOpen)).toBeNull()
+      expect(commandFromKeyEvent(key('C', 'INPUT'), guideOpen)).toBeNull()
       for (const digit of '0123456789') expect(commandFromKeyEvent(key(digit, 'INPUT'), guideOpen)).toBeNull()
     }
-    expect(commandFromKeyEvent(key('R', 'DIV'), false)).toEqual({ type: 'guide-cycle' })
+    expect(commandFromKeyEvent(key('C', 'DIV'), false)).toEqual({ type: 'guide-cycle' })
     expect(commandFromKeyEvent(key('4', 'DIV'), true)).toEqual({ type: 'digit', digit: 4 })
   })
 })

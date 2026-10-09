@@ -564,7 +564,7 @@ describe('existing Guide interactions', () => {
     expect(actions).toMatch(/>Options<[\s\S]*>Now<[\s\S]*>Add<[\s\S]*>Media</)
     expect(actions).not.toMatch(/>Import</)
     expect(commandFromKey('Home', plain, true)).toEqual({ type: 'guide-now' })
-    expect(commandFromKey('u', plain, false)).toEqual({ type: 'media' })
+    expect(commandFromKey('i', plain, false)).toEqual({ type: 'media' })
     expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
     expect(commandFromKey('Backspace', plain, false)).toEqual({ type: 'digit-back' })
     expect(guide).toContain('<GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />')

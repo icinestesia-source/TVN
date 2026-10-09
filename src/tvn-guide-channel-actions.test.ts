@@ -236,7 +236,7 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(takeScheduleBeforeLatest(11, store)).toEqual({})
   })
 
-  it('RELOAD (no longer a Guide button) rescans and schedules the channel again; only an order arranged by hand is kept', () => {
+  it('RELOAD (X, no longer a Guide button) rescans and schedules the channel again; only an order arranged by hand is kept', () => {
     const provider = read('src/state/TvProvider.tsx')
     const reload = provider.slice(provider.indexOf('const reloadChannel = useCallback('), provider.indexOf('const loadMoreChannelSource = useCallback('))
     expect(reload).toContain('const result = await rescanChannelEdit(number, current)')

@@ -70,15 +70,23 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
     for (const [key, label] of [
       ['P', 'Pause'],
       ['Space', 'Surf · hold: scope'],
-      ['S', 'Fav'],
+      ['A', 'Fav'],
+      ['S', 'Subs'],
+      ['V', 'Info'],
       [',', 'Prev'],
       ['.', 'Next'],
       ['/', 'Multi'],
       ['-', 'Zoom out'],
       ['=', 'Zoom in'],
       ['G', 'Guide'],
-      ['R', 'All / User / Fav'],
-      ['U', 'Media'],
+      ['C', 'All / User / Fav'],
+      ['R', 'Refresh'],
+      ['X', 'Reload'],
+      ['L', 'Latest'],
+      ['Z', 'A to Z'],
+      ['U', 'Add'],
+      ['I', 'Media'],
+      ['O', 'Export ALL'],
       ['B', 'Prev prog'],
       ['N', 'Next prog'],
       ['Home', 'Now'],
@@ -91,9 +99,9 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
 
   it('invents nothing: every key marked is one TVN binds, to what its label says', () => {
     const expected: Record<string, string> = {
-      Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'guide-tool', r: 'guide-cycle', t: 'surf', y: 'user-channels',
-      u: 'media', i: 'info', p: 'play-pause', a: 'guide-tool', s: 'favourite', f: 'fullscreen', g: 'guide', h: 'hints', Enter: 'confirm', c: 'subtitles',
-      v: 'guide-filter', b: 'step', n: 'step', m: 'mute', ',': 'history-back', '.': 'history-forward', '/': 'multiview', ' ': 'random-channel',
+      Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'guide-tool', r: 'schedule', t: 'surf', y: 'user-channels',
+      u: 'guide-tool', i: 'media', o: 'export-all', p: 'play-pause', a: 'favourite', s: 'subtitles', f: 'fullscreen', g: 'guide', h: 'hints', l: 'schedule', Enter: 'confirm',
+      z: 'schedule', x: 'schedule', c: 'guide-cycle', v: 'info', b: 'step', n: 'step', m: 'mute', ',': 'history-back', '.': 'history-forward', '/': 'multiview', ' ': 'random-channel',
       Home: 'guide-now', PageUp: 'channel-up', PageDown: 'channel-down', ArrowUp: 'channel-up', ArrowDown: 'channel-down', ArrowLeft: 'volume-down', ArrowRight: 'volume-up',
     }
     for (const item of [...KEYBOARD_ROWS.flat(), ...KEYBOARD_NAV]) {

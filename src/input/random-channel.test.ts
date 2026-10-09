@@ -30,11 +30,11 @@ describe('Space random channel', () => {
 
   afterAll(() => installUserCatalogue([], new Map()))
 
-  it('maps Space to a random tune while watching, R to the Guide tabs, and leaves browser shortcuts alone', () => {
+  it('maps Space to a random tune while watching, C to the Guide tabs, and leaves browser shortcuts alone', () => {
     expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
     expect(commandFromKey(' ', plain, true)).toBeNull()
-    expect(commandFromKey('r', plain, false)).toEqual({ type: 'guide-cycle' })
-    expect(commandFromKey('R', plain, true)).toEqual({ type: 'guide-cycle' })
+    expect(commandFromKey('c', plain, false)).toEqual({ type: 'guide-cycle' })
+    expect(commandFromKey('C', plain, true)).toEqual({ type: 'guide-cycle' })
     expect(commandFromKey('r', { ...plain, meta: true }, false)).toBeNull()
     expect(commandFromKey('r', { ...plain, ctrl: true }, false)).toBeNull()
   })

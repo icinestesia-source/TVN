@@ -121,7 +121,7 @@ import { isRefusalCode, learnRefusal, refusedVideos } from '../services/embed-re
 import { sourceArchive, uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
-import type { GuideTool, TvCommand } from '../types/input.ts'
+import type { GuideTool, ScheduleAction, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, padChannel, sleep } from '../utils/time.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
@@ -251,6 +251,7 @@ const VOLUME_MS = 1200
 const SOUND_RELEASE_MS = 1500
 /** One press of = or - on the Guide: a quarter more, or less, time per screen. */
 const GUIDE_KEY_ZOOM = 1.25
+const SCHEDULE_WORKING: Record<ScheduleAction, string> = { random: 'REFRESHING…', reload: 'RELOADING…', latest: 'LATEST…', az: 'A–Z…' }
 const NUMERIC_MS = 1600
 // A refused or failed first programme is usually replaced within a second or two (the refusal fallback).
 const STARTUP_RETRY_MS = 4000
@@ -478,6 +479,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const noticeTimer = useRef(0)
   const bufferRef = useRef('')
   const dispatchRef = useRef<(command: TvCommand) => void>(() => {})
+  /** A schedule key (R, X, L, Z) is at work; another waits for it. */
+  const scheduleBusyRef = useRef(false)
   const toggleSurfScopeRef = useRef<() => void>(() => {})
   /** The website or post on screen when TVN paused, and how far into its slot. */
   const pausedWebRef = useRef<{ channelNumber: number; programme: Programme; elapsedSeconds: number; slot: { startMs: number; endMs: number } } | null>(null)
@@ -1971,7 +1974,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setMultiviewPage(Math.max(0, command.page))
         break
       case 'info':
-        // I (or a tap on the picture) shows the information bar, and closes it again while it is up.
+        // V (or a tap on the picture) shows the information bar, and closes it again while it is up.
         if (overlay === 'info') showOverlay('none', 0)
         else showOverlay('info', INFO_MS)
         break
@@ -2040,7 +2043,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setFavourites((current) =>
           current.includes(number) ? current.filter((item) => item !== number) : [...current, number],
         )
-        // S (or the remote) says what it did; a star pressed in the Guide shows it in place.
+        // A (or the remote) says what it did; a star pressed in the Guide shows it in place.
         if (command.channelNumber === undefined) flash(adding ? `★ FAVOURITE · ${padChannel(number)}` : `☆ FAVOURITE REMOVED · ${padChannel(number)}`, 1400)
         break
       }
@@ -2052,6 +2055,33 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setGuideFilter(nextFilter)
         break
       }
+      case 'schedule': {
+        if (scheduleBusyRef.current) break
+        const number = command.channelNumber ?? (guideOpenRef.current ? cursorRef.current.channelNumber : channelRef.current)
+        const target = channelByNumber(number)
+        if (!target || !editorScope(target) || target.origin === 'session') {
+          flash(`${padChannel(number)} · THIS CHANNEL'S SCHEDULE CANNOT BE CHANGED HERE`, 2200)
+          break
+        }
+        const work = command.action === 'reload' ? reloadChannel(number) : arrangeChannel(number, command.action)
+        scheduleBusyRef.current = true
+        flash(`${padChannel(number)} · ${SCHEDULE_WORKING[command.action]}`, 60_000)
+        work
+          .then(
+            (message) => flash(`${padChannel(number)} · ${message}`, 2600),
+            (caught: unknown) => flash(`${padChannel(number)} · ${caught instanceof Error && caught.message ? caught.message.toUpperCase().slice(0, 110) : 'THAT DID NOT WORK'}`, 2600),
+          )
+          .finally(() => {
+            scheduleBusyRef.current = false
+          })
+        break
+      }
+      case 'export-all':
+        void exportTvn().then(
+          (message) => flash(message, 2600),
+          () => flash('EXPORT ALL DID NOT WORK', 2600),
+        )
+        break
       case 'guide-zoom':
         // From here the viewer's zoom stands until the Guide is opened afresh.
         if (guideOpenRef.current) setGuideZoomState((zoom) => clampZoom(zoom * (command.direction > 0 ? GUIDE_KEY_ZOOM : 1 / GUIDE_KEY_ZOOM)))
@@ -3164,9 +3194,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const latestFirst = useCallback((number: number) => arrangeChannel(number, 'latest'), [arrangeChannel])
 
   /**
-   * RELOAD in the Guide: the channel rescanned and scheduled again. A running order arranged by hand is kept,
-   * with what the rescan found joining it; A–Z sorts again and a shuffle reshuffles; any other channel is
-   * rebuilt afresh from every eligible programme, each source in turn. Replayed if watched.
+   * RELOAD (X, no longer a Guide button): the channel rescanned and scheduled again. A running order arranged by
+   * hand is kept, with what the rescan found joining it; A–Z sorts again and a shuffle reshuffles; any other
+   * channel is rebuilt afresh from every eligible programme, each source in turn. Replayed if watched.
    */
   const reloadChannel = useCallback(
     async (number: number) => {

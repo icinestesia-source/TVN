@@ -75,7 +75,7 @@ describe('guide navigation', () => {
     expect(commandFromKey('Escape', plain, true)).toEqual({ type: 'cancel' })
     expect(commandFromKey('Home', plain, true)).toEqual({ type: 'guide-now' })
     expect(commandFromKey('PageDown', plain, true)).toEqual({ type: 'nav', direction: 'down', rows: 8 })
-    expect(commandFromKey('i', plain, false)).toEqual({ type: 'info' })
+    expect(commandFromKey('v', plain, false)).toEqual({ type: 'info' })
   })
 
   it('lists dormant curated channels in the guide but not unavailable ones', () => {

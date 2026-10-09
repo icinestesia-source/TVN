@@ -149,7 +149,7 @@ export function TouchRemote() {
                 <path d="M12 3v8" />
               </svg>
             </button>
-            <button type="button" title="Favourite (S)" onClick={() => tv.dispatch({ type: 'favourite' })}>
+            <button type="button" title="Favourite (A)" onClick={() => tv.dispatch({ type: 'favourite' })}>
               Fav
             </button>
             <button type="button" onClick={() => tv.dispatch({ type: 'mute' })}>

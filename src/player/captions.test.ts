@@ -76,11 +76,11 @@ describe('subtitles toggle', () => {
     expect(youtube.showing()).toBe(false)
   })
 
-  it('B/C: plain C toggles off → on → off with a transient notice; S stays Favourite', () => {
-    expect(commandFromKey('c', plain, false)).toEqual({ type: 'subtitles' })
-    expect(commandFromKey('C', plain, false)).toEqual({ type: 'subtitles' })
-    expect(commandFromKey('c', plain, true)).toEqual({ type: 'subtitles' })
-    expect(commandFromKey('s', plain, false)).toEqual({ type: 'favourite' })
+  it('B/C: plain S toggles off → on → off with a transient notice; A is Favourite', () => {
+    expect(commandFromKey('s', plain, false)).toEqual({ type: 'subtitles' })
+    expect(commandFromKey('S', plain, false)).toEqual({ type: 'subtitles' })
+    expect(commandFromKey('s', plain, true)).toEqual({ type: 'subtitles' })
+    expect(commandFromKey('a', plain, false)).toEqual({ type: 'favourite' })
 
     const youtube = captionPlayer()
     const controller = new CaptionController(false, 'en')
@@ -164,11 +164,11 @@ describe('subtitles toggle', () => {
     expect(() => controller.modulesChanged({ getOptions: () => { throw new Error('proxy') } })).not.toThrow()
   })
 
-  it('H: C typed into an editable field does not toggle', () => {
-    expect(key('c', { target: { tagName: 'INPUT' } })).toBeNull()
-    expect(key('C', { target: { tagName: 'TEXTAREA' } })).toBeNull()
-    expect(key('c', { target: { tagName: 'DIV', isContentEditable: true } })).toBeNull()
-    expect(key('c', { target: { tagName: 'BUTTON' } })).toEqual({ type: 'subtitles' })
+  it('H: S typed into an editable field does not toggle', () => {
+    expect(key('s', { target: { tagName: 'INPUT' } })).toBeNull()
+    expect(key('S', { target: { tagName: 'TEXTAREA' } })).toBeNull()
+    expect(key('s', { target: { tagName: 'DIV', isContentEditable: true } })).toBeNull()
+    expect(key('s', { target: { tagName: 'BUTTON' } })).toEqual({ type: 'subtitles' })
   })
 
   it('I: Cmd, Ctrl and Alt with C or S do not toggle', () => {

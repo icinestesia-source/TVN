@@ -154,10 +154,10 @@ describe('USER exports carry their Favourites; RESTORE offers ALL or USER', () =
   })
 })
 
-describe('R cycles All, User and Fav', () => {
-  it('R is the Guide-tab cycle, with the Guide open or closed; Space stays Random', () => {
-    expect(commandFromKey('r', plain, false)).toEqual({ type: 'guide-cycle' })
-    expect(commandFromKey('R', plain, true)).toEqual({ type: 'guide-cycle' })
+describe('C cycles All, User and Fav', () => {
+  it('C is the Guide-tab cycle, with the Guide open or closed; Space stays Random', () => {
+    expect(commandFromKey('c', plain, false)).toEqual({ type: 'guide-cycle' })
+    expect(commandFromKey('C', plain, true)).toEqual({ type: 'guide-cycle' })
     expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
   })
 

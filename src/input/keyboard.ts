@@ -56,8 +56,8 @@ export function commandFromKey(
     case 'g':
     case 'G':
       return { type: 'guide' }
-    case 'i':
-    case 'I':
+    case 'v':
+    case 'V':
       return { type: 'info' }
     case 'm':
     case 'M':
@@ -68,33 +68,46 @@ export function commandFromKey(
       return { type: 'history-back' }
     case '.':
       return { type: 'history-forward' }
-    case 'a':
-    case 'A':
+    case 'u':
+    case 'U':
       return { type: 'guide-tool', tool: 'add' }
     case 'f':
     case 'F':
       return { type: 'fullscreen' }
+    case 'a':
+    case 'A':
+      return { type: 'favourite' }
     case 's':
     case 'S':
-      return { type: 'favourite' }
-    case 'c':
-    case 'C':
       return { type: 'subtitles' }
     case 'd':
     case 'D':
       return { type: 'debug' }
-    case 'v':
-    case 'V':
-      return { type: 'guide-filter' }
-    case 'u':
-    case 'U':
+    case 'i':
+    case 'I':
       return { type: 'media' }
+    case 'o':
+    case 'O':
+      return { type: 'export-all' }
     case 'y':
     case 'Y':
       return { type: 'user-channels' }
+    case 'c':
+    case 'C':
+      return { type: 'guide-cycle' }
+    // A channel's schedule, as the Guide's buttons arrange it: REFRESH (a new random order), LATEST and A to Z, and RELOAD.
     case 'r':
     case 'R':
-      return { type: 'guide-cycle' }
+      return { type: 'schedule', action: 'random' }
+    case 'x':
+    case 'X':
+      return { type: 'schedule', action: 'reload' }
+    case 'l':
+    case 'L':
+      return { type: 'schedule', action: 'latest' }
+    case 'z':
+    case 'Z':
+      return { type: 'schedule', action: 'az' }
     case 't':
     case 'T':
       return { type: 'surf' }
