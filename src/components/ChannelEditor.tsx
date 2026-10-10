@@ -3,7 +3,7 @@ import { loadRegister } from '../credits/load.ts'
 import { watchUrl, type SourceRegister } from '../credits/provenance.ts'
 import { shippedChannel, shippedProgrammes } from '../data/catalogue.ts'
 import { broadcast } from '../services/broadcast.ts'
-import { admitted, canLoadMore, eligibilityKey, heldIds, holdNew, lengthRangeOf, withLengthRange, withWebsiteSlot, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
+import { admitted, canLoadMore, eligibilityKey, heldIds, holdNew, lengthRangeOf, widenSources, withLengthRange, withWebsiteSlot, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import type { ChannelExportKind } from '../services/channel-file.ts'
 import { reachesArchive, withSourceDrafts, type SourceDraft } from '../services/channel-curation.ts'
 import type { ImportedVideo } from '../services/channels-import.ts'
@@ -181,6 +181,7 @@ function SourceDepth({
   disabled,
   canLoad,
   onAll,
+  onRecheck,
   onStop,
 }: {
   source: ChannelSource
@@ -188,6 +189,8 @@ function SourceDepth({
   disabled: boolean
   canLoad: boolean
   onAll: () => void
+  /** RE-CHECK, once LOAD ALL has nothing left to read: the whole source read again for what is new or withdrawn. */
+  onRecheck?: () => void
   onStop: () => void
 }) {
   const held = source.videos?.length ?? 0
@@ -207,6 +210,17 @@ function SourceDepth({
       ) : canLoad ? (
         <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={onAll} title="Read this source to the end of its public list">
           Load all
+        </button>
+      ) : onRecheck ? (
+        <button
+          type="button"
+          className="tab"
+          disabled={disabled}
+          onKeyDown={keepKey}
+          onClick={onRecheck}
+          title="Read the whole source again: add anything new, and drop programmes it no longer lists"
+        >
+          Re-check
         </button>
       ) : null}
     </div>
@@ -607,23 +621,40 @@ export function ChannelEditor({
     const next = { ...edit, sources: admitted(edit.sources), order: withLeft([...head, ...ids.slice(scheduled)]), orderKind: 'random' as const }
     keepOrder({ ...next, compiled: eligibilityKey(next) }, `RESCHEDULED · ${scheduled} PROGRAMMES IN A NEW RANDOM ORDER · SAVED`)
   }
-  const loadMore = (source: ChannelSource, all: boolean) => {
+  const loadMore = (source: ChannelSource, all: boolean, recheck = false) => {
     if (!edit || !onLoadMore) return
     const stop = new AbortController()
     stopRef.current = stop
-    setLoading({ id: source.id, loaded: source.videos?.length ?? 0, listed: source.listed, all })
+    setLoading({ id: source.id, loaded: recheck ? 0 : (source.videos?.length ?? 0), listed: source.listed, all })
     void run('load', async () => {
-      const found = await onLoadMore(source, {
+      const read = await onLoadMore(source, {
         all,
+        ...(recheck ? { recheck: true } : {}),
         signal: stop.signal,
         onProgress: (loaded, listed) => setLoading((current) => (current ? { ...current, loaded, listed } : current)),
       })
+      const found = recheck ? (widenSources([read], archiveOf)[0] ?? read) : read
       const loaded = { ...edit, sources: admitted(edit.sources.map((item) => (item.id === source.id ? found : item))) }
       const next = { ...loaded, compiled: eligibilityKey(loaded) }
       setEdit(next)
       await onSave(number, next)
       const count = found.videos?.length ?? 0
       const before = source.videos?.length ?? 0
+      if (recheck) {
+        const had = new Set((source.videos ?? []).map((video) => video.id))
+        const now = new Set((found.videos ?? []).map((video) => video.id))
+        const fresh = [...now].filter((id) => !had.has(id)).length
+        const gone = [...had].filter((id) => !now.has(id)).length
+        return [
+          stop.signal.aborted ? 'RE-CHECK STOPPED · NOTHING REMOVED' : 'RE-CHECKED',
+          `${fresh} NEW`,
+          stop.signal.aborted ? null : `${gone} NO LONGER LISTED`,
+          `${count}${found.listed ? ` OF ${found.listed}` : ''} IN THIS SOURCE`,
+          fresh > 0 || gone > 0 ? 'SCHEDULED · SAVED' : 'SAVED',
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      }
       return [
         stop.signal.aborted ? 'STOPPED' : count > before ? `${count - before} MORE LOADED` : 'NOTHING NEW',
         `${count}${found.listed ? ` OF ${found.listed}` : ''} IN THIS SOURCE`,
@@ -1141,6 +1172,7 @@ export function ChannelEditor({
                       disabled={busy !== null}
                       canLoad={loadableSource(source)}
                       onAll={() => loadMore(source, true)}
+                      onRecheck={onLoadMore && (source.kind === 'youtube' || source.kind === 'podcast') && source.enabled ? () => loadMore(source, true, true) : undefined}
                       onStop={() => stopRef.current?.abort()}
                     />
                   ) : null}

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -83,6 +84,52 @@ describe('a source deeper than its first 60 programmes', () => {
     const cut = { ...all, videos: all.videos!.slice(0, 100), listed: 449 }
     expect(canLoadMore(cut)).toBe(true)
     expect(canLoadMore({ ...cut, videos: all.videos!.slice(0, 420) })).toBe(false)
+  })
+
+  it('RE-CHECK reads a whole source again, uncached: new programmes join, withdrawn ones go, dates found stay', async () => {
+    const held = [{ id: 'withdrawn01', title: 'Made private', durationSec: 900 }, ...DEEP.slice(1).map((video) => ({ ...video }))]
+    const fromPlaylist = { id: 'fromlist001', title: 'Via filter playlist', durationSec: 700, lists: ['PLx'] }
+    const whole = deepSource({ videos: [...held, fromPlaylist], complete: true, deep: true, more: undefined })
+    expect(canLoadMore(whole)).toBe(false)
+    const calls: string[] = []
+    const fresh: unknown[] = []
+    const deps = fakeYouTube(calls)
+    const read = await loadMoreSource(whole, { ...deps, resolveYouTube: async (url, options) => (fresh.push(options), deps.resolveYouTube(url)) }, { all: true, recheck: true }, 5)
+    expect(calls[0]).toBe('first')
+    expect(fresh).toEqual([{ fresh: true }])
+    const ids = read.videos!.map((video) => video.id)
+    expect(ids).toContain(DEEP[0].id)
+    expect(ids).not.toContain('withdrawn01')
+    expect(ids).toContain('fromlist001')
+    expect(ids).toHaveLength(743)
+    expect(read.videos!.slice(1, 20).every((video) => video.published)).toBe(true)
+    expect(read.complete).toBe(true)
+  })
+
+  it('a stopped or empty RE-CHECK never loses what the source held', async () => {
+    const whole = deepSource({ videos: [{ id: 'kept0000001', title: 'Older find', durationSec: 900 }, ...DEEP.slice(0, 60)], complete: true, deep: true, more: undefined })
+    const stop = new AbortController()
+    const deps = fakeYouTube()
+    const stopped = await loadMoreSource(
+      whole,
+      { ...deps, resolveBatch: async (cursor) => (stop.abort(), deps.resolveBatch(cursor)) },
+      { all: true, recheck: true, signal: stop.signal },
+      5,
+    )
+    expect(stopped.videos!.map((video) => video.id)).toContain('kept0000001')
+    expect(stopped.complete).toBeUndefined()
+    const empty: LoadMoreDeps = { ...deps, resolveYouTube: async () => ({ channelId: 'UCdeep00000000000000000a', title: 'Deep', videos: [] }) }
+    await expect(loadMoreSource(whole, empty, { all: true, recheck: true }, 5)).rejects.toThrow()
+    const feed = { ...whole, kind: 'podcast' as const, url: 'https://example.com/feed', youtube: undefined }
+    const podcast = await loadMoreSource(feed, { ...deps, resolveFeed: async () => ({ feedUrl: feed.url, title: 'Feed', episodes: DEEP.slice(0, 3) }) as unknown as Awaited<ReturnType<NonNullable<LoadMoreDeps['resolveFeed']>>> }, { all: true, recheck: true }, 5)
+    expect(podcast.videos!.map((video) => video.id)).toEqual(DEEP.slice(0, 3).map((video) => video.id))
+    expect(podcast.listed).toBe(3)
+  })
+
+  it('offers RE-CHECK in the editor where LOAD ALL has nothing left to read', () => {
+    const source = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
+    expect(source).toMatch(/\) : onRecheck \? \([\s\S]*Re-check/)
+    expect(source).toMatch(/onRecheck=\{onLoadMore && \(source\.kind === 'youtube' \|\| source\.kind === 'podcast'\)/)
   })
 
   it('STOP keeps what has arrived and leaves the rest to load later', async () => {

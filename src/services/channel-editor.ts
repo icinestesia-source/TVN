@@ -162,7 +162,7 @@ export interface RescanDeps {
    */
   resolveYouTube(
     url: string,
-    options?: { mode?: SourceMode },
+    options?: { mode?: SourceMode; fresh?: boolean },
   ): Promise<{ channelId: string; sourceType?: 'youtube-channel' | 'youtube-playlist'; title: string; videos: readonly ImportedVideo[]; listed?: number; next?: string }>
   /** Whether this browser can open the stream now. */
   probeStream(source: ChannelSource): Promise<'online' | 'unavailable' | 'unsupported'>
@@ -517,6 +517,11 @@ export interface LoadMoreDeps {
 export interface LoadMoreOptions {
   /** LOAD ALL: keep reading batches until the source is exhausted or the safety ceiling is reached. */
   all?: boolean
+  /**
+   * RE-CHECK: read the whole source again from its start, uncached. A read that reaches the end leaves the source
+   * holding exactly what it offers now (new programmes in, withdrawn ones out); a stopped one only adds.
+   */
+  recheck?: boolean
   signal?: AbortSignal
   onProgress?(loaded: number, listed: number | undefined): void
 }
@@ -548,11 +553,13 @@ export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, 
     const { youtube: _youtube, ...rest } = read
     return { ...rest, kind: 'collection', url: source.url, ref: source.ref }
   }
-  const held = (source.videos ?? []).map((video) => ({ ...video }))
+  const recheck = options.recheck === true && (source.kind === 'youtube' || source.kind === 'podcast')
+  const previous = (source.videos ?? []).map((video) => ({ ...video }))
+  const held = recheck ? [] : previous.map((video) => ({ ...video }))
   const seen = new Set(held.map((video) => video.id))
   const add = (fresh: readonly ImportedVideo[]) => {
     let added = 0
-    for (const video of keepingDates(fresh, held)) {
+    for (const video of keepingDates(fresh, recheck ? previous : held)) {
       if (seen.has(video.id) || held.length >= MAX_SOURCE_VIDEOS) continue
       seen.add(video.id)
       held.push(video)
@@ -562,6 +569,10 @@ export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, 
   }
   const done = (extra: Pick<ChannelSource, 'listed' | 'more' | 'complete'>): ChannelSource => {
     const { more: _more, complete: _complete, listed: _listed, ...rest } = source
+    if (recheck && held.length === 0) throw new Error('The source listed nothing; what it held is kept')
+    // A re-check cut short only adds: nothing is dropped unless the whole list was read. Programmes from the
+    // filter's playlists come from those playlists, not this list, so they stay.
+    if (recheck) for (const video of previous) if (!seen.has(video.id) && (!extra.complete || video.lists?.length) && held.length < MAX_SOURCE_VIDEOS) held.push(video)
     return { ...rest, ...extra, deep: true, videos: held, status: { state: 'ready', playable: held.length, checkedAt: now } }
   }
   if (source.kind === 'podcast') {
@@ -575,11 +586,11 @@ export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, 
   }
   if (source.kind !== 'youtube') return source
   let listed = source.listed
-  let cursor = source.more
+  let cursor = recheck ? undefined : source.more
   let restarted = false
   const restart = async () => {
     restarted = true
-    const found = await deps.resolveYouTube(canonicalYouTubeUrl(source))
+    const found = await deps.resolveYouTube(canonicalYouTubeUrl(source), ...(recheck ? [{ fresh: true }] : []))
     add(found.videos)
     listed = found.listed ?? listed
     cursor = found.next
@@ -601,9 +612,10 @@ export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, 
     listed = batch.listed ?? listed
     cursor = batch.next
     options.onProgress?.(held.length, listed)
-    if (!options.all && added > 0) break
+    if (!options.all && !recheck && added > 0) break
   }
-  return done({ ...(listed !== undefined ? { listed } : {}), ...(cursor ? { more: cursor } : held.length < MAX_SOURCE_VIDEOS ? { complete: true } : {}) })
+  const ended = !cursor && held.length < MAX_SOURCE_VIDEOS
+  return done({ ...(listed !== undefined ? { listed } : {}), ...(cursor ? { more: cursor } : {}), ...(ended ? { complete: true } : {}) })
 }
 
 /**

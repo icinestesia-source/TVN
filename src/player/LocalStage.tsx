@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from
 import { noteLocalSource } from '../session/session-channel.ts'
 import { fileScale } from './file-scale.ts'
 import { attachFlv, type Remuxer } from './flv.ts'
+import { steadiedUrl, steadyLocalUrl } from './mp4-steady.ts'
 import { nativeHls } from './stream.ts'
 import { notePlayback } from './trace.ts'
 import type { LocalPlayerHandle } from './routed.ts'
@@ -226,7 +227,7 @@ export function LocalStage({
           onStatusRef.current('buffering')
           notePlayback({ playerState: 'buffering', expectedSeek: startSeconds })
           const showing = remuxRef.current ? remuxRef.current.url : video.getAttribute('src')
-          if (!live && showing === url && video.readyState >= 1) {
+          if (!live && showing !== null && (showing === url || showing === steadiedUrl(url)) && video.readyState >= 1) {
             begin(id)
             return
           }
@@ -244,6 +245,14 @@ export function LocalStage({
           }
           dropRemux()
           liveRef.current = live
+          if (!live && url.startsWith('blob:')) {
+            noteLocalSource(url)
+            // A file from this device with bunched frame times plays from a steadied copy of its index.
+            void steadyLocalUrl(url).then((playable) => {
+              if (id === requestId.current) video.src = playable
+            })
+            return
+          }
           video.src = url
           noteLocalSource(live ? null : url)
         })

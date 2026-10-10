@@ -72,7 +72,8 @@ export interface ResolvedFeed {
 }
 
 const RECENT_KEEP = 60
-const WIDE_KEEP = 500
+/** As many as a source holds (MAX_SOURCE_VIDEOS), so LOAD ALL reads a long feed to its end. */
+const WIDE_KEEP = 2000
 /** One call stays well inside a hosted function's time limit; a longer archive carries on in the next call. */
 export const CALL_BUDGET_MS = 5000
 /** Used only when a feed gives no duration: a typical spoken-word MP3 (128 kbit/s). */
