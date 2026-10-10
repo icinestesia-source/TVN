@@ -139,6 +139,40 @@ describe('a source deeper than its first 60 programmes', () => {
     expect(rescanned(newest, DEEP.slice(0, 5), 'recent')).toHaveLength(3)
     expect(rescanned(newest, DEEP.slice(0, 5), 'recent', true)).toHaveLength(8)
   })
+
+  it('a rescan never cuts a YouTube source holding more than one read back to its newest 60, and it can still load', async () => {
+    const unmarked = deepSource({ videos: DEEP.slice(0, 500), more: undefined, complete: true })
+    const [after] = await rescanSources(
+      [unmarked],
+      { resolveYouTube: async () => ({ channelId: 'UCdeep00000000000000000a', title: 'Deep', videos: DEEP.slice(0, 60), listed: 759 }), probeStream: async () => 'online' },
+      9,
+    )
+    expect(after.videos).toHaveLength(500)
+    expect(after.deep).toBe(true)
+    expect(canLoadMore(after)).toBe(true)
+    // Already cut back to 60 and marked whole by a plain rescan: LOAD is offered again to put it right.
+    expect(canLoadMore({ ...unmarked, videos: DEEP.slice(0, 60), listed: undefined })).toBe(true)
+  })
+
+  it('a podcast read in full keeps every episode through a rescan, and one already cut back can be read again', async () => {
+    const episodes = catalogue(500).map((video, index) => ({ ...video, id: `ep-${index}`, mediaUrl: `https://example.com/${index}.mp3` }))
+    const feed = (count: number) => async () => ({ feedUrl: 'https://example.com/feed/podcast/', title: 'Pod', website: null, description: '', episodes: episodes.slice(0, count) })
+    const podcast: ChannelSource = { id: 's1', kind: 'podcast', url: 'https://example.com/feed/podcast/', label: 'Pod', enabled: true, videos: episodes.slice(0, 60) }
+    const whole = await loadMoreSource(podcast, { resolveYouTube: fakeYouTube().resolveYouTube, resolveBatch: fakeYouTube().resolveBatch, resolveFeed: feed(500) as never }, {}, 5)
+    expect(whole.videos).toHaveLength(500)
+    expect(whole.listed).toBe(500)
+    expect(canLoadMore(whole)).toBe(false)
+    const deps = { resolveYouTube: fakeYouTube().resolveYouTube, resolveFeed: feed(60) as never, probeStream: async () => 'online' as const }
+    const [after] = await rescanSources([whole], deps, 9)
+    expect(after.videos).toHaveLength(500)
+    // Added through ADD with the whole feed, never marked deeper: still kept whole.
+    const { deep: _d, complete: _c, listed: _l, ...added } = whole
+    const [kept] = await rescanSources([added], deps, 9)
+    expect(kept.videos).toHaveLength(500)
+    // Cut back to 60 yet marked whole, as an older rescan left it: LOAD reads the feed again.
+    expect(canLoadMore({ ...added, videos: episodes.slice(0, 60), complete: true })).toBe(true)
+    expect(canLoadMore({ ...whole, videos: episodes.slice(0, 60) })).toBe(true)
+  })
 })
 
 const record = (list: ImportedVideo[]): StoredSource => ({
@@ -267,7 +301,7 @@ describe('the Channel Editor', () => {
     expect(html).toContain('60 loaded · 759 listed')
     expect(html).toContain('>Load more</button>')
     expect(html).toContain('>Load all</button>')
-    const done = render({ name: 'Deep', sources: [deepSource({ videos: DEEP, more: undefined, complete: true })] })
+    const done = render({ name: 'Deep', sources: [deepSource({ videos: DEEP, more: undefined, complete: true, deep: true })] })
     expect(done).toContain('742 loaded · 759 listed · whole source read')
     expect(done).toMatch(/<button[^>]*disabled=""[^>]*title="The whole source is read"[^>]*>Load more<\/button>/)
   })

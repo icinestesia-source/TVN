@@ -90,6 +90,18 @@ describe('BOOKMARKS: clips kept to play again', () => {
     expect(panel).toContain('tv.playChannelProgramme(bookmark.channelNumber, bookmark.programmeId)')
     expect(panel).toContain('onClick={() => removeBookmark(bookmark.key)}')
   })
+
+  it('♡ is one more tab: only one tab is underlined, C goes FAV → ♡ → ALL, and a filter tab closes it', () => {
+    const guide = read('src/components/Guide.tsx')
+    expect(guide).toContain("className={!bookmarksOn && tv.guideFilter === filter ? 'tab is-on' : 'tab'}")
+    expect(guide).toContain("className={!bookmarksOn && tv.guideFilter === 'favourites' ? 'tab is-on' : 'tab'}")
+    expect(guide).toContain("className={bookmarksOn ? 'tab guide-bookmarks is-on' : 'tab guide-bookmarks'}")
+    expect(guide).toContain('<span className="guide-bookmarks-glyph" aria-hidden="true">♡</span>')
+    const provider = read('src/state/TvProvider.tsx')
+    expect(provider).toMatch(/case 'guide-cycle': \{[\s\S]{0,200}panelOpenRef\.current\(\) === 'bookmarks'\) \{\s*closeGuideTool\(\)\s*setGuideFilter\('all'\)/)
+    expect(provider).toMatch(/guideFilter === 'favourites' && next === 'all'\) \{\s*openGuideTool\('bookmarks'\)/)
+    expect(provider).toMatch(/case 'guide-filter': \{[\s\S]{0,200}if \(panelOpenRef\.current\(\) === 'bookmarks'\) closeGuideTool\(\)/)
+  })
 })
 
 describe('INFORMATION OVERLAY: a star after the channel name, a bookmark after the title', () => {
@@ -129,7 +141,9 @@ describe('EDIT CHANNEL stands on the information overlay, which stays up beneath
   it('over the picture: the editor and the INFO bar together, the editor above', () => {
     expect(read('src/app/TvScreen.tsx')).toMatch(/<div className="screen-edit-stack">\s*<ScreenEditor \/>\s*<NowNextOverlay \/>\s*<\/div>/)
     const css = read('src/styles/overlays.css')
-    expect(css).toMatch(/\.screen-edit-stack \{\s*position: fixed;\s*top: var\(--safe\);[\s\S]{0,200}flex-direction: column;\s*justify-content: flex-end;/)
+    // Never above where the Guide's date and tabs sit: as high as it reaches with the Guide open.
+    expect(css).toMatch(/\.screen-edit-stack \{\s*position: fixed;\s*top: calc\(var\(--safe\) \+ 57px\);[\s\S]{0,200}flex-direction: column;\s*justify-content: flex-end;/)
+    expect(css).toContain('.screen-edit-stack { top: calc(var(--safe) + 49px); }')
     expect(css).toContain('.screen-edit-stack > .info-bar.screen-editor > .guide-info { flex: 0 1 auto; min-height: 0; max-height: none; }')
   })
 

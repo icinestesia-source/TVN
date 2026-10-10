@@ -93,7 +93,7 @@ describe('EDIT CHANNEL: LOAD MORE on each source, before REMOVE', () => {
   })
 
   it('shows it disabled, with the reason, when the source is read to the end', () => {
-    const html = render({ name: 'Alpha', sources: [youtube(dated(3), { complete: true, more: undefined })] })
+    const html = render({ name: 'Alpha', sources: [youtube(dated(3), { complete: true, deep: true, more: undefined })] })
     expect(html).toMatch(/class="tab editor-source-load" disabled=""[^>]*title="The whole source is read"/)
   })
 

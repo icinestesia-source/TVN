@@ -1419,7 +1419,7 @@ a.info-creator:focus-visible {
 .info-star:focus-visible { color: var(--gold); }
 .info-title-line { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; }
 .info-title-line > .info-title { min-width: 0; }
-.info-bookmark { font-size: 1.05em; }
+.info-bookmark { font-size: 0.85em; }
 .info-bookmark.is-on { color: var(--gold); }
 .info-bookmark:hover,
 .info-bookmark:focus-visible { color: var(--gold); }
@@ -1877,7 +1877,9 @@ a.info-creator:focus-visible {
 }
 
 /* ♡ Bookmarks: the clips the viewer bookmarked, one row each. */
-.tabs .guide-bookmarks { min-width: 0; padding: 0 8px; font-size: 16px; letter-spacing: 0; }
+.tabs .guide-bookmarks { min-width: 0; letter-spacing: 0; }
+/* The heart draws larger and higher than the letters beside it: smaller, and set down onto their line. */
+.guide-bookmarks-glyph { position: relative; top: 0.12em; font-size: 0.82em; }
 .bookmark-list { display: flex; flex-direction: column; max-width: 980px; margin: 0; padding: 0; list-style: none; background: #0b1c30; }
 .bookmark-row {
   display: grid;

@@ -437,12 +437,14 @@ function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: nu
           const mode = sourceModeOf(source)
           const found = await deps.resolveYouTube(canonicalYouTubeUrl(source), ...wider(mode))
           const youtube = found.sourceType === 'youtube-playlist' ? 'playlist' : found.sourceType === 'youtube-channel' ? 'channel' : source.youtube
-          const fresh = withPlaylistVideos(rescanned(found.videos, source.videos, mode, source.deep), await playlistVideos(source, deps.resolveYouTube))
+          const deep = heldDeeper(source, found.videos.length)
+          const fresh = withPlaylistVideos(rescanned(found.videos, source.videos, mode, deep), await playlistVideos(source, deps.resolveYouTube))
           const [widened] = widenSources([{ ...source, ref: found.channelId, ...(youtube ? { youtube } : {}), videos: fresh }], deps.archiveOf)
           const videos = widened.videos ?? []
           return {
             ...widened,
-            ...pagingAfterRescan(source, found),
+            ...(deep ? { deep: true } : {}),
+            ...pagingAfterRescan({ ...source, deep }, found),
             // What was typed (a handle, a video) gives way to the channel or playlist it resolved to.
             url: canonicalYouTubeUrl({ ref: found.channelId, url: source.url, ...(youtube ? { youtube } : {}) }),
             label: found.title || source.label,
@@ -457,13 +459,15 @@ function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: nu
         try {
           const found = await deps.resolveFeed(source.url, ...wider(sourceModeOf(source)))
           const info = found.website ? { ...source.info, website: source.info?.website ?? found.website } : source.info
-          const videos = source.deep ? mergedFresh(found.episodes, source.videos).slice(0, MAX_SOURCE_VIDEOS) : found.episodes.map((video) => ({ ...video }))
+          const deep = heldDeeper(source, found.episodes.length)
+          const videos = deep ? mergedFresh(found.episodes, source.videos).slice(0, MAX_SOURCE_VIDEOS) : found.episodes.map((video) => ({ ...video }))
           return {
             ...source,
             url: found.feedUrl,
             ref: found.feedUrl,
             label: found.title || source.label,
             videos,
+            ...(deep ? { deep: true } : {}),
             ...(info ? { info } : {}),
             status: { state: 'ready', playable: videos.length, checkedAt: now },
           }
@@ -481,6 +485,14 @@ function rescanEach(sources: readonly ChannelSource[], deps: RescanDeps, now: nu
       return { ...source, label: source.label || hostOf(source.url), status: { state: verdict, checkedAt: now } }
     }),
   )
+}
+
+/**
+ * Whether a source holds more than one fresh read finds: it was read deeper (LOAD MORE, LOAD ALL, a whole feed
+ * read when it was added), so a rescan adds what is new to what it holds and never cuts it back to the newest.
+ */
+function heldDeeper(source: ChannelSource, freshCount: number): boolean {
+  return source.deep === true || (source.videos?.length ?? 0) > freshCount
 }
 
 /**
@@ -512,10 +524,13 @@ export interface LoadMoreOptions {
 /** Whether a source can be read further than it has been; an imported list only when its uploader is known. */
 export function canLoadMore(source: ChannelSource, uploaderKnown = false): boolean {
   const held = source.videos?.length ?? 0
-  // Marked read to the end while holding well short of what YouTube lists: an earlier read stopped early, so it reads on.
-  const cutShort = source.kind === 'youtube' && source.listed !== undefined && held < source.listed * 0.9
-  if (!source.enabled || (source.complete && !cutShort) || held >= MAX_SOURCE_VIDEOS) return false
-  return source.kind === 'youtube' || (source.kind === 'podcast' && !source.deep) || (source.kind === 'collection' && uploaderKnown)
+  if (!source.enabled || held >= MAX_SOURCE_VIDEOS) return false
+  // Holding well short of what the source lists: an earlier read stopped early, or a rescan cut it back, so it reads on.
+  const cutShort = (source.kind === 'youtube' || source.kind === 'podcast') && source.listed !== undefined && held < source.listed * 0.9
+  // Only a read past the first batch proves the end was reached; a plain rescan finding no next page does not.
+  if (source.complete && source.deep && !cutShort) return false
+  if (source.kind === 'podcast') return !source.deep || !source.complete || cutShort
+  return source.kind === 'youtube' || (source.kind === 'collection' && uploaderKnown)
 }
 
 /**
@@ -552,8 +567,10 @@ export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, 
     if (!deps.resolveFeed) throw new Error('TVN cannot read this feed further')
     const found = await deps.resolveFeed(source.url, { mode: 'all' })
     add(found.episodes)
-    options.onProgress?.(held.length, undefined)
-    return done({ complete: true })
+    // What a whole read of the feed gives: a later rescan that leaves it holding far fewer can be read again.
+    const listed = found.episodes.length
+    options.onProgress?.(held.length, listed)
+    return done({ listed, complete: true })
   }
   if (source.kind !== 'youtube') return source
   let listed = source.listed

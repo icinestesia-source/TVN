@@ -1962,7 +1962,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
         openGuideTool(command.tool, command.channelNumber)
         break
       case 'guide-cycle': {
+        // ♡ is the tab after FAV while the Guide is up; from it the round starts again at ALL.
+        if (guideOpenRef.current && panelOpenRef.current() === 'bookmarks') {
+          closeGuideTool()
+          setGuideFilter('all')
+          break
+        }
         const next = nextGuideTab(guideFilter, usersRef.current.map((user) => user.id))
+        if (guideOpenRef.current && guideFilter === 'favourites' && next === 'all') {
+          openGuideTool('bookmarks')
+          break
+        }
         setGuideFilter(next)
         if (!guideOpenRef.current) flash(`GUIDE · ${guideTabLabel(next, usersRef.current)}`)
         break
@@ -2088,6 +2098,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         break
       case 'guide-filter': {
         const nextFilter = command.filter ?? (guideFilter === 'favourites' ? 'all' : 'favourites')
+        if (panelOpenRef.current() === 'bookmarks') closeGuideTool()
         setGuideFilter(nextFilter)
         break
       }

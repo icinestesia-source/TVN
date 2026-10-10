@@ -475,10 +475,13 @@
 .info-bar.screen-editor { padding: 0; }
 .info-bar.screen-editor .guide-editor { border: 1px solid #1d4c78; }
 
-/* Edit Channel over the picture stands on the INFO bar, which stays up beneath it, and grows only as tall as it needs. */
+/*
+ * Edit Channel over the picture stands on the INFO bar, which stays up beneath it, and grows only as tall as it
+ * needs: never above where the Guide's date and tabs sit, so it reaches as high as it does with the Guide open.
+ */
 .screen-edit-stack {
   position: fixed;
-  top: var(--safe);
+  top: calc(var(--safe) + 57px);
   left: var(--safe);
   right: var(--info-right);
   bottom: var(--info-bottom);
@@ -487,6 +490,9 @@
   flex-direction: column;
   justify-content: flex-end;
   pointer-events: none;
+}
+@media (max-width: 800px) {
+  .screen-edit-stack { top: calc(var(--safe) + 49px); }
 }
 .screen-edit-stack > * { pointer-events: auto; }
 .screen-edit-stack > .info-bar {
