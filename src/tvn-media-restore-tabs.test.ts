@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { commandFromKey } from './input/keyboard.ts'
-import { MEDIA_ACCEPT, mediaKindOf, remuxFor } from './session/import.ts'
+import { buildSessionItems, CONVERTER_URL, importSummary, MEDIA_ACCEPT, mediaKindOf, needsConverting, remuxFor } from './session/import.ts'
 import { clearSession, replaceSession, sessionBroadcast, sessionNeighbour, setUrlRevoker } from './session/session-channel.ts'
 import { playbackCommand } from './player/command.ts'
 import { remuxOf } from './player/flv.ts'
@@ -30,6 +30,40 @@ describe('Import Media takes more file types, FLV among them', () => {
       expect(remuxFor(file)).toBe('flv')
     }
     expect(remuxFor({ name: 'clip.mp4', type: 'video/mp4' })).toBeUndefined()
+  })
+
+  it('offers old AVI, WMV and MPEG video in the picker, counted as needing conversion rather than probed', async () => {
+    for (const ext of ['.avi', '.wmv', '.mpg', '.vob', '.rmvb', '.ts']) expect(MEDIA_ACCEPT).toContain(ext)
+    expect(needsConverting({ name: 'Movie.avi', type: 'video/x-msvideo' })).toBe(true)
+    expect(needsConverting({ name: 'clip.mp4', type: 'video/mp4' })).toBe(false)
+    const files = [
+      { name: 'Movie.avi', type: 'video/x-msvideo' },
+      { name: 'Old.flv', type: '' },
+      { name: 'Good.mp4', type: 'video/mp4' },
+      { name: 'notes.txt', type: 'text/plain' },
+    ]
+    const probed: string[] = []
+    const result = await buildSessionItems(files, {
+      canPlay: anything,
+      createUrl: (file) => file.name,
+      revokeUrl: () => {},
+      probe: async (url) => {
+        probed.push(url)
+        return url === 'Good.mp4' ? 60 : null
+      },
+    })
+    expect(probed.sort()).toEqual(['Good.mp4', 'Old.flv'])
+    expect(result.convert).toBe(2)
+    expect(importSummary(result)).toBe('1000 · LOCAL MEDIA · 1 PROGRAMME · 2 NEED CONVERTING · 1 SKIPPED')
+    expect(importSummary({ items: [], skipped: 3, convert: 2 })).toBe('NO PLAYABLE MEDIA FOUND · 2 NEED CONVERTING')
+  })
+
+  it('links the converter from the media panel, and the converter never writes over an original', () => {
+    expect(read('src/components/GuideAdd.tsx')).toMatch(/NEED CONVERTING[\s\S]*href=\{CONVERTER_URL\} download/)
+    const script = read(`public/${CONVERTER_URL}`)
+    expect(script).toMatch(/\(TVN\)\.mp4/)
+    expect(script).toMatch(/\.part\.mp4/)
+    expect(script).not.toMatch(/\basort\b|rm -f "\$file"/)
   })
 
   it('still skips a file the browser cannot play', () => {

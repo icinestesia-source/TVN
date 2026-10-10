@@ -3,6 +3,8 @@ import type { MediaKind } from '../types/programme.ts'
 import { appendSession, localChannel, SESSION_CHANNEL_NUMBER, type SessionItem } from './session-channel.ts'
 
 const VIDEO_EXTENSIONS = new Set(['mp4', 'm4v', 'f4v', 'webm', 'mov', 'qt', 'mkv', 'ogv', 'ogm', '3gp', '3g2', 'flv'])
+/** Video no browser decodes (old AVI, WMV, MPEG and RealMedia files); the converter turns them into MP4. */
+const CONVERT_EXTENSIONS = new Set(['avi', 'divx', 'xvid', 'wmv', 'asf', 'mpg', 'mpeg', 'mpe', 'm1v', 'm2v', 'vob', 'ts', 'm2ts', 'mts', 'rm', 'rmvb', 'dv', 'mxf', 'swf'])
 const AUDIO_EXTENSIONS = new Set(['mp3', 'm4a', 'm4b', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac', 'weba', 'mka', 'aif', 'aiff', 'caf'])
 const EXTENSION_TYPES: Record<string, string> = {
   mp4: 'video/mp4',
@@ -43,7 +45,16 @@ const PROBE_TIMEOUT_MS = 15_000
 const PICTURE_SIZE_GRACE_MS = 3_000
 
 /** The accept list for the file picker. */
-export const MEDIA_ACCEPT = ['video/*', 'audio/*', ...[...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS].map((ext) => `.${ext}`)].join(',')
+export const MEDIA_ACCEPT = ['video/*', 'audio/*', ...[...VIDEO_EXTENSIONS, ...CONVERT_EXTENSIONS, ...AUDIO_EXTENSIONS].map((ext) => `.${ext}`)].join(',')
+
+/** The download that turns old or unevenly timed video into MP4 that plays here. */
+export const CONVERTER_URL = 'tools/tvn-convert-media.command'
+
+/** Video that is there to play but which this browser cannot decode as it stands. */
+export function needsConverting(file: LocalFile): boolean {
+  if (file.name.startsWith('.')) return false
+  return CONVERT_EXTENSIONS.has(extensionOf(file.name)) || file.type.toLowerCase() === 'video/x-msvideo'
+}
 
 export interface LocalFile {
   name: string
@@ -141,6 +152,8 @@ export interface ImportResult {
   items: SessionItem[]
   scanned: number
   skipped: number
+  /** Video files among the skipped that the converter can make playable. */
+  convert?: number
   cancelled: boolean
 }
 
@@ -151,9 +164,11 @@ export interface ImportResult {
 export async function buildSessionItems<F extends LocalFile>(files: readonly F[], deps: ImportDeps<F>): Promise<ImportResult> {
   const scanned = Math.min(files.length, MAX_SCANNED_FILES)
   const candidates: { file: F; kind: MediaKind }[] = []
+  let convert = 0
   for (const file of files.slice(0, MAX_SCANNED_FILES)) {
-    const kind = mediaKindOf(file, deps.canPlay)
+    const kind = needsConverting(file) ? null : mediaKindOf(file, deps.canPlay)
     if (kind) candidates.push({ file, kind })
+    else if (needsConverting(file)) convert += 1
   }
   const accepted: (SessionItem | null)[] = new Array(candidates.length).fill(null)
   let next = 0
@@ -171,7 +186,7 @@ export async function buildSessionItems<F extends LocalFile>(files: readonly F[]
         if (validDuration(seconds) && !deps.cancelled?.()) {
           accepted[index] = { title: titleFromName(file.name), durationSeconds: seconds, url, kind, ...(remux ? { remux } : {}) }
           url = null
-        }
+        } else if (kind === 'video' && !deps.cancelled?.()) convert += 1
       } catch {
         // An unreadable file is skipped like any other unplayable one.
       } finally {
@@ -185,7 +200,7 @@ export async function buildSessionItems<F extends LocalFile>(files: readonly F[]
     for (const item of items) deps.revokeUrl(item.url)
     return { items: [], scanned, skipped: scanned, cancelled: true }
   }
-  return { items: shuffleOnce(items, deps.random), scanned, skipped: scanned - items.length, cancelled: false }
+  return { items: shuffleOnce(items, deps.random), scanned, skipped: scanned - items.length, ...(convert > 0 ? { convert } : {}), cancelled: false }
 }
 
 /**
@@ -200,11 +215,14 @@ export function commitImport(result: ImportResult, nowMs: number, number = SESSI
 }
 
 /** Plain RetroTV wording for the outcome; never a browser error. */
-export function importSummary(result: Pick<ImportResult, 'items' | 'skipped'>, number = SESSION_CHANNEL_NUMBER): string {
-  if (result.items.length === 0) return 'NO PLAYABLE MEDIA FOUND'
+export function importSummary(result: Pick<ImportResult, 'items' | 'skipped' | 'convert'>, number = SESSION_CHANNEL_NUMBER): string {
+  const convert = Math.min(result.convert ?? 0, result.skipped)
+  const converting = convert > 0 ? ` · ${convert} NEED CONVERTING` : ''
+  if (result.items.length === 0) return `NO PLAYABLE MEDIA FOUND${converting}`
   const count = `${result.items.length} ${result.items.length === 1 ? 'PROGRAMME' : 'PROGRAMMES'}`
   const channel = `${number} · ${localChannel(number).name.toUpperCase()}`
-  return result.skipped > 0 ? `${channel} · ${count} · ${result.skipped} SKIPPED` : `${channel} · ${count}`
+  const others = result.skipped - convert
+  return `${channel} · ${count}${converting}${others > 0 ? ` · ${others} SKIPPED` : ''}`
 }
 
 /** Loads only the file's metadata, locally, and always tears the element down. An FLV from this device is measured from its own tags. */

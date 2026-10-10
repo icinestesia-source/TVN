@@ -251,7 +251,7 @@ describe('building 1000 Local Media', () => {
     expect(result.items.find((entry) => entry.title === 'Good Two')?.kind).toBe('audio')
     expect(d.made.sort()).toEqual(['blob:test/Broken.mp4', 'blob:test/Good One.mp4', 'blob:test/Good Two.m4a', 'blob:test/Throws.mp4'])
     expect(d.dropped.sort()).toEqual(['blob:test/Broken.mp4', 'blob:test/Throws.mp4'])
-    expect(importSummary(result)).toBe('1000 · LOCAL MEDIA · 2 PROGRAMMES · 7 SKIPPED')
+    expect(importSummary(result)).toBe('1000 · LOCAL MEDIA · 2 PROGRAMMES · 1 NEED CONVERTING · 6 SKIPPED')
   })
 
   it('J: NaN, Infinity, zero, negative and sub-second durations never reach the schedule', async () => {

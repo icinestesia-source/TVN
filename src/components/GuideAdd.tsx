@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type RefObject } from 'react'
 import { createGuidePress } from '../view/guide-press.ts'
-import { directoryPicker, filePicker, MEDIA_ACCEPT, pickFiles, pickFolder } from '../session/import.ts'
+import { CONVERTER_URL, directoryPicker, filePicker, MEDIA_ACCEPT, pickFiles, pickFolder } from '../session/import.ts'
 import { rememberedChannels, rememberSupported, useRememberMedia, type MediaHandle } from '../session/remembered-media.ts'
 import { LOCAL_NAME_LIMIT, SESSION_CHANNEL } from '../session/session-channel.ts'
 import type { Channel } from '../types/channel.ts'
@@ -754,6 +754,15 @@ export function SessionImportTools({
         {note ? (
           <p className="guide-tool-status" role="status">
             {note}
+          </p>
+        ) : null}
+        {note?.includes('NEED CONVERTING') ? (
+          <p className="guide-tool-note">
+            Old AVI, FLV, WMV and MPEG video, and video that stutters, play here once converted to MP4. On a Mac, download the{' '}
+            <a href={CONVERTER_URL} download onKeyDown={keepKey}>
+              TVN converter
+            </a>
+            , open it with a right-click, then choose the folder; it needs ffmpeg and never changes the originals.
           </p>
         ) : null}
       </div>
