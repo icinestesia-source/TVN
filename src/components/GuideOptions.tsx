@@ -178,6 +178,7 @@ export function GuideOptions() {
   const fill = useFillEdges()
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const loadingAll = tv.loadAll && tv.loadAll.result === undefined ? tv.loadAll : null
   const users = listChannels().filter((channel) => (channel.number >= USER_NUMBER_START || channel.origin === 'user-import') && !channel.emptySlot)
   const owned = (id: string | undefined) => users.filter((channel) => channel.owner === id).length
 
@@ -404,7 +405,8 @@ export function GuideOptions() {
             Everything here is kept in this browser. Export ALL saves your users, User Network channels, your curation of TVN channels
             001–999, Favourites and settings. Export USER saves your users, User Network channels and their Favourites. Restore takes
             either, asks first, and can restore just the USER part of an ALL export. Single channels and their manifests are in Edit
-            Channel.
+            Channel. Load all &amp; export brings every User Network channel up to date and reads each source to its end (a YouTube
+            channel through its own uploads, a playlist through that playlist only, a podcast&rsquo;s whole feed), then exports USER.
           </p>
           <div className="options-choices">
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => void run(tv.exportTvn)}>
@@ -419,7 +421,22 @@ export function GuideOptions() {
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => void run(tv.loadTestChannels)}>
               Add starter network
             </button>
+            <button type="button" className="tab" disabled={busy || loadingAll !== null} onKeyDown={keepKey} onClick={tv.startLoadAll}>
+              Load all &amp; export
+            </button>
           </div>
+          {tv.loadAll?.result !== undefined ? <p className="options-load-all-done" role="status">{tv.loadAll.result}</p> : null}
+          {loadingAll ? (
+            <div className="options-load-all" role="status">
+              <progress max={100} value={loadingAll.percent} aria-label="Load all and export" />
+              <span className="options-load-all-text">
+                LOADING ALL · {loadingAll.percent}%{loadingAll.channel ? ` · ${loadingAll.channel}` : ''}
+              </span>
+              <button type="button" className="tab" onKeyDown={keepKey} onClick={tv.stopLoadAll}>
+                Stop
+              </button>
+            </div>
+          ) : null}
         </Card>
 
         <Card title="About">

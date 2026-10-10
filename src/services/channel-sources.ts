@@ -221,6 +221,8 @@ const YOUTUBE_HANDLE = /^@[\w.-]{3,100}$/
 const PLAIN_HOST = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/i
 /** A page or feed rather than a stream: the site itself, a web page, or an address that names a feed. */
 const FEED_PATH = /(?:^\/?$|\.(?:rss|xml|atom|html?|php|aspx?)$|\/(?:feed|rss|atom|podcasts?)(?:\/|$))/i
+/** A video site TVN's server reads like a feed (its channels, lists and single videos), whatever the page path. */
+const READER_HOST = /^(?:(?:www\.|player\.)?vimeo\.com|(?:www\.)?odysee\.com|(?:www\.|old\.)?bitchute\.com|(?:www\.)?rumble\.com)$/i
 const AUDIO_FILE = /\.(?:mp3|aac|m4a|ogg|oga|opus|flac|wav)$/i
 const VIDEO_FILE = /\.(?:mp4|m4v|webm|mov|ogv)$/i
 
@@ -249,7 +251,7 @@ export function classifySourceUrl(raw: string, hint: SourceKind | 'auto' = 'auto
     if (handle.length === 1 && YOUTUBE_HANDLE.test(decodeURIComponent(handle[0])) && !url.search) return { kind: 'youtube', url: `https://www.youtube.com/${decodeURIComponent(handle[0])}` }
     return { kind: 'youtube', url: url.toString() }
   }
-  if (hint === 'podcast' || (hint === 'auto' && FEED_PATH.test(url.pathname))) return { kind: 'podcast', url: url.toString() }
+  if (hint === 'podcast' || (hint === 'auto' && (FEED_PATH.test(url.pathname) || READER_HOST.test(url.hostname)))) return { kind: 'podcast', url: url.toString() }
   if (/\.(?:pls|m3u|asx|xspf)$/i.test(url.pathname)) throw new Error('Paste the stream address inside that playlist file')
   if (hint !== 'auto') return { kind: hint, url: url.toString() }
   if (/\.m3u8$/i.test(url.pathname)) return { kind: /radio|audio|aac|icecast/i.test(url.toString()) ? 'audio-hls' : 'video-hls', url: url.toString() }

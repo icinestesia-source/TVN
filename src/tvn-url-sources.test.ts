@@ -4,6 +4,7 @@ import { playbackCommand } from './player/command.ts'
 import { routedPlayer, routeFor } from './player/routed.ts'
 import type { PlayerHandle } from './player/types.ts'
 import { vimeoEmbedSrc, vimeoIdOf } from './player/vimeo.ts'
+import { classifySourceUrl } from './services/channel-sources.ts'
 import { lookUpFeed, sourcePreviewLines } from './services/podcast-source.ts'
 import { addPodcastChannel, addStreamChannel } from './services/user-network.ts'
 import { buildUserNetworkExport, exportSource, publicMediaAddress, serialiseUserNetworkExport } from './services/user-network-export.ts'
@@ -23,6 +24,13 @@ describe('identifying an address before anything is read', () => {
     expect(identifyUrl('https://rumble.com/c/c-296012/videos')).toMatchObject({ route: 'reader', provider: 'rumble' })
     expect(identifyUrl('https://cdn.example.net/live.m3u8')).toMatchObject({ route: 'reader', provider: 'unknown' })
     expect(identifyUrl('radio.example.net:8000/stream')).toMatchObject({ route: 'reader' })
+  })
+
+  it('Edit Channel DETECT reads a video site channel as the reader does, whatever its path, never as a live stream', () => {
+    for (const address of ['https://rumble.com/c/c-296012', 'https://rumble.com/c/c-296012/videos', 'rumble.com/user/example', 'https://vimeo.com/1228694119', 'https://odysee.com/@Odysee:8', 'https://www.bitchute.com/channel/bitchute/']) {
+      expect(classifySourceUrl(address).kind).toBe('podcast')
+    }
+    expect(classifySourceUrl('radio.example.net:8000/stream').kind).toBe('audio')
   })
 
   it('refuses ingest addresses with what TVN needs instead, and unsafe schemes outright', () => {

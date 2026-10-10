@@ -91,6 +91,17 @@ describe('BOOKMARKS: clips kept to play again', () => {
     expect(panel).toContain('onClick={() => removeBookmark(bookmark.key)}')
   })
 
+  it('LOAD ALL & EXPORT runs on with OPTIONS closed, and its progress is there again when OPTIONS reopens', () => {
+    const provider = read('src/state/TvProvider.tsx')
+    expect(provider).toContain('const [loadAll, setLoadAll] = useState<{ percent: number; channel: string; result?: string } | null>(null)')
+    expect(provider).toContain('loadAllAndExportUser((percent, channel) => setLoadAll({ percent, channel }), stop.signal)')
+    const options = read('src/components/GuideOptions.tsx')
+    expect(options).toContain('const loadingAll = tv.loadAll && tv.loadAll.result === undefined ? tv.loadAll : null')
+    expect(options).toContain('onClick={tv.startLoadAll}')
+    expect(options).toContain('onClick={tv.stopLoadAll}')
+    expect(options).not.toContain('new AbortController()')
+  })
+
   it('♡ is one more tab: only one tab is underlined, C goes FAV → ♡ → ALL, and a filter tab closes it', () => {
     const guide = read('src/components/Guide.tsx')
     expect(guide).toContain("className={!bookmarksOn && tv.guideFilter === filter ? 'tab is-on' : 'tab'}")

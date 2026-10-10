@@ -264,7 +264,7 @@ async function bitchute(url: URL, read: typeof fetch, keep: number): Promise<Res
 // --- Rumble ----------------------------------------------------------------------------------------------
 
 const RUMBLE_PAGE_SIZE = 25
-const RUMBLE_MAX_PAGES = 8
+const RUMBLE_MAX_PAGES = 20
 const RUMBLE_PLAYLIST = /^https:\/\/rumble\.com\/hls-vod\/[\w-]{6,40}\/playlist\.m3u8$/
 
 const record = (value: unknown): Record<string, unknown> => (value && typeof value === 'object' ? (value as Record<string, unknown>) : {})

@@ -229,6 +229,17 @@ export interface TvContextValue {
   createEmptyChannel: (low?: boolean) => Promise<number>
   /** Download the User Network (1001+) as tvn-user-network-v1 JSON. Reads only: nothing is changed. */
   exportUserNetwork: () => Promise<string>
+  /**
+   * LOAD ALL & EXPORT: every 1001+ channel rescanned and read to the end (YouTube channels through their own uploads,
+   * playlists through the playlist alone, podcasts' whole feeds), then exported as USER. `onProgress` hears a percentage.
+   */
+  loadAllAndExportUser: (onProgress: (percent: number, channel: string) => void, signal?: AbortSignal) => Promise<string>
+  /** LOAD ALL & EXPORT as it runs, whether or not OPTIONS is open: its percentage, then `result` once it has finished. */
+  loadAll: { percent: number; channel: string; result?: string } | null
+  /** Start LOAD ALL & EXPORT; it runs to the end however the Guide is used meanwhile. Pressed while it runs, nothing happens. */
+  startLoadAll: () => void
+  /** STOP: what has loaded is kept, and nothing is exported. */
+  stopLoadAll: () => void
   /** Replace the User Network (1001+) with a validated, confirmed tvn-user-network-v1 document. */
   /** onProgress hears how the sources read after the restore are going. */
   importUserNetwork: (document: import('../services/user-network-export.ts').UserNetworkExport, onProgress?: (note: string) => void) => Promise<string>

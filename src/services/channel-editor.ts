@@ -605,6 +605,47 @@ export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, 
   return done({ ...(listed !== undefined ? { listed } : {}), ...(cursor ? { more: cursor } : held.length < MAX_SOURCE_VIDEOS ? { complete: true } : {}) })
 }
 
+/**
+ * Whether LOAD ALL & EXPORT reads a source to its end: a YouTube channel through its own uploads, a YouTube
+ * playlist through that playlist alone, a podcast's whole feed. An imported list or a single video is kept as it
+ * is, since reading one further would add its uploader's other programmes.
+ */
+export function loadsWhole(source: ChannelSource): boolean {
+  if (!source.enabled || singleVideoId(source)) return false
+  return (source.kind === 'youtube' || source.kind === 'podcast') && canLoadMore(source)
+}
+
+/**
+ * One User Network channel brought up to date and read in full: rescanned for anything new (keeping all it holds),
+ * then every source `loadsWhole` reads is loaded to its end. `onProgress` reports how far through the channel it
+ * is, 0 to 1. A source that cannot be read keeps what it had; a stop keeps whatever has arrived.
+ */
+export async function loadChannelWhole(
+  edit: ChannelEdit,
+  deps: RescanDeps,
+  load: (source: ChannelSource, options: LoadMoreOptions) => Promise<ChannelSource>,
+  options: { signal?: AbortSignal; onProgress?(fraction: number): void } = {},
+  now = Date.now(),
+): Promise<ChannelEdit> {
+  const rescanned = await rescanSources(edit.sources, deps, now)
+  const wanted = rescanned.filter(loadsWhole)
+  const steps = 1 + wanted.length
+  options.onProgress?.(1 / steps)
+  const read = new Map<string, ChannelSource>()
+  for (const [index, source] of wanted.entries()) {
+    if (options.signal?.aborted) break
+    const found = await load(source, {
+      all: true,
+      ...(options.signal ? { signal: options.signal } : {}),
+      onProgress: (loaded, listed) => options.onProgress?.((1 + index + (listed ? Math.min(1, loaded / listed) : 0)) / steps),
+    }).catch(() => null)
+    if (found) read.set(source.id, found)
+    options.onProgress?.((2 + index) / steps)
+  }
+  const sources = admitted(rescanned.map((source) => read.get(source.id) ?? source))
+  return { ...edit, sources }
+}
+
 /** A plain summary of one channel after a rescan. */
 export function rescanSummary(sources: readonly ChannelSource[]): string {
   const enabled = sources.filter((source) => source.enabled)

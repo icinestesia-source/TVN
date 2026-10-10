@@ -55,7 +55,7 @@ import {
 } from '../services/channels-import.ts'
 import { lookUpBatch, lookUpChannel } from '../services/add-channel.ts'
 import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
-import { admitted, applyChannelEdit, canLoadMore, editOf, eligibilityKey, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
+import { admitted, applyChannelEdit, canLoadMore, editOf, eligibilityKey, loadChannelWhole, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
 import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
@@ -3325,6 +3325,75 @@ export function TvProvider({ children }: { children: ReactNode }) {
   )
 
   /**
+   * LOAD ALL & EXPORT in OPTIONS: every User Network channel, one after another, rescanned and read in full
+   * (`loadChannelWhole`), each saved as soon as it is read, then the USER export. STOP keeps what has loaded and
+   * exports nothing.
+   */
+  const loadAllAndExportUser = useCallback(
+    async (onProgress: (percent: number, channel: string) => void, signal?: AbortSignal) => {
+      const stored = async () => migrateLegacyUserNumbers(await loadStoredSources()).sources
+      const numbers = (await stored())
+        .map((record) => record.channelNumber)
+        .filter((number): number is number => typeof number === 'number' && number >= USER_NUMBER_START)
+        .sort((a, b) => a - b)
+      const deps = rescanDeps()
+      let channels = 0
+      let failed = 0
+      let before = 0
+      let after = 0
+      for (const [index, number] of numbers.entries()) {
+        if (signal?.aborted) break
+        const record = (await stored()).find((item) => item.channelNumber === number)
+        if (!record) continue
+        const label = `${padChannel(number)} ${record.name}`
+        const report = (fraction: number) => onProgress(Math.min(99, Math.floor(((index + fraction) / numbers.length) * 100)), label)
+        report(0)
+        const edit = editOf(record)
+        const whole = await loadChannelWhole(edit, deps, loadMoreChannelSource, { ...(signal ? { signal } : {}), onProgress: report }).catch(() => null)
+        if (!whole) {
+          failed += 1
+          continue
+        }
+        const latest = await stored()
+        if (!latest.some((item) => item.channelNumber === number)) continue
+        const next = { ...whole, sources: widenSources(whole.sources, sourceArchive) }
+        await saveStoredSources(applyChannelEdit(latest, number, { ...next, compiled: eligibilityKey(next) }, Date.now()))
+        const count = (sources: readonly ChannelSource[]) => sources.reduce((sum, source) => sum + (source.enabled ? (source.videos?.length ?? 0) : 0), 0)
+        before += count(edit.sources)
+        after += count(next.sources)
+        channels += 1
+      }
+      installSources(await stored())
+      const loaded = `${channels} ${channels === 1 ? 'CHANNEL' : 'CHANNELS'} LOADED · ${after} PROGRAMMES (${after - before >= 0 ? '+' : ''}${after - before})${failed ? ` · ${failed} COULD NOT BE READ` : ''}`
+      if (signal?.aborted) return `STOPPED · ${loaded} · KEPT, NOT EXPORTED`
+      onProgress(100, '')
+      return `${loaded} · ${await exportUserNetwork()}`
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [exportUserNetwork, installSources, loadMoreChannelSource, rescanDeps],
+  )
+
+  const [loadAll, setLoadAll] = useState<{ percent: number; channel: string; result?: string } | null>(null)
+  const loadAllStop = useRef<AbortController | null>(null)
+  const startLoadAll = useCallback(() => {
+    if (loadAllStop.current) return
+    const stop = new AbortController()
+    loadAllStop.current = stop
+    setLoadAll({ percent: 0, channel: '' })
+    const finish = (result: string, percent: number) => {
+      loadAllStop.current = null
+      setLoadAll({ percent, channel: '', result })
+      if (!guideOpenRef.current) flash(result, 6000)
+    }
+    loadAllAndExportUser((percent, channel) => setLoadAll({ percent, channel }), stop.signal).then(
+      (result) => finish(result, stop.signal.aborted ? 0 : 100),
+      (caught: unknown) => finish(caught instanceof Error ? caught.message.toUpperCase() : 'LOAD ALL & EXPORT DID NOT WORK', 0),
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadAllAndExportUser])
+  const stopLoadAll = useCallback(() => loadAllStop.current?.abort(), [])
+
+  /**
    * A playlist added is read to its end (up to the ceiling) in the background, one channel and one page at a time,
    * and every programme found is scheduled. What the viewer changed meanwhile stays: only the playlists read are merged.
    */
@@ -3927,6 +3996,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       startNewNetwork,
       createEmptyChannel,
       exportUserNetwork,
+      loadAllAndExportUser,
+      loadAll,
+      startLoadAll,
+      stopLoadAll,
       importUserNetwork,
       exportTvn,
       importTvn,
@@ -3997,6 +4070,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
       startNewNetwork,
       createEmptyChannel,
       exportUserNetwork,
+      loadAllAndExportUser,
+      loadAll,
+      startLoadAll,
+      stopLoadAll,
       importUserNetwork,
       exportTvn,
       importTvn,

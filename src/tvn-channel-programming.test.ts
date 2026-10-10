@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ChannelEditor } from './components/ChannelEditor.tsx'
 import { channels } from './data/catalogue.ts'
 import { MAX_SOURCE_VIDEOS, previewFilter, rescanned } from './services/channel-curation.ts'
-import { applyChannelEdit, canLoadMore, editOf, keptScheduleSize, loadMoreSource, rescanSources, type ChannelEdit, type LoadMoreDeps } from './services/channel-editor.ts'
+import { applyChannelEdit, canLoadMore, editOf, keptScheduleSize, loadChannelWhole, loadMoreSource, loadsWhole, rescanSources, type ChannelEdit, type LoadMoreDeps } from './services/channel-editor.ts'
 import type { ChannelSource } from './services/channel-sources.ts'
 import { channelsFromSources, type ImportedVideo, type StoredSource } from './services/channels-import.ts'
 import { buildCuratedEdit, loadCuratedEdit, curatedEditOf, saveCuratedEdit, tvnSource } from './services/curated-edits.ts'
@@ -172,6 +172,61 @@ describe('a source deeper than its first 60 programmes', () => {
     // Cut back to 60 yet marked whole, as an older rescan left it: LOAD reads the feed again.
     expect(canLoadMore({ ...added, videos: episodes.slice(0, 60), complete: true })).toBe(true)
     expect(canLoadMore({ ...whole, videos: episodes.slice(0, 60) })).toBe(true)
+  })
+})
+
+describe('LOAD ALL & EXPORT: every source read to its end, and no further than its own', () => {
+  const playlist = (extra: Partial<ChannelSource> = {}): ChannelSource => ({
+    ...deepSource({ id: 's2', youtube: 'playlist', ref: 'PLlist0000000000000', url: 'https://www.youtube.com/playlist?list=PLlist0000000000000', videos: DEEP.slice(0, 30), more: 'at-30' }),
+    ...extra,
+  })
+  const list: ChannelSource = { id: 's3', kind: 'collection', url: '', label: 'Imported', enabled: true, ref: 'Imported', videos: DEEP.slice(0, 5) }
+  const single: ChannelSource = { id: 's4', kind: 'collection', url: 'https://www.youtube.com/watch?v=abcdefghijk', label: 'One', enabled: true, videos: DEEP.slice(0, 1) }
+
+  it('reads YouTube channels, playlists and podcasts; never an imported list, a single video, a stream or a source switched off', () => {
+    expect(loadsWhole(deepSource())).toBe(true)
+    expect(loadsWhole(playlist())).toBe(true)
+    expect(loadsWhole({ id: 'p', kind: 'podcast', url: 'https://example.com/feed/', label: 'Pod', enabled: true, videos: [] })).toBe(true)
+    expect(loadsWhole(list)).toBe(false)
+    expect(loadsWhole(single)).toBe(false)
+    expect(loadsWhole({ id: 'r', kind: 'audio', url: 'https://radio.example/live', label: 'Radio', enabled: true })).toBe(false)
+    expect(loadsWhole(deepSource({ enabled: false }))).toBe(false)
+    expect(loadsWhole(deepSource({ videos: DEEP, complete: true, deep: true, more: undefined }))).toBe(false)
+  })
+
+  it('rescans each channel, loads each such source with its own reader, keeps the rest, and reports progress to 1', async () => {
+    const asked: string[] = []
+    const progress: number[] = []
+    const edit: ChannelEdit = { name: 'Mixed', sources: [deepSource(), playlist(), list, single] }
+    const deps = {
+      resolveYouTube: async (url: string) => (url.includes('playlist') ? { channelId: 'PLlist0000000000000', title: 'List', videos: DEEP.slice(0, 30), sourceType: 'youtube-playlist' as const, next: 'at-30' } : { channelId: 'UCdeep00000000000000000a', title: 'Deep', videos: DEEP.slice(0, 60), listed: 759, next: 'at-60' }),
+      probeStream: async () => 'online' as const,
+    }
+    const whole = await loadChannelWhole(edit, deps, async (source, options) => {
+      asked.push(`${source.id}:${source.youtube ?? source.kind}:${options.all}`)
+      options.onProgress?.(10, 20)
+      const end = source.youtube === 'playlist' ? 40 : DEEP.length
+      return { ...source, videos: DEEP.slice(0, end), deep: true, complete: true }
+    }, { onProgress: (fraction) => progress.push(fraction) }, 5)
+    expect(asked).toEqual(['s1:channel:true', 's2:playlist:true'])
+    expect(whole.sources.find((source) => source.id === 's1')?.videos).toHaveLength(742)
+    expect(whole.sources.find((source) => source.id === 's2')?.videos).toHaveLength(40)
+    expect(whole.sources.find((source) => source.id === 's3')?.videos).toHaveLength(5)
+    expect(whole.sources.find((source) => source.id === 's4')?.videos).toHaveLength(1)
+    expect(progress.at(-1)).toBe(1)
+    expect(progress.every((value) => value > 0 && value <= 1)).toBe(true)
+  })
+
+  it('a stop keeps what each source has, reading nothing further', async () => {
+    const stop = new AbortController()
+    stop.abort()
+    let reads = 0
+    const whole = await loadChannelWhole({ name: 'X', sources: [deepSource()] }, { resolveYouTube: async () => ({ channelId: 'UCdeep00000000000000000a', title: 'Deep', videos: DEEP.slice(0, 60), next: 'at-60' }), probeStream: async () => 'online' }, async (source) => {
+      reads += 1
+      return source
+    }, { signal: stop.signal }, 5)
+    expect(reads).toBe(0)
+    expect(whole.sources[0].videos).toHaveLength(60)
   })
 })
 
