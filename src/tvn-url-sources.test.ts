@@ -4,6 +4,7 @@ import { playbackCommand } from './player/command.ts'
 import { routedPlayer, routeFor } from './player/routed.ts'
 import type { PlayerHandle } from './player/types.ts'
 import { vimeoEmbedSrc, vimeoIdOf } from './player/vimeo.ts'
+import { canLoadMore } from './services/channel-editor.ts'
 import { classifySourceUrl } from './services/channel-sources.ts'
 import { lookUpFeed, sourcePreviewLines } from './services/podcast-source.ts'
 import { addPodcastChannel, addStreamChannel } from './services/user-network.ts'
@@ -147,6 +148,30 @@ describe('Complete Export and Restore', () => {
     const sources = resolved.records.flatMap((record) => record.channelSources ?? [])
     expect(sources.find((source) => source.kind === 'podcast')?.videos?.[0]).toMatchObject({ media: 'https://player.vimeo.com/video/1111111' })
     expect(sources.find((source) => source.kind === 'video-hls')).toMatchObject({ url: 'https://cdn.example.net/live.m3u8' })
+  })
+
+  it('a podcast read in full comes back whole: the restore adds the newest episodes and never cuts it to them', async () => {
+    const episode = (n: number) => ({ id: `ep-${n}`, title: `Episode ${n}`, durationSec: 3600, media: `https://example.com/${n}.mp3` })
+    const all = Array.from({ length: 500 }, (_, n) => episode(n))
+    const added = addPodcastChannel([], { feedUrl: 'https://example.com/feed/podcast/', website: null, title: 'Pod', episodes: all }, 1)
+    const full = added.sources.map((record) => ({ ...record, channelSources: record.channelSources?.map((source) => ({ ...source, deep: true, complete: true, listed: 500 })) }))
+    const file = readUserNetworkFile(serialiseUserNetworkExport(buildUserNetworkExport(full, new Date(3))))
+    expect(file.ok).toBe(true)
+    if (!file.ok) return
+    const newest = [episode(9000), ...all.slice(0, 59)]
+    const resolved = await resolveRestored(recordsFromExport(file.value, 4), {
+      resolveYouTube: async () => {
+        throw new Error('not asked')
+      },
+      resolveFeed: async (url) => ({ feedUrl: url, episodes: newest }),
+    }, 4)
+    const pod = resolved.records.flatMap((record) => record.channelSources ?? []).find((source) => source.kind === 'podcast')
+    expect(pod?.videos).toHaveLength(501)
+    expect(pod?.videos?.[0].id).toBe('ep-9000')
+    expect(pod?.listed).toBe(500)
+    // One an earlier restore left at 60, marked whole with no count: LOAD reads the feed again.
+    expect(canLoadMore({ ...pod!, videos: newest, listed: undefined })).toBe(true)
+    expect(canLoadMore(pod!)).toBe(false)
   })
 })
 

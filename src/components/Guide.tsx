@@ -426,6 +426,9 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 
   // OPTIONS, BOOKMARKS, the Network Editor (or a filter with nothing in it) take the listings away; they come back where they were.
   const bookmarksOn = tool === 'bookmarks'
+  const editOn = tool === 'edit'
+  // One tab is underlined at a time: ♡ and EDIT stand in for the listings' filter while they are open.
+  const filterTabsOn = !bookmarksOn && !editOn
   const gridShown = tool !== 'options' && !bookmarksOn && !networkShown && tv.visibleChannels.length > 0
   const gridHidden = useRef(false)
   useLayoutEffect(() => {
@@ -654,8 +657,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
               key={filter}
               type="button"
               role="tab"
-              aria-selected={!bookmarksOn && tv.guideFilter === filter}
-              className={!bookmarksOn && tv.guideFilter === filter ? 'tab is-on' : 'tab'}
+              aria-selected={filterTabsOn && tv.guideFilter === filter}
+              className={filterTabsOn && tv.guideFilter === filter ? 'tab is-on' : 'tab'}
               onClick={() => tv.dispatch({ type: 'guide-filter', filter })}
             >
               {label}
@@ -674,22 +677,34 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           <button
             type="button"
             role="tab"
-            aria-selected={!bookmarksOn && tv.guideFilter === 'favourites'}
-            className={!bookmarksOn && tv.guideFilter === 'favourites' ? 'tab is-on' : 'tab'}
+            aria-selected={filterTabsOn && tv.guideFilter === 'favourites'}
+            className={filterTabsOn && tv.guideFilter === 'favourites' ? 'tab guide-glyph-tab is-on' : 'tab guide-glyph-tab'}
+            aria-label="Favourites"
+            title="Favourites"
             onClick={() => tv.dispatch({ type: 'guide-filter', filter: 'favourites' })}
           >
-            Fav
+            <span className="guide-tab-glyph" aria-hidden="true">☆</span>
           </button>
           <button
             type="button"
             role="tab"
-            className={bookmarksOn ? 'tab guide-bookmarks is-on' : 'tab guide-bookmarks'}
+            className={bookmarksOn ? 'tab guide-glyph-tab guide-bookmarks is-on' : 'tab guide-glyph-tab guide-bookmarks'}
             aria-selected={bookmarksOn}
             aria-label="Bookmarks"
             title="Bookmarks: the clips you bookmarked (D)"
             onClick={() => tv.dispatch({ type: 'guide-tool', tool: 'bookmarks' })}
           >
-            <span className="guide-bookmarks-glyph" aria-hidden="true">♡</span>
+            <span className="guide-tab-glyph" aria-hidden="true">♡</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={editOn ? 'tab guide-edit-tab is-on' : 'tab guide-edit-tab'}
+            aria-selected={editOn}
+            title="Edit Channel: the selected channel (X)"
+            onClick={() => tv.dispatch({ type: 'guide-tool', tool: 'edit' })}
+          >
+            Edit
           </button>
         </div>
         <GuideSearch query={tv.guideQuery} onChange={tv.setGuideQuery} />

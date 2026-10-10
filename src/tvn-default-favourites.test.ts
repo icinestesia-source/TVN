@@ -260,7 +260,7 @@ describe('unchanged around it', () => {
     expect(guide).toMatch(/\['all', 'All'\],\s*\['user', userNetworkName\(undefined, tv\.networkUsers\)\],\s*\.\.\.tv\.networkUsers\.map/)
     const plus = guide.indexOf('className={tool === \'users\' ? \'tab guide-plus is-on\'')
     expect(plus).toBeGreaterThan(guide.indexOf('...tv.networkUsers.map'))
-    expect(plus).toBeLessThan(guide.indexOf('            Fav\n'))
+    expect(plus).toBeLessThan(guide.indexOf('<span className="guide-tab-glyph" aria-hidden="true">☆</span>'))
     const playing = css.slice(css.indexOf('\n.prog.is-playing {'), css.indexOf('}', css.indexOf('\n.prog.is-playing {')))
     expect(playing).toContain('box-shadow: inset 0 0 0 2px var(--gold);')
     expect(css).toMatch(/\n\.prog\.is-focused \{\s*z-index: 2;\s*background: var\(--guide-selected\);/)

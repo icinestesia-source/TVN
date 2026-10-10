@@ -84,7 +84,7 @@ describe('BOOKMARKS: clips kept to play again', () => {
 
   it('a ♡ tab after FAV opens the Bookmarks section, each clip with PLAY and REMOVE', () => {
     const guide = read('src/components/Guide.tsx')
-    expect(guide.indexOf('            Fav\n')).toBeLessThan(guide.indexOf("tv.dispatch({ type: 'guide-tool', tool: 'bookmarks' })"))
+    expect(guide.indexOf('<span className="guide-tab-glyph" aria-hidden="true">☆</span>')).toBeLessThan(guide.indexOf("tv.dispatch({ type: 'guide-tool', tool: 'bookmarks' })"))
     expect(guide).toContain(") : tool === 'bookmarks' ? (\n        <BookmarksPanel />")
     const panel = read('src/components/BookmarksPanel.tsx')
     expect(panel).toContain('tv.playChannelProgramme(bookmark.channelNumber, bookmark.programmeId)')
@@ -113,14 +113,14 @@ describe('BOOKMARKS: clips kept to play again', () => {
 
   it('♡ is one more tab: only one tab is underlined, C goes FAV → ♡ → ALL, and a filter tab closes it', () => {
     const guide = read('src/components/Guide.tsx')
-    expect(guide).toContain("className={!bookmarksOn && tv.guideFilter === filter ? 'tab is-on' : 'tab'}")
-    expect(guide).toContain("className={!bookmarksOn && tv.guideFilter === 'favourites' ? 'tab is-on' : 'tab'}")
-    expect(guide).toContain("className={bookmarksOn ? 'tab guide-bookmarks is-on' : 'tab guide-bookmarks'}")
-    expect(guide).toContain('<span className="guide-bookmarks-glyph" aria-hidden="true">♡</span>')
+    expect(guide).toContain("className={filterTabsOn && tv.guideFilter === filter ? 'tab is-on' : 'tab'}")
+    expect(guide).toContain("className={filterTabsOn && tv.guideFilter === 'favourites' ? 'tab guide-glyph-tab is-on' : 'tab guide-glyph-tab'}")
+    expect(guide).toContain("className={bookmarksOn ? 'tab guide-glyph-tab guide-bookmarks is-on' : 'tab guide-glyph-tab guide-bookmarks'}")
+    expect(guide).toContain('<span className="guide-tab-glyph" aria-hidden="true">♡</span>')
     const provider = read('src/state/TvProvider.tsx')
     expect(provider).toMatch(/case 'guide-cycle': \{[\s\S]{0,200}panelOpenRef\.current\(\) === 'bookmarks'\) \{\s*closeGuideTool\(\)\s*setGuideFilter\('all'\)/)
     expect(provider).toMatch(/guideFilter === 'favourites' && next === 'all'\) \{\s*openGuideTool\('bookmarks'\)/)
-    expect(provider).toMatch(/case 'guide-filter': \{[\s\S]{0,200}if \(panelOpenRef\.current\(\) === 'bookmarks'\) closeGuideTool\(\)/)
+    expect(provider).toMatch(/case 'guide-filter': \{[\s\S]{0,200}if \(panelOpenRef\.current\(\) === 'bookmarks' \|\| \(guideOpenRef\.current && editingRef\.current\(\)\)\) closeGuideTool\(\)/)
   })
 })
 

@@ -298,7 +298,11 @@ export async function resolveRestored(
         if (episodes === null) failed += 1
         return episodes === null
           ? { ...source, status: { state: 'failed', playable: 0, checkedAt: now } }
-          : { ...source, videos: episodes.map((video) => ({ ...video })), status: { state: 'ready', playable: episodes.length, checkedAt: now } }
+          : (() => {
+            // The newest episodes join every episode the file kept: a feed read in full is never cut back to its latest.
+            const videos = rescanned(cleanVideos(episodes), source.videos ?? [], 'recent', (source.videos?.length ?? 0) > 0)
+            return { ...source, videos, status: { state: 'ready' as const, playable: videos.length, checkedAt: now } }
+          })()
       }
       if (source.enabled && source.kind === 'website') {
         const pages = found.get(pageKey(source)) ?? null

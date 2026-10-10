@@ -527,9 +527,10 @@ export function canLoadMore(source: ChannelSource, uploaderKnown = false): boole
   if (!source.enabled || held >= MAX_SOURCE_VIDEOS) return false
   // Holding well short of what the source lists: an earlier read stopped early, or a rescan cut it back, so it reads on.
   const cutShort = (source.kind === 'youtube' || source.kind === 'podcast') && source.listed !== undefined && held < source.listed * 0.9
+  // A podcast is read whole again until a whole read has counted its episodes and it holds about that many.
+  if (source.kind === 'podcast') return !source.deep || !source.complete || source.listed === undefined || cutShort
   // Only a read past the first batch proves the end was reached; a plain rescan finding no next page does not.
   if (source.complete && source.deep && !cutShort) return false
-  if (source.kind === 'podcast') return !source.deep || !source.complete || cutShort
   return source.kind === 'youtube' || (source.kind === 'collection' && uploaderKnown)
 }
 

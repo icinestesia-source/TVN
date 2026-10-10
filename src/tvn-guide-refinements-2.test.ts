@@ -11,7 +11,7 @@ describe('Guide tabs: All · TVN · users · + · Fav', () => {
     expect(guide).toMatch(/\['all', 'All'\],\s*\['user', userNetworkName\(undefined, tv\.networkUsers\)\],\s*\.\.\.tv\.networkUsers\.map/)
     const plus = guide.indexOf('className={tool === \'users\' ? \'tab guide-plus is-on\'')
     expect(plus).toBeGreaterThan(guide.indexOf('...tv.networkUsers.map'))
-    expect(plus).toBeLessThan(guide.indexOf('            Fav\n'))
+    expect(plus).toBeLessThan(guide.indexOf('<span className="guide-tab-glyph" aria-hidden="true">☆</span>'))
     expect(guide).not.toContain("['retrotv',")
     expect(guide).not.toContain("['user', 'User']")
   })

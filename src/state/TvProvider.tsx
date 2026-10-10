@@ -2098,7 +2098,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         break
       case 'guide-filter': {
         const nextFilter = command.filter ?? (guideFilter === 'favourites' ? 'all' : 'favourites')
-        if (panelOpenRef.current() === 'bookmarks') closeGuideTool()
+        if (panelOpenRef.current() === 'bookmarks' || (guideOpenRef.current && editingRef.current())) closeGuideTool()
         setGuideFilter(nextFilter)
         break
       }
