@@ -935,8 +935,11 @@ export function NewUserTools({
   )
 }
 
-/** A User Network file is a few hundred kilobytes at most; anything far larger is not one. */
-const MAX_NETWORK_FILE_BYTES = 20 * 1024 * 1024
+/**
+ * A User Network read in full (LOAD ALL & EXPORT) runs to tens of megabytes: well over a thousand channels, every
+ * programme each source holds. Anything far beyond that is not one.
+ */
+const MAX_NETWORK_FILE_BYTES = 512 * 1024 * 1024
 
 /**
  * The Guide footer while IMPORT is open: restore a TVN User Network file. The file is read and checked

@@ -179,6 +179,7 @@ export function GuideOptions() {
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const loadingAll = tv.loadAll && tv.loadAll.result === undefined ? tv.loadAll : null
+  const [confirmDefault, setConfirmDefault] = useState(false)
   const users = listChannels().filter((channel) => (channel.number >= USER_NUMBER_START || channel.origin === 'user-import') && !channel.emptySlot)
   const owned = (id: string | undefined) => users.filter((channel) => channel.owner === id).length
 
@@ -406,7 +407,7 @@ export function GuideOptions() {
             001–999, Favourites and settings. Export USER saves your users, User Network channels and their Favourites. Restore takes
             either, asks first, and can restore just the USER part of an ALL export. Single channels and their manifests are in Edit
             Channel. Load all &amp; export brings every User Network channel up to date and reads each source to its end (a YouTube
-            channel through its own uploads, a playlist through that playlist only, a podcast&rsquo;s whole feed), then exports USER.
+            channel through its own uploads, a playlist through that playlist only, a podcast&rsquo;s whole feed), then exports USER. Default removes every User channel, so new ones start again at 1001.
           </p>
           <div className="options-choices">
             <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={() => void run(tv.exportTvn)}>
@@ -424,7 +425,30 @@ export function GuideOptions() {
             <button type="button" className="tab" disabled={busy || loadingAll !== null} onKeyDown={keepKey} onClick={tv.startLoadAll}>
               Load all &amp; export
             </button>
+            <button type="button" className="tab remove-key" disabled={busy || loadingAll !== null} onKeyDown={keepKey} onClick={() => setConfirmDefault(true)}>
+              Default…
+            </button>
           </div>
+          {confirmDefault ? (
+            <div className="options-choices options-confirm" role="alertdialog" aria-label="Remove every User channel?">
+              <span className="remove-ask">Remove every User channel, 1001 onwards, from this browser? New channels then start again at 1001. Export first to keep them.</span>
+              <button
+                type="button"
+                className="tab remove-key"
+                disabled={busy}
+                onKeyDown={keepKey}
+                onClick={() => {
+                  setConfirmDefault(false)
+                  void run(() => tv.removeUserChannels('all'))
+                }}
+              >
+                Yes, remove them
+              </button>
+              <button type="button" className="tab" onKeyDown={keepKey} onClick={() => setConfirmDefault(false)}>
+                Keep them
+              </button>
+            </div>
+          ) : null}
           {tv.loadAll?.result !== undefined ? <p className="options-load-all-done" role="status">{tv.loadAll.result}</p> : null}
           {loadingAll ? (
             <div className="options-load-all" role="status">

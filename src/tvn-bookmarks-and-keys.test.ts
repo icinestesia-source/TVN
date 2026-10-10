@@ -102,6 +102,15 @@ describe('BOOKMARKS: clips kept to play again', () => {
     expect(options).not.toContain('new AbortController()')
   })
 
+  it('RESTORE takes a User Network read in full (tens of megabytes), and DEFAULT clears the User Network after asking', () => {
+    expect(read('src/components/GuideAdd.tsx')).toContain('const MAX_NETWORK_FILE_BYTES = 512 * 1024 * 1024')
+    const options = read('src/components/GuideOptions.tsx')
+    expect(options.indexOf('Load all &amp; export')).toBeLessThan(options.indexOf('Default…'))
+    expect(options).toContain('onClick={() => setConfirmDefault(true)}')
+    expect(options).toContain("void run(() => tv.removeUserChannels('all'))")
+    expect(options).toContain('Keep them')
+  })
+
   it('♡ is one more tab: only one tab is underlined, C goes FAV → ♡ → ALL, and a filter tab closes it', () => {
     const guide = read('src/components/Guide.tsx')
     expect(guide).toContain("className={!bookmarksOn && tv.guideFilter === filter ? 'tab is-on' : 'tab'}")
