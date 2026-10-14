@@ -542,7 +542,7 @@ describe('a cleared 1001+ channel keeps its number as an empty slot', () => {
   })
 
   it('the editor deletes the channel outright, cleaning favourites and history; bulk removal still removes', () => {
-    const body = provider.slice(provider.indexOf('const deleteUserChannel = useCallback'), provider.indexOf('const screenAction'))
+    const body = provider.slice(provider.indexOf('const deleteUserChannel = useCallback'), provider.indexOf('const deleteNetworkChannel'))
     expect(body).toContain('deleteStoredUserChannel(')
     expect(body).toContain('forgetChannels(')
     expect(body).not.toContain('clearUserChannel(')

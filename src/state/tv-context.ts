@@ -288,6 +288,8 @@ export interface TvContextValue {
   playChannelProgramme: (channelNumber: number, programmeId: string) => string | null
   /** Delete one user channel (after the editor's confirmation): it leaves the network, its Favourite with it. */
   deleteUserChannel: (channelNumber: number) => Promise<string>
+  /** X in NETWORK: a 1001+ channel deleted with the rest moving up; one of the viewer's own 001–990 left as an empty channel. */
+  deleteNetworkChannel: (channelNumber: number) => Promise<string>
   /** MOVE TO: a user channel inserted at User position `to`; every 1001+ channel is renumbered from 1001. */
   moveUserChannel: (channelNumber: number, to: number) => Promise<string>
   /** SORT A–Z or RANDOMISE the User Network once; the new order is its stored running order. */

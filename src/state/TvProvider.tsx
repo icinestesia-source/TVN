@@ -54,7 +54,7 @@ import {
   type StoredSource,
 } from '../services/channels-import.ts'
 import { lookUpBatch, lookUpChannel } from '../services/add-channel.ts'
-import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
+import { addChannelSource, addPodcastChannel, addStreamChannel, clearUserChannel, planStarterNetwork, removeUserChannels as withoutUserChannels, starterCollections } from '../services/user-network.ts'
 import { admitted, applyChannelEdit, canLoadMore, editOf, eligibilityKey, loadChannelWhole, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
@@ -3652,7 +3652,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * shows as missing, as a restored Guide's unresolvable items do. Watching it falls back safely.
    */
   const deleteUserChannel = useCallback(
-    async (number: number) => {
+    async (number: number, fromNetwork = false) => {
       if (scopeOf(number).scope !== 'user') throw new Error('Only your own channels can be deleted')
       const result = deleteStoredUserChannel(migrateLegacyUserNumbers(await loadStoredSources()).sources, number)
       if (result.status === 'missing') throw new Error('That channel is no longer in your User Network')
@@ -3660,11 +3660,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
       // The channel listed above the deleted one takes its place, or the one below when it was first.
       const rows = visibleRef.current.filter((channel) => channel.number !== number)
       const near = rows.findLast((channel) => channel.number < number) ?? rows.find((channel) => channel.number > number)
-      closeGuideTool()
+      // Deleted from NETWORK, the Network Editor stays open on its list.
+      if (!fromNetwork) closeGuideTool()
       await saveStoredSources(result.sources)
       forgetChannels(new Set([number]), result.sources)
       installSources(result.sources, near?.number)
-      if (guideOpenRef.current && near) focusGuide(near.number, cursorRef.current.timeMs)
+      if (guideOpenRef.current && near && !fromNetwork) focusGuide(near.number, cursorRef.current.timeMs)
       return `${name.toUpperCase()} DELETED`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3722,6 +3723,32 @@ export function TvProvider({ children }: { children: ReactNode }) {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [installSources],
+  )
+
+  /**
+   * X in NETWORK. A 1001+ channel is deleted and the User Network closes up behind it, every later channel
+   * moving up one number. One of the viewer's own 001–990 (a NEW network) becomes an empty channel on the
+   * same number, and nothing else moves. TVN's own channels are never deleted.
+   */
+  const deleteNetworkChannel = useCallback(
+    async (number: number) => {
+      if (scopeOf(number).scope !== 'user') throw new Error('TVN’s own channels cannot be deleted')
+      const label = `${String(number).padStart(3, '0')} ${(channelByNumber(number)?.name ?? '').toUpperCase()}`.trim()
+      if (isLowUserNumber(number)) {
+        const result = clearUserChannel(migrateLegacyUserNumbers(await loadStoredSources()).sources, number, Date.now())
+        if (result.status === 'missing') throw new Error('That channel is no longer in your network')
+        if (result.status === 'already-empty') return `${String(number).padStart(3, '0')} IS ALREADY AN EMPTY CHANNEL`
+        await saveStoredSources(result.sources)
+        installSources(result.sources)
+        return `${label} DELETED · ${String(number).padStart(3, '0')} IS NOW AN EMPTY CHANNEL`
+      }
+      await deleteUserChannel(number, true)
+      const remaining = userOrder(migrateLegacyUserNumbers(await loadStoredSources()).sources, USER_BLOCK)
+      const moved = await reorderUserNetwork(remaining.map((source) => source.id), USER_BLOCK)
+      return moved === 'THE ORDER IS UNCHANGED' ? `${label} DELETED` : `${label} DELETED · THE CHANNELS AFTER IT MOVED UP ONE`
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [deleteUserChannel, reorderUserNetwork, installSources],
   )
 
   /** MOVE TO: one user channel taken out and put in at User position `to`; the rest close up and renumber from 1001. */
@@ -4156,6 +4183,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       sourceArchive,
       playChannelProgramme,
       deleteUserChannel,
+      deleteNetworkChannel,
       moveUserChannel,
       arrangeUserNetwork,
       restoreCuratedChannel,
@@ -4182,6 +4210,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importChannelFile,
       playChannelProgramme,
       deleteUserChannel,
+      deleteNetworkChannel,
       moveUserChannel,
       arrangeUserNetwork,
       restoreCuratedChannel,

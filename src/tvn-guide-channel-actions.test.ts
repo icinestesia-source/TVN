@@ -162,7 +162,7 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(at('className="ch-act ch-arrange ch-reset"')).toBeLessThan(at('title="Edit channel"'))
     expect(at('title="Edit channel"')).toBeLessThan(at("className={favourite ? 'star is-on' : 'star'}"))
     expect(cell).toContain("onClick={act(() => onArrange('reset'))}")
-    expect(cell).toContain('disabled={busy || !selected || on === null}')
+    expect(cell).toContain('disabled={busy || on === null}')
     expect(cell).not.toContain('ch-delete')
     expect(guide).toMatch(/how: 'latest', mark: '◉'[\s\S]*how: 'az', mark: 'AZ'[\s\S]*how: 'random', mark: '⤮'/)
     expect(cell).toContain('const all = selected && expanded')

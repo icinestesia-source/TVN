@@ -46,6 +46,8 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState<number | null>(null)
   const [confirm, setConfirm] = useState<'alphabetical' | 'shuffle' | null>(null)
+  // X asks once: the channel id waiting for its second press.
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [targets, setTargets] = useState<Record<string, string>>({})
   const listRef = useRef<HTMLOListElement>(null)
   // What is stored, not only what can air: a channel whose source has not been read yet is still a channel.
@@ -114,6 +116,24 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
       setNote(await tv.arrangeUserNetwork(how))
     } catch (caught) {
       setNote(message(caught, 'THE USER NETWORK COULD NOT BE REORDERED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remove = async (channel: Channel) => {
+    if (busy) return
+    if (deleting !== channel.id) {
+      setDeleting(channel.id)
+      setConfirm(null)
+      return
+    }
+    setDeleting(null)
+    setBusy(true)
+    try {
+      setNote(await tv.deleteNetworkChannel(channel.number))
+    } catch (caught) {
+      setNote(message(caught, 'THAT CHANNEL COULD NOT BE DELETED'))
     } finally {
       setBusy(false)
     }
@@ -262,6 +282,24 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               </span>
               <button type="button" className="tab network-edit" disabled={unloaded(channel)} onKeyDown={keepKey} onClick={() => onEdit(channel.number)}>
                 {channel.number === TVN_CHANNEL_NUMBER ? 'Settings' : 'Edit'}
+              </button>
+              <button
+                type="button"
+                className={deleting === channel.id ? 'tab network-delete is-on remove-key' : 'tab network-delete'}
+                disabled={busy || !user}
+                aria-label={deleting === channel.id ? `Confirm: delete ${channel.name}` : `Delete ${channel.name}`}
+                title={
+                  !user
+                    ? 'TVN’s own channels cannot be deleted: Edit one to change or restore it'
+                    : channel.number >= 1001
+                      ? 'Delete this channel: the channels after it move up one number'
+                      : 'Delete this channel: its number stays, as an empty channel'
+                }
+                onKeyDown={keepKey}
+                onBlur={() => setDeleting((current) => (current === channel.id ? null : current))}
+                onClick={() => void remove(channel)}
+              >
+                {deleting === channel.id ? 'Delete?' : '✕'}
               </button>
             </li>
           )

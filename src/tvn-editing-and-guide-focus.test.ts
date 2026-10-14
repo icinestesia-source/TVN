@@ -352,6 +352,6 @@ describe('Deleting a channel hands over to its neighbour, never to 001', () => {
     const body = provider.slice(provider.indexOf('const deleteUserChannel = useCallback'), provider.indexOf('const goneNumbers ='))
     expect(body).toContain('const near = rows.findLast((channel) => channel.number < number) ?? rows.find((channel) => channel.number > number)')
     expect(body).toContain('installSources(result.sources, near?.number)')
-    expect(body).toContain('if (guideOpenRef.current && near) focusGuide(near.number, cursorRef.current.timeMs)')
+    expect(body).toContain('if (guideOpenRef.current && near && !fromNetwork) focusGuide(near.number, cursorRef.current.timeMs)')
   })
 })

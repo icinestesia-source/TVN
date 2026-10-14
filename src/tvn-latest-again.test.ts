@@ -6,7 +6,7 @@ const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
 
 describe('LATEST right-clicked: the very latest order again', () => {
   it('right-click on LATEST asks for the latest order from now, without the browser menu', () => {
-    expect(guide).toMatch(/how === 'latest'\s*\? \(event: MouseEvent<HTMLButtonElement>\) => \{\s*event\.preventDefault\(\)\s*event\.stopPropagation\(\)\s*if \(!busy && selected\) onArrange\?\.\('latest-now'\)/)
+    expect(guide).toMatch(/how === 'latest'\s*\? \(event: MouseEvent<HTMLButtonElement>\) => \{\s*event\.preventDefault\(\)\s*event\.stopPropagation\(\)\s*if \(!busy\) onArrange\?\.\('latest-now'\)/)
     expect(guide).toContain("Right-click: the very latest order again, from now")
     // Like LATEST switched on, it goes to the picture to show the latest programme.
     expect(guide).toContain("(how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now' ? () => tv.dispatch({ type: 'cancel' })")
@@ -17,5 +17,12 @@ describe('LATEST right-clicked: the very latest order again', () => {
     expect(provider).toContain("const how = again ? 'latest' : asked")
     expect(provider).toContain("if (how === 'reset' || (on === how && how !== 'random' && !again)) {")
     expect(provider).toContain("liveFromMs: how === 'latest' ? Date.now() : undefined")
+  })
+
+  it('works on any row that shows it, selected or not, and never on TVN’s own 000', () => {
+    const cell = guide.slice(guide.indexOf('ARRANGEMENTS.map('), guide.indexOf("onArrange('reset')"))
+    expect(cell).toContain('disabled={busy}')
+    expect(cell).not.toContain('!selected')
+    expect(guide).toContain("editorScope(channel) && editorScope(channel) !== 'tvn' && channel.origin !== 'session'")
   })
 })

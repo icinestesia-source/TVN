@@ -845,7 +845,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                       busy={channelBusy === channel.number}
                       arranged={channel.arranged}
                       onArrange={
-                        editorScope(channel) && channel.origin !== 'session'
+                        editorScope(channel) && editorScope(channel) !== 'tvn' && channel.origin !== 'session'
                           ? (how) =>
                               channelAction(
                                 channel.number,
@@ -1180,14 +1180,14 @@ function ChannelCell({
             key={how}
             type="button"
             className={`ch-act ch-arrange ch-${how}${on === how ? ' is-on' : ''}`}
-            disabled={busy || !selected}
+            disabled={busy}
             onClick={act(() => onArrange?.(how))}
             onContextMenu={
               how === 'latest'
                 ? (event: MouseEvent<HTMLButtonElement>) => {
                     event.preventDefault()
                     event.stopPropagation()
-                    if (!busy && selected) onArrange?.('latest-now')
+                    if (!busy) onArrange?.('latest-now')
                   }
                 : undefined
             }
@@ -1205,7 +1205,7 @@ function ChannelCell({
         <button
           type="button"
           className="ch-act ch-arrange ch-reset"
-          disabled={busy || !selected || on === null}
+          disabled={busy || on === null}
           onClick={act(() => onArrange('reset'))}
           title={on === null ? 'Reset: already the default schedule' : 'Reset: back to the default schedule'}
         >
