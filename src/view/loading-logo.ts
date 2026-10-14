@@ -81,6 +81,22 @@ export function releaseSpin(samples: readonly { angle: number; at: number }[], n
   return Math.max(-SPIN_MAX, Math.min(SPIN_MAX, turned / seconds))
 }
 
+/** Degrees a second of spin added by each pixel a trackpad swipe scrolls. */
+export const WHEEL_GAIN = 3
+const LINE_PX = 16
+
+/**
+ * A two-finger trackpad swipe (or a mouse wheel) pushes the spin: the fingers moving right or down turn it
+ * clockwise, left or up anticlockwise. With natural scrolling, the Mac's default, the page reports those
+ * moves as negative deltas. Each push adds to the spin already there, so the swipe's own momentum, which the
+ * trackpad sends on after the fingers lift, keeps it going.
+ */
+export function wheelSpin(spin: number, wheel: { deltaX: number; deltaY: number; deltaMode: number }): number {
+  const scale = wheel.deltaMode === 1 ? LINE_PX : wheel.deltaMode === 2 ? LINE_PX * 20 : 1
+  const push = -(wheel.deltaX + wheel.deltaY) * scale * WHEEL_GAIN
+  return Math.max(-SPIN_MAX, Math.min(SPIN_MAX, spin + push))
+}
+
 /** The spin after `seconds` more of friction; zero once it is too slow to see. */
 export function slowedSpin(spin: number, seconds: number): number {
   const next = spin * Math.pow(1 - SPIN_FRICTION, seconds)

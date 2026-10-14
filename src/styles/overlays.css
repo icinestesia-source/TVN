@@ -380,6 +380,16 @@
 
 .startup .startup-logo.is-spinner:active { cursor: grabbing; }
 
+/* Swipes anywhere on the loading screen turn the spinner rather than scroll, zoom or go back a page. */
+.startup.has-spinner {
+  cursor: grab;
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+}
+
+.startup.has-spinner:active { cursor: grabbing; }
+
 .startup-percent {
   display: inline-block;
   min-width: 3.4em;

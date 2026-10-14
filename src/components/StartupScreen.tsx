@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SESSION_LOGO } from './logos.ts'
-import { pointerAngle, releaseSpin, slowedSpin, turnBetween, useLoadingLogo } from '../view/loading-logo.ts'
+import { pointerAngle, releaseSpin, slowedSpin, turnBetween, useLoadingLogo, wheelSpin } from '../view/loading-logo.ts'
 import type { StartupPhase } from '../state/startup.ts'
 import { ringColour } from './ring-colour.ts'
 
@@ -118,75 +118,92 @@ export function LoadingRing({ percent }: { percent: number }) {
 }
 
 /**
- * LOADING LOGO set to Spin: the logo follows the finger round its centre while held, keeps the speed it was
- * flicked with when let go, and slows to a stop. Drawn by setting its transform directly, so React does not
- * render on every frame while the network is still loading.
+ * LOADING LOGO set to Spin. A finger, pen or mouse dragged anywhere on the loading screen turns the logo round
+ * its centre and flicks it on when let go; a two-finger trackpad swipe or a mouse wheel pushes it round. It
+ * slows to a stop. Drawn by setting its transform directly, so React does not render on every frame while the
+ * network is still loading.
  */
 function SpinLogo() {
   const ref = useRef<HTMLImageElement>(null)
-  const state = useRef({ angle: 0, spin: 0, held: false, last: 0, tick: 0, frame: 0, samples: [] as { angle: number; at: number }[] })
-  useEffect(() => () => cancelAnimationFrame(state.current.frame), [])
-  const paint = () => {
-    if (ref.current) ref.current.style.transform = `rotate(${state.current.angle.toFixed(2)}deg)`
-  }
-  const angleOf = (event: PointerEvent<HTMLImageElement>) => {
-    const box = event.currentTarget.getBoundingClientRect()
-    return pointerAngle({ x: box.left + box.width / 2, y: box.top + box.height / 2 }, { x: event.clientX, y: event.clientY })
-  }
-  const step = (time: number) => {
-    const spin = state.current
-    const seconds = Math.min(0.1, (time - spin.tick) / 1000)
-    spin.tick = time
-    spin.angle = (spin.angle + spin.spin * seconds) % 360
-    spin.spin = slowedSpin(spin.spin, seconds)
-    paint()
-    spin.frame = spin.spin !== 0 && !spin.held ? requestAnimationFrame(step) : 0
-  }
-  return (
-    <img
-      ref={ref}
-      className="startup-logo is-spinner"
-      src={SESSION_LOGO}
-      alt={BRAND}
-      width={640}
-      height={640}
-      draggable={false}
-      title="Flick to spin"
-      onPointerDown={(event) => {
-        event.stopPropagation()
-        event.currentTarget.setPointerCapture(event.pointerId)
-        const spin = state.current
-        cancelAnimationFrame(spin.frame)
-        spin.frame = 0
-        spin.held = true
-        spin.spin = 0
-        spin.last = angleOf(event)
-        spin.samples = [{ angle: spin.last, at: performance.now() }]
-      }}
-      onPointerMove={(event) => {
-        const spin = state.current
-        if (!spin.held) return
-        const angle = angleOf(event)
-        spin.angle += turnBetween(spin.last, angle)
-        spin.last = angle
-        spin.samples = [...spin.samples.slice(-11), { angle, at: performance.now() }]
-        paint()
-      }}
-      onPointerUp={(event) => {
-        const spin = state.current
-        if (!spin.held) return
-        spin.held = false
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
-        const now = performance.now()
-        spin.spin = releaseSpin(spin.samples, now)
-        spin.tick = now
-        if (spin.spin !== 0) spin.frame = requestAnimationFrame(step)
-      }}
-      onPointerCancel={() => {
-        state.current.held = false
-      }}
-    />
-  )
+  useEffect(() => {
+    const logo = ref.current
+    const screen = logo?.closest<HTMLElement>('.startup')
+    if (!logo || !screen) return
+    const spin = { angle: 0, speed: 0, held: -1, last: 0, tick: 0, frame: 0, samples: [] as { angle: number; at: number }[] }
+    const paint = () => {
+      logo.style.transform = `rotate(${spin.angle.toFixed(2)}deg)`
+    }
+    const angleOf = (event: { clientX: number; clientY: number }) => {
+      const box = logo.getBoundingClientRect()
+      return pointerAngle({ x: box.left + box.width / 2, y: box.top + box.height / 2 }, { x: event.clientX, y: event.clientY })
+    }
+    const step = (time: number) => {
+      const seconds = Math.min(0.1, (time - spin.tick) / 1000)
+      spin.tick = time
+      spin.angle = (spin.angle + spin.speed * seconds) % 360
+      spin.speed = slowedSpin(spin.speed, seconds)
+      paint()
+      spin.frame = spin.speed !== 0 && spin.held < 0 ? requestAnimationFrame(step) : 0
+    }
+    const run = () => {
+      if (spin.frame || spin.speed === 0 || spin.held >= 0) return
+      spin.tick = performance.now()
+      spin.frame = requestAnimationFrame(step)
+    }
+    const stop = () => {
+      cancelAnimationFrame(spin.frame)
+      spin.frame = 0
+    }
+    const down = (event: globalThis.PointerEvent) => {
+      if (spin.held >= 0 || (event.pointerType === 'mouse' && event.button !== 0)) return
+      if (event.target instanceof Element && event.target.closest('button, a')) return
+      event.preventDefault()
+      stop()
+      spin.held = event.pointerId
+      spin.speed = 0
+      spin.last = angleOf(event)
+      spin.samples = [{ angle: spin.last, at: performance.now() }]
+      screen.setPointerCapture?.(event.pointerId)
+    }
+    const move = (event: globalThis.PointerEvent) => {
+      if (event.pointerId !== spin.held) return
+      const angle = angleOf(event)
+      spin.angle += turnBetween(spin.last, angle)
+      spin.last = angle
+      spin.samples = [...spin.samples.slice(-11), { angle, at: performance.now() }]
+      paint()
+    }
+    const up = (event: globalThis.PointerEvent) => {
+      if (event.pointerId !== spin.held) return
+      spin.held = -1
+      if (screen.hasPointerCapture?.(event.pointerId)) screen.releasePointerCapture(event.pointerId)
+      spin.speed = event.type === 'pointercancel' ? 0 : releaseSpin(spin.samples, performance.now())
+      run()
+    }
+    const wheel = (event: WheelEvent) => {
+      // A pinch is the browser's zoom; everything else here is the spinner's, not a page scroll or a swipe back.
+      if (event.ctrlKey) return
+      event.preventDefault()
+      spin.speed = wheelSpin(spin.speed, event)
+      run()
+    }
+    screen.addEventListener('pointerdown', down)
+    screen.addEventListener('pointermove', move)
+    screen.addEventListener('pointerup', up)
+    screen.addEventListener('pointercancel', up)
+    screen.addEventListener('wheel', wheel, { passive: false })
+    screen.classList.add('has-spinner')
+    return () => {
+      stop()
+      screen.removeEventListener('pointerdown', down)
+      screen.removeEventListener('pointermove', move)
+      screen.removeEventListener('pointerup', up)
+      screen.removeEventListener('pointercancel', up)
+      screen.removeEventListener('wheel', wheel)
+      screen.classList.remove('has-spinner')
+    }
+  }, [])
+  return <img ref={ref} className="startup-logo is-spinner" src={SESSION_LOGO} alt={BRAND} width={640} height={640} draggable={false} title="Flick or swipe to spin" />
 }
 
 /**

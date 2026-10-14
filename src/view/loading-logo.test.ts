@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { LOADING_LOGO_KEY, loadLoadingLogo, releaseSpin, setLoadingLogo, slowedSpin, SPIN_MAX, turnBetween } from './loading-logo.ts'
+import { LOADING_LOGO_KEY, loadLoadingLogo, releaseSpin, setLoadingLogo, slowedSpin, SPIN_MAX, turnBetween, WHEEL_GAIN, wheelSpin } from './loading-logo.ts'
 
 const memory = () => {
   const items = new Map<string, string>()
@@ -46,6 +46,22 @@ describe('OPTIONS → Loading logo: Pulse, or a logo to flick and spin', () => {
     }
     expect(seconds).toBeGreaterThan(4)
     expect(seconds).toBeLessThan(10)
+  })
+
+  it('a trackpad swipe pushes it round: fingers right or down clockwise, and the swipe’s momentum adds on', () => {
+    expect(wheelSpin(0, { deltaX: -20, deltaY: 0, deltaMode: 0 })).toBe(20 * WHEEL_GAIN)
+    expect(wheelSpin(0, { deltaX: 0, deltaY: 20, deltaMode: 0 })).toBe(-20 * WHEEL_GAIN)
+    expect(wheelSpin(100, { deltaX: -10, deltaY: 0, deltaMode: 0 })).toBe(100 + 10 * WHEEL_GAIN)
+    // A mouse wheel that counts in lines moves it as far as the same scroll in pixels.
+    expect(wheelSpin(0, { deltaX: 0, deltaY: -1, deltaMode: 1 })).toBe(16 * WHEEL_GAIN)
+    expect(wheelSpin(SPIN_MAX, { deltaX: -500, deltaY: 0, deltaMode: 0 })).toBe(SPIN_MAX)
+  })
+
+  it('takes swipes anywhere on the loading screen, from a finger, a pen, a mouse or a trackpad', () => {
+    const screen = readFileSync('src/components/StartupScreen.tsx', 'utf8')
+    expect(screen).toContain("screen.addEventListener('wheel', wheel, { passive: false })")
+    expect(screen).toContain("screen.addEventListener('pointerdown', down)")
+    expect(readFileSync('src/styles/overlays.css', 'utf8')).toMatch(/\.startup\.has-spinner \{[^}]*touch-action: none;[^}]*overscroll-behavior: none;/)
   })
 
   it('the loading screen and OPTIONS offer it', () => {
