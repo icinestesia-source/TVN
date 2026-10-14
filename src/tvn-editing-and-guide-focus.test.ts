@@ -104,7 +104,7 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
     const expected: Record<string, string> = {
       Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'export-all', d: 'bookmark', r: 'schedule', t: 'surf', y: 'user-channels',
       u: 'media', i: 'guide-tool', o: 'guide-tool', p: 'play-pause', a: 'favourite', s: 'subtitles', f: 'fullscreen', g: 'guide', h: 'hints', l: 'schedule', Enter: 'confirm',
-      z: 'schedule', q: 'schedule', x: 'guide-tool', c: 'guide-cycle', v: 'info', b: 'history-back', n: 'history-forward', m: 'mute', ',': 'step', '.': 'step', '/': 'multiview', '[': 'pip-size', ']': 'pip-size', ' ': 'random-channel',
+      z: 'schedule', q: 'schedule', x: 'guide-tool', c: 'guide-cycle', v: 'info', b: 'history-back', n: 'history-forward', m: 'mute', ',': 'step', '.': 'step', '/': 'multiview', '\\': 'multiview', '[': 'pip-size', ']': 'pip-size', ' ': 'random-channel',
       Home: 'guide-now', PageUp: 'channel-up', PageDown: 'channel-down', ArrowUp: 'channel-up', ArrowDown: 'channel-down', ArrowLeft: 'volume-down', ArrowRight: 'volume-up',
     }
     for (const item of [...KEYBOARD_ROWS.flat(), ...KEYBOARD_NAV]) {

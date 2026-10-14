@@ -148,7 +148,7 @@ describe('startup activates the selected channel', () => {
 
   it('leaves Random, CH+/CH−, numeric tuning and Multi View as they were', () => {
     expect(provider).toMatch(/case 'random-channel': \{\s+const picked = randomTarget\(channelRef\.current, \{ filter: guideFilter, favourites \}\)\s+if \(picked\) requestTune\(picked\.number\)/)
-    expect(provider).toContain("const target = stepTarget(tuned(), pending, command.type === 'channel-up' ? 1 : -1, { filter: guideFilter, favourites })")
+    expect(provider).toContain("let target = stepTarget(tuned(), pending, command.type === 'channel-up' ? 1 : -1, { filter: guideFilter, favourites })")
     expect(provider).toMatch(/if \(target === null\) flash\(emptyUniverseNote\(guideFilter\)\)\s+else requestTune\(target\)/)
     expect(provider).toMatch(/commitNumericRef\.current = \(\) => \{[\s\S]{0,400}requestTune\(number\)/)
     expect(provider).toMatch(/bootRef\.current = \(\) => \{\s+if \(bootedRef\.current\) return\s+if \(multiviewRef\.current !== '1'\) return/)

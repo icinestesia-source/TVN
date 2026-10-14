@@ -1,0 +1,21 @@
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+
+const guide = readFileSync('src/components/Guide.tsx', 'utf8')
+const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+
+describe('LATEST right-clicked: the very latest order again', () => {
+  it('right-click on LATEST asks for the latest order from now, without the browser menu', () => {
+    expect(guide).toMatch(/how === 'latest'\s*\? \(event: MouseEvent<HTMLButtonElement>\) => \{\s*event\.preventDefault\(\)\s*event\.stopPropagation\(\)\s*if \(!busy && selected\) onArrange\?\.\('latest-now'\)/)
+    expect(guide).toContain("Right-click: the very latest order again, from now")
+    // Like LATEST switched on, it goes to the picture to show the latest programme.
+    expect(guide).toContain("(how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now' ? () => tv.dispatch({ type: 'cancel' })")
+  })
+
+  it('never switches LATEST off: it rescans and schedules newest first from now, whatever was on', () => {
+    expect(provider).toContain("const again = asked === 'latest-now'")
+    expect(provider).toContain("const how = again ? 'latest' : asked")
+    expect(provider).toContain("if (how === 'reset' || (on === how && how !== 'random' && !again)) {")
+    expect(provider).toContain("liveFromMs: how === 'latest' ? Date.now() : undefined")
+  })
+})

@@ -201,7 +201,8 @@ describe('TVN 2.0 · playing a Guide', () => {
     expect(provider).toMatch(/if \(!keepPick\) clearManual\(\)\s+if \(!guideDrivingRef\.current\) guideEngine\.current\.suspend\(\)/)
     expect(provider).toMatch(/const playFromGuide = [^\n]+\n\s+if \(!guideDrivingRef\.current\) guideEngine\.current\.suspend\(\)/)
     expect(provider).toMatch(/guideEngine\.current\.suspend\(\)\s+if \(clearManual\(\)\) \{/)
-    expect(provider).toMatch(/case 'multiview': \{\s+guideEngine\.current\.suspend\(\)/)
+    // \ in single view already is not a change, so it leaves a playing Guide alone.
+    expect(provider).toMatch(/case 'multiview': \{\s+if \(command\.mode === '1' && multiviewRef\.current === '1'\) break\s+guideEngine\.current\.suspend\(\)/)
     expect(provider).toContain("if (run?.state === 'active') setGuideRun({ ...run, state: 'suspended' })")
     const resume = provider.slice(provider.indexOf('const resumeGuideAction'), provider.indexOf('const stopGuideAction'))
     expect(resume).toContain('playGuideFrom(run, run.index, 1)')

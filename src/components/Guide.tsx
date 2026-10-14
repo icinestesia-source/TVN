@@ -289,9 +289,9 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const flagClip = (channel: Channel, programme: Programme, slot: { startMs: number; endMs: number }) => {
     const flagged = flaggedByChannel.get(channel.number)?.has(slot.startMs) ?? false
     if (!flagged && channel.number === TVN_CHANNEL_NUMBER) return setAddNote('000 CHOOSES AS IT GOES · FLAG A CLIP ON ANOTHER CHANNEL')
-    if (!flagged && slot.endMs <= Date.now()) return setAddNote('THAT CLIP HAS ALREADY AIRED')
+    const aired = slot.endMs <= Date.now()
     const on = toggleClipFlag(clipFlag(channel, programme, slot.startMs, slot.endMs))
-    setAddNote(on ? `⚑\uFE0E FLAG SET · ${padChannel(channel.number)} · ${programme.title}` : `FLAG REMOVED · ${programme.title}`)
+    setAddNote(on ? `⚑\uFE0E FLAG SET · ${padChannel(channel.number)} · ${programme.title}${aired ? ' · ALREADY AIRED: KEPT FOR CHANNELS' : ''}` : `FLAG REMOVED · ${programme.title}`)
   }
   const manual = manualAiring(tv.channel.number, now)
   const picked = manual !== null
@@ -851,7 +851,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                                 channel.number,
                                 (number) => tv.arrangeChannel(number, how),
                                 // LATEST switched on goes to its very latest programme; the others stay in the Guide to show the new schedule.
-                                how === 'latest' && channel.liveFromMs === undefined ? () => tv.dispatch({ type: 'cancel' }) : undefined,
+                                (how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now' ? () => tv.dispatch({ type: 'cancel' }) : undefined,
                               )
                           : undefined
                       }
@@ -1102,7 +1102,7 @@ function ChannelCell({
   /** One of its own actions is in progress. */
   busy?: boolean
   /** LATEST, A–Z or RANDOM on (the others off), RANDOM shuffling again each time; RESET returns the default schedule. */
-  onArrange?: (how: Arrangement | 'reset') => void
+  onArrange?: (how: Arrangement | 'latest-now' | 'reset') => void
   /** The selected channel shows all of its actions, not just one. */
   expanded?: boolean
   onExpand?: () => void
@@ -1182,8 +1182,17 @@ function ChannelCell({
             className={`ch-act ch-arrange ch-${how}${on === how ? ' is-on' : ''}`}
             disabled={busy || !selected}
             onClick={act(() => onArrange?.(how))}
+            onContextMenu={
+              how === 'latest'
+                ? (event: MouseEvent<HTMLButtonElement>) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (!busy && selected) onArrange?.('latest-now')
+                  }
+                : undefined
+            }
             aria-pressed={on === how}
-            title={on === how ? (how === 'random' ? 'Random is on: press for a new random order' : `${name} is on: press to return to the default schedule`) : about}
+            title={`${on === how ? (how === 'random' ? 'Random is on: press for a new random order' : `${name} is on: press to return to the default schedule`) : about}${how === 'latest' ? ' · Right-click: the very latest order again, from now' : ''}`}
           >
             <span aria-hidden="true">{mark}</span>
             <span className="sr">

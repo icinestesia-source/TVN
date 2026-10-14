@@ -1836,7 +1836,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
       case 'channel-up':
       case 'channel-down': {
         const pending = tuningRef.current ? pendingNumberRef.current : null
-        const target = stepTarget(tuned(), pending, command.type === 'channel-up' ? 1 : -1, { filter: guideFilter, favourites })
+        let target = stepTarget(tuned(), pending, command.type === 'channel-up' ? 1 : -1, { filter: guideFilter, favourites })
+        // In Multi View the selected picture steps past the other pictures' channels, and past local media and live
+        // streams, which play in single view only.
+        const others = tilesRef.current.filter((_, index) => index !== audioFocusRef.current)
+        for (let hops = 0; multiviewRef.current !== '1' && target !== null && hops < 2000; hops += 1) {
+          const next = channelByNumber(target)
+          if (!next || (next.origin !== 'session' && !isLiveStreamChannel(next) && !others.includes(target))) break
+          target = stepTarget({ channelNumber: target, previousNumber: null }, null, command.type === 'channel-up' ? 1 : -1, { filter: guideFilter, favourites })
+        }
         if (target === null) flash(emptyUniverseNote(guideFilter))
         else requestTune(target)
         break
@@ -1936,8 +1944,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
         setGuideSplit(clampGuideSplit(command.share))
         break
       case 'multiview': {
+        if (command.mode === '1' && multiviewRef.current === '1') break
         guideEngine.current.suspend()
-        const nextMode = cycleMultiview(multiviewRef.current)
+        const nextMode = command.mode ?? cycleMultiview(multiviewRef.current)
         const ordered = listChannels()
           .filter((item) => item.enabled && item.origin !== 'session' && !isLiveStreamChannel(item))
           .map((item) => item.number)
@@ -2369,9 +2378,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const check = () => {
       const flags = clipFlags()
       if (flags.length === 0) return
-      const { fire, rest } = dueFlag(flags, Date.now())
-      if (rest.length === flags.length) return
-      saveClipFlags(rest)
+      const { fire, flags: kept, changed } = dueFlag(flags, Date.now())
+      if (!changed) return
+      saveClipFlags(kept)
       if (!fire || asleepRef.current) return
       if (channelRef.current !== fire.channelNumber) dispatchRef.current({ type: 'tune', channelNumber: fire.channelNumber })
       flash(`⚑\uFE0E FLAG · ${padChannel(fire.channelNumber)} · ${fire.title}`, 2600)
@@ -3352,9 +3361,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * LATEST, A–Z and RANDOM in the Guide: one on at a time. Pressing one arranges the channel that way (LATEST
    * rescans first, so its very latest programme is on now); LATEST and A–Z pressed again, or RESET, return the
    * channel's default schedule, and RANDOM deals a fresh order every time it is pressed. Replayed if watched.
+   * LATEST right-clicked ('latest-now') never switches it off: the channel is read again and set to its very
+   * latest programmes from now, whatever it was arranged as before.
    */
   const arrangeChannel = useCallback(
-    async (number: number, how: 'latest' | 'az' | 'random' | 'reset') => {
+    async (number: number, asked: 'latest' | 'latest-now' | 'az' | 'random' | 'reset') => {
+      const again = asked === 'latest-now'
+      const how = again ? 'latest' : asked
       const edit = await openChannelEdit(number)
       if (!edit) throw new Error('This channel cannot be arranged here')
       const { review: _review, ...opened } = edit
@@ -3362,7 +3375,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const on = sorted && opened.orderKind === 'latest' && opened.liveFromMs !== undefined ? 'latest' : sorted && (opened.orderKind === 'az' || opened.orderKind === 'random') ? opened.orderKind : null
       if (how === 'reset' && on === null) return 'RESET · THIS IS ALREADY THE DEFAULT SCHEDULE'
       const name = how === 'latest' ? 'LATEST' : how === 'az' ? 'A–Z' : how === 'random' ? 'RANDOM' : 'RESET'
-      if (how === 'reset' || (on === how && how !== 'random')) {
+      if (how === 'reset' || (on === how && how !== 'random' && !again)) {
         const before = takeScheduleBeforeLatest(number)
         const restored = before?.order?.length
           ? { ...opened, order: before.order, orderKind: before.orderKind, scheduleSize: before.scheduleSize, liveFromMs: undefined }
@@ -3388,7 +3401,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (how === 'az') return 'A–Z ON · THE SCHEDULE RUNS A TO Z'
       if (how === 'random') return on === 'random' ? 'RANDOM · SHUFFLED AGAIN' : 'RANDOM ON · THE SCHEDULE IS IN A RANDOM ORDER'
       const first = pool.find((video) => video.id === order[0])
-      return `LATEST ON · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
+      return `${again ? 'LATEST AGAIN' : 'LATEST ON'} · ${(first?.title ?? '').toUpperCase().slice(0, 60)} NOW, THEN NEWEST TO OLDEST`
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [openChannelEdit, rescanChannelEdit, saveChannelEdit],

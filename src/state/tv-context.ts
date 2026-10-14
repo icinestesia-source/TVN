@@ -272,7 +272,7 @@ export interface TvContextValue {
   /** LATEST FIRST: the channel's newest programme now, then newest to oldest; again, back to TVN's arrangement. A message for the viewer. */
   latestFirst: (channelNumber: number) => Promise<string>
   /** LATEST, A–Z or RANDOM on for a channel, the others off; RANDOM reshuffles each time, RESET (or LATEST and A–Z again) returns the default schedule. */
-  arrangeChannel: (channelNumber: number, how: 'latest' | 'az' | 'random' | 'reset') => Promise<string>
+  arrangeChannel: (channelNumber: number, how: 'latest' | 'latest-now' | 'az' | 'random' | 'reset') => Promise<string>
   /** RELOAD: rescan the channel and put it back in its kind of order. A message for the viewer. */
   reloadChannel: (channelNumber: number) => Promise<string>
   /**

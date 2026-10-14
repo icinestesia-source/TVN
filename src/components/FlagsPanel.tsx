@@ -11,7 +11,7 @@ function keepKey(event: KeyboardEvent<HTMLElement>) {
 
 /**
  * ⚑: the clips the viewer flagged in the Guide (right-click a clip), in the order they air. TVN tunes to
- * each as it starts. A tick box by each one chooses flags to remove, or (CREATE CHANNEL) the clips a new
+ * each as it starts; aired ones stay until removed. A tick box by each one chooses flags to remove, or (CREATE CHANNEL) the clips a new
  * channel airs, in the order listed.
  */
 export function FlagsPanel() {
@@ -24,6 +24,7 @@ export function FlagsPanel() {
   const [busy, setBusy] = useState(false)
 
   const chosen = flags.filter((flag) => picked.has(flag.key))
+  const aired = flags.filter((flag) => flag.fired).length
   const toggle = (key: string) =>
     setPicked((current) => {
       const next = new Set(current)
@@ -49,10 +50,16 @@ export function FlagsPanel() {
   return (
     <div className="guide-options guide-bookmarks-panel" aria-label="Flags">
       <p className="options-status" role="status">
-        {note ?? (flags.length ? `${flags.length} ${flags.length === 1 ? 'flag' : 'flags'} · TVN tunes to each as it starts` : 'No flags')}
+        {note ??
+          (flags.length
+            ? `${flags.length} ${flags.length === 1 ? 'flag' : 'flags'} · ${aired ? `${aired} aired, kept for channels · ` : ''}TVN tunes to each still to come as it starts`
+            : 'No flags')}
       </p>
       {flags.length === 0 ? (
-        <p className="options-note">Right-click a clip in the Guide to flag it: TVN tunes to it when it starts and stays until the next flag. Right-click it again to remove the flag.</p>
+        <p className="options-note">
+          Right-click a clip in the Guide to flag it: TVN tunes to it when it starts and stays until the next flag. Flags are kept after they air, to make channels from, until you
+          remove them. Right-click it again to remove the flag.
+        </p>
       ) : (
         <>
           {creating ? (
@@ -143,7 +150,8 @@ export function FlagsPanel() {
               <li key={flag.key} className={picked.has(flag.key) ? 'bookmark-row is-picked' : 'bookmark-row'}>
                 <input type="checkbox" className="bookmark-pick" checked={picked.has(flag.key)} aria-label={`Select ${flag.title}`} onKeyDown={keepKey} onChange={() => toggle(flag.key)} />
                 <span className="bookmark-title">
-                  ⚑{'\uFE0E'} {formatRange(flag.startMs, flag.endMs)} · {flag.title}
+                  ⚑{'\uFE0E'} {formatRange(flag.startMs, flag.endMs)}
+                  {flag.fired ? ' · aired' : ''} · {flag.title}
                 </span>
                 <span className="bookmark-channel">
                   {padChannel(flag.channelNumber)} {flag.channelName}

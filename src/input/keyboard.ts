@@ -26,15 +26,16 @@ export function commandFromKey(
 
   if (/^[0-9]$/.test(key)) return { type: 'digit', digit: Number(key) }
 
+  // In Multi View ← and → move between the pictures; ↑ and ↓ change the selected picture's channel.
   const moveFocus = multiview && !guideOpen
 
   switch (key) {
     case 'ArrowUp':
       if (guideOpen) return { type: 'nav', direction: 'up' }
-      return moveFocus ? { type: 'focus-move', direction: 'up' } : { type: 'channel-up' }
+      return { type: 'channel-up' }
     case 'ArrowDown':
       if (guideOpen) return { type: 'nav', direction: 'down' }
-      return moveFocus ? { type: 'focus-move', direction: 'down' } : { type: 'channel-down' }
+      return { type: 'channel-down' }
     case 'ArrowLeft':
       if (guideOpen) return { type: 'nav', direction: 'left' }
       return moveFocus ? { type: 'focus-move', direction: 'left' } : { type: 'volume-down' }
@@ -64,6 +65,8 @@ export function commandFromKey(
       return { type: 'mute' }
     case '/':
       return { type: 'multiview' }
+    case '\\':
+      return { type: 'multiview', mode: '1' }
     case '[':
       return { type: 'pip-size', step: -1 }
     case ']':

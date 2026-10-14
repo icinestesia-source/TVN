@@ -302,8 +302,9 @@ export function GuideOptions() {
           <p className="options-note">Where a programme does not cover the screen, such as a Short, fill the edges with its own picture, enlarged and blurred.</p>
           <Row label="Fill edges">{toggle(fill, ['On', 'Off'], () => setFillEdges(!fill))}</Row>
           <p className="options-note">
-            Picture in picture is the Multi View after nine (press / to step through): the selected channel fills the screen and a second sits in
-            the corner. [ and ] make the corner picture smaller or larger.
+            Picture in picture is the first Multi View (press / to step through, \ for a single channel again): one channel fills the screen and a
+            second sits in the top right corner. ← and → choose which is heard, ↑ and ↓ change its channel, and [ and ] make the corner picture
+            smaller or larger.
           </p>
           <label className="options-row">
             <span className="options-label">Picture in picture size</span>

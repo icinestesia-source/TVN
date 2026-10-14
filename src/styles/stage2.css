@@ -200,13 +200,13 @@
 .mv.rows-2 { grid-template-rows: 1fr 1fr; }
 .mv.rows-3 { grid-template-rows: 1fr 1fr 1fr; }
 
-/* Picture in picture: the first channel fills the screen, the second sits inset in the corner. */
+/* Picture in picture: the first channel fills the screen, the second sits inset in the top right corner. */
 .mv.is-pip { display: block; padding: 0; }
 .mv.is-pip > .tile:nth-child(1) { position: absolute; inset: 0; }
 .mv.is-pip > .tile:nth-child(2) {
   position: absolute;
+  top: 4%;
   right: 2.5%;
-  bottom: 4%;
   z-index: 2;
   width: var(--pip-size, 30%);
   aspect-ratio: 16 / 9;

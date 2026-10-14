@@ -19,6 +19,7 @@ export const ENTRY_KEYS: readonly { group: string; keys: readonly { key: string;
       { key: ',', label: 'Prev prog', name: 'Comma' },
       { key: '.', label: 'Next prog', name: 'Full stop' },
       { key: '/', label: 'Multi', name: 'Slash' },
+      { key: '\\', label: 'Single view', name: 'Backslash' },
       { key: '[ ]', label: 'PiP size', name: 'Brackets' },
     ],
   },
@@ -73,6 +74,7 @@ export const KEYBOARD_ROWS: readonly (readonly KeyboardKey[])[] = [
     letter('P', 'Pause'),
     { cap: '[', key: '[', label: 'PiP −', name: 'Left bracket' },
     { cap: ']', key: ']', label: 'PiP +', name: 'Right bracket' },
+    { cap: '\\', key: '\\', label: 'Single', name: 'Backslash' },
   ],
   [
     { cap: 'Caps', size: 1.75 },

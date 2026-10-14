@@ -158,3 +158,34 @@ describe('channel range in a NEW USER network (001–990 are the viewer’s own)
     expect(readRestoreFile(serialiseTvnExport(file)).ok).toBe(true)
   })
 })
+
+describe('a range file with channels written by hand', () => {
+  it('restores TVN channels whose entries carry no saved date or baseline, dating them by the restore', async () => {
+    const { overridesFromExport } = await import('./services/central-curation.ts')
+    const doc = {
+      format: 'tvn-export-v1',
+      version: 1,
+      exportedAt: '2026-10-14T05:11:11.022Z',
+      userNetwork: { format: 'tvn-user-network-v1', version: 1, exportedAt: '2026-10-14T05:11:11.022Z', numbering: { first: 1001, limit: 100000 }, users: [], channels: [] },
+      favourites: [],
+      settings: {},
+      central: {
+        format: 'tvn-central-overrides-v1',
+        overrides: [
+          { number: 960, name: 'Radio 960 - Dance', sources: [{ url: '', label: 'TVN', sourceType: 'tvn', enabled: true }, { url: 'https://radio.example/stream', label: 'Dance', sourceType: 'audio', enabled: true }] },
+        ],
+      },
+      manifests: [],
+      range: { first: 951, last: 990 },
+    }
+    const read = readRestoreFile(JSON.stringify(doc))
+    expect(read.ok).toBe(true)
+    if (!read.ok || read.kind !== 'complete') return
+    const [edit] = overridesFromExport(read.value.central!, 1234)
+    expect(edit).toMatchObject({ channelNumber: 960, name: 'Radio 960 - Dance', savedAt: 1234 })
+    // A date that is there must still be a date.
+    const bad = structuredClone(doc)
+    ;(bad.central.overrides[0] as Record<string, unknown>).savedAt = 'yesterday'
+    expect(readRestoreFile(JSON.stringify(bad))).toMatchObject({ ok: false, errors: ['central.overrides[0].savedAt is not a date'] })
+  })
+})

@@ -34,7 +34,8 @@ export type TvCommand =
   | { type: 'guide-expand' }
   | { type: 'guide-dock' }
   | { type: 'guide-split'; share: number }
-  | { type: 'multiview' }
+  /** / steps to the next Multi View; \ (mode '1') goes straight back to a single channel. */
+  | { type: 'multiview'; mode?: '1' }
   | { type: 'multiview-page'; page: number }
   /** [ and ]: the picture-in-picture inset smaller or larger. */
   | { type: 'pip-size'; step: -1 | 1 }

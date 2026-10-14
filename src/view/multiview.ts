@@ -1,11 +1,12 @@
 import type { MultiviewMode } from '../types/preferences.ts'
 import type { NavDirection } from '../types/input.ts'
 
+/** / steps single → picture in picture → 2 → 4 → 9 → single; \ goes straight back to single. */
 export function cycleMultiview(mode: MultiviewMode): MultiviewMode {
-  if (mode === '1') return '2'
+  if (mode === '1') return 'pip'
+  if (mode === 'pip') return '2'
   if (mode === '2') return '4'
   if (mode === '4') return '9'
-  if (mode === '9') return 'pip'
   return '1'
 }
 

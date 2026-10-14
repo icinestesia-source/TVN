@@ -32,7 +32,8 @@ export interface CentralOverride {
   /** Decisions about TVN's original sources, by source id: never the sources' programmes themselves. */
   originals?: OriginalOverride[]
   baseline?: CuratedBaseline
-  savedAt: string
+  /** When it was edited; TVN always writes it. A channel written by hand may leave it out: it is then dated by its restore. */
+  savedAt?: string
 }
 
 export interface CentralCuration {
@@ -100,7 +101,7 @@ export function checkCentralCuration(value: unknown, at: string, errors: string[
       errors.push(`${where}.scheduleSize is not a number of programmes`)
     if (item.excluded !== undefined && !isTextList(item.excluded)) errors.push(`${where}.excluded is not a list of programme ids`)
     checkOrderKind(item, where, errors)
-    if (typeof item.savedAt !== 'string' || Number.isNaN(Date.parse(item.savedAt))) errors.push(`${where}.savedAt is not a date`)
+    if (item.savedAt !== undefined && (typeof item.savedAt !== 'string' || Number.isNaN(Date.parse(item.savedAt)))) errors.push(`${where}.savedAt is not a date`)
     checkEditorial(item.editorial, `${where}.editorial`, errors)
     checkOriginals(item.originals, `${where}.originals`, errors)
     if (item.baseline !== undefined) {
@@ -125,7 +126,7 @@ export function checkCentralCuration(value: unknown, at: string, errors: string[
 }
 
 /** The overrides as stored records, before they are checked against the TVN they are restored into. */
-export function overridesFromExport(doc: CentralCuration): CuratedEdit[] {
+export function overridesFromExport(doc: CentralCuration, now = Date.now()): CuratedEdit[] {
   return doc.overrides.map((override) => ({
     channelNumber: override.number,
     name: override.name,
@@ -142,7 +143,7 @@ export function overridesFromExport(doc: CentralCuration): CuratedEdit[] {
     ...(override.editorial ? { editorial: structuredClone(override.editorial) } : {}),
     ...(override.originals?.length ? { originals: structuredClone(override.originals) } : {}),
     ...(override.baseline ? { baseline: { ...override.baseline } } : {}),
-    savedAt: Date.parse(override.savedAt),
+    savedAt: override.savedAt ? Date.parse(override.savedAt) : now,
   }))
 }
 
