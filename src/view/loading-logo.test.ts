@@ -64,6 +64,10 @@ describe('OPTIONS → Loading logo: Pulse, or a logo to flick and spin', () => {
     expect(readFileSync('src/styles/overlays.css', 'utf8')).toMatch(/\.startup\.has-spinner \{[^}]*touch-action: none;[^}]*overscroll-behavior: none;/)
   })
 
+  it('the logo stands in front of the LOADING TVN ring', () => {
+    expect(readFileSync('src/styles/overlays.css', 'utf8')).toContain('.startup-emblem .startup-logo { position: relative; z-index: 1; width: 100%; }')
+  })
+
   it('the loading screen and OPTIONS offer it', () => {
     const screen = readFileSync('src/components/StartupScreen.tsx', 'utf8')
     expect(screen).toContain("logo === 'spin' && !failed ? <SpinLogo />")

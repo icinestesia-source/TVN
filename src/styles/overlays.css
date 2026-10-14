@@ -313,7 +313,8 @@
   aspect-ratio: 1;
 }
 
-.startup-emblem .startup-logo { width: 100%; }
+/* The logo stands in front of the LOADING TVN ring wherever the two overlap. */
+.startup-emblem .startup-logo { position: relative; z-index: 1; width: 100%; }
 
 .startup-ring {
   position: absolute;
