@@ -9,6 +9,9 @@ import type { YouTubePlayer } from '../types/youtube.ts'
 import { qualityFrame, useDisplayQuality } from '../view/display-quality.ts'
 import { containedBox, leavesEdges, shapedThumbnail, useFillEdges, youtubeAspect } from '../view/fill-edges.ts'
 import { VOLUME_FULL } from './volume.ts'
+import { noteYoutubePlaying } from '../session/usage.ts'
+
+const USAGE_SAMPLE_MS = 5000
 
 interface YoutubeStageProps {
   playerRef: RefObject<PlayerHandle | null>
@@ -105,6 +108,19 @@ export function YoutubeStage({ playerRef, onReady, onStatus, preview = false, ca
       document.removeEventListener('visibilitychange', visible)
       window.clearTimeout(resumeRef.current)
     }
+  }, [])
+
+  // OPTIONS → Usage: YouTube's frame keeps its downloads to itself, so the time it plays, and at what quality, is counted instead.
+  useEffect(() => {
+    let last = performance.now()
+    const id = window.setInterval(() => {
+      const now = performance.now()
+      const seconds = (now - last) / 1000
+      last = now
+      const player = ytRef.current
+      if (player?.getPlayerState?.() === 1) noteYoutubePlaying(seconds, player.getPlaybackQuality?.())
+    }, USAGE_SAMPLE_MS)
+    return () => window.clearInterval(id)
   }, [])
 
   useEffect(() => {

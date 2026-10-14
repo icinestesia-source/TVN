@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { formatBytes, resetUsage, useUsage } from '../session/usage.ts'
+import { formatBytes, formatPlayed, resetUsage, useUsage } from '../session/usage.ts'
 import { PIP_SIZE_MAX, PIP_SIZE_MIN, PIP_SIZE_STEP } from '../view/multiview.ts'
 import { openAbout } from '../legal/about-store.ts'
 import { ChannelChangeOptions } from './ChannelChangeOptions.tsx'
@@ -13,6 +13,7 @@ import { useTv } from '../state/tv-context.ts'
 import { rememberSupported, setRememberMedia, useRememberMedia } from '../session/remembered-media.ts'
 import { DISPLAY_QUALITIES, setDisplayQuality, useDisplayQuality } from '../view/display-quality.ts'
 import { setFillEdges, useFillEdges } from '../view/fill-edges.ts'
+import { setLoadingLogo, useLoadingLogo } from '../view/loading-logo.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
 
 /** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
@@ -42,20 +43,24 @@ function UsageRows() {
   const since = new Date(usage.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   return (
     <>
-      <Row label="Downloaded">
-        <output className="options-value">{formatBytes(usage.dataBytes + usage.mediaBytes)}</output>
+      <Row label="Total, about">
+        <output className="options-value">{formatBytes(usage.dataBytes + usage.mediaBytes + usage.youtubeEstimate)}</output>
       </Row>
-      <Row label="Video & audio">
+      <Row label={`YouTube · ${formatPlayed(usage.youtubeSeconds)} played, about`}>
+        <output className="options-value">{formatBytes(usage.youtubeEstimate)}</output>
+      </Row>
+      <Row label="Streams, podcasts & files">
         <output className="options-value">{formatBytes(usage.mediaBytes)}</output>
       </Row>
       <Row label={`Pages & data · ${usage.dataRequests} ${usage.dataRequests === 1 ? 'request' : 'requests'}`}>
         <output className="options-value">{formatBytes(usage.dataBytes)}</output>
       </Row>
       <p className="options-note">
-        Since {since}. Counted: TVN&rsquo;s own pages and data, other sites that share their sizes, and video and audio TVN plays in its own
-        player (Chrome reports these). Not counted: YouTube and other embedded players, which download inside their own frames
-        {usage.unmeasured > 0 ? `, ${usage.unmeasured} ${usage.unmeasured === 1 ? 'request' : 'requests'} to sites that keep their sizes private` : ''}, and local
-        files, which are never downloaded.
+        Since {since}. YouTube keeps its downloads inside its own players, so TVN counts the time each one plays, every Multi View tile
+        included, and estimates the data from the quality YouTube reports. Streams, podcasts and files TVN plays itself, its pages and data,
+        and other sites that share their sizes are measured
+        {usage.unmeasured > 0 ? `; ${usage.unmeasured} ${usage.unmeasured === 1 ? 'request' : 'requests'} went to sites that keep their sizes private` : ''}. Local
+        files are never downloaded.
       </p>
       <div className="options-foot">
         <button type="button" className="tab" onKeyDown={keepKey} onClick={() => resetUsage()}>
@@ -210,6 +215,7 @@ export function GuideOptions() {
   const quality = useDisplayQuality()
   const remember = useRememberMedia()
   const fill = useFillEdges()
+  const logo = useLoadingLogo()
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const loadingAll = tv.loadAll && tv.loadAll.result === undefined ? tv.loadAll : null
@@ -298,6 +304,17 @@ export function GuideOptions() {
                 {label}
               </button>
             ))}
+          </div>
+          <p className="options-note">The logo while TVN loads: Pulse gently, or Spin, which you can flick round its centre like a fidget spinner.</p>
+          <div className="options-row">
+            <span className="options-label">Loading logo</span>
+            <span className="options-choices" role="radiogroup" aria-label="Loading logo">
+              {(['pulse', 'spin'] as const).map((mode) => (
+                <button key={mode} type="button" role="radio" aria-checked={logo === mode} className={logo === mode ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => setLoadingLogo(mode)}>
+                  {mode === 'pulse' ? 'Pulse' : 'Spin'}
+                </button>
+              ))}
+            </span>
           </div>
           <p className="options-note">Where a programme does not cover the screen, such as a Short, fill the edges with its own picture, enlarged and blurred.</p>
           <Row label="Fill edges">{toggle(fill, ['On', 'Off'], () => setFillEdges(!fill))}</Row>

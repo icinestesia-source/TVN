@@ -15,6 +15,46 @@ export interface UsageTotals {
   unmeasured: number
   /** Video and audio played in TVN's own player, as Chrome reports it. */
   mediaBytes: number
+  /** Seconds YouTube players have played on screen, every tile of Multi View counted. */
+  youtubeSeconds: number
+  /** What that playing is likely to have cost, from the quality YouTube reported, since its frames keep their sizes to themselves. */
+  youtubeEstimate: number
+}
+
+/**
+ * YouTube's typical rate at each quality, video and audio together, in bytes a second. An estimate: the real
+ * figure depends on the codec, the frame rate and how busy the picture is.
+ */
+export const YOUTUBE_RATES: Record<string, number> = {
+  tiny: 13_000,
+  small: 31_000,
+  medium: 63_000,
+  large: 125_000,
+  hd720: 313_000,
+  hd1080: 563_000,
+  hd1440: 1_125_000,
+  hd2160: 2_250_000,
+  highres: 3_125_000,
+}
+/** The rate when YouTube has not said: between 480p and 720p. */
+export const YOUTUBE_RATE_UNKNOWN = 190_000
+
+export function youtubeRate(quality: string | undefined): number {
+  return (quality && YOUTUBE_RATES[quality]) || YOUTUBE_RATE_UNKNOWN
+}
+
+/** Adds seconds of YouTube playing at a quality; the estimate grows with them. */
+export function countYoutube(current: UsageTotals, seconds: number, quality: string | undefined): UsageTotals {
+  if (!(seconds > 0)) return current
+  return { ...current, youtubeSeconds: current.youtubeSeconds + seconds, youtubeEstimate: current.youtubeEstimate + seconds * youtubeRate(quality) }
+}
+
+/** A YouTube player on screen played for `seconds` at this quality. */
+export function noteYoutubePlaying(seconds: number, quality: string | undefined): void {
+  const next = countYoutube(totals, seconds, quality)
+  if (next === totals) return
+  totals = next
+  notify()
 }
 
 type MediaWithCounts = HTMLMediaElement & { webkitVideoDecodedByteCount?: number; webkitAudioDecodedByteCount?: number }
@@ -26,7 +66,7 @@ interface ResourceSize {
   encodedBodySize: number
 }
 
-const fresh = (now: number): UsageTotals => ({ startedAt: now, dataBytes: 0, dataRequests: 0, unmeasured: 0, mediaBytes: 0 })
+const fresh = (now: number): UsageTotals => ({ startedAt: now, dataBytes: 0, dataRequests: 0, unmeasured: 0, mediaBytes: 0, youtubeSeconds: 0, youtubeEstimate: 0 })
 
 let totals: UsageTotals = fresh(Date.now())
 const listeners = new Set<() => void>()
@@ -112,6 +152,15 @@ function subscribe(listener: () => void) {
 
 export function useUsage(): UsageTotals {
   return useSyncExternalStore(subscribe, usageTotals, usageTotals)
+}
+
+/** 2 h 05 min, 14 min, 40 s. */
+export function formatPlayed(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds))
+  if (whole < 60) return `${whole} s`
+  const minutes = Math.floor(whole / 60)
+  if (minutes < 60) return `${minutes} min`
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`
 }
 
 /** 1.2 GB, 340 MB, 12 KB. */

@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
 import { SESSION_LOGO } from './logos.ts'
+import { pointerAngle, releaseSpin, slowedSpin, turnBetween, useLoadingLogo } from '../view/loading-logo.ts'
 import type { StartupPhase } from '../state/startup.ts'
 import { ringColour } from './ring-colour.ts'
 
@@ -117,12 +118,85 @@ export function LoadingRing({ percent }: { percent: number }) {
 }
 
 /**
+ * LOADING LOGO set to Spin: the logo follows the finger round its centre while held, keeps the speed it was
+ * flicked with when let go, and slows to a stop. Drawn by setting its transform directly, so React does not
+ * render on every frame while the network is still loading.
+ */
+function SpinLogo() {
+  const ref = useRef<HTMLImageElement>(null)
+  const state = useRef({ angle: 0, spin: 0, held: false, last: 0, tick: 0, frame: 0, samples: [] as { angle: number; at: number }[] })
+  useEffect(() => () => cancelAnimationFrame(state.current.frame), [])
+  const paint = () => {
+    if (ref.current) ref.current.style.transform = `rotate(${state.current.angle.toFixed(2)}deg)`
+  }
+  const angleOf = (event: PointerEvent<HTMLImageElement>) => {
+    const box = event.currentTarget.getBoundingClientRect()
+    return pointerAngle({ x: box.left + box.width / 2, y: box.top + box.height / 2 }, { x: event.clientX, y: event.clientY })
+  }
+  const step = (time: number) => {
+    const spin = state.current
+    const seconds = Math.min(0.1, (time - spin.tick) / 1000)
+    spin.tick = time
+    spin.angle = (spin.angle + spin.spin * seconds) % 360
+    spin.spin = slowedSpin(spin.spin, seconds)
+    paint()
+    spin.frame = spin.spin !== 0 && !spin.held ? requestAnimationFrame(step) : 0
+  }
+  return (
+    <img
+      ref={ref}
+      className="startup-logo is-spinner"
+      src={SESSION_LOGO}
+      alt={BRAND}
+      width={640}
+      height={640}
+      draggable={false}
+      title="Flick to spin"
+      onPointerDown={(event) => {
+        event.stopPropagation()
+        event.currentTarget.setPointerCapture(event.pointerId)
+        const spin = state.current
+        cancelAnimationFrame(spin.frame)
+        spin.frame = 0
+        spin.held = true
+        spin.spin = 0
+        spin.last = angleOf(event)
+        spin.samples = [{ angle: spin.last, at: performance.now() }]
+      }}
+      onPointerMove={(event) => {
+        const spin = state.current
+        if (!spin.held) return
+        const angle = angleOf(event)
+        spin.angle += turnBetween(spin.last, angle)
+        spin.last = angle
+        spin.samples = [...spin.samples.slice(-11), { angle, at: performance.now() }]
+        paint()
+      }}
+      onPointerUp={(event) => {
+        const spin = state.current
+        if (!spin.held) return
+        spin.held = false
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+        const now = performance.now()
+        spin.spin = releaseSpin(spin.samples, now)
+        spin.tick = now
+        if (spin.spin !== 0) spin.frame = requestAnimationFrame(step)
+      }}
+      onPointerCancel={() => {
+        state.current.held = false
+      }}
+    />
+  )
+}
+
+/**
  * The logo over static, from the first frame until the first channel is on screen; then it fades off over the
  * picture. While the network is loading it shows the share loaded.
  */
 export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupPhase; progress?: number; onLeft?: () => void }) {
   const failed = phase === 'failed'
   const loading = phase === 'loading'
+  const logo = useLoadingLogo()
   const percent = useCountUp(Math.round(Math.min(100, Math.max(0, progress))))
   const leftRef = useRef(false)
   const leave = () => {
@@ -157,7 +231,7 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
       <StartupNoise />
       <div className="startup-ident">
         <div className="startup-emblem">
-          <img className="startup-logo" src={SESSION_LOGO} alt={BRAND} width={640} height={640} />
+          {logo === 'spin' && !failed ? <SpinLogo /> : <img className="startup-logo" src={SESSION_LOGO} alt={BRAND} width={640} height={640} />}
           {failed ? null : <LoadingRing percent={percent} />}
         </div>
         {failed ? (

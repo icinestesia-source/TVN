@@ -367,6 +367,19 @@
   animation: logo-pulse 2.8s ease-in-out infinite;
 }
 
+/* LOADING LOGO set to Spin: no pulse; the logo turns only when it is flicked. */
+.startup .startup-logo.is-spinner,
+.startup[aria-busy='true'] .startup-logo.is-spinner {
+  animation: none;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  will-change: transform;
+}
+
+.startup .startup-logo.is-spinner:active { cursor: grabbing; }
+
 .startup-percent {
   display: inline-block;
   min-width: 3.4em;
