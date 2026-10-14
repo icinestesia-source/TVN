@@ -78,6 +78,8 @@ export interface ChannelSource {
   removed?: string[]
   /** The source's share of the channel's airtime, in percent, applied when the channel is rescheduled. Absent: an equal part of what is left. */
   share?: number
+  /** A stream taking turns with the channel's other streams: how long each turn lasts. Absent: an hour. */
+  slotSeconds?: number
 }
 
 interface SourceType {
@@ -113,6 +115,37 @@ export function liveStreamOf(sources: readonly ChannelSource[]): { source: Chann
   if (!source) return null
   const type = SOURCE_TYPES[source.kind]
   return { source, stream: { url: source.url, format: type.format ?? 'direct' }, media: type.media }
+}
+
+/** A stream's turn: 15 minutes to 6 hours, an hour unless the viewer chose another length. */
+export const STREAM_SLOT_DEFAULT = 3600
+export const STREAM_SLOT_MIN = 900
+export const STREAM_SLOT_MAX = 6 * 3600
+export const STREAM_SLOT_CHOICES: readonly number[] = [900, 1800, 3600, 7200, 10800, 21600]
+
+export function streamSlotOf(source: Pick<ChannelSource, 'slotSeconds'>): number {
+  const slot = source.slotSeconds
+  return typeof slot === 'number' && Number.isInteger(slot) && slot >= STREAM_SLOT_MIN && slot <= STREAM_SLOT_MAX ? slot : STREAM_SLOT_DEFAULT
+}
+
+export interface StreamTurn {
+  source: ChannelSource
+  stream: LiveStreamRef
+  media: 'audio' | 'video'
+  seconds: number
+}
+
+/**
+ * Two or more enabled streams take turns on the clock, in source order, each for its own slot, so a station
+ * can change every hour. Empty for a channel with one stream or none: one stream carries the channel live.
+ */
+export function streamRotationOf(sources: readonly ChannelSource[]): StreamTurn[] {
+  const streams = sources.filter((item) => item.enabled && isStreamSource(item))
+  if (streams.length < 2) return []
+  return streams.map((source) => {
+    const type = SOURCE_TYPES[source.kind]
+    return { source, stream: { url: source.url, format: type.format ?? 'direct' }, media: type.media, seconds: streamSlotOf(source) }
+  })
 }
 
 /** Eligible programmes from the enabled scheduled sources (each through its filter and mode), in source order, each video once. */

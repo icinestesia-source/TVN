@@ -231,9 +231,12 @@ import { guideToolTarget } from '../view/guide-tool.ts'
 import {
   clampPipSize,
   cycleMultiview,
+  enterTiles,
   fillTiles,
+  loadPipChannel,
   loadPipSize,
   PIP_SIZE_STEP,
+  savePipChannel,
   savePipSize,
   focusStep,
   gridDelta,
@@ -445,6 +448,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }, [])
   const pipSizeRef = useRef(pipSize)
   pipSizeRef.current = pipSize
+  // The inset changed under a main picture that stayed: the viewer chose it, so the next PiP starts with it.
+  const pipSeenRef = useRef<number[] | null>(null)
+  useEffect(() => {
+    if (multiviewMode !== 'pip') {
+      pipSeenRef.current = null
+      return
+    }
+    const before = pipSeenRef.current
+    pipSeenRef.current = tiles
+    if (before && tiles.length > 1 && before[0] === tiles[0] && before[1] !== tiles[1]) savePipChannel(tiles[1])
+  }, [multiviewMode, tiles])
   const [surfUntilEnd, setSurfUntilEndState] = useState(() => loadSurfUntilEnd())
   const [transition, setTransitionState] = useState<TransitionSettings>(() => loadTransitionSettings())
   const transitionRef = useRef(transition)
@@ -1950,7 +1964,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
         const ordered = listChannels()
           .filter((item) => item.enabled && item.origin !== 'session' && !isLiveStreamChannel(item))
           .map((item) => item.number)
-        const focusChannel = tilesRef.current[audioFocusRef.current] ?? channelRef.current
+        // From single view the watched channel leads: the tiles of an earlier Multi View are not brought back.
+        const entering = multiviewRef.current === '1'
+        const focusChannel = entering ? channelRef.current : (tilesRef.current[audioFocusRef.current] ?? channelRef.current)
         if (nextMode === '1') {
           multiviewRef.current = '1'
           setMultiviewMode('1')
@@ -1960,10 +1976,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
           break
         }
         clearManual()
-        const nextTiles = fillTiles(focusChannel, ordered, tileCount(nextMode), tilesRef.current)
+        const nextTiles = entering ? enterTiles(focusChannel, ordered, nextMode, loadPipChannel()) : fillTiles(focusChannel, ordered, tileCount(nextMode), tilesRef.current)
         tilesRef.current = nextTiles
         setTiles(nextTiles)
-        audioFocusRef.current = Math.min(audioFocusRef.current, Math.max(0, nextTiles.length - 1))
+        audioFocusRef.current = entering ? 0 : Math.min(audioFocusRef.current, Math.max(0, nextTiles.length - 1))
         setAudioFocus(audioFocusRef.current)
         const heard = nextTiles[audioFocusRef.current] ?? focusChannel
         startup.noteUserTune()
@@ -3343,11 +3359,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
     [installSources, rescanDeps],
   )
 
-  /** The watched channel was rearranged: its new schedule plays from where it stands now. */
+  /**
+   * The watched channel was rearranged: its new schedule plays from where it stands now. Any other channel only
+   * has its schedule updated, and starts when the viewer chooses it; Multi View tiles follow their schedules.
+   */
   const replayIfWatching = (number: number) => {
     const target = channelByNumber(number)
     if (!target) return
-    if (channelRef.current !== number || multiviewRef.current !== '1') return requestTune(number)
+    if (channelRef.current !== number || multiviewRef.current !== '1') return
     clearManual()
     loadedKey.current = ''
     if (!tuningRef.current && playerRef.current && playerReadyRef.current) void loadProgramme(target, Date.now())

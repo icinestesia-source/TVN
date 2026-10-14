@@ -110,7 +110,7 @@ export function channelSource(source: ExportSource, index: number): ChannelSourc
     const pages = cleanVideos(source.videos).filter((video) => video.web && video.media)
     return { ...base, kind: 'website', url: source.url, ...ref, ...(source.slotSeconds ? { slotSeconds: source.slotSeconds } : {}), ...(pages.length ? { videos: pages } : {}) }
   }
-  return { ...base, kind: storedKindOf(source.sourceType), url: source.url, ...ref }
+  return { ...base, kind: storedKindOf(source.sourceType), url: source.url, ...ref, ...(source.slotSeconds ? { slotSeconds: source.slotSeconds } : {}) }
 }
 
 /** The record id TVN would have given this channel: an added YouTube source's id, or an imported list's. */

@@ -8,8 +8,14 @@ describe('LATEST right-clicked: the very latest order again', () => {
   it('right-click on LATEST asks for the latest order from now, without the browser menu', () => {
     expect(guide).toMatch(/how === 'latest'\s*\? \(event: MouseEvent<HTMLButtonElement>\) => \{\s*event\.preventDefault\(\)\s*event\.stopPropagation\(\)\s*if \(!busy\) onArrange\?\.\('latest-now'\)/)
     expect(guide).toContain("Right-click: the very latest order again, from now")
-    // Like LATEST switched on, it goes to the picture to show the latest programme.
-    expect(guide).toContain("(how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now' ? () => tv.dispatch({ type: 'cancel' })")
+    // Like LATEST switched on, it goes to the picture to show the latest programme, but only on the watched channel.
+    expect(guide).toContain("channel.number === tv.channel.number && ((how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now') ? () => tv.dispatch({ type: 'cancel' })")
+  })
+
+  it('updates another channel’s schedule without tuning to it: that waits for the viewer to choose it', () => {
+    const replay = provider.slice(provider.indexOf('const replayIfWatching'), provider.indexOf('const arrangeChannel'))
+    expect(replay).toContain("if (channelRef.current !== number || multiviewRef.current !== '1') return\n")
+    expect(replay).not.toContain('requestTune(')
   })
 
   it('never switches LATEST off: it rescans and schedules newest first from now, whatever was on', () => {

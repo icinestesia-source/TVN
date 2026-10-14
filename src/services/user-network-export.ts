@@ -9,7 +9,7 @@ import {
   RELATED_NUMBER_MAX,
   SOURCE_MODES, sourceModeOf, type ChannelEditorial, type SourceFilter, type SourceMode } from './channel-curation.ts'
 import { sourcesOf } from './channel-editor.ts'
-import { canonicalYouTubeUrl, singleVideoId, youTubeSourceType, type ChannelSource, type OrderKind, type SourceInfo, type SourceKind } from './channel-sources.ts'
+import { canonicalYouTubeUrl, isStreamSource, singleVideoId, youTubeSourceType, type ChannelSource, type OrderKind, type SourceInfo, type SourceKind } from './channel-sources.ts'
 import type { UploaderOf } from './user-network.ts'
 import { checkUserName, ownerOf, TVN_OWNER, USER_ID } from '../data/user-network/users.ts'
 
@@ -88,7 +88,7 @@ export interface ExportSource {
   filter?: SourceFilter
   /** ARCHIVE or ALL. Absent in older files: recent. */
   mode?: SourceMode
-  /** A website or post: the slot (seconds) the viewer gave it, since the page has no length of its own. */
+  /** A website or post: the slot (seconds) the viewer gave it, since the page has no length of its own. A stream: its turn on a channel of several. */
   slotSeconds?: number
   /** Programmes (video ids) the viewer deleted from the schedule. Absent in older files: none. */
   removed?: string[]
@@ -258,7 +258,7 @@ export function exportSource(source: ChannelSource, uploaderOf: UploaderOf): Exp
     }
   }
   if (source.kind === 'tvn') return base
-  const slot = source.kind === 'website' ? source.videos?.[0]?.durationSec : undefined
+  const slot = source.kind === 'website' ? source.videos?.[0]?.durationSec : isStreamSource(source) ? source.slotSeconds : undefined
   const held = source.kind === 'podcast' || source.kind === 'website' ? heldVideos(source) : {}
   return { ...base, url: shareableUrl(source.url), ...(slot ? { slotSeconds: slot } : {}), ...held }
 }

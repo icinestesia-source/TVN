@@ -850,8 +850,9 @@ export function Guide({ closing = false }: { closing?: boolean }) {
                               channelAction(
                                 channel.number,
                                 (number) => tv.arrangeChannel(number, how),
-                                // LATEST switched on goes to its very latest programme; the others stay in the Guide to show the new schedule.
-                                (how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now' ? () => tv.dispatch({ type: 'cancel' }) : undefined,
+                                // LATEST on the watched channel goes to its very latest programme; on any other channel, and for
+                                // the others, the Guide stays up to show the new schedule until the viewer chooses the channel.
+                                channel.number === tv.channel.number && ((how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now') ? () => tv.dispatch({ type: 'cancel' }) : undefined,
                               )
                           : undefined
                       }

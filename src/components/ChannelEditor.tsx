@@ -18,6 +18,9 @@ import {
   SLOT_CHOICES,
   sourceStatusText,
   SOURCE_CHOICES,
+  STREAM_SLOT_CHOICES,
+  streamRotationOf,
+  streamSlotOf,
   type ChannelSource,
   type OrderKind,
   type SourceChoice,
@@ -98,6 +101,37 @@ function WebsiteSlot({ source, disabled, onChange }: { source: ChannelSource; di
       </label>
     </div>
   )
+}
+
+/** How long a stream's turn lasts on a channel of several streams: 15 minutes to 6 hours, an hour unless chosen. */
+function StreamSlot({ source, disabled, onChange, onEarlier }: { source: ChannelSource; disabled: boolean; onChange: (seconds: number) => void; onEarlier?: () => void }) {
+  const current = streamSlotOf(source)
+  return (
+    <div className="editor-slot" role="group" aria-label="Turn length">
+      <span>Turn</span>
+      {STREAM_SLOT_CHOICES.map((seconds) => (
+        <button key={seconds} type="button" className={current === seconds ? 'tab is-on' : 'tab'} aria-pressed={current === seconds} disabled={disabled} onKeyDown={keepKey} onClick={() => onChange(seconds)}>
+          {seconds < 3600 ? `${seconds / 60} min` : `${seconds / 3600} h`}
+        </button>
+      ))}
+      {onEarlier ? (
+        <button type="button" className="tab" disabled={disabled} onKeyDown={keepKey} onClick={onEarlier} title="Take this stream's turn before the stream above it">
+          ↑ Earlier
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+/** The stream moved one turn earlier: it changes places with the enabled stream before it. */
+function streamEarlier(sources: readonly ChannelSource[], id: string): ChannelSource[] {
+  const at = sources.findIndex((source) => source.id === id)
+  let before = at - 1
+  while (before >= 0 && !(sources[before].enabled && isStreamSource(sources[before]))) before -= 1
+  if (at < 0 || before < 0) return [...sources]
+  const next = [...sources]
+  ;[next[before], next[at]] = [next[at], next[before]]
+  return next
 }
 
 function sourceTitle(source: ChannelSource): string {
@@ -1188,6 +1222,14 @@ export function ChannelEditor({
                   {source.kind === 'website' && (source.videos?.length ?? 0) > 0 ? (
                     <WebsiteSlot source={source} disabled={busy !== null} onChange={(next) => setSource(source.id, { videos: next.videos })} />
                   ) : null}
+                  {source.enabled && isStreamSource(source) && streamRotationOf(edit.sources).length > 0 ? (
+                    <StreamSlot
+                      source={source}
+                      disabled={busy !== null}
+                      onChange={(seconds) => setSource(source.id, { slotSeconds: seconds })}
+                      onEarlier={streamRotationOf(edit.sources)[0]?.source.id === source.id ? undefined : () => change({ ...edit, sources: streamEarlier(edit.sources, source.id) })}
+                    />
+                  ) : null}
                   {open ? (
                     <SourceDetails source={source} number={number} disabled={busy !== null} onInfo={(info) => setSource(source.id, { info })} />
                   ) : null}
@@ -1375,7 +1417,12 @@ export function ChannelEditor({
                 </button>
               ) : null}
             </div>
-            {liveStreamOf(edit.sources) ? (
+            {streamRotationOf(edit.sources).length > 0 ? (
+              <p className="guide-tool-note">
+                <span className="editor-live">Live</span> {streamRotationOf(edit.sources).length} streams take turns, in the order of the sources above, each for
+                its turn length; the round starts at midnight, so hour-long turns change on the hour. Move a source to change the order.
+              </p>
+            ) : liveStreamOf(edit.sources) ? (
               <p className="guide-tool-note">
                 <span className="editor-live">Live</span> A live stream carries this channel, so it has no running order: tune to it to watch it live.
               </p>

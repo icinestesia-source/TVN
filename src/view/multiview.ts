@@ -53,6 +53,31 @@ export function savePipSize(size: number, store: Store | null = browserStore()):
   }
 }
 
+/** The inset channel the viewer chose, kept between sessions; until then the inset is the next channel up. */
+export const PIP_CHANNEL_KEY = 'tvn.pip-channel.v1'
+
+export function loadPipChannel(store: Store | null = browserStore()): number | null {
+  const value = Number(store?.getItem(PIP_CHANNEL_KEY) ?? NaN)
+  return Number.isInteger(value) && value >= 0 ? value : null
+}
+
+export function savePipChannel(channelNumber: number, store: Store | null = browserStore()): void {
+  try {
+    store?.setItem(PIP_CHANNEL_KEY, String(channelNumber))
+  } catch {
+    // Private browsing may refuse storage; the choice then lasts as long as the page.
+  }
+}
+
+/**
+ * The tiles from single view: the watched channel first, then the channels after it in order, so the inset is
+ * one channel up, unless the viewer has chosen an inset channel before. A change of mode within Multi View keeps
+ * the tiles already on the wall.
+ */
+export function enterTiles(current: number, ordered: readonly number[], mode: MultiviewMode, pipChannel: number | null): number[] {
+  return fillTiles(current, ordered, tileCount(mode), mode === 'pip' && pipChannel !== null ? [pipChannel] : [])
+}
+
 export interface MultiviewLayout {
   columns: number
   pageSize: number

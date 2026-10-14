@@ -23,6 +23,7 @@ import {
   singleVideoId,
   singleVideoUrl,
   SOURCE_TYPES,
+  streamRotationOf,
   WEBSITE_SLOT_SECONDS,
   type ChannelSource,
   type OrderKind,
@@ -691,7 +692,10 @@ export function rescanSummary(sources: readonly ChannelSource[]): string {
   const failed = enabled.filter((source) => ['failed', 'unavailable', 'unsupported'].includes(source.status?.state ?? '')).length
   const live = liveStreamOf(sources)
   const programmes = inventoryOf(sources).length
-  const lead = live
+  const turns = streamRotationOf(sources)
+  const lead = turns.length
+    ? `${turns.length} STREAMS TAKING TURNS · ${turns.filter((turn) => turn.source.status?.state === 'online').length} ONLINE`
+    : live
     ? `${SOURCE_TYPES[live.source.kind].label.toUpperCase()} · ${live.source.status?.state === 'online' ? 'ONLINE' : 'NOT RESPONDING'}`
     : enabled.length === 0
       ? 'NO SOURCES ENABLED'

@@ -3,7 +3,7 @@ import type { Programme } from '../types/programme.ts'
 import { isShippedEditorial, shippedEditorial } from '../data/central-editorial.ts'
 import { cleanEditorial } from './channel-curation.ts'
 import { cleanName, curatedSource, keptScheduleSize, orderFor, type ChannelEdit } from './channel-editor.ts'
-import { airingSources, inOrder, inventoryOf, liveStreamOf, type ChannelSource } from './channel-sources.ts'
+import { airingSources, inOrder, inventoryOf, liveStreamOf, streamRotationOf, type ChannelSource } from './channel-sources.ts'
 import { channelsFromSources } from './channels-import.ts'
 import { activeOriginals, cleanOriginals, ORIGINAL_ID_PREFIX, originalChannelSources, type OriginalSource } from './original-sources.ts'
 
@@ -334,6 +334,7 @@ function fromSources(
       playbackType: made.playbackType,
       liveSinceMs: made.liveSinceMs,
       ...(edit.liveFromMs && edit.order?.length ? { phaseOffsetSeconds: made.phaseOffsetSeconds, liveFromMs: edit.liveFromMs } : {}),
+      ...(streamRotationOf(own).length ? { phaseOffsetSeconds: made.phaseOffsetSeconds } : {}),
       ...(made.arranged ? { arranged: made.arranged } : {}),
       customLineup: true,
     },

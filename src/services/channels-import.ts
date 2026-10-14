@@ -3,7 +3,7 @@ import { currentNetworkBase } from '../data/user-overlay.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme, ProgrammeType } from '../types/programme.ts'
 import { reachesArchive, type ChannelEditorial } from './channel-curation.ts'
-import { airingSources, inOrder, inventoryOf, isStreamSource, liveStreamOf, refreshOrigin, type ChannelSource, type OrderKind } from './channel-sources.ts'
+import { airingSources, inOrder, inventoryOf, isStreamSource, liveStreamOf, refreshOrigin, streamRotationOf, type ChannelSource, type OrderKind, type StreamTurn } from './channel-sources.ts'
 import { publicWebPage, siteOf } from '../utils/web-page.ts'
 import type { ArchiveLookup } from './user-archive.ts'
 import { planArchive, runningOrder } from './user-depth.ts'
@@ -511,6 +511,20 @@ export function channelsFromSources(
       continue
     }
 
+    const turns = source.channelSources ? streamRotationOf(source.channelSources) : []
+    if (turns.length > 0) {
+      const { liveFromMs: _live, ...scheduled } = base
+      channels.push({
+        ...scheduled,
+        description: `${source.name}. ${turns.length} live streams taking turns on the clock.`,
+        mediaKind: turns.every((turn) => turn.media === 'audio') ? 'audio' : 'video',
+        sources: turns.map((turn) => ({ kind: 'stream' as const, id: turn.source.id, label: turn.source.label || source.name })),
+        phaseOffsetSeconds: streamTurnPhase(),
+      })
+      programmes.set(id, turns.map((turn, index) => streamTurnProgramme(id, source.name, turn, index)))
+      continue
+    }
+
     const live = source.channelSources ? liveStreamOf(source.channelSources) : null
     if (live) {
       channels.push({
@@ -744,6 +758,37 @@ function liveStreamProgramme(channelId: string, name: string, live: NonNullable<
     sourceRef: `stream:${live.source.id}`,
     creator: live.source.label || undefined,
     liveStream: { ...live.stream },
+  }
+}
+
+/**
+ * Streams taking turns start their round at local midnight, so turns that divide a day change on the hour,
+ * every day: an hour each from 00:00, 01:00 and on.
+ */
+export function streamTurnPhase(nowMs = Date.now()): number {
+  return -new Date(nowMs).getTimezoneOffset() * 60
+}
+
+/** One stream's turn on a channel of several: joined live, for its slot, then the next stream takes over. */
+function streamTurnProgramme(channelId: string, name: string, turn: StreamTurn, index: number): Programme {
+  const label = turn.source.label || `${name} · stream ${index + 1}`
+  return {
+    id: `${channelId}:turn:${index}:${turn.source.id}`,
+    title: label,
+    description: `${label}, live on ${name} for ${Math.round(turn.seconds / 60)} minutes.`,
+    videoId: null,
+    durationSeconds: turn.seconds,
+    channelId,
+    category: 'User',
+    source: 'imported',
+    kind: 'programme',
+    playbackMode: 'linear',
+    playback: 'live',
+    programmeType: turn.media === 'audio' ? 'radio' : 'live',
+    mediaKind: turn.media,
+    sourceRef: `stream:${turn.source.id}`,
+    creator: turn.source.label || undefined,
+    liveStream: { ...turn.stream },
   }
 }
 
