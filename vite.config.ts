@@ -36,6 +36,8 @@ const builtAt = Date.now()
 
 export default defineConfig({
   plugins: [react(), channelApi()],
+  // ffmpeg.wasm starts its own module worker; prebundling would move it away from the worker file.
+  optimizeDeps: { exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'] },
   // Each build has its own id; channel pools kept by an earlier build are never reused by a later one.
   define: {
     __TVN_BUILD__: JSON.stringify(builtAt.toString(36)),

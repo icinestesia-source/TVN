@@ -64,7 +64,7 @@ function asFilter(value: unknown): GuideFilter {
 }
 
 function asMode(value: unknown): MultiviewMode {
-  return value === '2' || value === '4' || value === '9' ? value : '1'
+  return value === '2' || value === '4' || value === '9' || value === 'pip' ? value : '1'
 }
 
 function asNumbers(value: unknown): number[] {

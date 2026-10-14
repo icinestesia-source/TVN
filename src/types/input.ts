@@ -8,7 +8,7 @@ export type ScheduleAction = 'random' | 'reload' | 'latest' | 'az'
  * Guide actions that happen inside the Guide: MEDIA at 1000 Local Media, IMPORT (a User Network file) and ADD
  * at the foot of the User Network, and EDIT, the Channel Editor for one channel (X, right-click, long-press, or the menu key).
  */
-export type GuideTool = 'media' | 'network' | 'add' | 'edit' | 'users' | 'options' | 'guides' | 'editor' | 'bookmarks'
+export type GuideTool = 'media' | 'network' | 'add' | 'edit' | 'users' | 'options' | 'guides' | 'editor' | 'bookmarks' | 'flags'
 
 /**
  * Commands a keyboard, on-screen remote, or future gamepad can emit.
@@ -36,6 +36,8 @@ export type TvCommand =
   | { type: 'guide-split'; share: number }
   | { type: 'multiview' }
   | { type: 'multiview-page'; page: number }
+  /** [ and ]: the picture-in-picture inset smaller or larger. */
+  | { type: 'pip-size'; step: -1 | 1 }
   | { type: 'focus-move'; direction: NavDirection }
   | { type: 'focus-tile'; index: number }
   | { type: 'tune'; channelNumber: number }

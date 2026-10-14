@@ -92,9 +92,12 @@ describe('EDIT CHANNEL: LOAD MORE on each source, before REMOVE', () => {
     expect(html).toContain('>Load all<')
   })
 
-  it('shows it disabled, with the reason, when the source is read to the end', () => {
+  it('still offers it when the source is read to the end, as a check for anything new', () => {
     const html = render({ name: 'Alpha', sources: [youtube(dated(3), { complete: true, deep: true, more: undefined })] })
-    expect(html).toMatch(/class="tab editor-source-load" disabled=""[^>]*title="The whole source is read"/)
+    expect(html).toMatch(/class="tab editor-source-load" aria-label="[^"]*" title="The whole source is read: check it again for anything new, and schedule it"/)
+    expect(render({ name: 'Alpha', sources: [youtube(dated(3), { complete: true, deep: true, more: undefined, enabled: false })] })).toMatch(
+      /class="tab editor-source-load" disabled=""[^>]*title="Enable this source to read more of it"/,
+    )
   })
 
   it('reads an imported list further from the channel it came from', async () => {

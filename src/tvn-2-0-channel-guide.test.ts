@@ -106,7 +106,7 @@ describe('CHANNEL GUIDE: channel sources', () => {
     expect(panel).toMatch(/Add source/)
     expect(panel).toMatch(/Build from sources/)
     expect(panel).toContain('plan-source-list')
-    expect(read('src/components/Guide.tsx')).toContain("Add to {guideName ?? 'My Guide'}")
+    expect(read('src/components/Guide.tsx')).toContain('onMenu={(programme, _x, _y, slot) => flagClip(channel, programme, slot)}')
     const provider = read('src/state/TvProvider.tsx')
     expect(provider).toContain("channel.origin === 'tvn' || channel.origin === 'session'")
     expect(provider).toContain('sourceChannel(source, listChannels())')

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { formatBytes, resetUsage, useUsage } from '../session/usage.ts'
+import { PIP_SIZE_MAX, PIP_SIZE_MIN, PIP_SIZE_STEP } from '../view/multiview.ts'
 import { openAbout } from '../legal/about-store.ts'
 import { ChannelChangeOptions } from './ChannelChangeOptions.tsx'
 import { listChannels } from '../data/catalogue.ts'
@@ -14,6 +16,8 @@ import { setFillEdges, useFillEdges } from '../view/fill-edges.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
 
 /** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
+const channelNumberText = (text: string) => /^\d{1,5}$/.test(text.trim()) && Number(text) >= 1
+
 function keepKey(event: KeyboardEvent<HTMLElement>) {
   if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
 }
@@ -29,6 +33,36 @@ function Card({ title, children, wide = false }: { title: string; children: Reac
       <h3 className="options-head">{title}</h3>
       {children}
     </section>
+  )
+}
+
+/** OPTIONS → Usage: what this tab has downloaded since it opened, as far as the browser lets TVN measure. */
+function UsageRows() {
+  const usage = useUsage()
+  const since = new Date(usage.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return (
+    <>
+      <Row label="Downloaded">
+        <output className="options-value">{formatBytes(usage.dataBytes + usage.mediaBytes)}</output>
+      </Row>
+      <Row label="Video & audio">
+        <output className="options-value">{formatBytes(usage.mediaBytes)}</output>
+      </Row>
+      <Row label={`Pages & data · ${usage.dataRequests} ${usage.dataRequests === 1 ? 'request' : 'requests'}`}>
+        <output className="options-value">{formatBytes(usage.dataBytes)}</output>
+      </Row>
+      <p className="options-note">
+        Since {since}. Counted: TVN&rsquo;s own pages and data, other sites that share their sizes, and video and audio TVN plays in its own
+        player (Chrome reports these). Not counted: YouTube and other embedded players, which download inside their own frames
+        {usage.unmeasured > 0 ? `, ${usage.unmeasured} ${usage.unmeasured === 1 ? 'request' : 'requests'} to sites that keep their sizes private` : ''}, and local
+        files, which are never downloaded.
+      </p>
+      <div className="options-foot">
+        <button type="button" className="tab" onKeyDown={keepKey} onClick={() => resetUsage()}>
+          Reset
+        </button>
+      </div>
+    </>
   )
 }
 
@@ -180,6 +214,8 @@ export function GuideOptions() {
   const [busy, setBusy] = useState(false)
   const loadingAll = tv.loadAll && tv.loadAll.result === undefined ? tv.loadAll : null
   const [confirmDefault, setConfirmDefault] = useState(false)
+  const [rangeFrom, setRangeFrom] = useState('')
+  const [rangeTo, setRangeTo] = useState('')
   const users = listChannels().filter((channel) => (channel.number >= USER_NUMBER_START || channel.origin === 'user-import') && !channel.emptySlot)
   const owned = (id: string | undefined) => users.filter((channel) => channel.owner === id).length
 
@@ -265,6 +301,25 @@ export function GuideOptions() {
           </div>
           <p className="options-note">Where a programme does not cover the screen, such as a Short, fill the edges with its own picture, enlarged and blurred.</p>
           <Row label="Fill edges">{toggle(fill, ['On', 'Off'], () => setFillEdges(!fill))}</Row>
+          <p className="options-note">
+            Picture in picture is the Multi View after nine (press / to step through): the selected channel fills the screen and a second sits in
+            the corner. [ and ] make the corner picture smaller or larger.
+          </p>
+          <label className="options-row">
+            <span className="options-label">Picture in picture size</span>
+            <span className="options-control">
+              <input
+                type="range"
+                min={PIP_SIZE_MIN}
+                max={PIP_SIZE_MAX}
+                step={PIP_SIZE_STEP}
+                value={tv.pipSize}
+                onKeyDown={keepKey}
+                onChange={(event) => tv.setPipSize(Number(event.target.value))}
+              />
+              <output className="options-value">{tv.pipSize}%</output>
+            </span>
+          </label>
         </Card>
 
         <Card title="Sleep">
@@ -401,6 +456,10 @@ export function GuideOptions() {
           </div>
         </Card>
 
+        <Card title="Usage this session">
+          <UsageRows />
+        </Card>
+
         <Card title="Save & restore">
           <p className="options-note">
             Everything here is kept in this browser. Export ALL saves your users, User Network channels, your curation of TVN channels
@@ -427,6 +486,30 @@ export function GuideOptions() {
             </button>
             <button type="button" className="tab remove-key" disabled={busy || loadingAll !== null} onKeyDown={keepKey} onClick={() => setConfirmDefault(true)}>
               Default…
+            </button>
+          </div>
+          <p className="options-note">
+            Export channels saves just the channels numbered From–To (for example 950 to 970): your User channels there and your curation of
+            TVN&rsquo;s channels there, with all their sources, running orders, notes and Favourites. Restore reads that file back and changes only
+            those numbers.
+          </p>
+          <div className="options-choices">
+            <label className="options-range">
+              From{' '}
+              <input type="number" min={1} step={1} inputMode="numeric" value={rangeFrom} aria-label="First channel" onKeyDown={keepKey} onChange={(event) => setRangeFrom(event.target.value)} />
+            </label>
+            <label className="options-range">
+              To{' '}
+              <input type="number" min={1} step={1} inputMode="numeric" value={rangeTo} aria-label="Last channel" onKeyDown={keepKey} onChange={(event) => setRangeTo(event.target.value)} />
+            </label>
+            <button
+              type="button"
+              className="tab"
+              disabled={busy || !channelNumberText(rangeFrom) || !channelNumberText(rangeTo || rangeFrom)}
+              onKeyDown={keepKey}
+              onClick={() => void run(() => tv.exportRange(Number(rangeFrom), Number(rangeTo || rangeFrom)))}
+            >
+              Export channels
             </button>
           </div>
           {confirmDefault ? (

@@ -145,6 +145,13 @@ export interface ImportDeps<F extends LocalFile> {
   random?: () => number
   /** A newer import started; this one's URLs are handed back. */
   cancelled?: () => boolean
+  /** The playable file an AVI becomes, converted in the page; null when it cannot be. */
+  convertAvi?: (file: F) => Promise<F | null>
+}
+
+/** An AVI by name or declared type, which TVN converts as it is imported. */
+export function isAviFile(file: LocalFile): boolean {
+  return /\.(avi|divx|xvid)$/i.test(file.name) || /^video\/(x-msvideo|avi|msvideo)$/i.test(file.type)
 }
 
 export interface ImportResult {
@@ -163,11 +170,12 @@ export interface ImportResult {
  */
 export async function buildSessionItems<F extends LocalFile>(files: readonly F[], deps: ImportDeps<F>): Promise<ImportResult> {
   const scanned = Math.min(files.length, MAX_SCANNED_FILES)
-  const candidates: { file: F; kind: MediaKind }[] = []
+  const candidates: { file: F; kind: MediaKind; avi?: boolean }[] = []
   let convert = 0
   for (const file of files.slice(0, MAX_SCANNED_FILES)) {
     const kind = needsConverting(file) ? null : mediaKindOf(file, deps.canPlay)
     if (kind) candidates.push({ file, kind })
+    else if (deps.convertAvi && isAviFile(file)) candidates.push({ file, kind: 'video', avi: true })
     else if (needsConverting(file)) convert += 1
   }
   const accepted: (SessionItem | null)[] = new Array(candidates.length).fill(null)
@@ -176,15 +184,21 @@ export async function buildSessionItems<F extends LocalFile>(files: readonly F[]
     while (next < candidates.length) {
       const index = next
       next += 1
-      const { file, kind } = candidates[index]
+      const { file: picked, kind, avi } = candidates[index]
       if (deps.cancelled?.()) return
       let url: string | null = null
       try {
+        const file = avi ? await deps.convertAvi?.(picked) : picked
+        if (!file) {
+          if (!deps.cancelled?.()) convert += 1
+          continue
+        }
+        if (deps.cancelled?.()) return
         const remux = remuxFor(file) ?? (kind === 'video' ? await deps.sniff?.(file) : undefined)
         url = deps.createUrl(file, remux)
         const seconds = await deps.probe(url, kind, remux)
         if (validDuration(seconds) && !deps.cancelled?.()) {
-          accepted[index] = { title: titleFromName(file.name), durationSeconds: seconds, url, kind, ...(remux ? { remux } : {}) }
+          accepted[index] = { title: titleFromName(picked.name), durationSeconds: seconds, url, kind, ...(remux ? { remux } : {}) }
           url = null
         } else if (kind === 'video' && !deps.cancelled?.()) convert += 1
       } catch {

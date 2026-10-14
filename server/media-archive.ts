@@ -312,6 +312,8 @@ export interface Cursor {
   k: number
   n: number
   f?: 1
+  /** A Rumble channel's listing, carried on from page `n`. */
+  r?: 1
 }
 
 export function encodeCursor(value: Cursor): string {
@@ -323,7 +325,7 @@ export function decodeCursor(text: string | null): Cursor | null {
   try {
     const value = JSON.parse(Buffer.from(text, 'base64url').toString('utf8')) as Record<string, unknown>
     if (typeof value.u !== 'string' || !Number.isInteger(value.k) || !Number.isInteger(value.n) || (value.k as number) < 0 || (value.n as number) < 0) return null
-    return { u: value.u, k: value.k as number, n: value.n as number, ...(value.f === 1 ? { f: 1 as const } : {}) }
+    return { u: value.u, k: value.k as number, n: value.n as number, ...(value.f === 1 ? { f: 1 as const } : {}), ...(value.r === 1 ? { r: 1 as const } : {}) }
   } catch {
     return null
   }

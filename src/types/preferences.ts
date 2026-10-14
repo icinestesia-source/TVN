@@ -25,7 +25,8 @@ export type GuideFilter =
   /** One named user's User Network tab (src/data/user-network/users.ts). */
   | `user:${string}`
 
-export type MultiviewMode = '1' | '2' | '4' | '9'
+/** 'pip': picture in picture, the selected channel full screen with a second one inset in the corner. */
+export type MultiviewMode = '1' | '2' | '4' | '9' | 'pip'
 
 export interface UserPreferences {
   version: 1 | 2

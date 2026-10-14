@@ -621,7 +621,7 @@ export function ChannelEditor({
     const next = { ...edit, sources: admitted(edit.sources), order: withLeft([...head, ...ids.slice(scheduled)]), orderKind: 'random' as const }
     keepOrder({ ...next, compiled: eligibilityKey(next) }, `RESCHEDULED · ${scheduled} PROGRAMMES IN A NEW RANDOM ORDER · SAVED`)
   }
-  const loadMore = (source: ChannelSource, all: boolean, recheck = false) => {
+  const loadMore = (source: ChannelSource, all: boolean, recheck = false, newest = false) => {
     if (!edit || !onLoadMore) return
     const stop = new AbortController()
     stopRef.current = stop
@@ -630,6 +630,7 @@ export function ChannelEditor({
       const read = await onLoadMore(source, {
         all,
         ...(recheck ? { recheck: true } : {}),
+        ...(newest ? { newest: true } : {}),
         signal: stop.signal,
         onProgress: (loaded, listed) => setLoading((current) => (current ? { ...current, loaded, listed } : current)),
       })
@@ -656,7 +657,8 @@ export function ChannelEditor({
           .join(' · ')
       }
       return [
-        stop.signal.aborted ? 'STOPPED' : count > before ? `${count - before} MORE LOADED` : 'NOTHING NEW',
+        newest ? 'CHECKED FOR NEW PROGRAMMES' : null,
+        stop.signal.aborted ? 'STOPPED' : count > before ? `${count - before} ${newest ? 'NEW' : 'MORE'} LOADED` : 'NOTHING NEW',
         `${count}${found.listed ? ` OF ${found.listed}` : ''} IN THIS SOURCE`,
         found.complete ? 'WHOLE SOURCE READ' : null,
         count > before ? 'SCHEDULED · SAVED' : 'SAVED',
@@ -672,9 +674,13 @@ export function ChannelEditor({
   // Sources LOAD can read further: enabled, not yet read to the end.
   const loadableSource = (source: ChannelSource) => onLoadMore !== undefined && (canLoad ? canLoad(source) : canLoadMore(source))
   const loadable = edit ? edit.sources.filter(loadableSource) : []
+  // Sources read to their end: LOAD MORE checks them again for anything new.
+  const newestSource = (source: ChannelSource) =>
+    onLoadMore !== undefined && source.enabled && (source.kind === 'youtube' || source.kind === 'podcast') && !singleVideoId(source) && !loadableSource(source)
+  const checkable = edit ? edit.sources.filter(newestSource) : []
   // A TVN channel's original publishers, read again so their newer and further programmes can be loaded too.
   const toRead = edit && onAcquire && onLoadMore && scope === 'curated' ? originalsToRead(originals, edit.sources, edit.originals) : []
-  const batchSize = toRead.length + loadable.length
+  const batchSize = toRead.length + loadable.length + checkable.length
   /**
    * LOAD MORE: one more batch from every enabled source that has more, one source after another. On a TVN
    * channel it first reads each original publisher again as an added source. What arrives joins the schedule
@@ -714,7 +720,7 @@ export function ChannelEditor({
         }
       }
       const loopFrom = availableOf(next)
-      for (const [index, source] of loadable.entries()) {
+      for (const [index, source] of [...loadable, ...checkable].entries()) {
         if (stop.signal.aborted) break
         const base = availableOf(next)
         const start = source.videos?.length ?? 0
@@ -722,6 +728,7 @@ export function ChannelEditor({
         setLoading({ id: source.id, loaded: start, listed: source.listed, all: false })
         try {
           const found = await onLoadMore(source, {
+            ...(index >= loadable.length ? { newest: true } : {}),
             signal: stop.signal,
             onProgress: (loaded, listed) => {
               setLoading((current) => (current ? { ...current, loaded, listed } : current))
@@ -942,8 +949,10 @@ export function ChannelEditor({
                     batchSize === 0
                       ? 'Every enabled source is read as far as it goes'
                       : toRead.length > 0
-                        ? `Read TVN's ${toRead.length === 1 ? 'original source' : `${toRead.length} original sources`} again from the publisher${loadable.length ? `, then the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more` : ''}, and schedule it`
-                        : `Read the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more, and schedule it`
+                        ? `Read TVN's ${toRead.length === 1 ? 'original source' : `${toRead.length} original sources`} again from the publisher${loadable.length ? `, then the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more` : ''}${checkable.length ? ', check sources read to their end for anything new' : ''}, and schedule it`
+                        : loadable.length
+                          ? `Read the next batch of ${loadable.length === 1 ? 'the one source that has' : `all ${loadable.length} sources that have`} more${checkable.length ? ', check the others for anything new' : ''}, and schedule it`
+                          : 'Check every source for anything new, and schedule it'
                   }
                   onClick={loadBatch}
                 >
@@ -1133,19 +1142,19 @@ export function ChannelEditor({
                     <button
                       type="button"
                       className="tab editor-source-load"
-                      disabled={busy !== null || !loadableSource(source)}
+                      disabled={busy !== null || !(loadableSource(source) || newestSource(source))}
                       aria-label={`Load more programmes from ${sourceTitle(source)}`}
                       title={
                         loadableSource(source)
                           ? 'Read the next batch of this source, and schedule it'
-                          : source.complete
-                            ? 'The whole source is read'
+                          : newestSource(source)
+                            ? 'The whole source is read: check it again for anything new, and schedule it'
                             : !source.enabled
                               ? 'Enable this source to read more of it'
                               : 'TVN cannot read this source any further'
                       }
                       onKeyDown={keepKey}
-                      onClick={() => loadMore(source, false)}
+                      onClick={() => (loadableSource(source) ? loadMore(source, false) : loadMore(source, false, false, true))}
                     >
                       {loading?.id === source.id ? 'Loading…' : 'Load more'}
                     </button>

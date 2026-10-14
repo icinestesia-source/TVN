@@ -1,5 +1,6 @@
 import { connect as tcpConnect } from 'node:net'
 import { connect as tlsConnect } from 'node:tls'
+import { encodeCursor, type Cursor } from './media-archive.ts'
 import { measureMedia } from './media-probe.ts'
 import { attr, dayOf, FeedError, fetchText, field, fnv, publicFeedUrl, refusal, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 import type { FeedEpisode, ResolvedFeed } from './podcast-feed.ts'
@@ -354,20 +355,45 @@ async function rumbleVideo(url: URL, read: typeof fetch): Promise<ResolvedFeed> 
   )
 }
 
-async function rumble(url: URL, read: typeof fetch, keep: number): Promise<ResolvedFeed> {
+/** How long one call may spend reading a channel's pages; the rest is read in the next call, from `next`. */
+export interface ReadBudget {
+  deadline: number
+  clock: () => number
+}
+
+/** A Rumble channel's address as TVN keeps it, for /c/name and /user/name with or without /videos. */
+function rumbleChannelUrl(url: URL): { channelUrl: string; name: string } | null {
   const parts = url.pathname.split('/').filter(Boolean)
-  if (/^v[0-9a-z]+[\w-]*\.html$/i.test(parts[0] ?? '') || parts[0] === 'embed') return rumbleVideo(url, read)
   const kind = parts[0] === 'c' || parts[0] === 'user' ? parts[0] : null
   const name = kind && /^[\w-]{2,64}$/.test(parts[1] ?? '') ? parts[1] : null
-  if (!kind || !name) throw new FeedError(422, 'TVN reads public Rumble channels and videos; that Rumble page is neither')
-  const channelUrl = `https://rumble.com/${kind}/${name}`
+  return kind && name ? { channelUrl: `https://rumble.com/${kind}/${name}`, name } : null
+}
+
+async function rumble(url: URL, read: typeof fetch, keep: number, budget?: ReadBudget): Promise<ResolvedFeed> {
+  const parts = url.pathname.split('/').filter(Boolean)
+  if (/^v[0-9a-z]+[\w-]*\.html$/i.test(parts[0] ?? '') || parts[0] === 'embed') return rumbleVideo(url, read)
+  const channel = rumbleChannelUrl(url)
+  if (!channel) throw new FeedError(422, 'TVN reads public Rumble channels and videos; that Rumble page is neither')
+  return rumblePages(channel.channelUrl, channel.name, read, keep, budget)
+}
+
+/**
+ * A Rumble channel's videos from listing page `from` on, page by page until TVN keeps enough, the list ends or
+ * this call's time is up; then `next` says where the next call carries on. `before` videos came in earlier calls.
+ */
+async function rumblePages(channelUrl: string, name: string, read: typeof fetch, keep: number, budget?: ReadBudget, from = 1, before = 0): Promise<ResolvedFeed> {
   const episodes: FeedEpisode[] = []
   let listed = 0
   let title = ''
-  const pages = Math.min(RUMBLE_MAX_PAGES, Math.max(1, Math.ceil(keep / RUMBLE_PAGE_SIZE)))
-  for (let n = 1; n <= pages && episodes.length < keep; n++) {
+  let next: Cursor | null = null
+  const last = Math.min(RUMBLE_MAX_PAGES, Math.max(1, Math.ceil(keep / RUMBLE_PAGE_SIZE)))
+  for (let n = from; n <= last && before + episodes.length < keep; n++) {
+    if (n > from && budget && budget.clock() > budget.deadline) {
+      next = { u: channelUrl, k: before + episodes.length, n, r: 1 }
+      break
+    }
     const page = await fetchText(`${channelUrl}/videos${n > 1 ? `?page=${n}` : ''}`, read).catch((error: unknown) => {
-      if (n === 1) throw error
+      if (n === from) throw error
       return null
     })
     if (!page) break
@@ -377,20 +403,28 @@ async function rumble(url: URL, read: typeof fetch, keep: number): Promise<Resol
     episodes.push(...grid.episodes)
     if (grid.listed < RUMBLE_PAGE_SIZE) break
   }
-  if (episodes.length === 0) throw new FeedError(422, 'That Rumble channel lists no public videos TVN can play')
+  if (episodes.length === 0 && from === 1) throw new FeedError(422, 'That Rumble channel lists no public videos TVN can play')
   return {
     feedUrl: channelUrl,
     website: channelUrl,
     title: title || name,
     description: '',
-    episodes: episodes.slice(0, keep),
+    episodes: episodes.slice(0, keep - before),
     listed,
     unplayable: listed - episodes.length,
     shape: 'feed',
     via: 'address',
     provider: 'rumble',
     form: 'collection',
+    ...(next ? { next: encodeCursor(next) } : {}),
   }
+}
+
+/** The rest of a Rumble channel's list, from a cursor an earlier call gave. */
+export function rumbleRest(cursor: Cursor, read: typeof fetch, keep: number, budget: ReadBudget): Promise<ResolvedFeed> {
+  const channel = rumbleChannelUrl(new URL(cursor.u))
+  if (!channel || !RUMBLE_HOST.test(new URL(cursor.u).hostname)) throw new FeedError(400, 'That cursor is not a Rumble channel')
+  return rumblePages(channel.channelUrl, channel.name, read, keep, budget, cursor.n, cursor.k)
 }
 
 // --- Direct media, HLS and DASH --------------------------------------------------------------------------
@@ -621,12 +655,12 @@ async function mediaSource(start: URL, read: typeof fetch, peek: IcyPeek): Promi
 }
 
 /** A known video provider's address, or a direct file or stream; null for a page or feed the podcast reader takes. */
-export async function resolveUrlSource(start: URL, read: typeof fetch, keep: number, parse: ParseFeed, peek: IcyPeek = icyPeek): Promise<ResolvedFeed | null> {
+export async function resolveUrlSource(start: URL, read: typeof fetch, keep: number, parse: ParseFeed, peek: IcyPeek = icyPeek, budget?: ReadBudget): Promise<ResolvedFeed | null> {
   const host = start.hostname.toLowerCase()
   if (VIMEO_HOST.test(host)) return vimeo(start, read, keep)
   if (ODYSEE_HOST.test(host)) return odysee(start, read, keep, parse)
   if (BITCHUTE_HOST.test(host)) return bitchute(start, read, keep)
-  if (RUMBLE_HOST.test(host)) return rumble(start, read, keep)
+  if (RUMBLE_HOST.test(host)) return rumble(start, read, keep, budget)
   if (isXHost(host)) return resolveXPost(start, read)
   return mediaSource(start, read, peek)
 }

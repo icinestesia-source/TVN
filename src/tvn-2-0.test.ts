@@ -277,7 +277,7 @@ describe('TVN 2.0 · COMPLETE TVN EXPORT (tvn-export-v1)', () => {
     const at = order.map((step) => restore.indexOf(step))
     expect(at.every((index) => index >= 0)).toBe(true)
     expect([...at].sort((x, y) => x - y)).toEqual(at)
-    const footer = renderToStaticMarkup(createElement(UserNetworkImportTools, { userChannels: 2, onApply: async () => '', onApplyComplete: async () => '' }))
+    const footer = renderToStaticMarkup(createElement(UserNetworkImportTools, { userChannels: 2, onApply: async () => '', onApplyComplete: async () => '', onApplyRange: async () => '' }))
     expect(footer).toContain('Choose file')
     expect(read('src/components/GuideAdd.tsx')).toContain('ALL also replaces your Favourites (with ${pending.favourites}), your settings')
   })

@@ -58,7 +58,7 @@ import { addChannelSource, addPodcastChannel, addStreamChannel, planStarterNetwo
 import { admitted, applyChannelEdit, canLoadMore, editOf, eligibilityKey, loadChannelWhole, loadMoreSource, rescanChannel, rescanSources, rescanSummary, widenSources, type ChannelEdit, type LoadMoreOptions } from '../services/channel-editor.ts'
 import { addChannelFromFile, buildChannelFile, channelFilename, readChannelFile, serialiseChannelFile, type ChannelExportKind } from '../services/channel-file.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../services/editorial-manifest.ts'
-import { overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
+import { CENTRAL_CURATION_FORMAT, overrideRecord, overridesFromExport, reconcileOverride, type CentralCuration } from '../services/central-curation.ts'
 import type { SourceMode } from '../services/channel-curation.ts'
 import { airingSources, inventoryOf, type ChannelSource, type OrderKind } from '../services/channel-sources.ts'
 import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../view/programme-order.ts'
@@ -116,7 +116,18 @@ import {
 } from '../view/info-shortcuts.ts'
 import { loadStoredSources, saveStoredSources } from '../services/user-db.ts'
 import { buildUserNetworkExport, downloadText, exportFilename, serialiseUserNetworkExport, type UserNetworkExport } from '../services/user-network-export.ts'
-import { favouritesAfterRestore, recordsFromExport, resolveRestored, restoreUserNetwork, usersFromExport } from '../services/user-network-restore.ts'
+import {
+  favouritesAfterRangeRestore,
+  favouritesAfterRestore,
+  inRange,
+  recordsFromExport,
+  resolveRestored,
+  restoreChannelRange,
+  restoreUserNetwork,
+  usersAfterRangeRestore,
+  usersFromExport,
+  type ChannelRange,
+} from '../services/user-network-restore.ts'
 import { isRefusalCode, learnRefusal, refusedVideos } from '../services/embed-refusals.ts'
 import { sourceArchive, uploaderArchive, uploaderIdFor } from '../services/user-archive.ts'
 import type { Channel } from '../types/channel.ts'
@@ -125,6 +136,7 @@ import type { GuideTool, ScheduleAction, TvCommand } from '../types/input.ts'
 import type { GuideFilter, MultiviewMode } from '../types/preferences.ts'
 import { clamp, padChannel, sleep } from '../utils/time.ts'
 import { bookmarkFor, toggleBookmark, type Bookmark } from '../view/bookmarks-store.ts'
+import { clipFlags, dueFlag, saveClipFlags } from '../view/clip-flags.ts'
 import { addClipsChannel, clipVideo } from '../services/bookmark-channel.ts'
 import { nextSleepMinutes, SLEEP_CHOICES, sleepPhase } from './sleep.ts'
 import { asSurfRange, loadSurfRange, loadSurfUntilEnd, saveSurfOn, saveSurfRange, saveSurfUntilEnd, surfDelayMs, surfUntilEndMs, type SurfRange } from './surf.ts'
@@ -152,7 +164,7 @@ import { buildChannelGuide, buildSearchGuide, channelSupply, SEARCH_TARGET } fro
 import { searchIndex } from '../services/guide-search-pool.ts'
 import { shippedEditorial } from '../data/central-editorial.ts'
 import type { ChannelEditorial } from '../services/channel-curation.ts'
-import { buildTvnExport, serialiseTvnExport, tvnExportFilename, validateTvnExport, type TvnExport } from '../services/tvn-export.ts'
+import { buildRangeExport, buildTvnExport, rangeExportFilename, serialiseTvnExport, tvnExportFilename, validateTvnExport, type TvnExport } from '../services/tvn-export.ts'
 import {
   asTransitionSettings,
   DEFAULT_TRANSITION_SETTINGS,
@@ -217,8 +229,12 @@ import { loadYouTubeApi } from '../player/load-api.ts'
 import { clampGuideSplit, guideTuneDecision, type GuideMode } from '../view/guide-mode.ts'
 import { guideToolTarget } from '../view/guide-tool.ts'
 import {
+  clampPipSize,
   cycleMultiview,
   fillTiles,
+  loadPipSize,
+  PIP_SIZE_STEP,
+  savePipSize,
   focusStep,
   gridDelta,
   multiviewLayout,
@@ -420,6 +436,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const surfingRef = useRef(surfing)
   const [surfHops, setSurfHops] = useState(0)
   const [surfRange, setSurfRangeState] = useState<SurfRange>(() => loadSurfRange())
+  const [pipSize, setPipSizeState] = useState(() => loadPipSize())
+  const setPipSize = useCallback((size: number) => {
+    const next = clampPipSize(size)
+    savePipSize(next)
+    setPipSizeState(next)
+    return next
+  }, [])
+  const pipSizeRef = useRef(pipSize)
+  pipSizeRef.current = pipSize
   const [surfUntilEnd, setSurfUntilEndState] = useState(() => loadSurfUntilEnd())
   const [transition, setTransitionState] = useState<TransitionSettings>(() => loadTransitionSettings())
   const transitionRef = useRef(transition)
@@ -497,7 +522,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   const commitNumericRef = useRef<() => void>(() => {})
   const sessionRef = useRef<{
     play: (programmeId: string) => void
-    import: (files: readonly File[], number: number, handles?: readonly MediaHandle[]) => Promise<string>
+    import: (files: readonly File[], number: number, handles?: readonly MediaHandle[], onNote?: (note: string) => void) => Promise<string>
     reload: () => Promise<string>
     remove: (programmeId: string) => void
     clear: (number: number) => void
@@ -913,7 +938,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   panelOpenRef.current = () => {
     const held = guideToolRef.current
     if (held?.kind === 'guides' || held?.kind === 'editor') return held.kind
-    return held && (held.kind === 'users' || held.kind === 'options' || held.kind === 'bookmarks') && held.cursor === cursorRef.current ? held.kind : null
+    return held && (held.kind === 'users' || held.kind === 'options' || held.kind === 'bookmarks' || held.kind === 'flags') && held.cursor === cursorRef.current ? held.kind : null
   }
 
   /** Every channel change comes through here and leaves a Guide pick behind, unless it is the tune that plays one. */
@@ -1106,9 +1131,17 @@ export function TvProvider({ children }: { children: ReactNode }) {
   }
 
   const localTitles = (number: number) => sessionProgrammes(number).map((programme) => programme.title)
-  const buildLocal = (files: readonly File[]) => {
+  const buildLocal = (files: readonly File[], onNote?: (note: string) => void) => {
     const token = ++importToken.current
     return buildSessionItems(files, {
+      convertAvi: async (file) => {
+        const { convertAvi } = await import('../player/avi-convert.ts')
+        return convertAvi(file, (note) => {
+          if (token !== importToken.current) return
+          if (onNote) onNote(note)
+          else if (!guideOpenRef.current) flash(note, 2000)
+        })
+      },
       canPlay: browserCanPlay,
       createUrl: (file, remux) => {
         const url = URL.createObjectURL(file)
@@ -1130,9 +1163,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
       const number = sessionNumberFor(programmeId)
       if (number !== null && rebaseSession(programmeId, Date.now())) showSession(number)
     },
-    async import(files, number, handles = []) {
+    async import(files, number, handles = [], onNote) {
       const target = isLocalMediaNumber(number) ? number : SESSION_CHANNEL_NUMBER
-      const result = await buildLocal(files)
+      const result = await buildLocal(files, onNote)
       const wasEmpty = !sessionActive(target)
       const summary = commitImport(result, Date.now(), target)
       if (result.cancelled || result.items.length === 0) return summary
@@ -1962,8 +1995,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
         openGuideTool(command.tool, command.channelNumber)
         break
       case 'guide-cycle': {
-        // ♡ is the tab after FAV while the Guide is up; from it the round starts again at ALL.
-        if (guideOpenRef.current && panelOpenRef.current() === 'bookmarks') {
+        // ♡ is the tab after FAV while the Guide is up, then ⚑ while there are flags; from there the round starts again at ALL.
+        if (guideOpenRef.current && panelOpenRef.current() === 'bookmarks' && clipFlags().length > 0) {
+          openGuideTool('flags')
+          break
+        }
+        if (guideOpenRef.current && (panelOpenRef.current() === 'bookmarks' || panelOpenRef.current() === 'flags')) {
           closeGuideTool()
           setGuideFilter('all')
           break
@@ -2005,6 +2042,12 @@ export function TvProvider({ children }: { children: ReactNode }) {
       case 'multiview-page':
         setMultiviewPage(Math.max(0, command.page))
         break
+      case 'pip-size': {
+        if (multiviewRef.current !== 'pip') break
+        const size = setPipSize(pipSizeRef.current + command.step * PIP_SIZE_STEP)
+        flash(`PICTURE IN PICTURE · ${size}%`, 1200)
+        break
+      }
       case 'info':
         // V (or a tap on the picture) shows the information bar, and closes it again while it is up.
         if (overlay === 'info') showOverlay('none', 0)
@@ -2098,7 +2141,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
         break
       case 'guide-filter': {
         const nextFilter = command.filter ?? (guideFilter === 'favourites' ? 'all' : 'favourites')
-        if (panelOpenRef.current() === 'bookmarks' || (guideOpenRef.current && editingRef.current())) closeGuideTool()
+        if (panelOpenRef.current() === 'bookmarks' || panelOpenRef.current() === 'flags' || (guideOpenRef.current && editingRef.current())) closeGuideTool()
         setGuideFilter(nextFilter)
         break
       }
@@ -2321,6 +2364,24 @@ export function TvProvider({ children }: { children: ReactNode }) {
     }
   }, [startupPhase])
 
+  useEffect(() => {
+    if (startupPhase !== 'ready') return
+    const check = () => {
+      const flags = clipFlags()
+      if (flags.length === 0) return
+      const { fire, rest } = dueFlag(flags, Date.now())
+      if (rest.length === flags.length) return
+      saveClipFlags(rest)
+      if (!fire || asleepRef.current) return
+      if (channelRef.current !== fire.channelNumber) dispatchRef.current({ type: 'tune', channelNumber: fire.channelNumber })
+      flash(`⚑\uFE0E FLAG · ${padChannel(fire.channelNumber)} · ${fire.title}`, 2600)
+    }
+    check()
+    const timer = window.setInterval(check, 1000)
+    return () => window.clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startupPhase])
+
   useEffect(() => subscribeCatalogue(() => setCatalogueVersion((version) => version + 1)), [])
   useEffect(() => subscribeSession(() => setCatalogueVersion((version) => version + 1)), [])
   useEffect(() => {
@@ -2332,7 +2393,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   const playSession = useCallback((programmeId: string) => sessionRef.current.play(programmeId), [])
   const importSession = useCallback(
-    (files: readonly File[], number: number, handles?: readonly MediaHandle[]) => sessionRef.current.import(files, number, handles),
+    (files: readonly File[], number: number, handles?: readonly MediaHandle[], onNote?: (note: string) => void) => sessionRef.current.import(files, number, handles, onNote),
     [],
   )
   const reloadLocalMedia = useCallback(() => sessionRef.current.reload(), [])
@@ -2985,6 +3046,36 @@ export function TvProvider({ children }: { children: ReactNode }) {
     return `TVN EXPORTED · ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'} · ${curated} CURATED · ${guides} ${guides === 1 ? 'GUIDE' : 'GUIDES'} · ${document.favourites.length} FAVOURITES · SETTINGS`
   }, [])
 
+  const exportRange = useCallback(async (from: number, to: number) => {
+    const now = new Date()
+    const register = await loadRegister()
+    const document = buildRangeExport(
+      {
+        stored: await loadStoredSources(),
+        users: usersRef.current,
+        favourites: favouritesRef.current,
+        now,
+        app: { commit: BUILD_INFO.commit, build: BUILD_INFO.build },
+        uploaderOf: uploaderIdFor,
+        curated: Object.values(loadCuratedEdits()),
+        originalsOf: (number) => originalsOf(number, register),
+        shippedOf: (number) => {
+          const shipped = shippedChannel(number)
+          return shipped ? shippedProgrammes(shipped.id) : []
+        },
+      },
+      from,
+      to,
+    )
+    const range = document.range ?? { first: from, last: to }
+    const user = document.userNetwork.channels.length
+    const curated = document.central?.overrides.length ?? 0
+    downloadText(rangeExportFilename(now, range), serialiseTvnExport(document))
+    const span = `${padChannel(range.first)}–${padChannel(range.last)}`
+    if (user + curated === 0) return `EXPORTED ${span} · BLANK · RESTORING IT CLEARS YOUR CHANNELS THERE`
+    return `EXPORTED ${span} · ${user} USER ${user === 1 ? 'CHANNEL' : 'CHANNELS'} · ${curated} CURATED`
+  }, [])
+
   /** The editor's scope for this channel number, checked again on every action rather than trusted from the view. */
   const scopeOf = (number: number) => {
     const target = channelByNumber(number)
@@ -3065,7 +3156,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * Replace this browser's 001–999 overrides with an export's, already validated. Only the override layer
    * changes; each override is checked against the channel TVN ships now, and what no longer fits is reported.
    */
-  const restoreCentralCuration = async (central: CentralCuration): Promise<string> => {
+  const restoreCentralCuration = async (central: CentralCuration, range?: ChannelRange): Promise<string> => {
     const now = Date.now()
     const followed = followMovedChannels(Object.fromEntries(overridesFromExport(central).map((edit) => [String(edit.channelNumber), edit])), channels, (shipped) => shippedBaseline(shipped, shippedIds(shipped)))
     const read = Object.values(followed.edits)
@@ -3082,7 +3173,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       if (result.edit) kept.push(carried.length ? { ...result.edit, conflicts: [...carried, ...(result.edit.conflicts ?? [])] } : result.edit)
       conflicts.push(...carried, ...result.conflicts)
     })
-    replaceCuratedEdits(kept)
+    const outside = range ? Object.values(loadCuratedEdits()).filter((edit) => !inRange(edit.channelNumber, range) && !kept.some((item) => item.channelNumber === edit.channelNumber)) : []
+    replaceCuratedEdits([...outside, ...kept])
     installCurated()
     return ` · ${kept.length} CURATED${conflicts.length ? ` · ${conflicts.length} TO REVIEW` : ''}`
   }
@@ -3138,6 +3230,36 @@ export function TvProvider({ children }: { children: ReactNode }) {
       return `${restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')}${central}${guides ? ` · ${guides.saved.length} ${guides.saved.length === 1 ? 'GUIDE' : 'GUIDES'}` : ''}`
     },
     [importUserNetwork],
+  )
+
+  /**
+   * Restore a range export the viewer has confirmed: every channel numbered inside its range becomes what
+   * the file holds (a number the file leaves out is cleared of the viewer's channel or curation); nothing
+   * outside the range, no setting and no Guide changes.
+   */
+  const importTvnRange = useCallback(
+    async (document: TvnExport, onProgress?: (note: string) => void) => {
+      const checked = validateTvnExport(document)
+      if (!checked.ok || !checked.value.range) throw new Error(`Not a TVN range export${checked.ok ? '' : ` · ${checked.errors[0]}`}`)
+      const { range, userNetwork, favourites } = checked.value
+      const now = Date.now()
+      const run = ++restoreRun.current
+      const records = recordsFromExport(userNetwork, now)
+      const resolved = await resolveRestored(records, restoreDeps, now, 4, { read: false })
+      const next = restoreChannelRange(await loadStoredSources(), resolved.records, range)
+      await saveStoredSources(next)
+      commitUsers(usersAfterRangeRestore(usersRef.current, userNetwork))
+      installSources(next)
+      void refreshRestored(records, resolved.records, run, onProgress).catch(() => {
+        if (run === restoreRun.current) onProgress?.('SOURCES COULD NOT BE UPDATED')
+      })
+      const central = await restoreCentralCuration(checked.value.central ?? { format: CENTRAL_CURATION_FORMAT, overrides: [] }, range)
+      setFavourites((current) => favouritesAfterRangeRestore(current, favourites, range))
+      const count = resolved.records.length
+      return `RESTORED ${padChannel(range.first)}–${padChannel(range.last)} · ${count} USER ${count === 1 ? 'CHANNEL' : 'CHANNELS'}${central}`
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [installSources, refreshRestored],
   )
 
   const openChannelEdit = useCallback(async (number: number): Promise<ChannelEdit | null> => {
@@ -3911,6 +4033,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideMode,
       guideSplit,
       multiviewMode,
+      pipSize,
+      setPipSize,
       tiles,
       audioFocus,
       multiviewPage,
@@ -4003,6 +4127,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importUserNetwork,
       exportTvn,
       importTvn,
+      exportRange,
+      importTvnRange,
       openChannelEdit,
       saveChannelEdit,
       rescanChannelEdit,
@@ -4077,6 +4203,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       importUserNetwork,
       exportTvn,
       importTvn,
+      exportRange,
+      importTvnRange,
       activateGuide,
       channel,
       debugOpen,
@@ -4158,6 +4286,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       guideVisiting,
       volume,
       multiviewMode,
+      pipSize,
+      setPipSize,
       tiles,
       audioFocus,
       multiviewPage,

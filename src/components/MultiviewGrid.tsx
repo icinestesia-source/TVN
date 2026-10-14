@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { channelByNumber } from '../data/catalogue.ts'
 import { useTv } from '../state/tv-context.ts'
 import { compactTracks, gridRows, multiviewLayout, pageCount } from '../view/multiview.ts'
@@ -23,17 +23,18 @@ export function MultiviewGrid({ width }: { width: number }) {
     return () => observer.disconnect()
   }, [])
 
+  const pip = tv.multiviewMode === 'pip'
   const rowClass = layout.stacked ? 'rows-2' : tv.multiviewMode === '2' ? 'rows-1' : layout.columns === 3 ? 'rows-3' : 'rows-2'
   const slot = tv.audioFocus - start
   const selected = slot >= 0 && slot < visible.length ? channelByNumber(visible[slot]) : undefined
   // Only a YouTube tile needs the room: radio faces and stills work at any size.
-  const tracks = size && selected && selected.mediaKind !== 'audio' ? compactTracks(size, layout, gridRows(tv.multiviewMode, layout), slot, 4, 0) : null
+  const tracks = !pip && size && selected && selected.mediaKind !== 'audio' ? compactTracks(size, layout, gridRows(tv.multiviewMode, layout), slot, 4, 0) : null
 
   return (
     <div
       ref={gridRef}
-      className={`mv cols-${layout.columns} ${rowClass} ${layout.stacked ? 'is-stacked' : ''}`}
-      style={tracks ? { gridTemplateColumns: tracks.columns, gridTemplateRows: tracks.rows } : undefined}
+      className={pip ? 'mv is-pip' : `mv cols-${layout.columns} ${rowClass} ${layout.stacked ? 'is-stacked' : ''}`}
+      style={pip ? ({ '--pip-size': `${tv.pipSize}%` } as CSSProperties) : tracks ? { gridTemplateColumns: tracks.columns, gridTemplateRows: tracks.rows } : undefined}
     >
       {visible.map((number, offset) => {
         const index = start + offset

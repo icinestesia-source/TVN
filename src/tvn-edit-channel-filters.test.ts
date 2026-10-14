@@ -63,7 +63,7 @@ describe('Edit Channel: LOAD MORE schedules what it loads; RESCHEDULE shuffles t
   it('LOAD MORE on a TVN channel reads its original publishers again before the next batch', () => {
     const batch = editor.slice(editor.indexOf('const loadBatch = () => {'), editor.indexOf('const noteDraft'))
     expect(batch.indexOf('toRead.entries()')).toBeGreaterThan(-1)
-    expect(batch.indexOf('toRead.entries()')).toBeLessThan(batch.indexOf('loadable.entries()'))
+    expect(batch.indexOf('toRead.entries()')).toBeLessThan(batch.indexOf('[...loadable, ...checkable].entries()'))
     expect(batch).toContain('onAcquire(made)')
   })
 })

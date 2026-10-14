@@ -341,6 +341,37 @@ export function restoreUserNetwork(existing: readonly StoredSource[], restored: 
   return [...kept, ...restored.filter(userNumber)]
 }
 
+export interface ChannelRange {
+  first: number
+  last: number
+}
+
+export const inRange = (number: number | null | undefined, range: ChannelRange): boolean =>
+  typeof number === 'number' && number >= range.first && number <= range.last
+
+/**
+ * A range restore: the viewer's own channels inside the range become exactly the file's; every channel
+ * outside it stays as it is. A record elsewhere with the same id as a restored channel gives way to it.
+ */
+export function restoreChannelRange(existing: readonly StoredSource[], restored: readonly StoredSource[], range: ChannelRange): StoredSource[] {
+  const incoming = restored.filter((record) => isOwnNumber(record.channelNumber) && inRange(record.channelNumber, range))
+  const ids = new Set(incoming.map((record) => record.id))
+  const kept = existing.filter((record) => !(isOwnNumber(record.channelNumber) && inRange(record.channelNumber, range)) && !ids.has(record.id))
+  return [...kept, ...incoming]
+}
+
+/** A range restore keeps this browser's users and adds the file's that are missing here. */
+export function usersAfterRangeRestore(current: readonly NetworkUser[], doc: UserNetworkExport): NetworkUser[] {
+  const known = new Set(current.map((user) => user.id))
+  return [...current, ...usersFromExport(doc).filter((user) => !known.has(user.id))]
+}
+
+/** Favourites inside the range become the file's; every other Favourite stays. */
+export function favouritesAfterRangeRestore(current: readonly number[], fromFile: readonly number[], range: ChannelRange): number[] {
+  const kept = current.filter((number) => !inRange(number, range))
+  return [...kept, ...fromFile.filter((number) => inRange(number, range) && !kept.includes(number))]
+}
+
 /**
  * Favourites after a restore. Curated, 000 and 1000 favourites stay. When the file lists its own User
  * Network Favourites, those replace this browser's 1001+ ones. Otherwise a 1001+ favourite stays on its

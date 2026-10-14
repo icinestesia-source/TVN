@@ -522,6 +522,11 @@ export interface LoadMoreOptions {
    * holding exactly what it offers now (new programmes in, withdrawn ones out); a stopped one only adds.
    */
   recheck?: boolean
+  /**
+   * LOAD MORE on a source read to its end: its newest programmes read again, uncached, page by page until a
+   * page brings nothing new. Everything held stays, and so does how far down the list it was read.
+   */
+  newest?: boolean
   signal?: AbortSignal
   onProgress?(loaded: number, listed: number | undefined): void
 }
@@ -586,6 +591,27 @@ export async function loadMoreSource(source: ChannelSource, deps: LoadMoreDeps, 
   }
   if (source.kind !== 'youtube') return source
   let listed = source.listed
+  if (options.newest && !recheck) {
+    const found = await deps.resolveYouTube(canonicalYouTubeUrl(source), { fresh: true })
+    let added = add(found.videos)
+    listed = found.listed ?? listed
+    let next = found.next
+    options.onProgress?.(held.length, listed)
+    while (next && added > 0 && held.length < MAX_SOURCE_VIDEOS && !options.signal?.aborted) {
+      let batch
+      try {
+        batch = await deps.resolveBatch(next, options.signal)
+      } catch (error) {
+        if (options.signal?.aborted) break
+        throw error
+      }
+      added = add(batch.videos)
+      listed = batch.listed ?? listed
+      next = batch.next
+      options.onProgress?.(held.length, listed)
+    }
+    return done({ ...(listed !== undefined ? { listed } : {}), ...(source.more ? { more: source.more } : {}), ...(source.complete ? { complete: true } : {}) })
+  }
   let cursor = recheck ? undefined : source.more
   let restarted = false
   const restart = async () => {

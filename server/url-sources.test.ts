@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { webmSeconds } from './media-probe.ts'
 import { resolveFeed } from './podcast-feed.ts'
-import { firstVariant, isSignedUrl, readMediaPlaylist, resolveUrlSource } from './url-sources.ts'
+import { decodeCursor } from './media-archive.ts'
+import { firstVariant, isSignedUrl, readMediaPlaylist, resolveUrlSource, rumbleRest } from './url-sources.ts'
 import { refusal } from './web-read.ts'
 
 type Route = (url: string, init?: RequestInit) => Response | null
@@ -163,6 +164,27 @@ describe('Rumble through its channel pages and public HLS playlists', () => {
     })
     expect(found?.episodes).toHaveLength(40)
     expect(seen).toEqual(['https://rumble.com/user/example-cast/videos', 'https://rumble.com/user/example-cast/videos?page=2'])
+  })
+
+  it('carries a long channel on in the next call when this one’s time is up, from a /c/…/videos link', async () => {
+    const owner = { type: 'channel', url: 'https://rumble.com/c/c-296012', name: 'Atlantic Underground' }
+    const full = (n: number) => page(Array.from({ length: 25 }, (_, i) => video(`v${n}b${i.toString(36)}`, { by: owner })))
+    const route: Route = (url) => {
+      if (url === 'https://rumble.com/c/c-296012/videos') return body(full(1), 'text/html')
+      if (url === 'https://rumble.com/c/c-296012/videos?page=2') return body(full(2), 'text/html')
+      return null
+    }
+    let now = 0
+    const budget = { deadline: 10, clock: () => (now += 20) }
+    const first = await resolveUrlSource(new URL('https://rumble.com/c/c-296012/videos'), reader(route), 500, () => {
+      throw new Error('no feed')
+    }, undefined, budget)
+    expect(first?.episodes).toHaveLength(25)
+    const cursor = decodeCursor(first?.next ?? null)
+    expect(cursor).toMatchObject({ u: 'https://rumble.com/c/c-296012', n: 2, k: 25, r: 1 })
+    const rest = await rumbleRest(cursor!, reader(route), 500, { deadline: Infinity, clock: () => 0 })
+    expect(rest.episodes).toHaveLength(25)
+    expect(rest.episodes[0].id).not.toBe(first?.episodes[0].id)
   })
 
   it('reads one video through its oEmbed record and public player record', async () => {

@@ -192,7 +192,7 @@ describe('EDITOR TABS and TERMINOLOGY', () => {
     }
     const panel = read('src/components/GuidePanel.tsx')
     for (const label of ['>My Guide</h3>', '>Channel sources</span>', "'Build from sources'", "'+ New Map'"]) expect(panel).toContain(label)
-    expect(read('src/components/Guide.tsx')).toContain("Add to {guideName ?? 'My Guide'}")
+    expect(read('src/components/Guide.tsx')).toContain('onMenu={(programme, _x, _y, slot) => flagClip(channel, programme, slot)}')
   })
 
   it('the Information Overlay keeps GUIDE: it opens the listings and reads green while My Guide plays', () => {

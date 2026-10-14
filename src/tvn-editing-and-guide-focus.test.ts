@@ -104,7 +104,7 @@ describe('ENTRY SCREEN: the keys at a glance', () => {
     const expected: Record<string, string> = {
       Escape: 'cancel', '-': 'volume-down', '=': 'volume-up', Backspace: 'digit-back', e: 'export-all', d: 'bookmark', r: 'schedule', t: 'surf', y: 'user-channels',
       u: 'media', i: 'guide-tool', o: 'guide-tool', p: 'play-pause', a: 'favourite', s: 'subtitles', f: 'fullscreen', g: 'guide', h: 'hints', l: 'schedule', Enter: 'confirm',
-      z: 'schedule', q: 'schedule', x: 'guide-tool', c: 'guide-cycle', v: 'info', b: 'history-back', n: 'history-forward', m: 'mute', ',': 'step', '.': 'step', '/': 'multiview', ' ': 'random-channel',
+      z: 'schedule', q: 'schedule', x: 'guide-tool', c: 'guide-cycle', v: 'info', b: 'history-back', n: 'history-forward', m: 'mute', ',': 'step', '.': 'step', '/': 'multiview', '[': 'pip-size', ']': 'pip-size', ' ': 'random-channel',
       Home: 'guide-now', PageUp: 'channel-up', PageDown: 'channel-down', ArrowUp: 'channel-up', ArrowDown: 'channel-down', ArrowLeft: 'volume-down', ArrowRight: 'volume-up',
     }
     for (const item of [...KEYBOARD_ROWS.flat(), ...KEYBOARD_NAV]) {
@@ -325,7 +325,7 @@ describe('CHANNEL EDITOR: what the viewer sees', () => {
   it('LOAD reads one batch per source, keeps Stop, and adding a source reads its first programmes without rebuilding', () => {
     const editor = read('src/components/ChannelEditor.tsx')
     expect(editor).toContain('const loadable = edit ? edit.sources.filter(loadableSource) : []')
-    expect(editor).toMatch(/const found = await onLoadMore\(source, \{\s*signal: stop\.signal,/)
+    expect(editor).toMatch(/const found = await onLoadMore\(source, \{\s*\.\.\.\(index >= loadable\.length \? \{ newest: true \} : \{\}\),\s*signal: stop\.signal,/)
     expect(editor).not.toMatch(/loadBatch[^]*all: true[^]*const noteDraft/)
     expect(editor).toContain('Loading · {batch.of}')
     expect(editor).toContain('onClick={() => stopRef.current?.abort()}')

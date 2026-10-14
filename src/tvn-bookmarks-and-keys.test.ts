@@ -118,9 +118,9 @@ describe('BOOKMARKS: clips kept to play again', () => {
     expect(guide).toContain("className={bookmarksOn ? 'tab guide-glyph-tab guide-bookmarks is-on' : 'tab guide-glyph-tab guide-bookmarks'}")
     expect(guide).toContain('<span className="guide-tab-glyph" aria-hidden="true">♡</span>')
     const provider = read('src/state/TvProvider.tsx')
-    expect(provider).toMatch(/case 'guide-cycle': \{[\s\S]{0,200}panelOpenRef\.current\(\) === 'bookmarks'\) \{\s*closeGuideTool\(\)\s*setGuideFilter\('all'\)/)
+    expect(provider).toMatch(/case 'guide-cycle': \{[\s\S]{0,400}panelOpenRef\.current\(\) === 'bookmarks' \|\| panelOpenRef\.current\(\) === 'flags'\)\) \{\s*closeGuideTool\(\)\s*setGuideFilter\('all'\)/)
     expect(provider).toMatch(/guideFilter === 'favourites' && next === 'all'\) \{\s*openGuideTool\('bookmarks'\)/)
-    expect(provider).toMatch(/case 'guide-filter': \{[\s\S]{0,200}if \(panelOpenRef\.current\(\) === 'bookmarks' \|\| \(guideOpenRef\.current && editingRef\.current\(\)\)\) closeGuideTool\(\)/)
+    expect(provider).toMatch(/case 'guide-filter': \{[\s\S]{0,200}if \(panelOpenRef\.current\(\) === 'bookmarks' \|\| panelOpenRef\.current\(\) === 'flags' \|\| \(guideOpenRef\.current && editingRef\.current\(\)\)\) closeGuideTool\(\)/)
   })
 })
 

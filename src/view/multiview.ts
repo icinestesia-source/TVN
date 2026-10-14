@@ -5,6 +5,7 @@ export function cycleMultiview(mode: MultiviewMode): MultiviewMode {
   if (mode === '1') return '2'
   if (mode === '2') return '4'
   if (mode === '4') return '9'
+  if (mode === '9') return 'pip'
   return '1'
 }
 
@@ -12,7 +13,43 @@ export function tileCount(mode: MultiviewMode): number {
   if (mode === '2') return 2
   if (mode === '4') return 4
   if (mode === '9') return 9
+  if (mode === 'pip') return 2
   return 1
+}
+
+/** The inset picture's width, as a share of the screen's: [ and ] step it, OPTIONS sets it. */
+export const PIP_SIZE_MIN = 15
+export const PIP_SIZE_MAX = 60
+export const PIP_SIZE_STEP = 5
+export const PIP_SIZE_DEFAULT = 30
+
+export function clampPipSize(value: unknown): number {
+  const size = typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : PIP_SIZE_DEFAULT
+  return Math.min(PIP_SIZE_MAX, Math.max(PIP_SIZE_MIN, size))
+}
+
+export const PIP_SIZE_KEY = 'tvn.pip-size.v1'
+
+type Store = Pick<Storage, 'getItem' | 'setItem'>
+const browserStore = (): Store | null => {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage
+  } catch {
+    return null
+  }
+}
+
+export function loadPipSize(store: Store | null = browserStore()): number {
+  const saved = store?.getItem(PIP_SIZE_KEY)
+  return clampPipSize(saved === null || saved === undefined ? undefined : Number(saved))
+}
+
+export function savePipSize(size: number, store: Store | null = browserStore()): void {
+  try {
+    store?.setItem(PIP_SIZE_KEY, String(clampPipSize(size)))
+  } catch {
+    // Private browsing may refuse storage; the size then lasts as long as the page.
+  }
 }
 
 export interface MultiviewLayout {
@@ -25,6 +62,8 @@ export interface MultiviewLayout {
 export function multiviewLayout(mode: MultiviewMode, viewportWidth: number): MultiviewLayout {
   const narrow = viewportWidth < 800
   if (mode === '1') return { columns: 1, pageSize: 1, stacked: false }
+  // Left and right move between the main picture and the inset.
+  if (mode === 'pip') return { columns: 2, pageSize: 2, stacked: false }
   if (mode === '2') {
     return narrow
       ? { columns: 1, pageSize: 2, stacked: true }

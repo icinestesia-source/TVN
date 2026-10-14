@@ -126,6 +126,37 @@ describe('a source deeper than its first 60 programmes', () => {
     expect(podcast.listed).toBe(3)
   })
 
+  it('LOAD MORE on a source read to its end checks its newest programmes again, keeping all it holds', async () => {
+    // Held: everything but the newest 130, which have appeared since; plus one the list no longer shows.
+    const whole = deepSource({ videos: [...DEEP.slice(130).map((video) => ({ ...video })), { id: 'older000001', title: 'Older find', durationSec: 900 }], complete: true, deep: true, more: undefined })
+    const calls: string[] = []
+    const fresh: unknown[] = []
+    const deps = fakeYouTube(calls)
+    const read = await loadMoreSource(whole, { ...deps, resolveYouTube: async (url, options) => (fresh.push(options), deps.resolveYouTube(url)) }, { newest: true }, 5)
+    expect(fresh).toEqual([{ fresh: true }])
+    // The first 60, then pages until one brings nothing new: 60–160 adds 70, 160–260 adds none.
+    expect(calls).toEqual(['first', 'at-60', 'at-160'])
+    const ids = read.videos!.map((video) => video.id)
+    expect(ids).toHaveLength(743)
+    expect(new Set(ids).size).toBe(743)
+    expect(ids).toContain('older000001')
+    expect(read.complete).toBe(true)
+    expect(read.more).toBeUndefined()
+    // Nothing new: one page read, nothing changes.
+    const again: string[] = []
+    const same = await loadMoreSource(read, fakeYouTube(again), { newest: true }, 6)
+    expect(again).toEqual(['first'])
+    expect(same.videos).toHaveLength(743)
+  })
+
+  it('always offers LOAD MORE: on a source read to its end it checks for anything new', () => {
+    const source = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
+    expect(source).toMatch(/disabled=\{busy !== null \|\| !\(loadableSource\(source\) \|\| newestSource\(source\)\)\}/)
+    expect(source).toMatch(/loadableSource\(source\) \? loadMore\(source, false\) : loadMore\(source, false, false, true\)/)
+    expect(source).toMatch(/\[\.\.\.loadable, \.\.\.checkable\]/)
+    expect(source).toMatch(/index >= loadable\.length \? \{ newest: true \}/)
+  })
+
   it('offers RE-CHECK in the editor where LOAD ALL has nothing left to read', () => {
     const source = readFileSync('src/components/ChannelEditor.tsx', 'utf8')
     expect(source).toMatch(/\) : onRecheck \? \([\s\S]*Re-check/)
@@ -405,7 +436,7 @@ describe('the Channel Editor', () => {
     expect(html).toContain('>Load all</button>')
     const done = render({ name: 'Deep', sources: [deepSource({ videos: DEEP, more: undefined, complete: true, deep: true })] })
     expect(done).toContain('742 loaded · 759 listed · whole source read')
-    expect(done).toMatch(/<button[^>]*disabled=""[^>]*title="The whole source is read"[^>]*>Load more<\/button>/)
+    expect(done).toMatch(/<button type="button" class="tab editor-source-load" aria-label="[^"]*" title="The whole source is read: check it again for anything new, and schedule it"[^>]*>Load more<\/button>/)
   })
 
   it('counts available, eligible and scheduled, and offers RANDOMISE and REBUILD', () => {

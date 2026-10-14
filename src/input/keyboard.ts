@@ -64,6 +64,10 @@ export function commandFromKey(
       return { type: 'mute' }
     case '/':
       return { type: 'multiview' }
+    case '[':
+      return { type: 'pip-size', step: -1 }
+    case ']':
+      return { type: 'pip-size', step: 1 }
     case 'b':
     case 'B':
       return { type: 'history-back' }

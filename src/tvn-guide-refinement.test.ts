@@ -67,10 +67,8 @@ describe('ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => undefined, onTool: () => undefined }))
     expect(markup).toMatch(/<button[^>]*>Add<\/button>/)
     expect(markup).not.toMatch(/role="(menu|dialog)"/)
-    // The one menu in the Guide is ADD TO GUIDE on a programme (right-click or hold), not ADD.
-    const listings = guide.replace(/\nfunction AddToGuideMenu[\s\S]*?\n\}\n/, '\n')
-    expect(listings).not.toBe(guide)
-    for (const source of [listings, readFileSync('src/components/GuideAdd.tsx', 'utf8')]) {
+    // A right-click or hold on a programme flags it: the Guide has no menu at all.
+    for (const source of [guide, readFileSync('src/components/GuideAdd.tsx', 'utf8')]) {
       expect(source).not.toMatch(/window\.prompt|\bprompt\(|role="menu"|guide-add-menu/)
     }
   })

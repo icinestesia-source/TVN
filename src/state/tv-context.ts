@@ -68,6 +68,9 @@ export interface TvContextValue {
   guideMode: GuideMode
   guideSplit: number
   multiviewMode: MultiviewMode
+  /** The picture-in-picture inset's width, as a percentage of the screen's. */
+  pipSize: number
+  setPipSize: (size: number) => number
   tiles: readonly number[]
   audioFocus: number
   multiviewPage: number
@@ -248,6 +251,10 @@ export interface TvContextValue {
   /** Restores a confirmed complete export; a file that fails validation changes nothing. */
   /** ALL restores everything the file holds; USER only its User Network and that network's Favourites. */
   importTvn: (document: import('../services/tvn-export.ts').TvnExport, scope?: 'all' | 'user', onProgress?: (note: string) => void) => Promise<string>
+  /** Save the viewer's channels and curation numbered from–to (either way round) as a range export. */
+  exportRange: (from: number, to: number) => Promise<string>
+  /** Restore a confirmed range export: only the numbers inside its range change. */
+  importTvnRange: (document: import('../services/tvn-export.ts').TvnExport, onProgress?: (note: string) => void) => Promise<string>
   /**
    * The Channel Editor, for one channel at a time. A 1001+ channel is read from and saved to the User
    * Network; a curated channel's change is kept in this browser, over the shipped channel.
@@ -291,7 +298,7 @@ export interface TvContextValue {
   /** Play Now on the session channel: this imported programme starts from the beginning. */
   playSession: (programmeId: string) => void
   /** Adds these files to a Local Media channel (991–1000). Resolves with the viewer-facing outcome ('' if superseded). */
-  importSession: (files: readonly File[], channelNumber: number, handles?: readonly MediaHandle[]) => Promise<string>
+  importSession: (files: readonly File[], channelNumber: number, handles?: readonly MediaHandle[], onNote?: (note: string) => void) => Promise<string>
   /** REMEMBER LOCAL MEDIA: loads every remembered Local Media channel again, as the viewer left it. */
   reloadLocalMedia: () => Promise<string>
   /** Takes one imported file out of its Local Media channel. */

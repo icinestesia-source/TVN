@@ -536,7 +536,7 @@ export function SessionImportTools({
   channel?: Channel
   programmes?: readonly Programme[]
   watching?: boolean
-  onImport: (files: readonly File[], channelNumber: number, handles?: readonly MediaHandle[]) => Promise<string>
+  onImport: (files: readonly File[], channelNumber: number, handles?: readonly MediaHandle[], onNote?: (note: string) => void) => Promise<string>
   onRemove?: (programmeId: string) => void
   onMove?: (programmeId: string, to: number) => boolean
   onClear?: (channelNumber: number) => void
@@ -579,7 +579,7 @@ export function SessionImportTools({
     setBusy(true)
     setNote('READING…')
     try {
-      setNote((await onImport(files, channel.number, handles)) || null)
+      setNote((await onImport(files, channel.number, handles, setNote)) || null)
     } catch (caught) {
       setNote(viewerMessage(caught, 'THOSE FILES COULD NOT BE READ'))
     } finally {
@@ -758,7 +758,7 @@ export function SessionImportTools({
         ) : null}
         {note?.includes('NEED CONVERTING') ? (
           <p className="guide-tool-note">
-            Old AVI, FLV, WMV and MPEG video, and video that stutters, play here once converted to MP4. On a Mac, download the{' '}
+            WMV and MPEG video, AVI files TVN could not convert here, and video that stutters, play once converted to MP4. On a Mac, download the{' '}
             <a href={CONVERTER_URL} download onKeyDown={keepKey}>
               TVN converter
             </a>
@@ -958,10 +958,12 @@ export function UserNetworkImportTools({
   userChannels,
   onApply,
   onApplyComplete,
+  onApplyRange,
 }: {
   userChannels: number
   onApply: (document: UserNetworkExport, onProgress: (note: string) => void) => Promise<string>
   onApplyComplete: (document: TvnExport, scope: 'all' | 'user', onProgress: (note: string) => void) => Promise<string>
+  onApplyRange: (document: TvnExport, onProgress: (note: string) => void) => Promise<string>
 }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -1000,17 +1002,22 @@ export function UserNetworkImportTools({
     }
   }
 
-  const apply = async (scope: 'all' | 'user') => {
+  const apply = async (scope: 'all' | 'user' | 'range') => {
     if (!pending) return
     const chosen = pending
     setPending(null)
     setBusy(true)
-    const restoring = chosen.kind === 'complete' && scope === 'all' ? 'RESTORING ALL…' : 'RESTORING USER NETWORK…'
+    const restoring = scope === 'range' ? 'RESTORING CHANNELS…' : chosen.kind === 'complete' && scope === 'all' ? 'RESTORING ALL…' : 'RESTORING USER NETWORK…'
     setNote(restoring)
     let done: string | null = null
     const progress = (update: string) => setNote(`${done ?? restoring} · ${update}`)
     try {
-      done = chosen.kind === 'complete' ? await onApplyComplete(chosen.document, scope, progress) : await onApply(chosen.document, progress)
+      done =
+        chosen.kind === 'complete'
+          ? scope === 'range'
+            ? await onApplyRange(chosen.document, progress)
+            : await onApplyComplete(chosen.document, scope, progress)
+          : await onApply(chosen.document, progress)
       setNote(done)
     } catch (caught) {
       setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE IMPORTED'))
@@ -1040,7 +1047,18 @@ export function UserNetworkImportTools({
         ) : null}
       </div>
       <div className="info-actions">
-        {pending ? (
+        {pending?.kind === 'complete' && pending.document.range ? (
+          <>
+            <span className="remove-ask" role="alertdialog" aria-label="Restore these channels?">
+              A channel range export of {padChannel(pending.document.range.first)}–{padChannel(pending.document.range.last)} from {pending.filename}: {pending.channels}{' '}
+              User {pending.channels === 1 ? 'channel' : 'channels'} and {pending.overrides} curated TVN {pending.overrides === 1 ? 'channel' : 'channels'}, with
+              their sources and data. Restoring makes every channel numbered {padChannel(pending.document.range.first)}–{padChannel(pending.document.range.last)} exactly
+              as the file has it, and clears your own channels and curation there that the file does not hold. Nothing outside that range changes.
+            </span>
+            {key(`Restore ${padChannel(pending.document.range.first)}–${padChannel(pending.document.range.last)}`, () => void apply('range'), 'tab remove-key')}
+            {key('Keep mine', () => setPending(null))}
+          </>
+        ) : pending ? (
           <>
             <span className="remove-ask" role="alertdialog" aria-label={pending.kind === 'complete' ? 'Restore ALL or USER?' : 'Restore USER?'}>
               {pending.kind === 'complete' ? 'An ALL export. ' : 'A USER export. '}

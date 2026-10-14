@@ -2,7 +2,7 @@ import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN, type SurfRange } from '../state/surf.ts'
 import { TRANSITION_IDS, transitionSettingsErrors, type TransitionId, type TransitionSettings } from '../state/transitions.ts'
 import { CORNERS, SHORTCUT_IDS, type ShortcutAssignment } from '../view/info-shortcuts.ts'
-import { USER_NUMBER_LIMIT } from '../data/network.ts'
+import { isOwnNumber, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { tvnChannelSettingsErrors, type TvnChannelSettings } from '../tvn/tvn-channel.ts'
 import { buildCentralCuration, checkCentralCuration, type CentralCuration } from './central-curation.ts'
 import type { StoredSource } from './channels-import.ts'
@@ -17,7 +17,7 @@ import {
   type ExportUser,
   type UserNetworkExport,
 } from './user-network-export.ts'
-import { readUserNetworkFile, type ReadResult } from './user-network-restore.ts'
+import { inRange, readUserNetworkFile, type ChannelRange, type ReadResult } from './user-network-restore.ts'
 import type { UploaderOf } from './user-network.ts'
 
 /**
@@ -71,6 +71,11 @@ export interface TvnExport {
   guides?: GuidesExport
   /** For reading only. */
   manifests: EditorialManifest[]
+  /**
+   * A range export: only the channels numbered first–last, with their sources, running orders, editorial
+   * notes, overrides and Favourites; no settings and no Guides. Its restore changes only those numbers.
+   */
+  range?: ChannelRange
 }
 
 export interface ExportApp {
@@ -123,6 +128,41 @@ export function buildTvnExport({ stored, users, favourites, settings, now, app, 
     guides: buildGuidesExport(guides),
     manifests,
   }
+}
+
+/** The complete export cut down to the channels numbered first–last (either way round). */
+export function buildRangeExport(input: Omit<TvnExportInput, 'settings' | 'guides'>, from: number, to: number): TvnExport {
+  const range = { first: Math.min(from, to), last: Math.max(from, to) }
+  const { stored, users, favourites, now, app, uploaderOf, curated = [], shippedOf = () => [], originalsOf = () => [] } = input
+  const network = buildUserNetworkExport(stored, now, uploaderOf, users)
+  const channels = network.channels.filter((channel) => inRange(channel.number, range))
+  const numbers = new Set(channels.map((channel) => channel.number))
+  const edits = curated.filter((edit) => inRange(edit.channelNumber, range))
+  return {
+    format: TVN_EXPORT_FORMAT,
+    version: TVN_EXPORT_VERSION,
+    exportedAt: now.toISOString(),
+    ...(app ? { app: { commit: app.commit, build: app.build } } : {}),
+    userNetwork: { ...network, channels },
+    favourites: favourites.filter((number) => inRange(number, range)),
+    settings: {},
+    central: buildCentralCuration(edits, uploaderOf),
+    manifests: [
+      ...[...edits].sort((a, b) => a.channelNumber - b.channelNumber).map((edit) => curatedChannelManifest(edit.channelNumber, edit, shippedOf(edit.channelNumber), originalsOf(edit.channelNumber))),
+      ...stored
+        .filter((record) => record.channelNumber !== null && numbers.has(record.channelNumber) && !record.emptySlot)
+        .sort((a, b) => (a.channelNumber ?? 0) - (b.channelNumber ?? 0))
+        .map(userChannelManifest),
+    ],
+    range,
+  }
+}
+
+/** `TVN_Channels_0950-0970_YYYY-MM-DD.json`. */
+export function rangeExportFilename(now: Date, range: ChannelRange): string {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const number = (value: number) => String(value).padStart(4, '0')
+  return `TVN_Channels_${number(range.first)}-${number(range.last)}_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`
 }
 
 /** `TVN_Export_YYYY-MM-DD.json`, by the viewer's own calendar. */
@@ -183,6 +223,25 @@ function checkSettings(value: unknown, errors: string[]): void {
   if (value.tvnChannel !== undefined) errors.push(...tvnChannelSettingsErrors(value.tvnChannel, at('tvnChannel')))
 }
 
+/** A range file holds nothing outside its own numbers, so its restore can never reach past them. */
+function checkRange(data: Record<string, unknown>, errors: string[]): void {
+  const range = data.range
+  if (!isRecord(range) || !isInt(range.first, 1, USER_NUMBER_LIMIT - 1) || !isInt(range.last, 1, USER_NUMBER_LIMIT - 1) || range.first > range.last) {
+    errors.push('range is not first–last channel numbers, lowest first')
+    return
+  }
+  const bounds = { first: range.first, last: range.last }
+  const numbers = (list: unknown, of: (item: Record<string, unknown>) => unknown): unknown[] => (Array.isArray(list) ? list.map((item) => (isRecord(item) ? of(item) : item)) : [])
+  const network = isRecord(data.userNetwork) ? data.userNetwork.channels : undefined
+  const central = isRecord(data.central) ? data.central.overrides : undefined
+  const outside = [
+    ...numbers(network, (channel) => channel.number),
+    ...numbers(central, (override) => override.number),
+    ...(Array.isArray(data.favourites) ? data.favourites : []),
+  ].filter((number) => typeof number === 'number' && !inRange(number, bounds))
+  if (outside.length) errors.push(`range ${bounds.first}–${bounds.last} does not hold channel ${String(outside[0])}`)
+}
+
 export function validateTvnExport(data: unknown): { ok: true; value: TvnExport } | { ok: false; errors: string[] } {
   if (!isRecord(data)) return { ok: false, errors: ['Not a TVN export'] }
   const errors: string[] = []
@@ -204,6 +263,7 @@ export function validateTvnExport(data: unknown): { ok: true; value: TvnExport }
   if (data.central !== undefined) checkCentralCuration(data.central, 'central', errors)
   if (data.guides !== undefined) checkGuides(data.guides, 'guides', errors)
   if (data.manifests !== undefined && !Array.isArray(data.manifests)) errors.push('manifests is not a list')
+  if (data.range !== undefined) checkRange(data, errors)
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: data as unknown as TvnExport }
 }
 
@@ -230,7 +290,18 @@ export function readRestoreFile(text: string): ({ kind: 'complete' } & TvnExport
   } catch {
     return { kind: 'network', ok: false, errors: ['Not a JSON file'] }
   }
-  if (isRecord(data) && data.format === TVN_EXPORT_FORMAT) return { kind: 'complete', ...readTvnExportData(data) }
+  if (isRecord(data) && data.format === TVN_EXPORT_FORMAT) {
+    const channels = isRecord(data.userNetwork) && Array.isArray(data.userNetwork.channels) ? data.userNetwork.channels : []
+    const low = channels.find((channel) => isRecord(channel) && typeof channel.number === 'number' && channel.number < USER_NUMBER_START && !isOwnNumber(channel.number))
+    if (low && isRecord(low)) {
+      return {
+        kind: 'complete',
+        ok: false,
+        errors: [`Its own channels from ${String(low.number)} come from a NEW USER network, where 001–990 are yours: start NEW in this browser first, then restore`],
+      }
+    }
+    return { kind: 'complete', ...readTvnExportData(data) }
+  }
   return { kind: 'network', ...readUserNetworkFile(text) }
 }
 

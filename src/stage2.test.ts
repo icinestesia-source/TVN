@@ -193,7 +193,8 @@ describe('guide and multiview state', () => {
   it('keeps one audible tile and restores the focused channel', () => {
     const ordered = [1, 2, 3, 4, 101, 900]
     expect(cycleMultiview('1')).toBe('2')
-    expect(cycleMultiview('9')).toBe('1')
+    expect(cycleMultiview('9')).toBe('pip')
+    expect(cycleMultiview('pip')).toBe('1')
     const dual = fillTiles(3, ordered, 2)
     expect(dual[0]).toBe(3)
     expect(audibleTile(0, dual.length).filter(Boolean)).toHaveLength(1)

@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { decodeCursor, encodeCursor, readArchive, type ArchiveEpisode, type Cursor } from './media-archive.ts'
 import { measureMedia } from './media-probe.ts'
-import { INGEST_MESSAGE, INGEST_SCHEME, resolveUrlSource, type LiveSource, type SourceForm, type SourceProvider } from './url-sources.ts'
+import { INGEST_MESSAGE, INGEST_SCHEME, resolveUrlSource, rumbleRest, type LiveSource, type SourceForm, type SourceProvider } from './url-sources.ts'
 import { isXHost, resolveWebsite, resolveXPost } from './web-programmes.ts'
 import { attr, dayOf, FeedError, fetchText, field, fnv, parseDuration, publicFeedUrl, sameSite, TIMEOUT_MS, USER_AGENT } from './web-read.ts'
 
@@ -393,10 +393,11 @@ export async function resolveFeed(
   const cursor = decodeCursor(options.cursor ?? null)
   if (cursor && !sameSite(new URL(cursor.u).hostname, start.hostname)) throw new FeedError(400, 'That cursor belongs to another site')
   if (cursor?.f) return feedRest(cursor, read, keep, deadline)
+  if (cursor?.r) return rumbleRest(cursor, read, keep, { deadline, clock })
   // Chosen as a Website: the page itself is the programme, never a feed it may announce.
   if (options.as === 'website' && !cursor) return isXHost(start.hostname) ? resolveXPost(start, read) : resolveWebsite(start, read)
   if (!cursor) {
-    const source = await resolveUrlSource(start, read, keep, parseFeed)
+    const source = await resolveUrlSource(start, read, keep, parseFeed, undefined, { deadline, clock })
     if (source) return source
   }
 
