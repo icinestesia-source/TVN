@@ -208,7 +208,7 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
     expect(arrange).not.toContain('playFromGuideRef')
     const guide = read('src/components/Guide.tsx')
     expect(guide).toContain('(number) => tv.arrangeChannel(number, how),')
-    expect(guide).toContain("(how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now' ? () => tv.dispatch({ type: 'cancel' }) : undefined,")
+    expect(guide).toContain("channel.number === tv.channel.number && ((how === 'latest' && channel.liveFromMs === undefined) || how === 'latest-now') ? () => tv.dispatch({ type: 'cancel' }) : undefined,")
     expect(guide).toContain('live={channel.liveFromMs !== undefined}')
     expect(guide).toContain('arranged={channel.arranged}')
   })
