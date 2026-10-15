@@ -1,13 +1,10 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useState } from 'react'
 import { useTv } from '../state/tv-context.ts'
 import { formatDuration, formatRange, padChannel } from '../utils/time.ts'
 import { flagBookmark, removeClipFlags, useClipFlags } from '../view/clip-flags.ts'
+import { keepKey } from './keep-key.ts'
 
 const DEFAULT_NAME = 'My Flagged Clips'
-
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
 
 /**
  * ⚑: the clips the viewer flagged in the Guide (right-click a clip), in the order they air. TVN tunes to

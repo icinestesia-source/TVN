@@ -1,4 +1,3 @@
-import type { KeyboardEvent } from 'react'
 import type { TvContextValue } from '../state/tv-context.ts'
 import type { Channel } from '../types/channel.ts'
 import type { Programme } from '../types/programme.ts'
@@ -13,6 +12,7 @@ import {
   type ShortcutContext,
   type ShortcutDefinition,
 } from '../view/info-shortcuts.ts'
+import { keepKey } from './keep-key.ts'
 
 export type HistoryActions = {
   canBack: boolean
@@ -34,11 +34,6 @@ export function historyActions(tv: Pick<TvContextValue, 'canGoBack' | 'canGoForw
     multiOn: tv.multiviewMode !== '1',
     onMulti: () => tv.dispatch({ type: 'multiview' }),
   }
-}
-
-/** Enter and Space press the control rather than reaching the television (and tuning or confirming). */
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
 }
 
 /** One hold timer for the corner keys, kept across the bar's once-a-second renders. A held mouse button counts. */

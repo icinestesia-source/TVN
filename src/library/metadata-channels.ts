@@ -206,7 +206,7 @@ export function eraMembership(programmes: readonly { sourceId?: string; title?: 
 export function artistOf(programme: { sourceId?: string; title?: string }): string {
   const source = programme.sourceId ?? ''
   if (!MULTI_ARTIST_SOURCES.has(source) || !programme.title) return source
-  const act = programme.title.split(/\s[-–—|]\s|\s["“'‘]/)[0].replace(/\s*[(\[].*$/, '').trim().toLowerCase()
+  const act = programme.title.split(/\s[-–—|]\s|\s["“'‘]/)[0].replace(/\s*[([].*$/, '').trim().toLowerCase()
   return act ? `${source}:${act}` : source
 }
 

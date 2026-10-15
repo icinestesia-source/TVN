@@ -20,7 +20,6 @@
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
-    "@ffmpeg/util": "^0.12.2",
     "mpegts.js": "^1.8.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

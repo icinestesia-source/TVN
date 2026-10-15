@@ -6,17 +6,21 @@ import {
   CARD_POSITIONS,
   CARD_SIZES,
   CARD_TYPES,
+  COLOUR_SETS,
   COLOURS,
   DEFAULT_TRANSITION_SETTINGS,
   GRAINS,
+  MAX_TRANSITION_COLOURS,
   SPEEDS,
   TRANSITION_IDS,
   TRANSITIONS,
+  toggledColour,
   transitionTiming,
+  withColours,
   type TitleCard,
   type TransitionSettings,
 } from '../state/transitions.ts'
-import { TransitionOverlay, type CardIdentity } from './TransitionOverlay.tsx'
+import { TINTS, TransitionOverlay, type CardIdentity } from './TransitionOverlay.tsx'
 
 /** A clearly made-up channel: the preview never tunes the television. */
 const SAMPLE: CardIdentity = { number: '225', name: 'TVN Preview', programme: 'Sample programme' }
@@ -118,6 +122,64 @@ function TransitionPreview({ settings }: { settings: TransitionSettings }) {
   )
 }
 
+/** One colour or up to five, picked in order; Mono clears them. A combination replaces the colours picked. */
+function ColourPicker({ settings, onChange }: { settings: TransitionSettings; onChange: (next: TransitionSettings) => void }) {
+  const { colours } = settings
+  const full = colours.length >= MAX_TRANSITION_COLOURS
+  const matching = COLOUR_SETS.findIndex((set) => set.colours.length === colours.length && set.colours.every((colour, index) => colours[index] === colour))
+  return (
+    <>
+      <Row label="Colour">
+        <span className="options-choices fx-colours" role="group" aria-label="Colour">
+          {COLOURS.map(({ value, label }) => {
+            const order = colours.indexOf(value)
+            const on = value === 'mono' ? colours.length === 0 : order >= 0
+            return (
+              <button
+                key={value}
+                type="button"
+                className={on ? 'tab is-on' : 'tab'}
+                aria-pressed={on}
+                disabled={!on && full && value !== 'mono'}
+                title={!on && full && value !== 'mono' ? `Up to ${MAX_TRANSITION_COLOURS} colours: take one out first` : undefined}
+                onClick={() => onChange(withColours(settings, toggledColour(colours, value)))}
+              >
+                {TINTS[value] ? <i className="fx-swatch" style={{ background: TINTS[value] }} aria-hidden="true" /> : null}
+                {label}
+                {order >= 0 && colours.length > 1 ? <b className="fx-colour-order">{order + 1}</b> : null}
+              </button>
+            )
+          })}
+        </span>
+      </Row>
+      <Row label="Combinations">
+        <select
+          aria-label="Colour combinations"
+          value={matching >= 0 ? String(matching) : ''}
+          onChange={(event) => {
+            const set = COLOUR_SETS[Number(event.target.value)]
+            if (set) onChange(withColours(settings, set.colours))
+          }}
+        >
+          <option value="" disabled>
+            {colours.length > 1 ? 'Your own' : 'Choose…'}
+          </option>
+          {COLOUR_SETS.map((set, index) => (
+            <option key={set.label} value={index}>
+              {set.label}
+            </option>
+          ))}
+        </select>
+      </Row>
+      <p className="options-note">
+        {colours.length > 1
+          ? `${colours.length} of ${MAX_TRANSITION_COLOURS} colours, swept through in the order picked.`
+          : `Pick up to ${MAX_TRANSITION_COLOURS} colours to sweep through them; Mono for none.`}
+      </p>
+    </>
+  )
+}
+
 /** OPTIONS → Channel change: the transition, its look and its title card, with only the controls it uses. */
 export function ChannelChangeOptions({ settings, onChange }: { settings: TransitionSettings; onChange: (next: TransitionSettings) => void }) {
   const definition = TRANSITIONS[settings.id]
@@ -141,11 +203,7 @@ export function ChannelChangeOptions({ settings, onChange }: { settings: Transit
           <Choices label="Speed" value={settings.speed} choices={SPEEDS} onChange={(speed) => set({ speed })} />
         </Row>
       ) : null}
-      {definition.colour ? (
-        <Row label="Colour">
-          <Select label="Colour" value={settings.colour} choices={COLOURS} onChange={(colour) => set({ colour })} />
-        </Row>
-      ) : null}
+      {definition.colour ? <ColourPicker settings={settings} onChange={onChange} /> : null}
       {definition.grain ? (
         <Row label="Grain">
           <Choices label="Grain" value={settings.grain} choices={GRAINS} onChange={(grain) => set({ grain })} />

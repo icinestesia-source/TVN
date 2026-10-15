@@ -13,13 +13,26 @@ export interface CardIdentity {
   programme: string | null
 }
 
-const TINTS: Record<TransitionColour, string | null> = {
+export const TINTS: Record<TransitionColour, string | null> = {
   mono: null,
   warm: '#ffd2a1',
   cool: '#a8d4ff',
   green: '#8dffa8',
   amber: '#ffb54d',
   accent: 'var(--gold)',
+  purple: '#c79bff',
+  pink: '#ff9ad5',
+  red: '#ff8080',
+  blue: '#86a8ff',
+  teal: '#7ff5e1',
+}
+
+/** One colour as a flat tint; several as a band that sweeps through them and back to the first. */
+export function tintOf(colours: readonly TransitionColour[]): string | null {
+  const shades = colours.map((colour) => TINTS[colour]).filter((shade): shade is string => shade !== null)
+  if (shades.length === 0) return null
+  if (shades.length === 1) return shades[0]
+  return `linear-gradient(115deg, ${[...shades, shades[0]].join(', ')})`
 }
 
 const ACCENTS: Record<CardAccent, string> = {
@@ -72,7 +85,8 @@ export function TransitionOverlay({
 }) {
   const definition = TRANSITIONS[settings.id]
   const timing = transitionTiming(settings)
-  const tint = definition.colour ? TINTS[settings.colour] : null
+  const tint = definition.colour ? tintOf(settings.colours) : null
+  const blend = definition.colour && settings.colours.length > 1
   const grain = definition.grain ? settings.grain : 'normal'
   const style = {
     '--fx-ms': `${Math.max(1, timing.durationMs)}ms`,
@@ -109,7 +123,7 @@ export function TransitionOverlay({
         </>
       ) : null}
       {definition.effect === 'flash' ? <div className="fx-flash-light" /> : null}
-      {tint ? <div className="fx-tint" /> : null}
+      {tint ? <div className={blend ? 'fx-tint is-blend' : 'fx-tint'} /> : null}
       {timing.cardAtMs !== null && !revealing ? <TitleCard settings={settings} identity={identity} immediate={timing.cardAtMs === 0} /> : null}
     </div>
   )

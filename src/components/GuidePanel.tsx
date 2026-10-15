@@ -1,20 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { channelByNumber, programmesFor } from '../data/catalogue.ts'
 import { refusedVideos } from '../services/embed-refusals.ts'
 import { NEW_MAP_NAME, resolveItem, unsaved, type GuideItem, type GuideRun, type GuideSource, type ViewingGuide } from '../services/viewing-guides.ts'
 import { useTv } from '../state/tv-context.ts'
 import { padChannel } from '../utils/time.ts'
 import { mapSources, mapSummary } from '../view/map-summary.ts'
-
-/** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
-
-function viewerMessage(caught: unknown, fallback: string): string {
-  const text = caught instanceof Error ? caught.message.trim() : ''
-  return text && text.length <= 90 && !/[<>{}]/.test(text) ? text.toUpperCase() : fallback
-}
+import { keepKey } from './keep-key.ts'
+import { viewerMessage } from './viewer-message.ts'
 
 function minutes(seconds: number): string {
   const total = Math.max(1, Math.round(seconds / 60))

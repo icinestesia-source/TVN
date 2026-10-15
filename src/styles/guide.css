@@ -1071,19 +1071,6 @@ span.editor-expand { border-color: transparent; }
   line-height: 1;
 }
 
-.mark {
-  width: 26px;
-  height: 18px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
 .ch-name {
   flex: 1;
   min-width: 0;
@@ -1980,6 +1967,10 @@ a.info-creator:focus-visible {
 .options-value { min-width: 44px; color: var(--ink); font-size: 15px; text-align: right; font-variant-numeric: tabular-nums; }
 
 .options-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.fx-colours .tab { display: inline-flex; align-items: center; gap: 5px; }
+.fx-colours .tab:disabled { opacity: 0.4; cursor: not-allowed; }
+.fx-swatch { width: 0.8em; height: 0.8em; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }
+.fx-colour-order { font-size: 0.75em; min-width: 1.3em; padding: 0 3px; border-radius: 3px; background: var(--gold); color: #000; text-align: center; }
 .options-confirm { align-items: center; margin-top: 10px; }
 .options-range { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-size: 14px; }
 .options-range input { width: 80px; padding: 4px 6px; border: 1px solid #1d4c78; background: rgba(8, 20, 34, 0.92); color: var(--ink); font: inherit; font-variant-numeric: tabular-nums; }
@@ -2046,6 +2037,26 @@ a.info-creator:focus-visible {
 /* A flagged clip: TVN tunes to it when it airs. */
 .prog.is-flagged { box-shadow: inset 3px 0 0 var(--gold); }
 .prog-flag { margin-right: 5px; color: var(--gold); }
+/* A flag set where clicked: a gold line at its moment inside the clip. */
+.prog-flag-at {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--gold);
+  box-shadow: 0 0 4px rgb(0 0 0 / 60%);
+  pointer-events: none;
+}
+.prog-flag-at::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 2px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid var(--gold);
+}
 
 .guide-menu-scrim { position: fixed; inset: 0; z-index: 60; }
 .guide-menu {
@@ -2221,7 +2232,7 @@ a.info-creator:focus-visible {
 .network-list { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
 .network-row {
   display: grid;
-  grid-template-columns: 4.2em minmax(0, 1fr) 7em 2.4em 15.5em 5.8em 5em;
+  grid-template-columns: 5.4em minmax(0, 1fr) 7em 2.4em 15.5em 5.8em 5em;
   align-items: center;
   gap: 10px;
   min-height: 44px;
@@ -2233,6 +2244,33 @@ a.info-creator:focus-visible {
 .network-row.is-dragging { opacity: 0.45; }
 .network-row[draggable='true'] { cursor: grab; }
 .network-number { font-family: var(--font-ui); font-size: 18px; font-weight: 600; letter-spacing: 0.04em; }
+.network-open { padding: 4px 0; border: 0; background: none; color: inherit; text-align: left; white-space: nowrap; cursor: pointer; }
+.network-open > span { display: inline-block; width: 0.8em; color: var(--muted); font-size: 13px; }
+.network-open.is-on > span { color: var(--gold); }
+.network-open:disabled { cursor: default; }
+.network-open:disabled > span { visibility: hidden; }
+.network-open:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* ▸ opened: name, sources with their clip counts (never titles), and MERGE, under the row. */
+.network-detail {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 8px;
+  margin: 0 0 8px 5.4em;
+  padding: 10px 12px;
+  border-left: 2px solid var(--gold);
+  background: rgb(255 255 255 / 4%);
+}
+.network-rename,
+.network-merge { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.network-rename > span,
+.network-merge > span:first-child { color: var(--muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.network-rename input { flex: 1; min-width: 12em; max-width: 28em; min-height: 30px; padding: 2px 8px; border: 1px solid rgb(255 255 255 / 25%); background: rgb(0 0 0 / 40%); color: inherit; font: inherit; }
+.network-clips { margin: 0; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.network-sources { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.network-sources li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 12px; font-size: 13px; }
+.network-sources li.is-off { opacity: 0.5; }
+.network-source-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.network-source-clips { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .network-name {
   display: grid;
   min-width: 0;
@@ -2277,9 +2315,10 @@ a.info-creator:focus-visible {
 .network-delete { justify-self: end; min-width: 2.4em; padding: 2px 8px; white-space: nowrap; }
 .network-delete:disabled { opacity: 0.25; }
 @media (max-width: 720px) {
-  .network-row { grid-template-columns: 3.4em minmax(0, 1fr) 2.2em auto 4.4em 3.6em; }
+  .network-row { grid-template-columns: 4.6em minmax(0, 1fr) 2.2em auto 4.4em 3.6em; }
   .network-status { display: none; }
   .network-move-to { display: none; }
+  .network-detail { margin-left: 0; }
 }
 
 .editor-slot {

@@ -20,6 +20,23 @@
   background: var(--fx-tint);
   mix-blend-mode: multiply;
 }
+.fx-tint.is-blend {
+  background-size: 300% 300%;
+  animation: fx-tint-sweep var(--fx-ms) linear infinite;
+}
+@keyframes fx-tint-sweep {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-tint.is-blend {
+    animation: none;
+  }
+}
 
 /* Analogue static: scan lines and a rolling hold bar over heavy snow. */
 .fx-scan {

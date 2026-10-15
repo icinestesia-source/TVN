@@ -230,8 +230,8 @@ function WebControls() {
 }
 
 /**
- * The picture itself: a tap or click shows the information bar, a double-click goes full screen, and a
- * scroll or a vertical swipe changes channel.
+ * The picture itself: a tap or click shows the information bar, a double-click goes full screen, a right-click
+ * surfs as Space does, and a scroll or a vertical swipe changes channel.
  */
 function PictureCatch() {
   const tv = useTv()
@@ -246,7 +246,12 @@ function PictureCatch() {
         else tv.dispatch({ type: 'info' })
       }}
       onDoubleClick={() => tv.dispatch({ type: 'fullscreen' })}
-      onContextMenu={(event) => event.preventDefault()}
+      onContextMenu={(event) => {
+        event.preventDefault()
+        // A finger's long press also arrives as a right-click; only a mouse or trackpad surfs.
+        if ((event.nativeEvent as PointerEvent).pointerType === 'touch') return
+        tv.dispatch({ type: 'random-channel' })
+      }}
       onWheel={(event) => {
         const step = wheel(event)
         if (step) tv.dispatch(step)

@@ -2,6 +2,7 @@ import { isOwnNumber } from '../data/network.ts'
 import {
   cleanEditorial,
   cleanFilter,
+  eligibleOf,
   keepingDates,
   MAX_SOURCE_VIDEOS,
   rescanned,
@@ -721,4 +722,61 @@ export async function rescanChannel(
   const renamed = { ...edit, sources, ...(!edit.name.trim() && named ? { name: named } : {}) }
   const next = { ...renamed, compiled: eligibilityKey(renamed) }
   return { all: applyChannelEdit(all, channelNumber, next, now), edit: next, message: rescanSummary(sources) }
+}
+
+/** The same source twice: one address (or one imported list) read the same way. */
+const sourceKey = (source: ChannelSource) => `${source.kind}:${source.youtube ?? ''}:${(source.ref || source.url || source.label).toLowerCase()}`
+
+/**
+ * NETWORK → MERGE: another channel's own sources join this channel as a further set, each with what it has
+ * already read, its filter and its share, so a User channel can set up a channel at 001–990. TVN programming is
+ * the other channel's own and stays there; a source this channel already has is not added twice. Ids that clash
+ * with this channel's are given new ones. The channel merged from is left as it was.
+ */
+export function mergeSources(target: ChannelEdit, from: readonly ChannelSource[]): { edit: ChannelEdit; added: number; already: number } {
+  const have = new Set(target.sources.map(sourceKey))
+  const ids = new Set(target.sources.map((source) => source.id))
+  const joining: ChannelSource[] = []
+  let already = 0
+  for (const source of from) {
+    if (source.kind === 'tvn') continue
+    const key = sourceKey(source)
+    if (have.has(key)) {
+      already += 1
+      continue
+    }
+    have.add(key)
+    let id = source.id
+    for (let step = 2; ids.has(id); step += 1) id = `${source.id}-${step}`
+    ids.add(id)
+    joining.push({ ...structuredClone(source), id })
+  }
+  const { review: _review, ...edit } = target
+  return { edit: { ...edit, sources: [...edit.sources, ...joining] }, added: joining.length, already }
+}
+
+/** A channel's sources as NETWORK lists them when a row is opened: what each is and how many clips it holds, never their titles. */
+export interface SourceClips {
+  label: string
+  kind: string
+  enabled: boolean
+  /** Clips the source has read; null for TVN programming and live streams, which have no clips of their own. */
+  clips: number | null
+  /** Of those, the clips its filter lets air. */
+  eligible: number | null
+}
+
+export function sourceClips(sources: readonly ChannelSource[]): { sources: SourceClips[]; clips: number; eligible: number } {
+  const listed = sources.map((source): SourceClips => {
+    const counted = source.kind !== 'tvn' && !isStreamSource(source)
+    return {
+      label: source.kind === 'tvn' ? 'TVN programming' : source.label || source.url || source.ref || SOURCE_TYPES[source.kind].label,
+      kind: SOURCE_TYPES[source.kind].label,
+      enabled: source.enabled,
+      clips: counted ? (source.videos?.length ?? 0) : null,
+      eligible: counted ? eligibleOf(source).length : null,
+    }
+  })
+  const on = listed.filter((source) => source.enabled)
+  return { sources: listed, clips: on.reduce((sum, source) => sum + (source.clips ?? 0), 0), eligible: on.reduce((sum, source) => sum + (source.eligible ?? 0), 0) }
 }

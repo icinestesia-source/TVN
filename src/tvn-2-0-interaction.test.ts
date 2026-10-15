@@ -78,6 +78,11 @@ describe('PLAYER INTERACTION SHIELD', () => {
     expect(zIndex(overlays, '.info-bar')).toBeGreaterThan(zIndex(shell, '.click-catch'))
   })
 
+  it('a right-click on the picture surfs as Space does; a finger’s long press does not', () => {
+    expect(catcher).toMatch(/pointerType === 'touch'\) return\s*tv\.dispatch\(\{ type: 'random-channel' \}\)/)
+    expect(read('src/input/keyboard.ts')).toMatch(/case ' ':\s*return guideOpen \? null : \{ type: 'random-channel' \}/)
+  })
+
   it('swipe navigation and the wheel still step channels from the shield', () => {
     expect(catcher).toContain('swipeStep(start')
     expect(catcher).toContain('const step = wheel(event)')
@@ -85,7 +90,7 @@ describe('PLAYER INTERACTION SHIELD', () => {
   })
 
   it('a long press is TVN’s: no browser menu or callout on the picture, and the corner hold still runs', () => {
-    expect(catcher).toContain('onContextMenu={(event) => event.preventDefault()}')
+    expect(catcher).toMatch(/onContextMenu=\{\(event\) => \{\s*event\.preventDefault\(\)/)
     expect(read('src/components/BroadcastTile.tsx')).toContain('onContextMenu={(event) => event.preventDefault()}')
     expect(rule(shell, '.click-catch')).toContain('-webkit-touch-callout: none')
     expect(rule(stage2, '.tile')).toContain('-webkit-touch-callout: none')

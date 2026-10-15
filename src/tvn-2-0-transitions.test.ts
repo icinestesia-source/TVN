@@ -156,8 +156,8 @@ describe('the transition registry', () => {
     expect(render({ id: 'glitch' })).toContain('fx-tears')
     expect(render({ id: 'flash' })).toContain('fx-flash-light')
     expect(render({ id: 'flash' })).not.toContain('static-number')
-    expect(render({ id: 'crt', colour: 'green' })).toContain('fx-tint')
-    expect(render({ id: 'fade', colour: 'green' })).not.toContain('fx-tint')
+    expect(render({ id: 'crt', colour: 'green', colours: ['green'] })).toContain('fx-tint')
+    expect(render({ id: 'fade', colour: 'green', colours: ['green'] })).not.toContain('fx-tint')
     expect(render({ colour: 'mono' })).not.toContain('fx-tint')
   })
 
@@ -216,7 +216,7 @@ describe('saved settings and the complete export', () => {
     expect(loadTransitionSettings(io)).toEqual(DEFAULT_TRANSITION_SETTINGS)
     store.set(LEGACY_TRANSITION_KEY, 'instant')
     expect(loadTransitionSettings(io).id).toBe('instant')
-    const chosen = style({ id: 'crt', speed: 1.5, colour: 'amber', card: { ...DEFAULT_TRANSITION_SETTINGS.card, position: 'top-right' } })
+    const chosen = style({ id: 'crt', speed: 1.5, colour: 'amber', colours: ['amber'], card: { ...DEFAULT_TRANSITION_SETTINGS.card, position: 'top-right' } })
     saveTransitionSettings(chosen, io)
     expect(JSON.parse(store.get(TRANSITION_KEY)!)).toEqual(chosen)
     expect(loadTransitionSettings(io)).toEqual(chosen)
@@ -237,7 +237,7 @@ describe('saved settings and the complete export', () => {
   })
 
   it('round-trips through tvn-export-v1', () => {
-    const chosen = style({ id: 'glitch', speed: 0.75, colour: 'cool', grain: 'coarse', card: { ...DEFAULT_TRANSITION_SETTINGS.card, panel: 'none', accent: 'green', opacity: 0.8 } })
+    const chosen = style({ id: 'glitch', speed: 0.75, colour: 'cool', colours: ['cool'], grain: 'coarse', card: { ...DEFAULT_TRANSITION_SETTINGS.card, panel: 'none', accent: 'green', opacity: 0.8 } })
     const text = serialiseTvnExport(buildTvnExport({ stored: [], users: [], favourites: [], settings: settings(chosen), now: new Date(NOW) }))
     const back = readTvnExportFile(text)
     if (!back.ok) throw new Error(back.errors.join('; '))

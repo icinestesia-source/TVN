@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { formatBytes, formatPlayed, resetUsage, useUsage } from '../session/usage.ts'
 import { PIP_SIZE_MAX, PIP_SIZE_MIN, PIP_SIZE_STEP } from '../view/multiview.ts'
 import { openAbout } from '../legal/about-store.ts'
@@ -14,19 +14,12 @@ import { rememberSupported, setRememberMedia, useRememberMedia } from '../sessio
 import { DISPLAY_QUALITIES, setDisplayQuality, useDisplayQuality } from '../view/display-quality.ts'
 import { setFillEdges, useFillEdges } from '../view/fill-edges.ts'
 import { setLoadingLogo, useLoadingLogo } from '../view/loading-logo.ts'
+import { setFlagAt, useFlagAt } from '../view/clip-flags.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
+import { keepKey } from './keep-key.ts'
+import { viewerMessage } from './viewer-message.ts'
 
-/** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
 const channelNumberText = (text: string) => /^\d{1,5}$/.test(text.trim()) && Number(text) >= 1
-
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
-
-function message(caught: unknown, fallback: string): string {
-  const text = caught instanceof Error ? caught.message.trim() : ''
-  return text && text.length <= 90 && !/[<>{}]/.test(text) ? text.toUpperCase() : fallback
-}
 
 function Card({ title, children, wide = false }: { title: string; children: ReactNode; wide?: boolean }) {
   return (
@@ -93,7 +86,7 @@ function UserRow({ user, channels, onStatus }: { user: NetworkUser; channels: nu
       onStatus(tv.renameNetworkUser(user.id, name))
       setRenaming(false)
     } catch (caught) {
-      onStatus(message(caught, 'THAT NAME COULD NOT BE USED'))
+      onStatus(viewerMessage(caught, 'THAT NAME COULD NOT BE USED'))
     }
   }
   const remove = async (mode: 'move' | 'remove') => {
@@ -101,7 +94,7 @@ function UserRow({ user, channels, onStatus }: { user: NetworkUser; channels: nu
     try {
       onStatus(await tv.deleteNetworkUser(user.id, mode))
     } catch (caught) {
-      onStatus(message(caught, 'THAT USER COULD NOT BE DELETED'))
+      onStatus(viewerMessage(caught, 'THAT USER COULD NOT BE DELETED'))
       setBusy(false)
     }
   }
@@ -216,6 +209,7 @@ export function GuideOptions() {
   const remember = useRememberMedia()
   const fill = useFillEdges()
   const logo = useLoadingLogo()
+  const flagWhere = useFlagAt()
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const loadingAll = tv.loadAll && tv.loadAll.result === undefined ? tv.loadAll : null
@@ -230,7 +224,7 @@ export function GuideOptions() {
     try {
       setStatus((await work()) || null)
     } catch (caught) {
-      setStatus(message(caught, 'THAT DID NOT WORK'))
+      setStatus(viewerMessage(caught, 'THAT DID NOT WORK'))
     } finally {
       setBusy(false)
     }
@@ -269,6 +263,10 @@ export function GuideOptions() {
           </div>
         </Card>
 
+        <Card title="Channel change" wide>
+          <ChannelChangeOptions settings={tv.transition} onChange={tv.setTransition} />
+        </Card>
+
         <Card title="Picture & sound">
           <Row label="Volume">
             <button type="button" className="tab" aria-label="Volume down" onKeyDown={keepKey} onClick={() => tv.dispatch({ type: 'volume-down' })}>
@@ -281,10 +279,6 @@ export function GuideOptions() {
           </Row>
           <Row label="Sound">{toggle(tv.muted, ['Muted', 'On'], () => tv.dispatch({ type: 'mute' }))}</Row>
           <Row label="Subtitles">{toggle(tv.subtitles, ['On', 'Off'], () => tv.dispatch({ type: 'subtitles' }))}</Row>
-        </Card>
-
-        <Card title="Channel change" wide>
-          <ChannelChangeOptions settings={tv.transition} onChange={tv.setTransition} />
         </Card>
 
         <Card title="Display">
@@ -390,6 +384,20 @@ export function GuideOptions() {
               Show
             </button>
           </Row>
+          <div className="options-row">
+            <span className="options-label">Flags</span>
+            <span className="options-choices" role="radiogroup" aria-label="Flags set">
+              {(['start', 'clicked'] as const).map((mode) => (
+                <button key={mode} type="button" role="radio" aria-checked={flagWhere === mode} className={flagWhere === mode ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => setFlagAt(mode)}>
+                  {mode === 'start' ? 'Clip start' : 'Where clicked'}
+                </button>
+              ))}
+            </span>
+          </div>
+          <p className="options-note">
+            Right-click or hold a clip in the Guide timeline to flag it. Clip start flags it from its beginning; Where clicked flags it from the moment
+            under the pointer, marked with a gold line, so TVN tunes in at that point. Flag a flagged clip again to take its flag off.
+          </p>
         </Card>
 
         <Card title="Random Cycle">

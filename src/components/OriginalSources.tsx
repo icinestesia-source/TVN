@@ -1,13 +1,10 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useState } from 'react'
 import { watchUrl } from '../credits/provenance.ts'
 import { canFilter, originalChannelSource, originalOverrideOf, type OriginalOverride, type OriginalSource } from '../services/original-sources.ts'
 import { formatDuration } from '../utils/time.ts'
 import { contributionsOf, contributionText } from '../view/channel-provenance.ts'
 import { SourceFilterPanel } from './ChannelCuration.tsx'
-
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
+import { keepKey } from './keep-key.ts'
 
 /**
  * TVN ORIGINAL: the sources behind TVN's own programming for this channel, each with what it gives the channel

@@ -37,6 +37,8 @@ import { playlistUrl } from '../services/add-channel.ts'
 import { addedFromOriginal, originalsToRead, withOriginalOverride } from '../services/original-sources.ts'
 import { addedContributions, addedSourceLabels, channelOriginals, contributionsOf, contributionText, originalLineup } from '../view/channel-provenance.ts'
 import { alphabeticalVideos, latestVideos, rebuiltVideos, sharedVideos, shuffledVideos, sourceShares } from '../view/programme-order.ts'
+import { keepKey } from './keep-key.ts'
+import { viewerMessage } from './viewer-message.ts'
 
 /** Rows drawn at once in a long list; the rest are a press away, so a deep source never slows the editor. */
 const ROW_LIMIT = 200
@@ -52,16 +54,6 @@ const ORDER_KINDS: Record<OrderKind, { label: string; hint: string }> = {
 
 /** An edit read from storage, given the fingerprint of what it compiles if it was saved before RESCAN kept one. */
 const withBaseline = (edit: ChannelEdit): ChannelEdit => (edit.compiled ? edit : { ...edit, compiled: eligibilityKey(edit) })
-
-/** Enter and Space press these controls; they must not also reach the Guide. */
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
-
-function viewerMessage(caught: unknown, fallback: string): string {
-  const message = caught instanceof Error ? caught.message.trim() : ''
-  return message && message.length <= 90 && !/[<>{}]/.test(message) ? message.toUpperCase() : fallback
-}
 
 /**
  * How long each page of a website or post source holds the screen: 5, 10, 15 or 30 minutes, or any length

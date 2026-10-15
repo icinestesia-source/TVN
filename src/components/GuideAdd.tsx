@@ -12,11 +12,8 @@ import { readRestoreFile, type TvnExport } from '../services/tvn-export.ts'
 import type { GuideTool } from '../types/input.ts'
 import { USER_NAME_MAX } from '../data/user-network/users.ts'
 import { formatDuration, padChannel } from '../utils/time.ts'
-
-/** Enter and Space press these controls; they must not also confirm (and tune) the guide cursor. */
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
+import { keepKey } from './keep-key.ts'
+import { viewerMessage } from './viewer-message.ts'
 
 function folderSupported(): boolean {
   if (typeof window === 'undefined') return false
@@ -24,11 +21,6 @@ function folderSupported(): boolean {
 }
 
 /** A short line for the viewer; anything that is not one reads as a plain failure. */
-function viewerMessage(caught: unknown, fallback: string): string {
-  const message = caught instanceof Error ? caught.message.trim() : ''
-  return message && message.length <= 90 && !/[<>{}]/.test(message) ? message.toUpperCase() : fallback
-}
-
 /**
  * NETWORK · GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the
  * Guide itself. NETWORK is the Network Editor (curate the channels); GUIDE is the television listings (what is

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type RefObject, type WheelEvent } from 'react'
-import { clipFlag, toggleClipFlag, useClipFlags } from '../view/clip-flags.ts'
+import { clipFlag, flagClipStart, toggleClipFlag, useClipFlags, useFlagAt } from '../view/clip-flags.ts'
 import { FlagsPanel } from './FlagsPanel.tsx'
 import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 import {
@@ -276,22 +276,29 @@ export function Guide({ closing = false }: { closing?: boolean }) {
     return marks
   }, [tv.guideLibrary, tv.guideRun])
   const flags = useClipFlags()
+  const flagWhere = useFlagAt()
+  // Per channel: each flagged clip's start, and the moment its flag is set (the same, unless set where clicked).
   const flaggedByChannel = useMemo(() => {
-    const byChannel = new Map<number, Set<number>>()
+    const byChannel = new Map<number, Map<number, number>>()
     for (const flag of flags) {
-      const starts = byChannel.get(flag.channelNumber) ?? new Set<number>()
-      starts.add(flag.startMs)
-      byChannel.set(flag.channelNumber, starts)
+      const clips = byChannel.get(flag.channelNumber) ?? new Map<number, number>()
+      clips.set(flagClipStart(flag), flag.startMs)
+      byChannel.set(flag.channelNumber, clips)
     }
     return byChannel
   }, [flags])
-  /** A right-click or hold on a clip flags it from its start, or takes its flag off again. */
-  const flagClip = (channel: Channel, programme: Programme, slot: { startMs: number; endMs: number }) => {
+  /**
+   * A right-click or hold on a clip flags it, from its start or, with OPTIONS → Guide → Flags set to Where
+   * clicked, from the moment under the pointer; on a flagged clip it takes the flag off again.
+   */
+  const flagClip = (channel: Channel, programme: Programme, slot: { startMs: number; endMs: number; atMs?: number }) => {
     const flagged = flaggedByChannel.get(channel.number)?.has(slot.startMs) ?? false
     if (!flagged && channel.number === TVN_CHANNEL_NUMBER) return setAddNote('000 CHOOSES AS IT GOES · FLAG A CLIP ON ANOTHER CHANNEL')
-    const aired = slot.endMs <= Date.now()
-    const on = toggleClipFlag(clipFlag(channel, programme, slot.startMs, slot.endMs))
-    setAddNote(on ? `⚑\uFE0E FLAG SET · ${padChannel(channel.number)} · ${programme.title}${aired ? ' · ALREADY AIRED: KEPT FOR CHANNELS' : ''}` : `FLAG REMOVED · ${programme.title}`)
+    const flag = clipFlag(channel, programme, slot.startMs, slot.endMs, flagWhere === 'clicked' ? slot.atMs : undefined)
+    const aired = flag.endMs <= Date.now()
+    const on = toggleClipFlag(flag)
+    const from = flag.clipStartMs !== undefined ? ` · FROM ${formatClock(flag.startMs, true)}` : ''
+    setAddNote(on ? `⚑\uFE0E FLAG SET · ${padChannel(channel.number)} · ${programme.title}${from}${aired ? ' · ALREADY AIRED: KEPT FOR CHANNELS' : ''}` : `FLAG REMOVED · ${programme.title}`)
   }
   const manual = manualAiring(tv.channel.number, now)
   const picked = manual !== null
@@ -1297,13 +1304,13 @@ function ProgrammeRow({
   /** Programmes in the viewer's Guide, keyed `channel:programme`; the one being followed is 'active'. */
   marks: ReadonlyMap<string, 'queued' | 'active'>
   /** The secondary action on a programme (right-click or hold): sets or removes its flag. A click still plays. */
-  onMenu: (programme: Programme, x: number, y: number, slot: { startMs: number; endMs: number }) => void
-  /** Flagged clips on this row, by start time. */
-  flagged?: ReadonlySet<number>
+  onMenu: (programme: Programme, x: number, y: number, slot: { startMs: number; endMs: number; atMs?: number }) => void
+  /** Flagged clips on this row: each clip's start, and the moment its flag is set. */
+  flagged?: ReadonlyMap<number, number>
 }) {
   // A hold fires long after this render: it uses the handler and programme taken when the press began.
   const [hold] = useState(() => {
-    const state: { onMenu: typeof onMenu; held: { programme: Programme; x: number; y: number; slot: { startMs: number; endMs: number } } | null } = { onMenu, held: null }
+    const state: { onMenu: typeof onMenu; held: { programme: Programme; x: number; y: number; slot: { startMs: number; endMs: number; atMs?: number } } | null } = { onMenu, held: null }
     const press = createLongPress(() => {
       if (state.held) state.onMenu(state.held.programme, state.held.x, state.held.y, state.held.slot)
     })
@@ -1327,6 +1334,13 @@ function ProgrammeRow({
         const isPlaying = playing === 'airing' ? flags.airing : playing !== null && playing.startMs === slot.startMs
         const mark = marks.get(`${channel.number}:${slot.programme.id}`)
         const flag = flagged?.has(slot.startMs) ?? false
+        const flagMoment = flagged?.get(slot.startMs)
+        // The moment under the pointer, from where it is across the whole clip.
+        const momentAt = (element: HTMLElement, clientX: number) => {
+          const box = element.getBoundingClientRect()
+          const share = box.width > 0 ? Math.min(1, Math.max(0, (clientX - box.left) / box.width)) : 0
+          return slot.startMs + share * (slot.endMs - slot.startMs)
+        }
         return (
           <div
             key={`${slot.programme.id}-${slot.startMs}`}
@@ -1346,11 +1360,11 @@ function ProgrammeRow({
             onContextMenu={(event: MouseEvent<HTMLDivElement>) => {
               event.preventDefault()
               press.opened()
-              onMenu(slot.programme, event.clientX, event.clientY, { startMs: slot.startMs, endMs: slot.endMs })
+              onMenu(slot.programme, event.clientX, event.clientY, { startMs: slot.startMs, endMs: slot.endMs, atMs: momentAt(event.currentTarget, event.clientX) })
             }}
             onPointerDown={(event) => {
               hold.state.onMenu = onMenu
-              hold.state.held = { programme: slot.programme, x: event.clientX, y: event.clientY, slot: { startMs: slot.startMs, endMs: slot.endMs } }
+              hold.state.held = { programme: slot.programme, x: event.clientX, y: event.clientY, slot: { startMs: slot.startMs, endMs: slot.endMs, atMs: momentAt(event.currentTarget, event.clientX) } }
               press.down({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })
             }}
             onPointerMove={(event) => press.move({ pointerType: event.pointerType, clientX: event.clientX, clientY: event.clientY })}
@@ -1374,6 +1388,14 @@ function ProgrammeRow({
             ) : null}
             {frame.width > 168 ? (
               <span className="prog-time">{isLiveStream(slot.programme) ? 'Live' : formatRange(slot.startMs, slot.endMs)}</span>
+            ) : null}
+            {flagMoment !== undefined && flagMoment > slot.startMs ? (
+              <span
+                className="prog-flag-at"
+                style={{ left: `${((flagMoment - slot.startMs) / (slot.endMs - slot.startMs)) * 100}%` }}
+                title={`Flagged from ${formatClock(flagMoment, true)}`}
+                aria-hidden="true"
+              />
             ) : null}
           </div>
         )

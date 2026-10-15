@@ -1418,6 +1418,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
    * schedule is untouched, and on the channel already being watched Previous is left alone. Picked from its
    * slot in the schedule, the channel then plays on through the programmes after it until NOW or a tune.
    */
+  const requestTuneRef = useRef(requestTune)
+  requestTuneRef.current = requestTune
   const playFromGuide = (target: Channel, programme: Programme, slot?: { startMs: number; endMs: number }, fromSeconds = 0) => {
     if (!guideDrivingRef.current) guideEngine.current.suspend()
     selectProgramme(target.number, programme, Date.now(), slot && { startMs: slot.startMs, endMs: slot.endMs }, slot && !guideDrivingRef.current && target.origin !== 'tvn' && target.origin !== 'session' ? target : undefined, fromSeconds)
@@ -1734,7 +1736,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       // Choosing an imported programme, from the grid or from a search, is Play Now.
       const chosen = sessionChoice(guideQueryRef.current, slot?.programme ?? null, selected.number)
       if (chosen) sessionRef.current.play(chosen.id)
-      else requestTune(selected.number)
+      else requestTuneRef.current(selected.number)
       return
     }
     if (!slot) return
@@ -1742,11 +1744,11 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const airing = now >= slot.startMs && now < slot.endMs
     if (airing && !options?.fromStart && guideTuneDecision(slot.startMs, slot.endMs, now) === 'tune') {
       closeGuide()
-      requestTune(selected.number)
+      requestTuneRef.current(selected.number)
       return
     }
     if (hasPicture(slot.programme)) {
-      playFromGuide(selected, slot.programme, slot)
+      playFromGuideRef.current(selected, slot.programme, slot)
       return
     }
     setGuideNote(now < slot.startMs ? 'later' : 'ended')

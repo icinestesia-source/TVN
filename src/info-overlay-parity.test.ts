@@ -45,7 +45,7 @@ describe('one information bar, in the Guide and over the picture', () => {
   it('has no Guide-only rule for the actions: the one-line rule and the narrow-width rule apply to both', () => {
     expect(css).toMatch(/\.info-actions\.has-history \{\s*flex-wrap: nowrap;\s*max-width: none;\s*\}/)
     expect(css).toMatch(/@media \(max-width: 420px\) \{\s*\.info-actions\.has-history \{ gap: 4px; \}/)
-    expect(css).not.toMatch(/\.guide(?!-info\.is-programme \>)[^{]*\.info-actions/)
+    expect(css).not.toMatch(/\.guide(?!-info\.is-programme >)[^{]*\.info-actions/)
   })
 
   it('keeps the semantics: ↑ and ↓ are viewing history; ← and → stay programme steps', () => {

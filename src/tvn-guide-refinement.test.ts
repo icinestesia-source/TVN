@@ -248,7 +248,7 @@ describe('programme selection', () => {
   it('keeps Play Now for channel 000 and plays any other playable Guide programme from the start', () => {
     const body = provider.slice(provider.indexOf('const activateGuide'), provider.indexOf('const goToSleep = ('))
     expect(body).toMatch(/selected\.origin === 'session'[\s\S]*sessionRef\.current\.play\(chosen\.id\)/)
-    expect(body).toMatch(/if \(hasPicture\(slot\.programme\)\) \{\s+playFromGuide\(selected, slot\.programme, slot\)/)
+    expect(body).toMatch(/if \(hasPicture\(slot\.programme\)\) \{\s+playFromGuideRef\.current\(selected, slot\.programme, slot\)/)
     expect(provider).not.toMatch(/selectProgramme\(SESSION_CHANNEL_NUMBER/)
   })
 })

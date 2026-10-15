@@ -160,11 +160,25 @@ export const PREVIOUS_STARTER_FILES = [
   '/user-network/starter-network-2026-10-05.json',
 ] as const
 
-/** The starter network as shipped, read fresh each time and never written to. */
+const starterTexts = new Map<string, Promise<string>>()
+
+/** A shipped file cannot change while the page is open: one download each, and a failed one is tried again. */
+function starterText(path: string): Promise<string> {
+  let text = starterTexts.get(path)
+  if (!text) {
+    text = fetch(path).then((response) => {
+      if (!response.ok) throw new Error(`Could not read ${path}`)
+      return response.text()
+    })
+    text.catch(() => starterTexts.delete(path))
+    starterTexts.set(path, text)
+  }
+  return text
+}
+
+/** The starter network as shipped, parsed afresh for each caller and never written to. */
 export async function readStarterNetwork(path: string = STARTER_NETWORK_FILE): Promise<UserNetworkExport> {
-  const response = await fetch(path)
-  if (!response.ok) throw new Error(`Could not read ${path}`)
-  const read = readUserNetworkFile(await response.text())
+  const read = readUserNetworkFile(await starterText(path))
   if (!read.ok) throw new Error(`${path} is not a TVN User Network file`)
   return read.value
 }

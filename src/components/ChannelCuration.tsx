@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   cleanFilter,
   CURATION_STATUSES,
@@ -23,11 +23,7 @@ import {
 import type { ChannelSource } from '../services/channel-sources.ts'
 import type { ImportedVideo } from '../services/channels-import.ts'
 import { formatDuration } from '../utils/time.ts'
-
-/** Enter and Space press these controls; they must not also reach the Guide. */
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
+import { keepKey } from './keep-key.ts'
 
 const MODE_NOTES: Record<SourceMode, string> = {
   recent: 'The newest uploads, newest weighted.',

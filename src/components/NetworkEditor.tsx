@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEven
 import { listChannels } from '../data/catalogue.ts'
 import { channelMatchesFilter } from '../data/network.ts'
 import { userFilter, userNetworkName } from '../data/user-network/users.ts'
+import { mergeSources, sourceClips, type ChannelEdit } from '../services/channel-editor.ts'
 import type { StoredSource } from '../services/channels-import.ts'
 import { loadStoredSources } from '../services/user-db.ts'
 import { useTv } from '../state/tv-context.ts'
@@ -9,22 +10,14 @@ import { TVN_CHANNEL_NUMBER } from '../tvn/tvn-channel.ts'
 import type { Channel } from '../types/channel.ts'
 import type { GuideFilter } from '../types/preferences.ts'
 import { networkRows, networkStatus, unloaded } from '../view/network-rows.ts'
+import { keepKey } from './keep-key.ts'
+import { viewerMessage } from './viewer-message.ts'
 
 /** The editor's lists: ALL, USER (1001+), each named user's channels, and FAV. */
 type EditorList = GuideFilter
 
 const pad = (number: number) => String(number).padStart(3, '0')
 const isUser = (channel: Channel) => channel.origin === 'user-import' || channel.origin === 'user-created'
-
-function message(caught: unknown, fallback: string): string {
-  const text = caught instanceof Error ? caught.message.trim() : ''
-  return text && text.length <= 90 && !/[<>{}]/.test(text) ? text.toUpperCase() : fallback
-}
-
-/** Enter and Space press these controls; they must not also confirm (and tune) the Guide cursor. */
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
 
 /** A channel as listed here: hidden and resting channels too, which the Guide leaves out. */
 function listedIn(channel: Channel, list: EditorList, favourites: readonly number[]): boolean {
@@ -49,6 +42,12 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
   // X asks once: the channel id waiting for its second press.
   const [deleting, setDeleting] = useState<string | null>(null)
   const [targets, setTargets] = useState<Record<string, string>>({})
+  // ▸: the one open row, its channel as the Channel Editor would open it, and what is typed there.
+  const [opened, setOpened] = useState<string | null>(null)
+  const [detail, setDetail] = useState<{ id: string; number: number; edit: ChannelEdit; clips: ReturnType<typeof sourceClips> } | null>(null)
+  const [name, setName] = useState('')
+  const [mergeTo, setMergeTo] = useState('')
+  const [merging, setMerging] = useState(false)
   const listRef = useRef<HTMLOListElement>(null)
   // What is stored, not only what can air: a channel whose source has not been read yet is still a channel.
   const [stored, setStored] = useState<readonly StoredSource[]>([])
@@ -87,7 +86,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
         requestAnimationFrame(() => listRef.current?.querySelector<HTMLElement>(`[data-channel-id="${CSS.escape(id)}"] .network-move`)?.focus())
       }
     } catch (caught) {
-      setNote(message(caught, 'THAT CHANNEL COULD NOT BE MOVED'))
+      setNote(viewerMessage(caught, 'THAT CHANNEL COULD NOT BE MOVED'))
     } finally {
       setBusy(false)
     }
@@ -115,7 +114,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
     try {
       setNote(await tv.arrangeUserNetwork(how))
     } catch (caught) {
-      setNote(message(caught, 'THE USER NETWORK COULD NOT BE REORDERED'))
+      setNote(viewerMessage(caught, 'THE USER NETWORK COULD NOT BE REORDERED'))
     } finally {
       setBusy(false)
     }
@@ -133,7 +132,90 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
     try {
       setNote(await tv.deleteNetworkChannel(channel.number))
     } catch (caught) {
-      setNote(message(caught, 'THAT CHANNEL COULD NOT BE DELETED'))
+      setNote(viewerMessage(caught, 'THAT CHANNEL COULD NOT BE DELETED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** ▸ opens a row: the channel's name to edit, its sources with their clip counts, and MERGE. */
+  const toggleOpen = async (channel: Channel) => {
+    if (opened === channel.id) {
+      setOpened(null)
+      return
+    }
+    setOpened(channel.id)
+    setDetail(null)
+    setMergeTo('')
+    setMerging(false)
+    try {
+      const edit = await tv.openChannelEdit(channel.number)
+      if (!edit) throw new Error('This channel has no sources to show')
+      setDetail({ id: channel.id, number: channel.number, edit, clips: sourceClips(edit.sources) })
+      setName(edit.name)
+    } catch (caught) {
+      setOpened(null)
+      setNote(viewerMessage(caught, 'THAT CHANNEL CANNOT BE OPENED HERE'))
+    }
+  }
+
+  const reopen = async (channel: Channel) => {
+    const edit = await tv.openChannelEdit(channel.number)
+    if (edit) {
+      setDetail({ id: channel.id, number: channel.number, edit, clips: sourceClips(edit.sources) })
+      setName(edit.name)
+    }
+  }
+
+  const rename = async (channel: Channel) => {
+    if (busy || !detail || !name.trim() || name.trim() === detail.edit.name) return
+    setBusy(true)
+    try {
+      const { review: _review, ...edit } = detail.edit
+      await tv.saveChannelEdit(channel.number, { ...edit, name: name.trim() })
+      setNote(`${pad(channel.number)} IS NOW ${name.trim().toUpperCase()}`)
+      await reopen(channel)
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THAT NAME COULD NOT BE SAVED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** MERGE asks once, naming the channel, then adds this channel's own sources to that one. */
+  const merge = async (channel: Channel) => {
+    if (busy || !detail) return
+    const into = Number(mergeTo)
+    const target = listChannels().find((item) => item.number === into)
+    if (!mergeTo.trim() || !Number.isInteger(into) || into === channel.number) {
+      setNote('TYPE ANOTHER CHANNEL NUMBER TO MERGE INTO')
+      return
+    }
+    if (!target || into === TVN_CHANNEL_NUMBER || target.origin === 'session') {
+      setNote(`${pad(into)} CANNOT TAKE SOURCES: CHOOSE A CHANNEL FROM 001`)
+      return
+    }
+    if (!merging) {
+      setMerging(true)
+      return
+    }
+    setMerging(false)
+    setBusy(true)
+    try {
+      const targetEdit = await tv.openChannelEdit(into)
+      if (!targetEdit) throw new Error(`${pad(into)} cannot take sources`)
+      const result = mergeSources(targetEdit, detail.edit.sources)
+      if (result.added === 0) {
+        setNote(result.already ? `${pad(into)} ALREADY HAS THESE SOURCES` : `${pad(channel.number)} HAS NO SOURCES OF ITS OWN TO MERGE`)
+        return
+      }
+      // An empty channel takes the merged channel's name; any other keeps its own.
+      const named = target.emptySlot ? { ...result.edit, name: detail.edit.name } : result.edit
+      await tv.saveChannelEdit(into, named)
+      setMergeTo('')
+      setNote(`${result.added} ${result.added === 1 ? 'SOURCE' : 'SOURCES'} MERGED INTO ${pad(into)} ${(named.name || target.name).toUpperCase()}${result.already ? ` · ${result.already} IT ALREADY HAD` : ''}`)
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THOSE SOURCES COULD NOT BE MERGED'))
     } finally {
       setBusy(false)
     }
@@ -236,7 +318,17 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               onDrop={movable ? (event) => drop(event, channel) : undefined}
               onKeyDown={(event) => rowKey(event, channel)}
             >
-              <span className="network-number">{pad(channel.number)}</span>
+              <button
+                type="button"
+                className={opened === channel.id ? 'network-number network-open is-on' : 'network-number network-open'}
+                aria-expanded={opened === channel.id}
+                disabled={channel.number === TVN_CHANNEL_NUMBER || channel.origin === 'session'}
+                title={`Show ${channel.name}'s sources, rename it, or merge its sources into another channel`}
+                onKeyDown={keepKey}
+                onClick={() => void toggleOpen(channel)}
+              >
+                <span aria-hidden="true">{opened === channel.id ? '▾' : '▸'}</span> {pad(channel.number)}
+              </button>
               <button type="button" className="network-name" disabled={unloaded(channel)} onKeyDown={keepKey} onClick={() => onEdit(channel.number)} title={unloaded(channel) ? `${channel.name}: editable once its source has loaded` : `Edit ${channel.name}`}>
                 <span className="network-title">{channel.name}</span>
                 <span className="network-kind">{network}</span>
@@ -301,6 +393,68 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               >
                 {deleting === channel.id ? 'Delete?' : '✕'}
               </button>
+              {opened === channel.id && detail?.id === channel.id ? (
+                <div className="network-detail" role="group" aria-label={`${channel.name}: name, sources and merge`}>
+                  <label className="network-rename">
+                    <span>Name</span>
+                    <input
+                      value={name}
+                      maxLength={80}
+                      aria-label={`Name of ${pad(channel.number)}`}
+                      onChange={(event) => setName(event.target.value)}
+                      onKeyDown={(event) => {
+                        event.stopPropagation()
+                        if (event.key === 'Enter') void rename(channel)
+                        if (event.key === 'Escape') setName(detail.edit.name)
+                      }}
+                    />
+                    <button type="button" className="tab" disabled={busy || !name.trim() || name.trim() === detail.edit.name} onKeyDown={keepKey} onClick={() => void rename(channel)}>
+                      Save name
+                    </button>
+                  </label>
+                  <p className="network-clips">
+                    {detail.clips.sources.length === 0
+                      ? 'No sources yet.'
+                      : `${detail.clips.sources.length} ${detail.clips.sources.length === 1 ? 'source' : 'sources'} · ${detail.clips.clips} clips · ${detail.clips.eligible} can air`}
+                  </p>
+                  {detail.clips.sources.length ? (
+                    <ul className="network-sources">
+                      {detail.clips.sources.map((source, index) => (
+                        <li key={index} className={source.enabled ? undefined : 'is-off'}>
+                          <span className="network-source-label">{source.label}</span>
+                          <span className="network-kind">{source.kind}{source.enabled ? '' : ' · off'}</span>
+                          <span className="network-source-clips">{source.clips === null ? '—' : `${source.clips} clips${source.eligible !== source.clips ? ` · ${source.eligible} can air` : ''}`}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {list !== 'favourites' ? (
+                    <div className="network-merge">
+                      <span>Merge these sources into</span>
+                      <input
+                        className="network-target"
+                        value={mergeTo}
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="001"
+                        aria-label={`Channel to merge ${channel.name}'s sources into`}
+                        onChange={(event) => {
+                          setMergeTo(event.target.value.replace(/[^0-9]/g, ''))
+                          setMerging(false)
+                        }}
+                        onKeyDown={(event) => {
+                          event.stopPropagation()
+                          if (event.key === 'Enter') void merge(channel)
+                        }}
+                      />
+                      <button type="button" className={merging ? 'tab is-on' : 'tab'} disabled={busy || !mergeTo.trim()} onKeyDown={keepKey} onClick={() => void merge(channel)}>
+                        {merging ? `Merge into ${pad(Number(mergeTo))}?` : 'Merge'}
+                      </button>
+                      <span className="network-kind">Added as a further set of sources; {pad(channel.number)} stays as it is.</span>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           )
         })}

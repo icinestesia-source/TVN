@@ -1,13 +1,10 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useState } from 'react'
 import { useTv } from '../state/tv-context.ts'
 import { formatDuration, padChannel } from '../utils/time.ts'
 import { removeBookmark, removeBookmarks, useBookmarks } from '../view/bookmarks-store.ts'
+import { keepKey } from './keep-key.ts'
 
 const DEFAULT_NAME = 'My Bookmarks'
-
-function keepKey(event: KeyboardEvent<HTMLElement>) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
-}
 
 /**
  * ♡: the clips the viewer bookmarked (D, or the bookmark on the information bar), newest first, each to play

@@ -26,6 +26,52 @@ export interface ClipFlag {
   video?: ImportedVideo
   /** Its moment has come: TVN tuned to it, or it passed while TVN was closed. */
   fired?: boolean
+  /** Set where the viewer clicked inside the clip: the clip's own start, while `startMs` is the moment flagged. */
+  clipStartMs?: number
+}
+
+/** The start of the clip a flag is on, wherever inside it the flag was set. */
+export const flagClipStart = (flag: Pick<ClipFlag, 'startMs' | 'clipStartMs'>): number => flag.clipStartMs ?? flag.startMs
+
+/** OPTIONS → Guide: a flag set from the clip's start (the default), or at the moment clicked inside it. */
+export type FlagAt = 'start' | 'clicked'
+export const FLAG_AT_KEY = 'tvn.flag-at.v1'
+
+export function loadFlagAt(store: Store | null = browserStore()): FlagAt {
+  try {
+    return store?.getItem(FLAG_AT_KEY) === 'clicked' ? 'clicked' : 'start'
+  } catch {
+    return 'start'
+  }
+}
+
+let flagAtNow: FlagAt | null = null
+const flagAtListeners = new Set<() => void>()
+
+export function flagAt(): FlagAt {
+  flagAtNow ??= loadFlagAt()
+  return flagAtNow
+}
+
+export function setFlagAt(mode: FlagAt, store: Store | null = browserStore()): void {
+  flagAtNow = mode
+  try {
+    store?.setItem(FLAG_AT_KEY, mode)
+  } catch {
+    // A browser that keeps nothing still uses the choice for this visit.
+  }
+  for (const listener of flagAtListeners) listener()
+}
+
+export function useFlagAt(): FlagAt {
+  return useSyncExternalStore(
+    (listener) => {
+      flagAtListeners.add(listener)
+      return () => flagAtListeners.delete(listener)
+    },
+    flagAt,
+    () => 'start',
+  )
 }
 
 type Store = Pick<Storage, 'getItem' | 'setItem'>
@@ -40,18 +86,22 @@ function browserStore(): Store | null {
 
 export const clipFlagKey = (channelNumber: number, startMs: number): string => `${channelNumber}@${startMs}`
 
-export function clipFlag(channel: { number: number; name: string }, programme: Programme, startMs: number, endMs: number): ClipFlag {
+/** A flag on a clip: from its start, or, given `atMs` inside it, from that moment (to the second). */
+export function clipFlag(channel: { number: number; name: string }, programme: Programme, startMs: number, endMs: number, atMs?: number): ClipFlag {
   const { programmeId, durationSeconds, video } = bookmarkFor(channel, programme)
+  const second = atMs === undefined ? startMs : Math.floor(atMs / 1000) * 1000
+  const at = second > startMs && second < endMs ? second : startMs
   return {
-    key: clipFlagKey(channel.number, startMs),
+    key: clipFlagKey(channel.number, at),
     channelNumber: channel.number,
     channelName: channel.name,
     title: programme.title,
-    startMs,
+    startMs: at,
     endMs,
     programmeId,
     durationSeconds,
     ...(video ? { video } : {}),
+    ...(at !== startMs ? { clipStartMs: startMs } : {}),
   }
 }
 
@@ -102,7 +152,9 @@ export function readClipFlags(store: Store | null = browserStore()): ClipFlag[] 
 
 /** On, or off again. Flags stay in time order; one set on a clip already over is kept fired, for channels only. */
 export function toggledFlags(list: readonly ClipFlag[], flag: ClipFlag, now: number): ClipFlag[] {
-  if (list.some((item) => item.key === flag.key)) return list.filter((item) => item.key !== flag.key)
+  // One flag to a clip: flagging a flagged clip again, wherever inside it, takes its flag off.
+  const sameClip = (item: ClipFlag) => item.key === flag.key || (item.channelNumber === flag.channelNumber && flagClipStart(item) === flagClipStart(flag))
+  if (list.some(sameClip)) return list.filter((item) => !sameClip(item))
   if (flag.endMs <= now) return [...list, { ...flag, fired: true }].sort((a, b) => a.startMs - b.startMs).slice(-MAX_CLIP_FLAGS)
   // Two flags at one moment cannot both be followed: the newer one takes it.
   return [...list.filter((item) => item.startMs !== flag.startMs || item.fired), flag].sort((a, b) => a.startMs - b.startMs).slice(-MAX_CLIP_FLAGS)
