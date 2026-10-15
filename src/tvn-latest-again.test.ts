@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { providerSource } from './test-support/provider-source.ts'
+import { arrangePlan, replaysHere } from './view/arrange.ts'
 
 const guide = readFileSync('src/components/Guide.tsx', 'utf8')
-const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+const provider = providerSource()
 
 describe('LATEST right-clicked: the very latest order again', () => {
   it('right-click on LATEST asks for the latest order from now, without the browser menu', () => {
@@ -13,16 +15,13 @@ describe('LATEST right-clicked: the very latest order again', () => {
   })
 
   it('updates another channel’s schedule without tuning to it: that waits for the viewer to choose it', () => {
+    expect(replaysHere(8, 7, '1')).toBe(false)
     const replay = provider.slice(provider.indexOf('const replayIfWatching'), provider.indexOf('const arrangeChannel'))
-    expect(replay).toContain("if (channelRef.current !== number || multiviewRef.current !== '1') return\n")
     expect(replay).not.toContain('requestTune(')
   })
 
   it('never switches LATEST off: it rescans and schedules newest first from now, whatever was on', () => {
-    expect(provider).toContain("const again = asked === 'latest-now'")
-    expect(provider).toContain("const how = again ? 'latest' : asked")
-    expect(provider).toContain("if (how === 'reset' || (on === how && how !== 'random' && !again)) {")
-    expect(provider).toContain("liveFromMs: how === 'latest' ? Date.now() : undefined")
+    for (const on of [null, 'latest', 'az', 'random'] as const) expect(arrangePlan('latest-now', on)).toMatchObject({ step: 'arrange', how: 'latest' })
   })
 
   it('works on any row that shows it, selected or not, and never on TVN’s own 000', () => {

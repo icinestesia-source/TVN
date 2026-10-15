@@ -23,6 +23,7 @@ import { resolveStartupTuning } from './state/startup.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, historyStep, visit, type ViewingHistory } from './state/history.ts'
 import type { Channel } from './types/channel.ts'
 import { compactTracks, gridRows, MIN_EMBED_PX, MULTI_PLAYBACK, multiviewLayout, surfTile, tileEmbeds } from './view/multiview.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const T = Date.UTC(2026, 9, 1, 19, 0, 0)
@@ -169,7 +170,7 @@ describe('Multi View', () => {
   })
 
   it('selecting a tile moves the player there and returns the old tile to its still', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("case 'focus-tile': {")
     expect(provider).toContain("case 'focus-move': {")
     const grid = read('src/components/MultiviewGrid.tsx')
@@ -208,7 +209,7 @@ describe('Multi View', () => {
   })
 
   it('Surf runs in Multi View through the same timer, and single-picture Surf is unchanged', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("if (!surfing || asleep || guideOpen || screenEdit !== null || startupPhase !== 'ready' || !noticeSeen) return")
     expect(provider).toMatch(/if \(multiviewRef\.current === '1'\) \{[\s\S]{0,200}?if \(channelRef\.current === TVN_CHANNEL_NUMBER\) return setSurfHops\(\(hops\) => hops \+ 1\)\s+const picked = randomChannel\(channelRef\.current\)\s+if \(picked\) requestTune\(picked\.number\)/)
     expect(provider).toContain('const next = surfTile(tilesRef.current, audioFocusRef.current, candidates)')
@@ -351,7 +352,7 @@ describe('viewing history: Back and Forward', () => {
   })
 
   it('every tune records through the one commit point; Back and Forward aim the cursor; Multi View focus does not record', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('historyRef.current = commitHistory(historyRef.current, next.channelNumber, historyAimRef.current)')
     expect(provider).toMatch(/const requestTune = \(number: number, keepPick = false\) => \{\s+historyAimRef\.current = historyNavRef\.current\s+historyNavRef\.current = null/)
     expect(provider).toMatch(/historyNavRef\.current = step\.index\s+requestTune\(step\.channelNumber\)/)
@@ -373,7 +374,7 @@ describe('viewing history: Back and Forward', () => {
   })
 
   it('leaves Previous and programme Prev/Next as they were', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toMatch(/case 'last-channel': \{\s+const previous = previousRef\.current/)
     expect(read('src/components/NowNextOverlay.tsx')).toContain('onPrev={steps && hasPicture(stepFrom(channel, now, -1).programme) ? () => tv.screenStep(-1) : undefined}')
     expect(read('src/components/Guide.tsx')).toMatch(/<InfoActions\s+key=\{channel\.number\}\s+channel=\{channel\}\s+programme=\{slot\.programme\}\s+onPrev=\{onPrev\}\s+onNext=\{onNext\}(?:\s+following=\{following\})?\s+history=\{history\}/)

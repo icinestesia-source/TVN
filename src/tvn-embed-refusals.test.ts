@@ -13,6 +13,7 @@ import {
   resetRefusalsForTests,
   setShippedRefusals,
 } from './services/embed-refusals.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const shipped = JSON.parse(read('public/independent/playable.json'))
@@ -79,7 +80,7 @@ describe('curated videos that refuse embedded playback', () => {
   }, 120_000)
 
   it('the provider learns refusals on every channel and retunes in place', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('if (!videoId || !isRefusalCode(detail) || !learnRefusal(videoId)) return')
     expect(provider).toMatch(/return\n\s*\}\n\s*republishLibrary\(\)\n\s*loadedKey\.current = ''\n\s*syncLive\(Date\.now\(\)\)/)
     expect(read('src/library/store.ts')).toContain('forDirector(item) && !isRefusedVideo(item.externalId)')

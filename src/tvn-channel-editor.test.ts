@@ -25,12 +25,13 @@ import { addChannelSource, removeUserChannels } from './services/user-network.ts
 import { SESSION_CHANNEL_NUMBER } from './session/session-channel.ts'
 import type { Channel } from './types/channel.ts'
 import { createLongPress, editorScope, LONG_PRESS_MS } from './view/channel-edit.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const T0 = Date.UTC(2026, 8, 30, 12, 0, 0)
 const HOUR = 3_600_000
 const plain = { meta: false, ctrl: false, alt: false }
 const guide = readFileSync('src/components/Guide.tsx', 'utf8')
-const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+const provider = providerSource()
 const localStage = readFileSync('src/player/LocalStage.tsx', 'utf8')
 
 function videos(prefix: string, count: number, from = 0): ImportedVideo[] {

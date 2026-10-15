@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { MediaItem } from './director/types.ts'
 import { asStored, encodePools, noteCalculatedPools, offerSavedPools, poolsToKeep, resetPoolCacheForTests, takeSavedPools } from './library/pool-cache.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const item = (id: string) => ({ id }) as unknown as MediaItem
 
@@ -24,7 +25,7 @@ describe('A faster start', () => {
   })
 
   it('downloads the shipped catalogue and curated edits while the saved library is read', () => {
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     const start = provider.indexOf('const shipped = fetchShippedCatalogue()')
     expect(start).toBeGreaterThan(0)
     expect(start).toBeLessThan(provider.indexOf('await hydrateDirector()'))

@@ -7,6 +7,7 @@ import { schedulingPool } from './mode.ts'
 import { decodePools, encodePools, noteCalculatedPools, offerSavedPools, poolKey, poolsToKeep, resetPoolCacheForTests } from './pool-cache.ts'
 import { getChannelMedia } from './query.ts'
 import { loadShippedIndependentCatalogue, resetLibraryForTests, setLibraryWriter } from './store.ts'
+import { providerSource } from '../test-support/provider-source.ts'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -109,7 +110,7 @@ describe('channel pools kept between visits', () => {
   })
 
   it('startup offers the saved pools before the library is first published, and keeps new ones only after the set has painted', () => {
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toMatch(/const savedPools = readSavedPools\(\)\.catch\(\(\) => null\)[\s\S]{0,140}offerSavedPools\(await savedPools\)\s+await hydrateLibrary\(\)/)
     expect(provider).toMatch(/afterPaint\(\(\) => void saveDeferredLibrary\(\)\.catch\(\(\) => undefined\)\.then\(keepPools\)\)/)
     expect(readFileSync('vite.config.ts', 'utf8')).toMatch(/const builtAt = Date\.now\(\)[\s\S]*__TVN_BUILD__: JSON\.stringify\(builtAt\.toString\(36\)\)/)

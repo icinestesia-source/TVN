@@ -6,6 +6,7 @@ import { createStartupRestore } from '../state/startup-channel.ts'
 import { CaptionController, subtitlesNotice, type CaptionPlayer } from './captions.ts'
 import { pauseViewing } from './viewing.ts'
 import type { PlayerHandle } from './types.ts'
+import { providerSource } from '../test-support/provider-source.ts'
 
 const plain = { meta: false, ctrl: false, alt: false }
 const key = (value: string, extra: Partial<{ target: unknown; metaKey: boolean; ctrlKey: boolean; altKey: boolean }> = {}) =>
@@ -92,7 +93,7 @@ describe('subtitles toggle', () => {
     expect(youtube.showing()).toBe(false)
     expect(subtitlesNotice(false)).toBe('SUBTITLES OFF')
 
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     const handler = provider.slice(provider.indexOf("case 'subtitles'"), provider.indexOf("case 'volume-up'"))
     expect(handler).toMatch(/!subtitlesRef\.current/)
     expect(handler).toMatch(/flash\(subtitlesNotice\(nextSubtitles\)\)/)
@@ -134,7 +135,7 @@ describe('subtitles toggle', () => {
     off.videoPlaying(next.player)
     expect(next.showing()).toBe(false)
 
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     // The toggle, and a confirmed complete restore.
     expect(provider.match(/setSubtitles\(/g)).toHaveLength(2)
     expect(provider.slice(provider.indexOf('const importTvn = useCallback(')).indexOf('setSubtitles(settings.subtitles)')).toBeGreaterThan(0)
@@ -153,7 +154,7 @@ describe('subtitles toggle', () => {
     controller.videoPlaying(youtube.player)
     expect(controller.enabled).toBe(true)
     expect(youtube.showing()).toBe(true)
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     const playPause = provider.slice(provider.indexOf("case 'play-pause'"), provider.indexOf("case 'mute'"))
     expect(playPause).not.toMatch(/subtitle/i)
   })

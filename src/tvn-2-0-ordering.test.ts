@@ -24,10 +24,11 @@ import { universeChannels } from './state/tuning.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
 import { programmeDate, UNKNOWN_DATE } from './view/programme-date.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const editor = read('src/components/NetworkEditor.tsx')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 
 const videos = (prefix: string, count: number): ImportedVideo[] =>
   Array.from({ length: count }, (_, index) => ({ id: `${prefix}${String(index).padStart(11 - prefix.length, '0')}`, title: `${prefix} ${index + 1}`, durationSec: 900 }))
@@ -187,9 +188,10 @@ describe('EDITOR TABS and TERMINOLOGY', () => {
     expect(following).toMatch(/is-following[^>]*>Guide</)
     expect(html).not.toMatch(/>My Guide</)
     expect(following).toMatch(/aria-current="page"[^>]*>Guide</)
-    for (const path of ['src/components/GuideAdd.tsx', 'src/components/GuidePanel.tsx', 'src/components/Guide.tsx', 'src/components/InfoActions.tsx', 'src/state/TvProvider.tsx']) {
+    for (const path of ['src/components/GuideAdd.tsx', 'src/components/GuidePanel.tsx', 'src/components/Guide.tsx', 'src/components/InfoActions.tsx']) {
       expect(read(path), path).not.toMatch(/\bch guide\b|channel guide/i)
     }
+    expect(providerSource()).not.toMatch(/\bch guide\b|channel guide/i)
     const panel = read('src/components/GuidePanel.tsx')
     for (const label of ['>My Guide</h3>', '>Channel sources</span>', "'Build from sources'", "'+ New Map'"]) expect(panel).toContain(label)
     expect(read('src/components/Guide.tsx')).toContain('onMenu={(programme, _x, _y, slot) => flagClip(channel, programme, slot)}')

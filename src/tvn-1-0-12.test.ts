@@ -14,8 +14,9 @@ import { commitHistory, EMPTY_HISTORY, type ViewingHistory } from './state/histo
 import { pictureOwner, playingRequested } from './player/picture.ts'
 import { commitTune } from './state/tune-commit.ts'
 import { commitTuned, stepTarget, type Tuned } from './state/tuning.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
-const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+const provider = providerSource()
 const between = (from: string, to: string) => provider.slice(provider.indexOf(from), provider.indexOf(to, provider.indexOf(from)))
 
 interface Deferred<T> {

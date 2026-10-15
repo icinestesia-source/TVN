@@ -14,12 +14,13 @@ import { setShippedArchive, uploaderIdFor } from './services/user-archive.ts'
 import { planStarterNetwork, planTestChannels } from './services/user-network.ts'
 import { readUserNetworkFile, recordsFromExport } from './services/user-network-restore.ts'
 import { DEFAULT_SHORTCUTS, SHORTCUT_IDS } from './view/info-shortcuts.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 setShippedArchive(JSON.parse(read('public/user-network/uploaders.json')))
 const template = mergeParsedExports(BUILT_IN_CATALOGUE_FILES.map((file) => parseChannelsExport(read(`public${file.path}`))))
 const shipped = expandPlayableCatalogue(JSON.parse(read('public/independent/playable.json')))
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 /** The shipped starter User Network, as a fresh install reads it. */
 const starterFile = readUserNetworkFile(read('public/user-network/starter-network.json'))
 const starter = starterFile.ok ? recordsFromExport(starterFile.value, 0) : []

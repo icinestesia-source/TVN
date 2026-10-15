@@ -28,9 +28,10 @@ import { universeChannels } from './state/tuning.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
 import { programmeDate, UNKNOWN_DATE } from './view/programme-date.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 
 function videos(prefix: string, count: number): ImportedVideo[] {
   return Array.from({ length: count }, (_, index) => ({ id: `${prefix}${String(index).padStart(11 - prefix.length, '0')}`, title: `${prefix} ${index + 1}`, durationSec: 900 }))

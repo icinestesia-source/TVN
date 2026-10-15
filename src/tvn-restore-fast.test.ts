@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { channelsFromSources } from './services/channels-import.ts'
 import { buildUserNetworkExport } from './services/user-network-export.ts'
 import { readUserNetworkFile, recordsFromExport, resolveRestored } from './services/user-network-restore.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const file = readUserNetworkFile(read('public/user-network/starter-network.json'))
@@ -40,7 +41,7 @@ describe('RESTORE comes back at once from the file, then reads its sources', () 
   })
 
   it('the provider saves the file’s channels first and replaces only records untouched since', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('resolveRestored(records, restoreDeps, now, 4, { read: false })')
     expect(provider).toContain('void refreshRestored(records, resolved.records, run, onProgress)')
     expect(provider).toMatch(/asRestored\.get\(record\.id\) !== JSON\.stringify\(record\)\) return record/)

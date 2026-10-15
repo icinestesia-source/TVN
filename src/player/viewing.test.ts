@@ -11,6 +11,7 @@ import type { Channel } from '../types/channel.ts'
 import { deliver, playbackCommand } from './command.ts'
 import type { PlayerHandle, PlayerLoadRequest } from './types.ts'
 import { liveAiring, pauseViewing } from './viewing.ts'
+import { providerSource } from '../test-support/provider-source.ts'
 
 const MINUTE = 60_000
 
@@ -132,7 +133,7 @@ describe('remote pause and play', () => {
   })
 
   it('leaves the provider tuning path to clear pause and load the live airing', () => {
-    const source = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const source = providerSource()
     const commit = source.slice(source.indexOf('commitTuneRef.current = async'), source.indexOf('const closeGuide'))
     expect(commit).toMatch(/if \(pausedRef\.current\) resumeViewing\(\)/)
     expect(commit).toMatch(/pausedRef\.current = false\s+setPaused\(false\)/)

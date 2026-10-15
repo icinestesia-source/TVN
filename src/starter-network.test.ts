@@ -10,6 +10,7 @@ import { channelsFromSources, mergeParsedExports, parseChannelsExport, type Stor
 import { setShippedArchive, uploaderIdFor } from './services/user-archive.ts'
 import { addChannelSource, nextUserNumber, planTestChannels, removeUserChannels } from './services/user-network.ts'
 import { SESSION_CHANNEL_NUMBER } from './session/session-channel.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const template = mergeParsedExports(BUILT_IN_CATALOGUE_FILES.map((file) => parseChannelsExport(read(`public${file.path}`))))
@@ -124,7 +125,7 @@ describe('the bundled starter network', () => {
     setStarterState('removed', store)
     for (let visit = 0; visit < 3; visit += 1) expect(claimStarterInstall(store)).toBe(false)
     expect(starterState(store)).toBe('removed')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("if (numbers === 'all') setStarterState('removed')")
     expect(provider).toMatch(/const removeStarterNetwork = useCallback\(async \(\) => \{[\s\S]*?setStarterState\('removed'\)/)
     expect(read('src/data/user-network/bootstrap.ts')).not.toMatch(/planTestChannels|claimStarterInstall/)
@@ -156,7 +157,7 @@ describe('the bundled starter network', () => {
       expect(result.added).toEqual(STARTER)
       expect(starterState(store)).toBe('installed')
     }
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).not.toMatch(/existing\.length > 0/)
     expect(provider).not.toMatch(/setStarterState\('skipped'\)/)
   })
@@ -169,7 +170,7 @@ describe('the bundled starter network', () => {
     claimStarterInstall(store)
     setStarterState('installed', store)
     expect(claimStarterInstall(store)).toBe(false)
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toMatch(/if \(startupPhase !== 'ready' \|\| \(!starterDue && !favouritesSeeded\) \|\| starterRanRef\.current\) return/)
     expect(provider).toMatch(/starterDue \? loadTestChannels\(true\)/)
   })
@@ -193,7 +194,7 @@ describe('the bundled starter network', () => {
     expect(guide).toContain('onLoadTest={tv.loadTestChannels}')
     expect(add).toContain("key('Add starter network', () => void run(onLoadTest))")
     expect(guide).toContain('<TestChannelsButton onLoad={tv.loadTestChannels} />')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const load = provider.slice(provider.indexOf('const loadTestChannels = useCallback('), provider.indexOf('const starterRanRef'))
     // Only the automatic install consults the marker; the deliberate one always runs and marks it installed.
     expect(load).toContain("if (automatic && (starterState() !== 'pending' || currentNetworkBase() === 'new')) return ''")
@@ -260,7 +261,7 @@ describe('1001+ is part of every installation unless the viewer removed it', () 
     const sources = [...install().sources, mine]
     expect(withoutStarter(sources, starterIds(template))).toEqual([mine])
     expect(removeUserChannels(sources, 'all')).toEqual([])
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toMatch(/const removeStarterNetwork = useCallback\(async \(\) => \{[\s\S]*?withoutStarter\(existing, ids\)[\s\S]*?setStarterState\('removed'\)/)
     expect(provider).toContain("if (numbers === 'all') setStarterState('removed')")
     // Deleting one channel is not removing the User Network.

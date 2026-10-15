@@ -4,6 +4,7 @@ import { shippedChannel } from './data/catalogue.ts'
 import { centralEdit, centralEditsFrom, installCentralEdits, withCentralEdits } from './data/central-edits.ts'
 import { DEDICATED } from './director/fit.ts'
 import { buildCuratedEdit, type CuratedEdit } from './services/curated-edits.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const doc = JSON.parse(readFileSync('src/data/central-edits.json', 'utf8'))
 const read = (path: string) => readFileSync(path, 'utf8')
@@ -52,7 +53,7 @@ describe('729, 776 VERITAS and 777 CRROW777: central channels from public podcas
     const own = { channelNumber: 776, name: 'MY VERITAS', sources: [], savedAt: 1 } as CuratedEdit
     expect(withCentralEdits({ '776': own })['776']).toBe(own)
     expect(withCentralEdits({})['777'].name).toBe('CRROW777')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('const saved = loadCuratedEdit(number) ?? centralEdit(number)')
     expect(provider).toContain('for (const edit of Object.values(withCentralEdits(edits))) {')
   })

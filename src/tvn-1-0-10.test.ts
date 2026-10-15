@@ -11,9 +11,10 @@ import { clearUserChannel, planTestChannels } from './services/user-network.ts'
 import { buildUserNetworkExport, serialiseUserNetworkExport, validateUserNetworkExport, type UserNetworkExport } from './services/user-network-export.ts'
 import { favouritesAfterRestore, readUserNetworkFile, recordsFromExport, resolveRestored, restoreUserNetwork, usersFromExport } from './services/user-network-restore.ts'
 import { randomTarget, stepTarget, universeChannels, type ChannelUniverse } from './state/tuning.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const guide = read('src/components/Guide.tsx')
 const NOW = new Date(2026, 9, 2, 3, 0)
 

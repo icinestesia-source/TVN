@@ -15,13 +15,15 @@ import { hasPicture, SESSION_CHANNEL_NUMBER } from './session/session-channel.ts
 import { commitTuned } from './state/tuning.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
+import { guidePickAction } from './view/guide-mode.ts'
 import { guideToolTarget } from './view/guide-tool.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const T0 = Date.UTC(2026, 8, 30, 12, 0, 0)
 const HOUR = 3_600_000
 const plain = { meta: false, ctrl: false, alt: false }
 const guide = readFileSync('src/components/Guide.tsx', 'utf8')
-const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+const provider = providerSource()
 
 function userSource(id: string, name: string, number: number): StoredSource {
   return {
@@ -248,7 +250,8 @@ describe('programme selection', () => {
   it('keeps Play Now for channel 000 and plays any other playable Guide programme from the start', () => {
     const body = provider.slice(provider.indexOf('const activateGuide'), provider.indexOf('const goToSleep = ('))
     expect(body).toMatch(/selected\.origin === 'session'[\s\S]*sessionRef\.current\.play\(chosen\.id\)/)
-    expect(body).toMatch(/if \(hasPicture\(slot\.programme\)\) \{\s+playFromGuideRef\.current\(selected, slot\.programme, slot\)/)
+    expect(guidePickAction(T0, T0 + 60_000, T0 - 1, true)).toBe('play')
+    expect(guidePickAction(T0, T0 + 60_000, T0 + 1, true, true)).toBe('play')
     expect(provider).not.toMatch(/selectProgramme\(SESSION_CHANNEL_NUMBER/)
   })
 })

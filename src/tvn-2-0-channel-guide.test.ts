@@ -24,6 +24,7 @@ import {
 } from './services/viewing-guides.ts'
 import type { Channel } from './types/channel.ts'
 import { networkRows, networkStatus } from './view/network-rows.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const NOW = Date.UTC(2026, 9, 3, 20)
@@ -107,7 +108,7 @@ describe('CHANNEL GUIDE: channel sources', () => {
     expect(panel).toMatch(/Build from sources/)
     expect(panel).toContain('plan-source-list')
     expect(read('src/components/Guide.tsx')).toContain('onMenu={(programme, _x, _y, slot) => flagClip(channel, programme, slot)}')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("channel.origin === 'tvn' || channel.origin === 'session'")
     expect(provider).toContain('sourceChannel(source, listChannels())')
   })

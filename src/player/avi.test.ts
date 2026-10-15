@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { buildSessionItems, isAviFile } from '../session/import.ts'
 import { aviRoute, aviToFlv, mp3Frame, nalUnits, parseAviHeader } from './avi.ts'
 import { scanFile } from './flv-index.ts'
+import { providerSource } from '../test-support/provider-source.ts'
 
 /** Two seconds of 64×48 H.264 with B-frames (20 pictures at 10 a second) and MP3 sound, made by ffmpeg. */
 const tiny = new Uint8Array(readFileSync('src/player/fixtures/tiny-h264-mp3.avi'))
@@ -105,7 +106,7 @@ describe('AVI files in Import media', () => {
   })
 
   it('loads the converter only when an AVI needs it, from TVN itself', () => {
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toMatch(/await import\('\.\.\/player\/avi-convert\.ts'\)/)
     const convert = readFileSync('src/player/avi-convert.ts', 'utf8')
     expect(convert).toMatch(/await import\('\.\/avi-ffmpeg\.ts'\)/)

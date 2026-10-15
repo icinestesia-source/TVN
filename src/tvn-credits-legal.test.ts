@@ -37,6 +37,7 @@ import type { StoredSource } from './services/channels-import.ts'
 import { loadCuratedEdit, saveCuratedEdit } from './services/curated-edits.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const catalogue = JSON.parse(read('public/independent/playable.json')) as PlayableCatalogueV2 & { sources: Record<string, string> }
@@ -99,7 +100,7 @@ function catalogueAiring(): { channel: Channel; programme: Programme } {
 
 describe('CREDITS on the remote', () => {
   const remote = read('src/components/TouchRemote.tsx')
-  const provider = read('src/state/TvProvider.tsx')
+  const provider = providerSource()
 
   it('sits after CLOSE and before PAUSE', () => {
     const foot = remote.slice(remote.indexOf('aria-label="Close remote"'))

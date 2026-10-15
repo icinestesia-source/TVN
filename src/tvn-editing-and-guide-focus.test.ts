@@ -22,6 +22,7 @@ import { airingSources, type ChannelSource } from './services/channel-sources.ts
 import { channelsFromSources, type ImportedVideo, type StoredSource } from './services/channels-import.ts'
 import { canonicalEdit, curatedEditOf } from './services/curated-edits.ts'
 import type { Channel } from './types/channel.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const videos = (prefix: string, count: number, from = 0): ImportedVideo[] =>
@@ -330,14 +331,14 @@ describe('CHANNEL EDITOR: what the viewer sees', () => {
     expect(editor).toContain('Loading · {batch.of}')
     expect(editor).toContain('onClick={() => stopRef.current?.abort()}')
     expect(editor).toContain("const arrived = holding ? holdNew({ ...source, videos: [] }, found) : found")
-    expect(read('src/state/TvProvider.tsx')).toContain('const acquireChannelSource = useCallback(async (source: ChannelSource) => (await rescanSources([source], rescanDeps(), Date.now()))[0], [rescanDeps])')
+    expect(providerSource()).toContain('const acquireChannelSource = useCallback(async (source: ChannelSource) => (await rescanSources([source], rescanDeps(), Date.now()))[0], [rescanDeps])')
     expect(read('src/components/Guide.tsx')).toContain('onAcquire={tv.acquireChannelSource}')
   })
 })
 
 describe('STARTUP RACE: the viewer\'s channels win over the starter install', () => {
   it('plans the starter around what is stored now and plans again if it changed before saving', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const body = provider.slice(provider.indexOf('const loadTestChannels = useCallback'), provider.indexOf('// However the first load goes'))
     expect(body.indexOf('await ingestParsed(')).toBeLessThan(body.indexOf('const stored = await loadStoredSources()'))
     expect(body).toContain('if (plan.added.length > 0 && !sameStoredSources(stored, await loadStoredSources())) continue')
@@ -348,7 +349,7 @@ describe('STARTUP RACE: the viewer\'s channels win over the starter install', ()
 
 describe('Deleting a channel hands over to its neighbour, never to 001', () => {
   it('the channel listed above takes its place, or the one below when it was first, for the picture and the Guide alike', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const body = provider.slice(provider.indexOf('const deleteUserChannel = useCallback'), provider.indexOf('const goneNumbers ='))
     expect(body).toContain('const near = rows.findLast((channel) => channel.number < number) ?? rows.find((channel) => channel.number > number)')
     expect(body).toContain('installSources(result.sources, near?.number)')

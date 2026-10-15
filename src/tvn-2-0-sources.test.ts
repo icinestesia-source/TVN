@@ -7,6 +7,7 @@ import { lookUpFeed, sourcePreviewLines, type FoundFeed } from './services/podca
 import { addPodcastChannel } from './services/user-network.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -91,7 +92,7 @@ describe('the preview shows what TVN found before anything is saved', () => {
     expect(form).toContain('sourcePreviewLines(preview).map((line) => (')
     expect(form).toContain('Add channel')
     expect(read('src/components/Guide.tsx').match(/onPreview=\{tv\.previewSource\}/g)).toHaveLength(2)
-    expect(read('src/state/TvProvider.tsx')).toContain("const previewed = previewedRef.current?.link === link.trim() ? previewedRef.current.feed : null")
+    expect(providerSource()).toContain("const previewed = previewedRef.current?.link === link.trim() ? previewedRef.current.feed : null")
   })
 })
 

@@ -9,6 +9,7 @@ import { FirstRunNotice } from './legal/FirstRunNotice.tsx'
 import { chooseTvn, resetTvnChannel, setTvnLookup, setTvnRandom, tvnBroadcast } from './tvn/tvn-channel.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const memoryStore = () => {
@@ -16,7 +17,7 @@ const memoryStore = () => {
   return { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => void data.set(key, value), data }
 }
 const notice = read('src/legal/FirstRunNotice.tsx')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const newNetwork = provider.slice(provider.indexOf('const startNewNetwork = useCallback'), provider.indexOf('/** A new, empty 1001+ channel for Edit Channel to fill'))
 
 afterEach(() => {

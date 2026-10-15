@@ -4,6 +4,7 @@ import { setNetworkBase } from './data/user-overlay.ts'
 import type { ImportedVideo, StoredSource } from './services/channels-import.ts'
 import { deleteUserChannel, remapNumbers, renumberUserNetwork, USER_BLOCK, userOrder } from './services/network-order.ts'
 import { clearUserChannel } from './services/user-network.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const videos = (prefix: string): ImportedVideo[] => Array.from({ length: 3 }, (_, index) => ({ id: `${prefix}${String(index).padStart(11 - prefix.length, '0')}`, title: `${prefix} ${index}`, durationSec: 900 }))
 const channel = (number: number, name: string): StoredSource => ({ id: `yt:UC${String(number).padStart(22, '0')}`, name, videos: videos(`c${number}`), channelNumber: number, inLibrary: false, automatic: true, updatedAt: 1 })
@@ -37,7 +38,7 @@ describe('X in NETWORK', () => {
   })
 
   it('the provider closes up 1001+ and empties 001–990; TVN’s own channels are never deleted', () => {
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     const body = provider.slice(provider.indexOf('const deleteNetworkChannel = useCallback('), provider.indexOf('/** MOVE TO:'))
     expect(body).toContain("if (scopeOf(number).scope !== 'user') throw new Error('TVN’s own channels cannot be deleted')")
     expect(body).toMatch(/if \(isLowUserNumber\(number\)\) \{\s*const result = clearUserChannel\(/)

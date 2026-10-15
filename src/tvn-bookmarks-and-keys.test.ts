@@ -9,6 +9,7 @@ import type { Programme } from './types/programme.ts'
 import { addClipsChannel, clipVideo } from './services/bookmark-channel.ts'
 import type { StoredSource } from './services/channels-import.ts'
 import { BOOKMARKS_KEY, bookmarkFor, MAX_BOOKMARKS, readBookmarks, toggledBookmarks } from './view/bookmarks-store.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const plain = { meta: false, ctrl: false, alt: false }
@@ -39,7 +40,7 @@ describe('KEYS: I Add, U Media, E Export ALL, O Options, D Bookmark', () => {
 
 describe('B and N: the channels remembered, then the channel keys', () => {
   it('step through the remembered channels, and with none that way go down (B) or up (N) a channel', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const history = provider.slice(provider.indexOf("case 'history-back':"), provider.indexOf("case 'confirm':"))
     expect(history).toMatch(/if \(step && channelByNumber\(step\.channelNumber\)\) \{\s*historyNavRef\.current = step\.index\s*requestTune\(step\.channelNumber\)\s*break\s*\}/)
     expect(history).toContain("const delta = command.type === 'history-back' ? -1 : 1")
@@ -76,7 +77,7 @@ describe('BOOKMARKS: clips kept to play again', () => {
   })
 
   it('D bookmarks the clip on screen, or the one selected in the Guide', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const bookmark = provider.slice(provider.indexOf("case 'bookmark': {"), provider.indexOf("case 'debug':"))
     expect(bookmark).toContain('const number = guideOpenRef.current ? cursorRef.current.channelNumber : channelRef.current')
     expect(bookmark).toContain('const on = toggleBookmark(bookmarkFor(target, programme))')
@@ -92,7 +93,7 @@ describe('BOOKMARKS: clips kept to play again', () => {
   })
 
   it('LOAD ALL & EXPORT runs on with OPTIONS closed, and its progress is there again when OPTIONS reopens', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('const [loadAll, setLoadAll] = useState<{ percent: number; channel: string; result?: string } | null>(null)')
     expect(provider).toContain('loadAllAndExportUser((percent, channel) => setLoadAll({ percent, channel }), stop.signal)')
     const options = read('src/components/GuideOptions.tsx')
@@ -117,7 +118,7 @@ describe('BOOKMARKS: clips kept to play again', () => {
     expect(guide).toContain("className={filterTabsOn && tv.guideFilter === 'favourites' ? 'tab guide-glyph-tab is-on' : 'tab guide-glyph-tab'}")
     expect(guide).toContain("className={bookmarksOn ? 'tab guide-glyph-tab guide-bookmarks is-on' : 'tab guide-glyph-tab guide-bookmarks'}")
     expect(guide).toContain('<span className="guide-tab-glyph" aria-hidden="true">♡</span>')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toMatch(/case 'guide-cycle': \{[\s\S]{0,400}panelOpenRef\.current\(\) === 'bookmarks' \|\| panelOpenRef\.current\(\) === 'flags'\)\) \{\s*closeGuideTool\(\)\s*setGuideFilter\('all'\)/)
     expect(provider).toMatch(/guideFilter === 'favourites' && next === 'all'\) \{\s*openGuideTool\('bookmarks'\)/)
     expect(provider).toMatch(/case 'guide-filter': \{[\s\S]{0,200}if \(panelOpenRef\.current\(\) === 'bookmarks' \|\| panelOpenRef\.current\(\) === 'flags' \|\| \(guideOpenRef\.current && editingRef\.current\(\)\)\) closeGuideTool\(\)/)

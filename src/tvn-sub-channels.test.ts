@@ -5,6 +5,7 @@ import { installUserCatalogue, subChannelsOf } from './data/user-overlay.ts'
 import { broadcast } from './services/broadcast.ts'
 import { channelsFromSources, subChannelId, type ImportedVideo, type StoredSource } from './services/channels-import.ts'
 import { guideLayout, loadOpenSubChannels, rowIndexOf, saveOpenSubChannels } from './view/sub-channels-store.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const videos = (prefix: string, count: number): ImportedVideo[] =>
@@ -108,7 +109,7 @@ describe('The Guide lists sub-channels under their channel when "+" shows them',
     expect(guide).toMatch(/className=\{subsOpen \? 'ch-act ch-subs is-open' : 'ch-act ch-subs'\}/)
     expect(guide.indexOf("'ch-act ch-subs")).toBeLessThan(guide.indexOf("'ch-act ch-more"))
     expect(guide).toContain('onWatch={() => tv.playSubChannel(channel)}')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('playFromGuide(sub, airing.programme, { startMs: airing.startMs, endMs: airing.endMs }, (now - airing.startMs) / 1000)')
     expect(provider).toContain('installUserCatalogue(built.channels, built.programmes, built.subChannels)')
   })
@@ -117,7 +118,7 @@ describe('The Guide lists sub-channels under their channel when "+" shows them',
     const panel = read('src/components/GuideAdd.tsx')
     expect(panel).toMatch(/Combine \{chosenPlaylists\(\)\.length\} into one channel/)
     expect(panel).toContain('chosen.map((playlist) => ({ url: playlistUrl(playlist.id), title: playlist.title }))')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toMatch(/const addCombinedChannel = useCallback\(/)
     expect(provider).toContain("youtube: 'playlist',")
   })

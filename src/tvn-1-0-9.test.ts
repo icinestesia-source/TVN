@@ -29,10 +29,11 @@ import { universeChannels } from './state/tuning.ts'
 import type { Channel } from './types/channel.ts'
 import { guideToolTarget } from './view/guide-tool.ts'
 import { DEFAULT_SHORTCUTS } from './view/info-shortcuts.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const guide = read('src/components/Guide.tsx')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const addSource = read('src/components/GuideAdd.tsx')
 const labelsOf = (html: string) => [...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1].trim())
 

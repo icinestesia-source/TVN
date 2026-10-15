@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { commandFromKey } from '../input/keyboard.ts'
 import { clampPipSize, cycleMultiview, loadPipSize, multiviewLayout, PIP_SIZE_DEFAULT, PIP_SIZE_KEY, PIP_SIZE_MAX, PIP_SIZE_MIN, savePipSize, tileCount } from './multiview.ts'
+import { providerSource } from '../test-support/provider-source.ts'
 
 const plain = { meta: false, ctrl: false, alt: false }
 
@@ -31,7 +32,7 @@ describe('picture in picture', () => {
     expect(commandFromKey('ArrowLeft', plain, false, true)).toEqual({ type: 'focus-move', direction: 'left' })
     expect(commandFromKey('ArrowRight', plain, false, true)).toEqual({ type: 'focus-move', direction: 'right' })
     expect(commandFromKey('ArrowUp', plain, true, true)).toEqual({ type: 'nav', direction: 'up' })
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toContain("if (command.mode === '1' && multiviewRef.current === '1') break")
     expect(provider).toContain('const nextMode = command.mode ?? cycleMultiview(multiviewRef.current)')
   })

@@ -19,9 +19,10 @@ import { mergeParsedExports, parseChannelsExport } from './services/channels-imp
 import { ringColour, RING_COLOURS } from './components/ring-colour.ts'
 import { afterPaint } from './state/after-paint.ts'
 import type { GuideFilter } from './types/preferences.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const stage = read('src/player/YoutubeStage.tsx')
 const between = (text: string, from: string, to: string) => text.slice(text.indexOf(from), text.indexOf(to, text.indexOf(from)))
 
@@ -321,7 +322,7 @@ describe('the starter network', () => {
 
   it('runtime reads the checked-in file, never Downloads', () => {
     expect(read('src/data/user-network/bootstrap.ts')).toMatch(/STARTER_NETWORK_FILE = '\/user-network\/starter-network\.json'/)
-    for (const path of ['src/data/user-network/bootstrap.ts', 'src/state/TvProvider.tsx']) expect(read(path)).not.toMatch(/Downloads/)
+    for (const text of [read('src/data/user-network/bootstrap.ts'), providerSource()]) expect(text).not.toMatch(/Downloads/)
   })
 })
 

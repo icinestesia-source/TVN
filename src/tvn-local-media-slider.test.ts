@@ -11,6 +11,7 @@ import { clearSession, LOCAL_MEDIA_NUMBERS, localChannel, replaceSession, sessio
 import { guideToolTarget } from './view/guide-tool.ts'
 import { editorScope } from './view/channel-edit.ts'
 import type { Programme } from './types/programme.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const NOW = new Date('2026-10-06T20:00:00+01:00').getTime()
@@ -62,7 +63,7 @@ describe('Local Media 991–1000 in the Guide', () => {
     expect(guideToolTarget('media', 'all', [], { channelNumber: 225, timeMs: 0 }, channels, NOW).cursor.channelNumber).toBe(1000)
     expect(guideToolTarget('media', 'all', [], { channelNumber: 994, timeMs: 0 }, channels, NOW).cursor.channelNumber).toBe(994)
     expect(guideToolTarget('media', 'all', [], { channelNumber: 225, timeMs: 0 }, channels, NOW, 996).cursor.channelNumber).toBe(996)
-    expect(read('src/state/TvProvider.tsx')).toContain("kind = 'media'")
+    expect(providerSource()).toContain("kind = 'media'")
   })
 
   it('the panel names the channel and lists its files, each removable, with Folder, Files, Watch and Clear', () => {
@@ -83,7 +84,7 @@ describe('Local Media 991–1000 in the Guide', () => {
   })
 
   it('stays open after an import, so another folder can be added', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('if (wasEmpty) showSession(target, guideOpenRef.current)')
     expect(read('src/components/GuideAdd.tsx')).toContain("if (picked === 'refused') folderInput.current?.click()")
   })

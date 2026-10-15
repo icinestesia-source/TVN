@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_PREFERENCES, PREFERENCES_KEY } from './services/preferences.ts'
 import { currentEntryMode, entryMode, SURF_ENTRY_PATH, surfsOnEntry } from './state/entry.ts'
 import { SURF_KEY } from './state/surf.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 
 describe('one TVN, two entries', () => {
   it('tvn.lol/ is the television: Surf waits for the TVN button', () => {

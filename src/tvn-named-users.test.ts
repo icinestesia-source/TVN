@@ -8,6 +8,7 @@ import { listChannels } from './data/catalogue.ts'
 import { guideFilterForChannel } from './epg/navigation.ts'
 import { guideToolTarget } from './view/guide-tool.ts'
 import { DEFAULT_PREFERENCES, PREFERENCES_KEY, loadPreferences } from './services/preferences.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const guide = readFileSync('src/components/Guide.tsx', 'utf8')
 
@@ -125,7 +126,7 @@ describe('named users', () => {
 describe('OPTIONS', () => {
   const actions = readFileSync('src/components/GuideAdd.tsx', 'utf8')
   const options = readFileSync('src/components/GuideOptions.tsx', 'utf8')
-  const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+  const provider = providerSource()
 
   it('sits before NOW and opens in the Guide body in place of the listings', () => {
     expect(actions.indexOf("action('Options'")).toBeLessThan(actions.indexOf("action('Now'"))

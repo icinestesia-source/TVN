@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { AddChannelForm } from './components/GuideAdd.tsx'
 import { isPlaylistsLink, isYouTubeChannelLink, lookUpChannelPlaylists } from './services/add-channel.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 describe('ADD CHANNELS reads the playlists through TVN’s lookup', () => {
   it('the client asks for that mode and keeps only well-formed rows', async () => {
@@ -45,7 +46,7 @@ describe('ADD CHANNELS in the Add row', () => {
     expect(panel).toContain('A channel per playlist')
     expect(panel).toContain('One channel')
     expect(panel).toContain('.map((playlist) => playlistUrl(playlist.id))')
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toMatch(/const result = addChannelSource\(sources, outcome\.value, Date\.now\(\), uploaderIdFor\)/)
     expect(readFileSync('src/components/Guide.tsx', 'utf8').match(/onAddMany=\{addMany\}/g)).toHaveLength(2)
   })

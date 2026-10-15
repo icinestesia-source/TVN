@@ -23,9 +23,10 @@ import {
   type TransitionSettings,
 } from './state/transitions.ts'
 import { DEFAULT_SHORTCUTS } from './view/info-shortcuts.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const screen = read('src/app/TvScreen.tsx')
 const NOW = Date.parse('2026-10-02T20:00:00Z')
 const SAMPLE = { number: '225', name: 'TVN Preview', programme: 'Sample programme' }

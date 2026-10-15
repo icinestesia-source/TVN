@@ -11,6 +11,7 @@ import { LoadingRing, STARTUP_COPY, StartupScreen } from './components/StartupSc
 import type { Channel } from './types/channel.ts'
 import type { TvCommand } from './types/input.ts'
 import type { Programme } from './types/programme.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 describe('the Guide information bar', () => {
   it('ends with the Next line, like the one over the picture', () => {
@@ -133,7 +134,7 @@ describe('the Guide button', () => {
     const markup = renderToStaticMarkup(createElement(InfoActions, { channel, programme, ...padProps({ sent }) }))
     expect(markup).toMatch(/<button[^>]*class="tune-key info-pad-guide"[^>]*aria-label="Guide"[^>]*>Guide<\/button>/)
     expect(readFileSync('src/components/InfoActions.tsx', 'utf8')).toContain("corners.dispatch({ type: 'guide' })")
-    expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(/case 'guide':\s*if \(command\.listings\) \{[\s\S]*?break\s*\}\s*if \(guideModeRef\.current === 'closed'\) openGuide\('expanded'\)\s*else \{\s*closeGuide\(\)/)
+    expect(providerSource()).toMatch(/case 'guide':\s*if \(command\.listings\) \{[\s\S]*?break\s*\}\s*if \(guideModeRef\.current === 'closed'\) openGuide\('expanded'\)\s*else \{\s*closeGuide\(\)/)
     const remote = readFileSync('src/components/TouchRemote.tsx', 'utf8')
     expect(remote).not.toContain('remote-bar')
     expect(remote).not.toContain('guide-key')
@@ -142,7 +143,7 @@ describe('the Guide button', () => {
 
 describe('I', () => {
   it('opens the information display, and closes it while it is up', () => {
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toMatch(/case 'info':[\s\S]{0,160}if \(overlay === 'info'\) showOverlay\('none', 0\)\s*else showOverlay\('info', INFO_MS\)/)
   })
 })

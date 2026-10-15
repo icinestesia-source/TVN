@@ -21,10 +21,11 @@ import { guideSlots } from './services/broadcast.ts'
 import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
 import type { TvCommand } from './types/input.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const guide = read('src/components/Guide.tsx')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const css = read('src/styles/guide.css')
 
 type Control = { label: string; props: Record<string, unknown> }

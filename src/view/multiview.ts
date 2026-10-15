@@ -214,3 +214,29 @@ export function compactTracks(
 export function audibleTile(focus: number, count: number): boolean[] {
   return Array.from({ length: count }, (_, index) => index === focus)
 }
+
+/**
+ * A change of layout. From single view the watched channel leads, with the remembered PiP channel beside it and
+ * the first tile heard; within Multi View the heard tile's channel leads and the tiles are kept where they can be.
+ * Back to single view, `focus` is the channel the picture goes to.
+ */
+export function planMultiview(
+  from: MultiviewMode,
+  to: MultiviewMode,
+  watched: number,
+  tiles: readonly number[],
+  audioFocus: number,
+  ordered: readonly number[],
+  pipChannel: number | null,
+): { focus: number; tiles: number[]; audioFocus: number } {
+  const entering = from === '1'
+  const focus = entering ? watched : (tiles[audioFocus] ?? watched)
+  if (to === '1') return { focus, tiles: [...tiles], audioFocus }
+  const next = entering ? enterTiles(focus, ordered, to, pipChannel) : fillTiles(focus, ordered, tileCount(to), tiles)
+  return { focus, tiles: next, audioFocus: entering ? 0 : Math.min(audioFocus, Math.max(0, next.length - 1)) }
+}
+
+/** The inset the viewer chose: it changed while the main picture stayed. Null when there is nothing to remember. */
+export function pipToRemember(before: readonly number[] | null, tiles: readonly number[]): number | null {
+  return before && tiles.length > 1 && before[0] === tiles[0] && before[1] !== tiles[1] ? tiles[1] : null
+}

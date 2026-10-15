@@ -10,6 +10,7 @@ import { buildUserNetworkExport, validateUserNetworkExport } from './services/us
 import { favouritesAfterRestore, readUserNetworkFile, recordsFromExport, resolveRestored, restoreUserNetwork } from './services/user-network-restore.ts'
 import { guideTabLabel, guideTabs, nextGuideTab } from './state/guide-tabs.ts'
 import { userFilter } from './data/user-network/users.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const plain = { meta: false, ctrl: false, alt: false }
@@ -115,7 +116,7 @@ describe('B and N on 1000 Local Media', () => {
 
   it('are null on the empty channel, and the provider plays the step through Play Now', () => {
     expect(sessionNeighbour(0, 1)).toBeNull()
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toMatch(/here\?\.origin === 'session'\) \{\s+const target = sessionNeighbour\(Date\.now\(\), direction, here\.number\)\s+if \(target\) sessionRef\.current\.play\(target\.id\)/)
   })
 })
@@ -177,7 +178,7 @@ describe('USER exports carry their Favourites; RESTORE offers ALL or USER', () =
   })
 
   it('ALL restores everything; USER only the User Network with its Favourites', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("async (document: TvnExport, scope: 'all' | 'user' = 'all', onProgress?: (note: string) => void) =>")
     expect(provider).toContain('return importUserNetwork({ ...checked.value.userNetwork, favourites }, onProgress)')
     const add = read('src/components/GuideAdd.tsx')

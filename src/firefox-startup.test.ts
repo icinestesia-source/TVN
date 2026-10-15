@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IDB_PAGE, readAllPaged } from './library/idb-read.ts'
 import { runStartup, startupReason } from './state/startup.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 
@@ -85,7 +86,7 @@ describe('a start that fails says why, in the console only', () => {
   })
 
   it('the provider logs the reason with the build commit; the viewer still sees only the off-air card', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("}, undefined, (reason) => console.error(`TVN could not start (commit ${BUILD_INFO.commit}): ${reason}`))")
     expect(provider).toContain('console.error(`TVN could not start (commit ${BUILD_INFO.commit}): no channel to start on`)')
     expect(read('src/components/StartupScreen.tsx')).toContain("failed: 'TVN IS OFF THE AIR'")

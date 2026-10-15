@@ -45,6 +45,7 @@ import type { Programme } from './types/programme.ts'
 import { editorScope } from './view/channel-edit.ts'
 import { guideToolTarget } from './view/guide-tool.ts'
 import { DEFAULT_SHORTCUTS } from './view/info-shortcuts.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const T0 = new Date('2026-10-02T20:00:00+01:00').getTime()
@@ -489,7 +490,7 @@ describe('000 TVN: a continuous channel surfer on the Random Cycle wait', () => 
     const tvn = read('src/tvn/tvn-channel.ts')
     expect(tvn).not.toMatch(/setTimeout|setInterval/)
     expect(read('src/services/broadcast.ts')).toContain('dwellMs: () => surfDelayMs(loadSurfRange()),')
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("if (current.origin === 'tvn') driveTvn(nowMs)")
     expect(provider).toContain("if (target.origin === 'tvn') driveTvn(nowMs)")
     expect(provider).toContain('if (channelRef.current === TVN_CHANNEL_NUMBER) return setSurfHops((hops) => hops + 1)')
@@ -497,7 +498,7 @@ describe('000 TVN: a continuous channel surfer on the Random Cycle wait', () => 
   })
 
   it("a surf's title card names the channel 000 has just joined; a tune made during it names its own channel", () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('const sampled = tvnChoice()?.channelNumber')
     expect(provider).toContain('number: TVN_CHANNEL_NUMBER, settings, ...(sampled !== undefined ? { cardNumber: sampled } : {}) }')
     expect(provider).toContain('held ? { session: held.session, number, settings: held.settings }')

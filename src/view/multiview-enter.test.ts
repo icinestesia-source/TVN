@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { enterTiles, loadPipChannel, PIP_CHANNEL_KEY, savePipChannel } from './multiview.ts'
+import { enterTiles, loadPipChannel, PIP_CHANNEL_KEY, pipToRemember, planMultiview, savePipChannel } from './multiview.ts'
 
 const memory = () => {
   const items = new Map<string, string>()
@@ -8,7 +7,6 @@ const memory = () => {
 }
 
 const ordered = [1, 2, 3, 4, 5, 1001, 1002, 1085]
-const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
 
 describe('MULTI from single view starts at the watched channel', () => {
   it('fills the tiles with the channels after the watched one; the inset is one channel up', () => {
@@ -30,12 +28,11 @@ describe('MULTI from single view starts at the watched channel', () => {
   })
 
   it('the earlier Multi View’s tiles are not brought back, and the sound starts on the watched channel', () => {
-    expect(provider).toContain("const focusChannel = entering ? channelRef.current : (tilesRef.current[audioFocusRef.current] ?? channelRef.current)")
-    expect(provider).toContain('entering ? enterTiles(focusChannel, ordered, nextMode, loadPipChannel())')
-    expect(provider).toContain('audioFocusRef.current = entering ? 0 :')
+    expect(planMultiview('1', '4', 3, [7, 8, 9, 10], 2, ordered, null)).toEqual({ focus: 3, tiles: [3, 4, 5, 1001], audioFocus: 0 })
   })
 
   it('the inset is remembered only when the viewer changes it under the same main picture', () => {
-    expect(provider).toContain('if (before && tiles.length > 1 && before[0] === tiles[0] && before[1] !== tiles[1]) savePipChannel(tiles[1])')
+    expect(pipToRemember([3, 4], [3, 1002])).toBe(1002)
+    expect(pipToRemember([3, 4], [5, 1002])).toBeNull()
   })
 })

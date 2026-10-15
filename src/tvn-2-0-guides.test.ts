@@ -33,9 +33,10 @@ import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
 import { DEFAULT_SHORTCUTS } from './view/info-shortcuts.ts'
 import { followingInfo } from './view/guide-following.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const NOW = Date.parse('2026-10-02T12:00:00Z')
-const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+const provider = providerSource()
 const guideView = readFileSync('src/components/Guide.tsx', 'utf8')
 
 const prog = (channelId: string, id: string, videoId: string, title: string): Programme =>

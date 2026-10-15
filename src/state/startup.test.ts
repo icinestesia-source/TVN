@@ -15,6 +15,7 @@ import { DEFAULT_PREFERENCES } from '../services/preferences.ts'
 import { createStartupRestore } from './startup-channel.ts'
 import { independentNetworkLoaded, resolveStartupTuning, runStartup, startupAccepts, STARTUP_STALL_MS } from './startup.ts'
 import { commitTuned, stepTarget, type Tuned } from './tuning.ts'
+import { providerSource } from '../test-support/provider-source.ts'
 
 const deferred = () => {
   let resolve!: (usable: boolean) => void
@@ -78,7 +79,7 @@ describe('startup loading presentation', () => {
     expect(held).toMatch(/class="startup"/)
     expect(held).toMatch(/<img[^>]*class="startup-logo"/)
     expect(held).not.toContain('static-ident')
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toMatch(/setPictureLive\(true\)\s+setStartupSettled\(true\)/)
     expect(provider).toMatch(/if \(load !== loadToken\.current\) return result\s+if \(result === 'slate'\) setStartupSettled\(true\)\s+if \(result === 'error'\) setStartupFailed\(true\)/)
     expect(provider).toMatch(/if \(startupPhase !== 'ready' \|\| startupSettled \|\| !startupFailed\) return\s+const timer = window\.setTimeout\(\(\) => setStartupSettled\(true\), STARTUP_RETRY_MS\)/)

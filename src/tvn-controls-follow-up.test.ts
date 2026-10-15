@@ -20,9 +20,10 @@ import type { Channel } from './types/channel.ts'
 import type { Programme } from './types/programme.ts'
 import { programmeDate } from './view/programme-date.ts'
 import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from './view/programme-order.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const plain = { meta: false, ctrl: false, alt: false }
 const NOW = Date.UTC(2026, 9, 4, 12)
 const TOM = 'UCBa659QWEk1AI4Tg--mrJ2A'

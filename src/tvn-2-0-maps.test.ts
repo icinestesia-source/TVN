@@ -18,6 +18,7 @@ import type { Programme } from './types/programme.ts'
 import { cornerActions, randomScoped } from './view/info-shortcuts.ts'
 import { mapSources, mapSummary } from './view/map-summary.ts'
 import { alphabeticalVideos, latestVideos } from './view/programme-order.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const NOW = Date.parse('2026-10-03T12:00:00Z')
@@ -40,7 +41,7 @@ describe('MY GUIDE holds Maps', () => {
     expect(unnamedMap(newGuide(NEW_MAP_NAME, NOW))).toBe(true)
     expect(unnamedMap(newGuide(DEFAULT_GUIDE_NAME, NOW))).toBe(true)
     expect(unnamedMap(evening())).toBe(false)
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('library.current ?? newGuide(NEW_MAP_NAME, now)')
     expect(provider).toMatch(/unnamedMap\(library\.current\)/)
   })
@@ -91,7 +92,7 @@ describe('MY GUIDE holds Maps', () => {
 
 describe('the green GUIDE while a Map plays', () => {
   const pad = read('src/components/InfoActions.tsx')
-  const provider = read('src/state/TvProvider.tsx')
+  const provider = providerSource()
 
   it('click shows the Map’s schedule; right-click or a long press shows the NOW Guide and the Map plays on', () => {
     expect(pad).toContain("corners.dispatch({ type: 'guide', listings: true })")
@@ -162,7 +163,7 @@ describe('shortcut hints', () => {
 
 describe('REMOTE SMART', () => {
   const remote = read('src/components/TouchRemote.tsx')
-  const provider = read('src/state/TvProvider.tsx')
+  const provider = providerSource()
 
   it('the row reads USER · SMART · FAV, SMART a round on/off key named Smart', () => {
     const user = remote.search(/>\s*User\s*</)

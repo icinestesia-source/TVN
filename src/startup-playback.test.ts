@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { advancing, confirmStart, soundHeld, soundRefused, type StartHold } from './player/autoplay.ts'
 import type { PlayerHandle } from './player/types.ts'
 import { DEFAULT_PREFERENCES } from './services/preferences.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 
 /** A player whose clock moves only while `moving()` says so; waiting advances the clock by that much. */
 function fakePlayer(moving: (muted: boolean) => boolean) {
@@ -129,11 +130,11 @@ describe('startup activates the selected channel', () => {
   it('never asks for a key or tap over the picture; held sound shows as Muted, with no message', () => {
     const screen = read('src/app/TvScreen.tsx')
     expect(screen).not.toMatch(/startHold|START_HOLD_COPY|press any key|Sound off/i)
-    expect(read('src/state/TvProvider.tsx')).toContain("muted: muted || startHold === 'sound',")
+    expect(providerSource()).toContain("muted: muted || startHold === 'sound',")
   })
 
   it('UNMUTE pressed while sound is held turns sound on, rather than muting TVN on the same press', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const release = provider.slice(provider.indexOf('const release = () => {'), provider.indexOf('}, [startHold])'))
     expect(release).toContain("if (startHoldRef.current === 'sound') soundReleasedAt.current = Date.now()")
     const mute = provider.slice(provider.indexOf("case 'mute': {"), provider.indexOf("case 'subtitles': {"))

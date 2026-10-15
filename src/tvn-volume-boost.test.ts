@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { VolumeOsd } from './components/VolumeOsd.tsx'
 import { loadPreferences, PREFERENCES_KEY } from './services/preferences.ts'
 import { boostableUrl, boostGain, elementVolume, volumeLimit } from './player/volume.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 
@@ -26,7 +27,7 @@ describe('volume boost, 100 to 200, on 1000 Local Media only', () => {
   })
 
   it('the provider allows 200 only on 1000 in single view, and leaving 1000 brings it back to 100', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("volumeLimit(isLocalMediaNumber(channelRef.current) && multiviewRef.current === '1')")
     expect(provider).toMatch(/if \(!isLocalMediaNumber\(next\.channelNumber\) && volumeRef\.current > VOLUME_FULL\) \{\s+volumeRef\.current = VOLUME_FULL/)
     expect(provider).toContain('volume: Math.min(VOLUME_FULL, volumeRef.current),')

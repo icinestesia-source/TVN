@@ -25,10 +25,11 @@ import {
   type ShortcutContext,
 } from './view/info-shortcuts.ts'
 import { closeRandomSettings, openRandomSettings, randomSettingsOpen } from './view/tvn-settings-store.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const css = read('src/styles/guide.css')
-const provider = read('src/state/TvProvider.tsx')
+const provider = providerSource()
 const overlay = read('src/components/NowNextOverlay.tsx')
 const guide = read('src/components/Guide.tsx')
 const remote = read('src/components/TouchRemote.tsx')

@@ -14,6 +14,8 @@ import type { Channel } from './types/channel.ts'
 import { loadGuideActionsAll, saveGuideActionsAll } from './view/guide-actions-store.ts'
 import { saveScheduleBeforeLatest, takeScheduleBeforeLatest } from './view/latest-mode-store.ts'
 import { newestProgramme } from './view/programme-order.ts'
+import { providerSource } from './test-support/provider-source.ts'
+import { arrangementOn, arrangePlan } from './view/arrange.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const dated = (count: number, from = 0): ImportedVideo[] =>
@@ -193,11 +195,15 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
   })
 
   it('LATEST and A–Z are switches, RANDOM shuffles every time, and RESET brings the default schedule back', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const arrange = provider.slice(provider.indexOf('const arrangeChannel = useCallback('), provider.indexOf('const reloadChannel = useCallback('))
-    expect(arrange).toContain("const on = sorted && opened.orderKind === 'latest' && opened.liveFromMs !== undefined ? 'latest' : sorted && (opened.orderKind === 'az' || opened.orderKind === 'random') ? opened.orderKind : null")
-    expect(arrange).toContain("if (how === 'reset' && on === null) return 'RESET · THIS IS ALREADY THE DEFAULT SCHEDULE'")
-    expect(arrange).toContain("if (how === 'reset' || (on === how && how !== 'random' && !again)) {")
+    expect(arrangementOn({ order: ['a'], orderKind: 'latest', liveFromMs: 1 })).toBe('latest')
+    expect(arrangementOn({ order: ['a'], orderKind: 'latest' })).toBeNull()
+    expect(arrangePlan('reset', null).step).toBe('already-default')
+    expect(arrangePlan('latest', 'latest').step).toBe('restore')
+    expect(arrangePlan('az', 'az').step).toBe('restore')
+    expect(arrangePlan('random', 'random').step).toBe('arrange')
+    expect(arrangePlan('reset', 'random').step).toBe('restore')
     expect(arrange).toContain("return on === 'random' ? 'RANDOM · SHUFFLED AGAIN' : 'RANDOM ON · THE SCHEDULE IS IN A RANDOM ORDER'")
     expect(arrange).toContain('const before = takeScheduleBeforeLatest(number)')
     expect(arrange).toContain('? await rescanChannelEdit(number, opened).then(')
@@ -243,7 +249,7 @@ describe('GUIDE: LATEST FIRST, a semi-live channel', () => {
   })
 
   it('RELOAD (X, no longer a Guide button) rescans and schedules the channel again; only an order arranged by hand is kept', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     const reload = provider.slice(provider.indexOf('const reloadChannel = useCallback('), provider.indexOf('const loadMoreChannelSource = useCallback('))
     expect(reload).toContain('const result = await rescanChannelEdit(number, current)')
     expect(reload).toContain("if (kind === 'manual' || pool.length === 0) {")
@@ -286,7 +292,7 @@ describe('TV SURF: wait for the programme to end (an option, off by default)', (
     expect(surfUntilEndMs(1_000_000 + 120_000, 1_000_000)).toBe(120_800)
     expect(surfUntilEndMs(1_000_000 + 200, 1_000_000)).toBe(1500)
     expect(surfUntilEndMs(1_000_000 + SURF_END_LIMIT_MS + 1, 1_000_000)).toBeNull()
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain('const untilEnd = watching ? surfUntilEndMs(onScreen(watching, now).current.endMs, now) : null')
     expect(provider).toContain('}, untilEnd ?? surfDelayMs(surfRange))')
     expect(read('src/components/GuideOptions.tsx')).toContain('<Row label="Wait for the end">')

@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { commandFromKey } from '../input/keyboard.ts'
 import { asSurfRange, DEFAULT_SURF_RANGE, loadSurfOn, loadSurfRange, saveSurfOn, saveSurfRange, SURF_KEY, surfDelayMs } from './surf.ts'
+import { providerSource } from '../test-support/provider-source.ts'
 
 const memory = () => {
   const map = new Map<string, string>()
@@ -41,7 +41,7 @@ describe('TVN surf range', () => {
     saveSurfOn(true, store)
     expect(loadSurfOn(store)).toBe(true)
     expect(loadSurfRange(store)).toEqual({ minSeconds: 3, maxSeconds: 9 })
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toContain('const [surfing, setSurfing] = useState(() => surfsOnEntry(currentEntryMode()))')
   })
 
@@ -51,8 +51,8 @@ describe('TVN surf range', () => {
     expect(commandFromKey('T', plain, true)).toEqual({ type: 'surf' })
     expect(commandFromKey(',', plain, false)).toEqual({ type: 'step', direction: -1 })
     expect(commandFromKey('.', plain, true)).toEqual({ type: 'step', direction: 1 })
-    expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(/case 'surf':\s*toggleSurf\(\)/)
-    expect(readFileSync('src/state/TvProvider.tsx', 'utf8')).toMatch(
+    expect(providerSource()).toMatch(/case 'surf':\s*toggleSurf\(\)/)
+    expect(providerSource()).toMatch(
       /case 'step':\s*if \(guideOpenRef\.current\) stepGuideTime\(command\.direction\)\s*else if \(multiviewRef\.current === '1'\) screenStep\(command\.direction\)/,
     )
   })
@@ -65,7 +65,7 @@ describe('TVN surf range', () => {
   })
 
   it('hops without counting as activity, pauses in the Guide and the Channel Editor, and stops for SLEEP', () => {
-    const provider = readFileSync('src/state/TvProvider.tsx', 'utf8')
+    const provider = providerSource()
     expect(provider).toContain("if (!surfing || asleep || guideOpen || screenEdit !== null || startupPhase !== 'ready' || !noticeSeen) return")
     expect(provider).toMatch(/const picked = randomChannel\(channelRef\.current\)\s*if \(picked\) requestTune\(picked\.number\)/)
     expect(provider).toMatch(/asleepRef\.current = true\s*surfingRef\.current = false\s*setSurfing\(false\)/)

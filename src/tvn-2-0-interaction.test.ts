@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import { TVN_OWNER, TVN_OWNER_NAME, USER_NETWORK_FALLBACK, userNetworkName } from './data/user-network/users.ts'
 import { focusedProviderFrame, guardProviderFocus, shieldProviderFrame } from './player/picture-shield.ts'
+import { providerSource } from './test-support/provider-source.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 const screen = read('src/app/TvScreen.tsx')
@@ -150,7 +151,7 @@ describe('PLAYER INTERACTION SHIELD', () => {
   })
 
   it('CONTINUE still enables sound from the same first interaction', () => {
-    const provider = read('src/state/TvProvider.tsx')
+    const provider = providerSource()
     expect(provider).toContain("window.addEventListener('pointerdown', early, true)")
     expect(read('src/player/autoplay.ts')).toContain('hasBeenActive')
   })
