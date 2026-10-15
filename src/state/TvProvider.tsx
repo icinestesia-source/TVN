@@ -1087,6 +1087,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     watchingNumber,
     recoveryRef,
     recoverRef,
+    volumeRef,
+    mutedRef,
   })
 
   const focusGuide = useCallback((nextChannel: number, timeMs: number) => {

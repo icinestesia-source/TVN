@@ -54,6 +54,8 @@ export interface PlayerEventDeps {
   watchingNumber: () => number
   recoveryRef: RefObject<Recovery | null>
   recoverRef: RefObject<(channelNumber: number, cause: "refused" | "unplayable") => void>
+  volumeRef: RefObject<number>
+  mutedRef: RefObject<boolean>
 }
 
 /** What the player reports back: ready, playing, refused or failed, and the live position kept in step with the schedule. */
@@ -89,6 +91,8 @@ export function usePlayerEvents({
   watchingNumber,
   recoveryRef,
   recoverRef,
+  volumeRef,
+  mutedRef,
 }: PlayerEventDeps) {
 
   const syncLive = useCallback((nowMs: number) => {
@@ -134,6 +138,8 @@ export function usePlayerEvents({
       return
     }
     if (multiviewRef.current !== '1' || pausedRef.current) return
+    // A player built again (leaving MULTI) starts at the provider's own volume, not the viewer's.
+    playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
     const current = channelByNumber(channelRef.current)
     if (current) void loadProgramme(current, Date.now())
   }, [])
