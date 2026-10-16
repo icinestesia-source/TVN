@@ -50,14 +50,14 @@ const names = (filter: 'all' | 'user' | 'favourites', favourites: number[] = [])
 afterEach(() => installUserCatalogue([], new Map()))
 
 describe('DEFAULT USER NETWORK', () => {
-  it('the shipped starter is the 6 October completed file: 170 channels numbered as arranged, 1001–1195', () => {
+  it('the shipped starter is the 16 October selection: 55 channels numbered 1001–1055', () => {
     const file = readUserNetworkFile(read('public/user-network/starter-network.json'))
     expect(file.ok).toBe(true)
     if (!file.ok) return
     const channels = file.value.channels
-    expect(channels).toHaveLength(170)
-    expect(channels[0]).toMatchObject({ number: 1001, name: '8K Earth' })
-    expect(channels.at(-1)).toMatchObject({ number: 1195, name: 'Ximo Pierto' })
+    expect(channels).toHaveLength(55)
+    expect(channels[0]).toMatchObject({ number: 1001, name: '4K World Ultra Vision' })
+    expect(channels.at(-1)).toMatchObject({ number: 1055, name: 'HG Virtual Tour' })
     const ids = channels.map((channel) => channel.id).filter(Boolean)
     expect(new Set(ids).size).toBe(ids.length)
     expect(channels.every((channel) => channel.sources.length > 0)).toBe(true)

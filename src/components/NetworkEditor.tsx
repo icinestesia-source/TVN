@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type KeyboardEvent } from 'react'
 import { listChannels } from '../data/catalogue.ts'
+import { offAirNumbers, setOffAir, subscribeOffAir } from '../data/off-air.ts'
 import { channelMatchesFilter } from '../data/network.ts'
 import { userFilter, userNetworkName } from '../data/user-network/users.ts'
 import { mergeSources, sourceClips, type ChannelEdit } from '../services/channel-editor.ts'
@@ -75,7 +76,10 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
   }, [list, tv.favourites, tv.visibleChannels, tv.networkUsers, stored])
 
   const canMove = list !== 'favourites'
+  const sameTools = list === 'all' || list === 'user'
+  const canExport = sameTools || list === 'favourites'
   const users = rows.filter(isUser)
+  const offAir = useSyncExternalStore(subscribeOffAir, offAirNumbers, offAirNumbers)
 
   const move = async (channel: Channel, to: number | undefined, focus = true) => {
     if (to === undefined || to === channel.number || busy) return
@@ -228,7 +232,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
     setPicked(new Set())
   }
 
-  /** EXPORT on the User tab: tick the channels, then the same button saves just those as a JSON file. */
+  /** EXPORT on the User and Fav tabs: tick the channels, then the same button saves just those as a JSON file. */
   const exportChosen = async () => {
     if (!picking) {
       setConfirm(null)
@@ -313,21 +317,25 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               {label}
             </button>
           ))}
-          {list === 'user' ? (
-            <span className="network-order" role="group" aria-label="Order the User Network">
-              <button type="button" className={confirm === 'alphabetical' ? 'tab is-on' : 'tab'} disabled={busy || users.length < 2} onKeyDown={keepKey} onClick={() => void arrange('alphabetical')} title="Sort every User channel by name and renumber from 1001">
-                {confirm === 'alphabetical' ? 'Sort User Network A–Z?' : 'Sort A–Z'}
-              </button>
-              <button type="button" className={confirm === 'shuffle' ? 'tab is-on' : 'tab'} disabled={busy || users.length < 2} onKeyDown={keepKey} onClick={() => void arrange('shuffle')} title="Shuffle the User Network once and renumber from 1001">
-                {confirm === 'shuffle' ? 'Randomise User Network?' : 'Randomise'}
-              </button>
+          {canExport ? (
+            <span className="network-order" role="group" aria-label={list === 'favourites' ? 'Export Favourites' : 'Order the User Network'}>
+              {sameTools ? (
+                <>
+                  <button type="button" className={confirm === 'alphabetical' ? 'tab is-on' : 'tab'} disabled={busy || users.length < 2} onKeyDown={keepKey} onClick={() => void arrange('alphabetical')} title="Sort every User channel by name and renumber from 1001">
+                    {confirm === 'alphabetical' ? 'Sort User Network A–Z?' : 'Sort A–Z'}
+                  </button>
+                  <button type="button" className={confirm === 'shuffle' ? 'tab is-on' : 'tab'} disabled={busy || users.length < 2} onKeyDown={keepKey} onClick={() => void arrange('shuffle')} title="Shuffle the User Network once and renumber from 1001">
+                    {confirm === 'shuffle' ? 'Randomise User Network?' : 'Randomise'}
+                  </button>
+                </>
+              ) : null}
               <button
                 type="button"
                 className={picking ? 'tab is-on' : 'tab'}
                 disabled={busy || users.length === 0 || (picking && picked.size === 0)}
                 onKeyDown={keepKey}
                 onClick={() => void exportChosen()}
-                title="Choose User channels, then save them as a new list with no gaps"
+                title={list === 'favourites' ? 'Choose favourite User channels, then save them as a new list with no gaps' : 'Choose User channels, then save them as a new list with no gaps'}
               >
                 {picking ? `Export ${picked.size}` : 'Export'}
               </button>
@@ -368,13 +376,15 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
           const user = isUser(channel)
           const favourite = tv.favourites.includes(channel.number)
           const owner = user ? userNetworkName(channel.owner, tv.networkUsers) : null
+          const status = networkStatus(channel)
           const network = channel.number === TVN_CHANNEL_NUMBER ? 'TVN' : user ? `User · ${owner}` : channel.origin === 'session' ? 'Local' : 'TVN 001–999'
+          const kind = status === 'On air' || status === 'Surfing' ? network : `${network} · ${status}`
           const movable = canMove && user
           return (
             <li
               key={channel.id}
               data-channel-id={channel.id}
-              className={`network-row${channel.number === tv.channel.number ? ' is-current' : ''}${dragging === channel.number ? ' is-dragging' : ''}`}
+              className={`network-row${channel.number === tv.channel.number ? ' is-current' : ''}${dragging === channel.number ? ' is-dragging' : ''}${offAir.has(channel.number) ? ' is-off-air' : ''}`}
               draggable={movable && !busy}
               onDragStart={movable ? (event) => {
                 event.dataTransfer.effectAllowed = 'move'
@@ -386,14 +396,18 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               onDrop={movable ? (event) => drop(event, channel) : undefined}
               onKeyDown={(event) => rowKey(event, channel)}
             >
-              {picking && user ? (
-                <input
-                  type="checkbox"
-                  className="network-pick"
-                  checked={picked.has(channel.number)}
-                  aria-label={`Export ${channel.name}`}
-                  onChange={() => togglePicked(channel.number)}
-                />
+              {picking ? (
+                user ? (
+                  <input
+                    type="checkbox"
+                    className="network-pick"
+                    checked={picked.has(channel.number)}
+                    aria-label={`Export ${channel.name}`}
+                    onChange={() => togglePicked(channel.number)}
+                  />
+                ) : (
+                  <span className="network-pick" aria-hidden="true" />
+                )
               ) : null}
               <button
                 type="button"
@@ -408,9 +422,8 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               </button>
               <button type="button" className="network-name" disabled={unloaded(channel)} onKeyDown={keepKey} onClick={() => onEdit(channel.number)} title={unloaded(channel) ? `${channel.name}: editable once its source has loaded` : `Edit ${channel.name}`}>
                 <span className="network-title">{channel.name}</span>
-                <span className="network-kind">{network}</span>
+                <span className="network-kind">{kind}</span>
               </button>
-              <span className={`network-status is-${networkStatus(channel).toLowerCase().replace(/\s+/g, '-')}`}>{networkStatus(channel)}</span>
               <button
                 type="button"
                 className={favourite ? 'network-star is-on' : 'network-star'}
@@ -422,12 +435,12 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
                 {favourite ? '★' : '☆'}
               </button>
               <span className="network-moves">
-                {movable ? (
+                {canMove ? (
                   <>
-                    <button type="button" className="tab network-move" disabled={busy || neighbour(channel, -1) === undefined} aria-label={`Move ${channel.name} up`} onKeyDown={keepKey} onClick={() => void move(channel, neighbour(channel, -1))}>
+                    <button type="button" className="tab network-move" disabled={!movable || busy || neighbour(channel, -1) === undefined} aria-label={`Move ${channel.name} up`} onKeyDown={keepKey} onClick={() => void move(channel, neighbour(channel, -1))}>
                       ↑
                     </button>
-                    <button type="button" className="tab network-move" disabled={busy || neighbour(channel, 1) === undefined} aria-label={`Move ${channel.name} down`} onKeyDown={keepKey} onClick={() => void move(channel, neighbour(channel, 1))}>
+                    <button type="button" className="tab network-move" disabled={!movable || busy || neighbour(channel, 1) === undefined} aria-label={`Move ${channel.name} down`} onKeyDown={keepKey} onClick={() => void move(channel, neighbour(channel, 1))}>
                       ↓
                     </button>
                     <input
@@ -437,13 +450,14 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
                       maxLength={5}
                       placeholder={pad(channel.number)}
                       aria-label={`User number to move ${channel.name} to`}
+                      disabled={!movable || busy}
                       onChange={(event) => setTargets((current) => ({ ...current, [channel.id]: event.target.value.replace(/[^0-9]/g, '') }))}
                       onKeyDown={(event) => {
                         event.stopPropagation()
                         if (event.key === 'Enter') moveToTyped(channel)
                       }}
                     />
-                    <button type="button" className="tab network-move-to" disabled={busy || !(targets[channel.id] ?? '').trim()} onKeyDown={keepKey} onClick={() => moveToTyped(channel)} title={`Insert ${channel.name} at that User number; the channels between move along one`}>
+                    <button type="button" className="tab network-move-to" disabled={!movable || busy || !(targets[channel.id] ?? '').trim()} onKeyDown={keepKey} onClick={() => moveToTyped(channel)} title={movable ? `Insert ${channel.name} at that User number; the channels between move along one` : 'TVN’s own channels keep their numbers'}>
                       Move to
                     </button>
                   </>
@@ -451,6 +465,18 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               </span>
               <button type="button" className="tab network-edit" disabled={unloaded(channel)} onKeyDown={keepKey} onClick={() => onEdit(channel.number)}>
                 {channel.number === TVN_CHANNEL_NUMBER ? 'Settings' : 'Edit'}
+              </button>
+              <button
+                type="button"
+                className={offAir.has(channel.number) ? 'tab network-air is-off' : 'tab network-air'}
+                aria-pressed={!offAir.has(channel.number)}
+                disabled={busy || channel.number === TVN_CHANNEL_NUMBER || Boolean(channel.emptySlot)}
+                aria-label={offAir.has(channel.number) ? `Put ${channel.name} on air` : `Take ${channel.name} off air`}
+                title={offAir.has(channel.number) ? 'Off air: channel up, channel down and random skip this channel' : 'On air: this channel can be selected'}
+                onKeyDown={keepKey}
+                onClick={() => setOffAir(channel.number, !offAir.has(channel.number))}
+              >
+                {offAir.has(channel.number) ? 'Off air' : 'On air'}
               </button>
               <button
                 type="button"

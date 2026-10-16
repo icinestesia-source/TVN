@@ -158,6 +158,7 @@ export const PREVIOUS_STARTER_FILES = [
   '/user-network/starter-network-2026-10-03.json',
   '/user-network/starter-network-2026-10-04.json',
   '/user-network/starter-network-2026-10-05.json',
+  '/user-network/starter-network-2026-10-06.json',
 ] as const
 
 const starterTexts = new Map<string, Promise<string>>()

@@ -10,17 +10,17 @@ export const DEFAULT_FAVOURITES: readonly number[] = [
   125, // 1980s Trailers
   534, // Dance
   289, // Retro Television
-  1014, // Argyle Life | Green
+  1009, // Argyle Life | Green
   710, // Street Food
   103, // Classic Film
-  1072, // Heat Check
+  1021, // Heat Check
   805, // Newsreel Archive
   535, // Drum & Bass
-  1188, // World Wanderings: 4K Walking Tours
+  1054, // World Wanderings: 4K Walking Tours
   412, // World War II
-  1033, // CinemaSins
+  1012, // Boiler Room
   485, // Wildlife
-  1148, // Secret Base
+  1025, // Manjula's Kitchen
   844, // Theatre Archive
   536, // Trip-Hop
   491, // Ideas

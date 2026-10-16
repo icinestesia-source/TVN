@@ -143,7 +143,7 @@ describe('starter Favourites', () => {
     savePreferences({ ...loaded, favouriteChannelNumbers: change(loaded.favouriteChannelNumbers), defaultFavouritesOffered: true })
     return loaded.favouriteChannelNumbers
   }
-  const EIGHTEEN = [225, 125, 534, 289, 1014, 710, 103, 1072, 805, 535, 1188, 412, 1033, 485, 1148, 844, 536, 491]
+  const EIGHTEEN = [225, 125, 534, 289, 1009, 710, 103, 1021, 805, 535, 1054, 412, 1012, 485, 1025, 844, 536, 491]
 
   it('are exactly the eighteen requested channels, in order', () => expect(DEFAULT_FAVOURITES).toEqual(EIGHTEEN))
 
@@ -176,11 +176,11 @@ describe('starter Favourites', () => {
 
   it('edited defaults are preserved and a removed default never returns', () => {
     withStore({}, () => {
-      visit((favourites) => [...favourites.filter((number) => number !== 225 && number !== 1014), 301])
+      visit((favourites) => [...favourites.filter((number) => number !== 225 && number !== 1009), 301])
       for (let reload = 0; reload < 3; reload += 1) {
         const back = visit()
         expect(back).not.toContain(225)
-        expect(back).not.toContain(1014)
+        expect(back).not.toContain(1009)
         expect(back.at(-1)).toBe(301)
         expect(back).toHaveLength(EIGHTEEN.length - 1)
       }

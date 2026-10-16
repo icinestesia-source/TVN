@@ -13,6 +13,7 @@ import {
   toggledColour,
   transitionSettingsErrors,
   withColours,
+  withCustomColour,
 } from './state/transitions.ts'
 
 const SAMPLE = { number: '225', name: 'TVN Preview', programme: null }
@@ -70,6 +71,20 @@ describe('Channel change colours: more of them, and up to five at once', () => {
     expect(asTransitionSettings({ id: 'crt', colour: 'amber' }).colours).toEqual(['amber'])
     expect(asTransitionSettings({ id: 'crt', colour: 'mono' }).colours).toEqual([])
     expect(cleanColours(['red', 'red', 'mono', 'wrong', 'blue', 'teal', 'green', 'pink', 'purple'])).toEqual(['red', 'blue', 'teal', 'green', 'pink'])
+  })
+
+  it('a custom colour joins the five and paints the static blocks with that shade', () => {
+    const html = renderToStaticMarkup(createElement(ChannelChangeOptions, { settings: DEFAULT_TRANSITION_SETTINGS, onChange: () => {} }))
+    expect(html).toContain('aria-label="Custom colour"')
+    const chosen = withCustomColour(DEFAULT_TRANSITION_SETTINGS, '#3366CC')
+    expect(chosen.colours).toEqual(['custom'])
+    expect(chosen.custom).toBe('#3366cc')
+    expect(chosen.colour).toBe('mono')
+    expect(snowColours(chosen.colours, chosen.custom)).toEqual(['#3366cc'])
+    expect(withCustomColour(withColours(DEFAULT_TRANSITION_SETTINGS, ['red', 'amber', 'green', 'blue', 'purple']), '#112233').colours).not.toContain('custom')
+    expect(asTransitionSettings(JSON.parse(JSON.stringify(withCustomColour(crt(['purple']), '#abcdef'))))).toMatchObject({ colours: ['purple', 'custom'], custom: '#abcdef' })
+    expect(asTransitionSettings({ colours: ['custom'] }).colours).toEqual([])
+    expect(transitionSettingsErrors({ colours: ['custom'], custom: 'green' }, 's')).toHaveLength(1)
   })
 
   it('a restored file with too many or unknown colours is refused', () => {

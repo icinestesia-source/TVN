@@ -112,6 +112,7 @@ import {
   replaceFocusedTile,
   surfTile,
 } from '../view/multiview.ts'
+import { isOffAir } from '../data/off-air.ts'
 import { isOnAir } from '../network/airing.ts'
 import { confirmStart, soundHeld, soundRefused, viewerInteracted, type StartHold } from '../player/autoplay.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, visit, type ViewingHistory } from './history.ts'
@@ -772,6 +773,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const target = channelByNumber(number)
     if (!target) {
       flash('NO CHANNEL')
+      return
+    }
+    if (isOffAir(number) && number !== channelRef.current) {
+      flash('OFF AIR')
       return
     }
     if (!keepPick) clearManual()
@@ -1663,7 +1668,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       } else {
         // In Multi View one tile changes per hop, never the selected one, so the wall changes a tile at a time.
         const candidates = listChannels()
-          .filter((item) => item.enabled && item.origin !== 'session' && !isLiveStreamChannel(item) && isOnAir(item))
+          .filter((item) => item.enabled && item.origin !== 'session' && !isLiveStreamChannel(item) && isOnAir(item) && !isOffAir(item.number))
           .map((item) => item.number)
         const next = surfTile(tilesRef.current, audioFocusRef.current, candidates)
         if (next) {

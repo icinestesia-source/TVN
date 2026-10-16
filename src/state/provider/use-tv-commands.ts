@@ -2,6 +2,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { startupAccepts, type StartupPhase } from '../startup.ts'
 import { GUIDE_KEY_ZOOM, INFO_MS, NUMERIC_MS, SCHEDULE_WORKING, SCREEN_EDIT_COMMANDS, SOUND_RELEASE_MS, VOLUME_MS } from './shared.ts'
 import { channelByNumber, listChannels } from '../../data/catalogue.ts'
+import { isOffAir } from '../../data/off-air.ts'
 import { tunerStep } from '../../input/tuner.ts'
 import { emptyUniverseNote, randomTarget, stepTarget, type Tuned } from '../tuning.ts'
 import { isLiveStreamChannel } from '../../dynamic/stream.ts'
@@ -420,7 +421,7 @@ export function useTvCommands({
         guideEngine.current.suspend()
         const nextMode = command.mode ?? cycleMultiview(multiviewRef.current)
         const ordered = listChannels()
-          .filter((item) => item.enabled && item.origin !== 'session' && !isLiveStreamChannel(item))
+          .filter((item) => item.enabled && item.origin !== 'session' && !isLiveStreamChannel(item) && !isOffAir(item.number))
           .map((item) => item.number)
         const from = multiviewRef.current
         const plan = planMultiview(from, nextMode, channelRef.current, tilesRef.current, audioFocusRef.current, ordered, from === '1' ? loadPipChannel() : null)

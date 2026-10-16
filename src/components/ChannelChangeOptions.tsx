@@ -14,9 +14,11 @@ import {
   SPEEDS,
   TRANSITION_IDS,
   TRANSITIONS,
+  DEFAULT_CUSTOM_COLOUR,
   toggledColour,
   transitionTiming,
   withColours,
+  withCustomColour,
   type TitleCard,
   type TransitionSettings,
 } from '../state/transitions.ts'
@@ -131,7 +133,7 @@ function ColourPicker({ settings, onChange }: { settings: TransitionSettings; on
     <>
       <Row label="Colour">
         <span className="options-choices fx-colours" role="group" aria-label="Colour">
-          {COLOURS.map(({ value, label }) => {
+          {COLOURS.filter(({ value }) => value !== 'custom').map(({ value, label }) => {
             const order = colours.indexOf(value)
             const on = value === 'mono' ? colours.length === 0 : order >= 0
             return (
@@ -150,6 +152,24 @@ function ColourPicker({ settings, onChange }: { settings: TransitionSettings; on
               </button>
             )
           })}
+          <label className={colours.includes('custom') ? 'tab is-on' : 'tab'}>
+            <input
+              type="color"
+              className="fx-custom"
+              aria-label="Custom colour"
+              value={settings.custom ?? DEFAULT_CUSTOM_COLOUR}
+              disabled={!colours.includes('custom') && full}
+              title={!colours.includes('custom') && full ? `Up to ${MAX_TRANSITION_COLOURS} colours: take one out first` : 'Your own colour for the static blocks'}
+              onChange={(event) => onChange(withCustomColour(settings, event.target.value))}
+            />
+            Custom
+            {colours.includes('custom') && colours.length > 1 ? <b className="fx-colour-order">{colours.indexOf('custom') + 1}</b> : null}
+          </label>
+          {colours.includes('custom') ? (
+            <button type="button" className="tab" aria-label="Remove custom colour" onClick={() => onChange(withColours(settings, toggledColour(colours, 'custom')))}>
+              Clear
+            </button>
+          ) : null}
         </span>
       </Row>
       <Row label="Combinations">

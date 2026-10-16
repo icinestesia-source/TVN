@@ -1,5 +1,6 @@
 import { adjacentChannel, listChannels, playingLocal, randomChannel } from '../data/catalogue.ts'
 import { channelMatchesFilter, inFavouriteOrder } from '../data/network.ts'
+import { isOffAir } from '../data/off-air.ts'
 import { isOnAir } from '../network/airing.ts'
 import type { Channel } from '../types/channel.ts'
 import type { GuideFilter } from '../types/preferences.ts'
@@ -29,7 +30,7 @@ export function universeChannels(universe: ChannelUniverse, channels: readonly C
 
 /** Channels CH+ and CH- can land on: listed, on air, not an empty User Channel slot and not an empty Local Media channel. */
 function steppable(universe: ChannelUniverse): Channel[] {
-  return universeChannels(universe).filter((channel) => channel.enabled && playingLocal(channel) && !channel.emptySlot && isOnAir(channel))
+  return universeChannels(universe).filter((channel) => channel.enabled && playingLocal(channel) && !channel.emptySlot && isOnAir(channel) && !isOffAir(channel.number))
 }
 
 /**

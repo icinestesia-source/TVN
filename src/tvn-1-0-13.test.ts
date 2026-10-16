@@ -246,14 +246,14 @@ describe('the starter network', () => {
   const checked = readUserNetworkFile(file)
   const records = checked.ok ? recordsFromExport(checked.value, 0) : []
 
-  it('is a valid TVN User Network file: 170 channels on their own numbers from 1001 to 1195, TVN’s, keyless', () => {
+  it('is a valid TVN User Network file: 55 channels on their own numbers from 1001 to 1055, TVN’s, keyless', () => {
     expect(checked.ok).toBe(true)
     if (!checked.ok) return
-    expect(checked.value.channels).toHaveLength(170)
+    expect(checked.value.channels).toHaveLength(55)
     const numbers = checked.value.channels.map((channel) => channel.number)
     expect(numbers).toEqual([...numbers].sort((a, b) => a - b))
     expect(new Set(numbers).size).toBe(numbers.length)
-    expect([numbers[0], numbers.at(-1)]).toEqual([1001, 1195])
+    expect([numbers[0], numbers.at(-1)]).toEqual([1001, 1055])
     expect(checked.value.users).toEqual([])
     expect(carriesSecret(file)).toBe(false)
     expect(file).not.toMatch(/\/Users\/|file:\/\/|localhost|127\.0\.0\.1|AIza/)
@@ -262,9 +262,9 @@ describe('the starter network', () => {
   it('installs on a fresh viewer with every channel on its own number, each with programmes', () => {
     const plan = planStarterNetwork([], records, 5)
     expect(plan.added).toEqual(records.map((record) => record.channelNumber))
-    expect(plan.sources.find((record) => record.channelNumber === 1001)?.sourceType).toBe('youtube-channel')
+    expect(plan.sources.find((record) => record.channelNumber === 1001)?.videos.length).toBeGreaterThan(0)
     expect(plan.sources.filter((record) => record.videos.length === 0)).toHaveLength(0)
-    expect(starterCollections(records).sources).toHaveLength(170)
+    expect(starterCollections(records).sources).toHaveLength(55)
   })
 
   it('every default favourite resolves on a fresh install, in order', () => {
@@ -273,11 +273,11 @@ describe('the starter network', () => {
     expect([...expected.keys()]).toEqual(DEFAULT_FAVOURITES.filter((number) => number > 1000))
     expect(placeStarterFavourites(DEFAULT_FAVOURITES, expected, fresh)).toEqual(DEFAULT_FAVOURITES)
     const names = new Map(fresh.map((record) => [record.channelNumber, record.name]))
-    expect([1014, 1033, 1072, 1148, 1188].map((number) => names.get(number))).toEqual([
+    expect([1009, 1012, 1021, 1025, 1054].map((number) => names.get(number))).toEqual([
       'Argyle Life | Green',
-      'CinemaSins',
+      'Boiler Room',
       'Heat Check',
-      'Secret Base',
+      "Manjula's Kitchen",
       'World Wanderings: 4K Walking Tours',
     ])
   })

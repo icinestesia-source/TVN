@@ -1974,6 +1974,8 @@ a.info-creator:focus-visible {
 .fx-colours .tab { display: inline-flex; align-items: center; gap: 5px; }
 .fx-colours .tab:disabled { opacity: 0.4; cursor: not-allowed; }
 .fx-swatch { width: 0.8em; height: 0.8em; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }
+.fx-custom { width: 1.15em; height: 1.15em; padding: 0; border: 0; background: none; cursor: pointer; }
+.fx-custom:disabled { cursor: not-allowed; opacity: 0.4; }
 .fx-colour-order { font-size: 0.75em; min-width: 1.3em; padding: 0 3px; border-radius: 3px; background: var(--gold); color: #000; text-align: center; }
 .options-confirm { align-items: center; margin-top: 10px; }
 .options-range { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); font-size: 14px; }
@@ -2236,7 +2238,7 @@ a.info-creator:focus-visible {
 .network-list { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
 .network-row {
   display: grid;
-  grid-template-columns: 5.4em minmax(0, 1fr) 7em 2.4em 15.5em 5.8em 5em;
+  grid-template-columns: 5.4em minmax(0, 1fr) 2.4em 15.5em 5.8em 5.2em 5em;
   align-items: center;
   gap: 10px;
   min-height: 44px;
@@ -2246,6 +2248,7 @@ a.info-creator:focus-visible {
 .network-row.is-current .network-number,
 .network-row.is-current .network-title { color: var(--gold); }
 .network-row.is-dragging { opacity: 0.45; }
+.network-row.is-off-air { opacity: 0.55; }
 .network-row[draggable='true'] { cursor: grab; }
 .network-number { font-family: var(--font-ui); font-size: 18px; font-weight: 600; letter-spacing: 0.04em; }
 .network-open { padding: 4px 0; border: 0; background: none; color: inherit; text-align: left; white-space: nowrap; cursor: pointer; }
@@ -2288,12 +2291,6 @@ a.info-creator:focus-visible {
 .network-name:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .network-title { overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .network-kind { color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
-.network-status { color: var(--muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
-.network-status.is-on-air,
-.network-status.is-surfing { color: var(--ink); }
-.network-status.is-empty,
-.network-status.is-disabled,
-.network-status.is-source-not-loaded { color: #c98b6b; }
 .network-name:disabled { cursor: default; opacity: 0.75; }
 .network-star { border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; }
 .network-star.is-on { color: var(--gold); }
@@ -2301,7 +2298,7 @@ a.info-creator:focus-visible {
 .network-moves { display: flex; align-items: center; gap: 4px; }
 .network-head .tabs .network-order { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .network-pick { width: 1.05em; height: 1.05em; margin: 0; accent-color: var(--gold); }
-.network-list.is-picking .network-row { grid-template-columns: 1.4em 5.4em minmax(0, 1fr) 7em 2.4em 15.5em 5.8em 5em; }
+.network-list.is-picking .network-row { grid-template-columns: 1.4em 5.4em minmax(0, 1fr) 2.4em 15.5em 5.8em 5.2em 5em; }
 .network-target {
   width: 4.6em;
   min-height: 30px;
@@ -2318,12 +2315,13 @@ a.info-creator:focus-visible {
 .network-move { min-width: 2.2em; padding: 2px 6px; }
 .network-move:disabled { opacity: 0.3; }
 .network-edit { justify-self: end; }
+.network-air { justify-self: end; min-width: 4.6em; padding: 2px 8px; white-space: nowrap; }
+.network-air.is-off { color: var(--muted); }
 .network-delete { justify-self: end; min-width: 2.4em; padding: 2px 8px; white-space: nowrap; }
 .network-delete:disabled { opacity: 0.25; }
 @media (max-width: 720px) {
-  .network-row { grid-template-columns: 4.6em minmax(0, 1fr) 2.2em auto 4.4em 3.6em; }
-  .network-list.is-picking .network-row { grid-template-columns: 1.4em 4.6em minmax(0, 1fr) 2.2em auto 4.4em 3.6em; }
-  .network-status { display: none; }
+  .network-row { grid-template-columns: 4.6em minmax(0, 1fr) 2.2em auto 4.4em 4.6em 3.6em; }
+  .network-list.is-picking .network-row { grid-template-columns: 1.4em 4.6em minmax(0, 1fr) 2.2em auto 4.4em 4.6em 3.6em; }
   .network-move-to { display: none; }
   .network-detail { margin-left: 0; }
 }

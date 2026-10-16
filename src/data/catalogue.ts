@@ -3,6 +3,7 @@ import type { MediaKind, Programme, ProgrammeKind, ProgrammeType } from '../type
 import { reconcileWithCanonical } from './reconcile.ts'
 import { categoryIdFor } from './network.ts'
 import { isOnAir } from '../network/airing.ts'
+import { isOffAir } from './off-air.ts'
 import { curatedEditList, curatedProgrammesFor, currentNetworkBase, userChannelList, userProgrammesFor, type NetworkBase } from './user-overlay.ts'
 import { DEMO_FILMS } from './media.ts'
 import { localChannels, localNumberForId, sessionActive, sessionProgrammes } from '../session/session-channel.ts'
@@ -439,7 +440,7 @@ export function randomChannel(
   random: () => number = Math.random,
   among: readonly Channel[] = listChannels(),
 ): Channel | undefined {
-  const onAir = among.filter((channel) => channel.enabled && playingLocal(channel) && channel.origin !== 'tvn' && !channel.emptySlot && isOnAir(channel))
+  const onAir = among.filter((channel) => channel.enabled && playingLocal(channel) && channel.origin !== 'tvn' && !channel.emptySlot && isOnAir(channel) && !isOffAir(channel.number))
   const choices = onAir.length > 1 ? onAir.filter((channel) => channel.number !== current) : onAir
   return choices[Math.floor(random() * choices.length)]
 }
@@ -455,7 +456,7 @@ export function playingLocal(channel: Pick<Channel, 'origin' | 'number'>): boole
  * goes on to its neighbours. One with files is stepped to like any other.
  */
 export function adjacentChannel(number: number, delta: number): Channel {
-  const enabled = listChannels().filter((channel) => channel.enabled && playingLocal(channel) && !channel.emptySlot && isOnAir(channel))
+  const enabled = listChannels().filter((channel) => channel.enabled && playingLocal(channel) && !channel.emptySlot && isOnAir(channel) && !isOffAir(channel.number))
   if (enabled.length === 0) {
     const fallback = listChannels().filter((channel) => channel.enabled)
     const index = fallback.findIndex((channel) => channel.number === number)

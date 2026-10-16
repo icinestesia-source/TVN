@@ -26,19 +26,24 @@ export const TINTS: Record<TransitionColour, string | null> = {
   red: '#ff8080',
   blue: '#86a8ff',
   teal: '#7ff5e1',
+  custom: null,
 }
 
-/** The chosen colours as hex shades the snow (or CRT / flash) can paint with. */
-export function snowColours(colours: readonly TransitionColour[]): string[] {
-  return colours.map((colour) => TINTS[colour]).filter((shade): shade is string => shade !== null)
+/** The chosen colours as hex shades the snow (or CRT / flash) can paint with. Custom uses the viewer's own shade. */
+export function snowColours(colours: readonly TransitionColour[], custom: string | null = null): string[] {
+  return colours.flatMap((colour) => {
+    if (colour === 'custom') return custom ? [custom] : []
+    const shade = TINTS[colour]
+    return shade ? [shade] : []
+  })
 }
 
 /**
  * A fill for effects with no snow (CRT beam, cut flash): one colour, or a band of several.
  * Kept for those layers only — the static transition colours the blocks themselves.
  */
-export function tintOf(colours: readonly TransitionColour[]): string | null {
-  const shades = snowColours(colours)
+export function tintOf(colours: readonly TransitionColour[], custom: string | null = null): string | null {
+  const shades = snowColours(colours, custom)
   if (shades.length === 0) return null
   if (shades.length === 1) return shades[0]
   return `linear-gradient(115deg, ${[...shades, shades[0]].join(', ')})`
@@ -94,8 +99,8 @@ export function TransitionOverlay({
 }) {
   const definition = TRANSITIONS[settings.id]
   const timing = transitionTiming(settings)
-  const shades = definition.colour ? snowColours(settings.colours) : []
-  const fill = definition.colour && !definition.grain ? tintOf(settings.colours) : null
+  const shades = definition.colour ? snowColours(settings.colours, settings.custom) : []
+  const fill = definition.colour && !definition.grain ? tintOf(settings.colours, settings.custom) : null
   const grain = definition.grain ? settings.grain : 'normal'
   const style = {
     '--fx-ms': `${Math.max(1, timing.durationMs)}ms`,

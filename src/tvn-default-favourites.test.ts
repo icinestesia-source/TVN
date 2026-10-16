@@ -25,23 +25,23 @@ const provider = providerSource()
 const starterFile = readUserNetworkFile(read('public/user-network/starter-network.json'))
 const starter = starterFile.ok ? recordsFromExport(starterFile.value, 0) : []
 
-const REQUIRED = [125, 225, 534, 535, 536, 1014, 1072, 1148]
+const REQUIRED = [125, 225, 534, 535, 536, 1009, 1021, 1054]
 const NAMES: Record<number, string> = {
   225: 'Saturday Cartoons',
   125: '1980s Trailers',
   534: 'Dance',
   289: 'Retro Television',
-  1014: 'Argyle Life | Green',
+  1009: 'Argyle Life | Green',
   710: 'Street Food',
   103: 'Classic Film',
-  1072: 'Heat Check',
+  1021: 'Heat Check',
   805: 'Newsreel Archive',
   535: 'Drum & Bass',
-  1188: 'World Wanderings: 4K Walking Tours',
+  1054: 'World Wanderings: 4K Walking Tours',
   412: 'World War II',
-  1033: 'CinemaSins',
+  1012: 'Boiler Room',
   485: 'Wildlife',
-  1148: 'Secret Base',
+  1025: "Manjula's Kitchen",
   844: 'Theatre Archive',
   536: 'Trip-Hop',
   491: 'Ideas',
@@ -146,11 +146,11 @@ describe('seeding once, for a new viewer only', () => {
 
   it('does not re-seed on reload, nor because a default is missing', () => {
     withStore({}, () => {
-      visit((favourites) => favourites.filter((number) => number !== 225 && number !== 1014))
+      visit((favourites) => favourites.filter((number) => number !== 225 && number !== 1009))
       for (let reload = 0; reload < 3; reload += 1) {
         const back = visit()
         expect(back).not.toContain(225)
-        expect(back).not.toContain(1014)
+        expect(back).not.toContain(1009)
         expect(back).toHaveLength(DEFAULT_FAVOURITES.length - 2)
       }
     })

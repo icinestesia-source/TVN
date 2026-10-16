@@ -1,7 +1,7 @@
 import type { ParsedExport, StoredSource } from '../../services/channels-import.ts'
 
 /**
- * The bundled starter User Network (1001–1116): the shipped starter network file, never written to; once
+ * The bundled starter User Network (1001–1055): the shipped starter network file, never written to; once
  * installed, the channels are the viewer's own stored sources like any other.
  *
  * pending   due: installed after the viewer's own channels once startup is ready (retried if interrupted)
