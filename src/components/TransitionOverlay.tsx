@@ -13,13 +13,14 @@ export interface CardIdentity {
   programme: string | null
 }
 
+/** Resolved hex for each colour; used by the snow blocks and by CRT / flash fills. */
 export const TINTS: Record<TransitionColour, string | null> = {
   mono: null,
   warm: '#ffd2a1',
   cool: '#a8d4ff',
   green: '#8dffa8',
   amber: '#ffb54d',
-  accent: 'var(--gold)',
+  accent: '#f0c014',
   purple: '#c79bff',
   pink: '#ff9ad5',
   red: '#ff8080',
@@ -27,9 +28,17 @@ export const TINTS: Record<TransitionColour, string | null> = {
   teal: '#7ff5e1',
 }
 
-/** One colour as a flat tint; several as a band that sweeps through them and back to the first. */
+/** The chosen colours as hex shades the snow (or CRT / flash) can paint with. */
+export function snowColours(colours: readonly TransitionColour[]): string[] {
+  return colours.map((colour) => TINTS[colour]).filter((shade): shade is string => shade !== null)
+}
+
+/**
+ * A fill for effects with no snow (CRT beam, cut flash): one colour, or a band of several.
+ * Kept for those layers only — the static transition colours the blocks themselves.
+ */
 export function tintOf(colours: readonly TransitionColour[]): string | null {
-  const shades = colours.map((colour) => TINTS[colour]).filter((shade): shade is string => shade !== null)
+  const shades = snowColours(colours)
   if (shades.length === 0) return null
   if (shades.length === 1) return shades[0]
   return `linear-gradient(115deg, ${[...shades, shades[0]].join(', ')})`
@@ -85,8 +94,8 @@ export function TransitionOverlay({
 }) {
   const definition = TRANSITIONS[settings.id]
   const timing = transitionTiming(settings)
-  const tint = definition.colour ? tintOf(settings.colours) : null
-  const blend = definition.colour && settings.colours.length > 1
+  const shades = definition.colour ? snowColours(settings.colours) : []
+  const fill = definition.colour && !definition.grain ? tintOf(settings.colours) : null
   const grain = definition.grain ? settings.grain : 'normal'
   const style = {
     '--fx-ms': `${Math.max(1, timing.durationMs)}ms`,
@@ -95,16 +104,18 @@ export function TransitionOverlay({
     '--card-opacity': settings.card.opacity,
     '--card-zoom': SIZES[settings.card.size] * (contained ? 0.34 : 1),
     '--card-accent': ACCENTS[settings.card.accent],
-    ...(tint ? { '--fx-tint': tint } : {}),
+    ...(fill ? { '--fx-fill': fill } : {}),
   } as CSSProperties
-  const className = ['fx', `fx-${definition.effect}`, contained ? 'is-contained' : '', revealing ? 'is-revealing' : ''].filter(Boolean).join(' ')
+  const className = ['fx', `fx-${definition.effect}`, contained ? 'is-contained' : '', revealing ? 'is-revealing' : '', fill ? 'has-fill' : '']
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <div className={className} style={style} role="status" aria-live="polite" data-transition={settings.id}>
-      {definition.effect === 'tune' ? <Noise grain={grain} /> : null}
+      {definition.effect === 'tune' ? <Noise grain={grain} colours={shades} /> : null}
       {definition.effect === 'analogue' ? (
         <>
-          <Noise grain={grain} heavy />
+          <Noise grain={grain} heavy colours={shades} />
           <div className="fx-scan" />
           <div className="fx-roll" />
         </>
@@ -112,7 +123,7 @@ export function TransitionOverlay({
       {definition.effect === 'crt' ? <div className="fx-beam" /> : null}
       {definition.effect === 'glitch' ? (
         <>
-          <Noise grain={grain} />
+          <Noise grain={grain} colours={shades} />
           <div className="fx-tears">
             <i />
             <i />
@@ -123,7 +134,6 @@ export function TransitionOverlay({
         </>
       ) : null}
       {definition.effect === 'flash' ? <div className="fx-flash-light" /> : null}
-      {tint ? <div className={blend ? 'fx-tint is-blend' : 'fx-tint'} /> : null}
       {timing.cardAtMs !== null && !revealing ? <TitleCard settings={settings} identity={identity} immediate={timing.cardAtMs === 0} /> : null}
     </div>
   )

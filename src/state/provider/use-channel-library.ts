@@ -49,6 +49,8 @@ import {
   inRange,
   recordsFromExport,
   resolveRestored,
+  appendPackedChannels,
+  favouritesAfterAppend,
   restoreChannelRange,
   restoreUserNetwork,
   usersAfterRangeRestore,
@@ -64,8 +66,10 @@ import { followMovedChannels, loadCuratedEdits, replaceCuratedEdits, shippedBase
 import { buildUserNetworkExport, downloadText, exportFilename, serialiseUserNetworkExport, type UserNetworkExport } from '../../services/user-network-export.ts'
 import { loadRegister } from '../../credits/load.ts'
 import {
+  buildPickedExport,
   buildRangeExport,
   buildTvnExport,
+  pickedExportFilename,
   rangeExportFilename,
   serialiseTvnExport,
   tvnExportFilename,
@@ -748,6 +752,35 @@ export function useChannelLibrary({
     return `EXPORTED ${span} · ${user} USER ${user === 1 ? 'CHANNEL' : 'CHANNELS'} · ${curated} CURATED`
   }, [])
 
+  /** The channels ticked in NETWORK: only those, as a JSON file. Restoring it changes only those numbers. */
+  const exportPicked = useCallback(async (numbers: readonly number[]) => {
+    const now = new Date()
+    const register = await loadRegister()
+    const document = buildPickedExport(
+      {
+        stored: await loadStoredSources(),
+        users: usersRef.current,
+        favourites: favouritesRef.current,
+        now,
+        app: { commit: BUILD_INFO.commit, build: BUILD_INFO.build },
+        uploaderOf: uploaderIdFor,
+        curated: Object.values(loadCuratedEdits()),
+        originalsOf: (number) => originalsOf(number, register),
+        shippedOf: (number) => {
+          const shipped = shippedChannel(number)
+          return shipped ? shippedProgrammes(shipped.id) : []
+        },
+      },
+      numbers,
+    )
+    const count = document.picked?.length ?? document.userNetwork.channels.length
+    downloadText(pickedExportFilename(now, document.picked ?? numbers), serialiseTvnExport(document))
+    const first = document.picked?.[0]
+    const last = document.picked?.[document.picked.length - 1]
+    const span = first !== undefined && last !== undefined ? (first === last ? padChannel(first) : `${padChannel(first)}–${padChannel(last)}`) : ''
+    return `EXPORTED ${count} ${count === 1 ? 'CHANNEL' : 'CHANNELS'} AS A NEW LIST${span ? ` · ${span}` : ''}`
+  }, [])
+
   /** The editor's scope for this channel number, checked again on every action rather than trusted from the view. */
   const scopeOf = (number: number) => {
     const target = channelByNumber(number)
@@ -828,7 +861,7 @@ export function useChannelLibrary({
    * Replace this browser's 001–999 overrides with an export's, already validated. Only the override layer
    * changes; each override is checked against the channel TVN ships now, and what no longer fits is reported.
    */
-  const restoreCentralCuration = async (central: CentralCuration, range?: ChannelRange): Promise<string> => {
+  const restoreCentralCuration = async (central: CentralCuration, range?: ChannelRange, picked?: readonly number[]): Promise<string> => {
     const now = Date.now()
     const followed = followMovedChannels(Object.fromEntries(overridesFromExport(central).map((edit) => [String(edit.channelNumber), edit])), channels, (shipped) => shippedBaseline(shipped, shippedIds(shipped)))
     const read = Object.values(followed.edits)
@@ -845,7 +878,9 @@ export function useChannelLibrary({
       if (result.edit) kept.push(carried.length ? { ...result.edit, conflicts: [...carried, ...(result.edit.conflicts ?? [])] } : result.edit)
       conflicts.push(...carried, ...result.conflicts)
     })
-    const outside = range ? Object.values(loadCuratedEdits()).filter((edit) => !inRange(edit.channelNumber, range) && !kept.some((item) => item.channelNumber === edit.channelNumber)) : []
+    const chosen = picked ? new Set(picked) : null
+    const touches = (number: number) => (chosen ? chosen.has(number) : range ? inRange(number, range) : false)
+    const outside = range || picked ? Object.values(loadCuratedEdits()).filter((edit) => !touches(edit.channelNumber) && !kept.some((item) => item.channelNumber === edit.channelNumber)) : []
     replaceCuratedEdits([...outside, ...kept])
     installCurated()
     return ` · ${kept.length} CURATED${conflicts.length ? ` · ${conflicts.length} TO REVIEW` : ''}`
@@ -913,11 +948,26 @@ export function useChannelLibrary({
     async (document: TvnExport, onProgress?: (note: string) => void) => {
       const checked = validateTvnExport(document)
       if (!checked.ok || !checked.value.range) throw new Error(`Not a TVN range export${checked.ok ? '' : ` · ${checked.errors[0]}`}`)
-      const { range, userNetwork, favourites } = checked.value
+      const { range, userNetwork, favourites, picked } = checked.value
       const now = Date.now()
       const run = ++restoreRun.current
       const records = recordsFromExport(userNetwork, now)
       const resolved = await resolveRestored(records, restoreDeps, now, 4, { read: false })
+      if (picked?.length) {
+        const { sources, placed } = appendPackedChannels(await loadStoredSources(), resolved.records)
+        await saveStoredSources(sources)
+        commitUsers(usersAfterRangeRestore(usersRef.current, userNetwork))
+        installSources(sources)
+        void refreshRestored(records, resolved.records, run, onProgress).catch(() => {
+          if (run === restoreRun.current) onProgress?.('SOURCES COULD NOT BE UPDATED')
+        })
+        const fileNumbers = [...resolved.records].sort((a, b) => (a.channelNumber ?? 0) - (b.channelNumber ?? 0)).map((record) => record.channelNumber ?? 0)
+        setFavourites((current) => favouritesAfterAppend(current, favourites, fileNumbers, placed.map((record) => record.channelNumber ?? 0)))
+        const first = placed[0]?.channelNumber
+        const last = placed[placed.length - 1]?.channelNumber
+        const span = typeof first === 'number' && typeof last === 'number' ? (first === last ? padChannel(first) : `${padChannel(first)}–${padChannel(last)}`) : `${placed.length}`
+        return `ADDED ${placed.length} ${placed.length === 1 ? 'CHANNEL' : 'CHANNELS'} AS A NEW LIST · ${span}`
+      }
       const next = restoreChannelRange(await loadStoredSources(), resolved.records, range)
       await saveStoredSources(next)
       commitUsers(usersAfterRangeRestore(usersRef.current, userNetwork))
@@ -954,6 +1004,7 @@ export function useChannelLibrary({
     exportUserNetwork,
     exportTvn,
     exportRange,
+    exportPicked,
     scopeOf,
     importUserNetwork,
     importTvn,

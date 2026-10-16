@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ChannelChangeOptions } from './components/ChannelChangeOptions.tsx'
-import { tintOf, TransitionOverlay } from './components/TransitionOverlay.tsx'
+import { parseHex, shadeTowards } from './components/StaticOverlay.tsx'
+import { snowColours, tintOf, TransitionOverlay, TINTS } from './components/TransitionOverlay.tsx'
 import {
   asTransitionSettings,
   cleanColours,
@@ -17,6 +17,7 @@ import {
 
 const SAMPLE = { number: '225', name: 'TVN Preview', programme: null }
 const crt = (colours: Parameters<typeof withColours>[1]) => withColours({ ...DEFAULT_TRANSITION_SETTINGS, id: 'crt' }, colours)
+const tune = (colours: Parameters<typeof withColours>[1]) => withColours({ ...DEFAULT_TRANSITION_SETTINGS, id: 'tv-tune' }, colours)
 
 describe('Channel change colours: more of them, and up to five at once', () => {
   it('offers purple, pink, red, blue and teal beside the originals', () => {
@@ -40,14 +41,26 @@ describe('Channel change colours: more of them, and up to five at once', () => {
     expect(html).toContain('5 of 5 colours')
   })
 
-  it('one colour tints flat; several sweep as a band, and Mono has no tint', () => {
-    expect(tintOf([])).toBeNull()
+  it('colours the static blocks from black through the colour to white, not a filter over grey snow', () => {
+    expect(parseHex('#c79bff')).toEqual([199, 155, 255])
+    expect(shadeTowards([199, 155, 255], 0)).toEqual([0, 0, 0])
+    expect(shadeTowards([199, 155, 255], 128)).toEqual([199, 155, 255])
+    expect(shadeTowards([199, 155, 255], 255)).toEqual([255, 255, 255])
+    expect(snowColours(['purple', 'green'])).toEqual([TINTS.purple, TINTS.green])
+    expect(snowColours([])).toEqual([])
+    // Tuned snow carries the colours; there is no multiply tint layer.
+    const snow = renderToStaticMarkup(createElement(TransitionOverlay, { settings: tune(['purple', 'green']), identity: SAMPLE }))
+    expect(snow).toContain('static-noise')
+    expect(snow).not.toContain('fx-tint')
+    // CRT and flash have no snow: the beam / flash take the colour fill instead.
     expect(tintOf(['purple'])).toBe('#c79bff')
     expect(tintOf(['purple', 'green'])).toBe('linear-gradient(115deg, #c79bff, #8dffa8, #c79bff)')
-    expect(renderToStaticMarkup(createElement(TransitionOverlay, { settings: crt(['purple']), identity: SAMPLE }))).toContain('class="fx-tint"')
-    expect(renderToStaticMarkup(createElement(TransitionOverlay, { settings: crt(['purple', 'green']), identity: SAMPLE }))).toContain('fx-tint is-blend')
-    expect(renderToStaticMarkup(createElement(TransitionOverlay, { settings: crt([]), identity: SAMPLE }))).not.toContain('fx-tint')
-    expect(readFileSync('src/styles/overlays.css', 'utf8')).toMatch(/\.fx-tint\.is-blend \{[\s\S]*animation: fx-tint-sweep/)
+    const beam = renderToStaticMarkup(createElement(TransitionOverlay, { settings: crt(['purple']), identity: SAMPLE }))
+    expect(beam).toContain('fx-beam')
+    expect(beam).toContain('--fx-fill:#c79bff')
+    expect(beam).toContain('has-fill')
+    expect(beam).not.toContain('fx-tint')
+    expect(renderToStaticMarkup(createElement(TransitionOverlay, { settings: crt([]), identity: SAMPLE }))).not.toContain('--fx-fill')
   })
 
   it('saves the colours, keeps the first as the old single colour, and still reads files from before', () => {

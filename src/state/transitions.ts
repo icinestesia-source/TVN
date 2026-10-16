@@ -158,7 +158,7 @@ export const COLOURS: readonly { value: TransitionColour; label: string }[] = [
   { value: 'teal', label: 'Teal' },
 ]
 
-/** Up to five colours at once: the effect sweeps through them, in the order chosen. */
+/** Up to five colours at once: the static blocks take shades of each, in the order chosen. */
 export const MAX_TRANSITION_COLOURS = 5
 
 /** Combinations to start from; any colours can be picked by hand. */
@@ -249,7 +249,7 @@ export interface TransitionSettings {
   speed: number
   /** The first of `colours`, or Mono: what TVN saved before colours could be combined. */
   colour: TransitionColour
-  /** One to five colours, swept through in this order; none is Mono. */
+  /** One to five colours for the static blocks (or CRT / flash fill), in this order; none is Mono. */
   colours: TransitionColour[]
   grain: TransitionGrain
   card: TitleCard

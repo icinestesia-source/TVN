@@ -1039,7 +1039,17 @@ export function UserNetworkImportTools({
         ) : null}
       </div>
       <div className="info-actions">
-        {pending?.kind === 'complete' && pending.document.range ? (
+        {pending?.kind === 'complete' && pending.document.picked?.length ? (
+          <>
+            <span className="remove-ask" role="alertdialog" aria-label="Add these channels as a new list?">
+              A selection of {pending.document.picked.length} {pending.document.picked.length === 1 ? 'channel' : 'channels'} from {pending.filename},
+              saved one after another with no gaps. Restoring adds them as a new list on the end of your User Network. The channels you already have
+              stay where they are.
+            </span>
+            {key('Add as new list', () => void apply('range'), 'tab remove-key')}
+            {key('Keep mine', () => setPending(null))}
+          </>
+        ) : pending?.kind === 'complete' && pending.document.range ? (
           <>
             <span className="remove-ask" role="alertdialog" aria-label="Restore these channels?">
               A channel range export of {padChannel(pending.document.range.first)}–{padChannel(pending.document.range.last)} from {pending.filename}: {pending.channels}{' '}

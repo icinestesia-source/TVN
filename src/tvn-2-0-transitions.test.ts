@@ -157,9 +157,10 @@ describe('the transition registry', () => {
     expect(render({ id: 'glitch' })).toContain('fx-tears')
     expect(render({ id: 'flash' })).toContain('fx-flash-light')
     expect(render({ id: 'flash' })).not.toContain('static-number')
-    expect(render({ id: 'crt', colour: 'green', colours: ['green'] })).toContain('fx-tint')
-    expect(render({ id: 'fade', colour: 'green', colours: ['green'] })).not.toContain('fx-tint')
-    expect(render({ colour: 'mono' })).not.toContain('fx-tint')
+    expect(render({ id: 'crt', colour: 'green', colours: ['green'] })).toContain('--fx-fill:#8dffa8')
+    expect(render({ id: 'fade', colour: 'green', colours: ['green'] })).not.toContain('--fx-fill')
+    expect(render({ colour: 'mono' })).not.toContain('--fx-fill')
+    expect(render({ id: 'crt', colour: 'green', colours: ['green'] })).not.toContain('fx-tint')
   })
 
   it('the title card follows its settings', () => {

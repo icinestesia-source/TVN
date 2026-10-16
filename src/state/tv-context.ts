@@ -253,6 +253,8 @@ export interface TvContextValue {
   importTvn: (document: import('../services/tvn-export.ts').TvnExport, scope?: 'all' | 'user', onProgress?: (note: string) => void) => Promise<string>
   /** Save the viewer's channels and curation numbered from–to (either way round) as a range export. */
   exportRange: (from: number, to: number) => Promise<string>
+  /** Save the channels the viewer ticked in NETWORK as a JSON file. Restoring it changes only those numbers. */
+  exportPicked: (numbers: readonly number[]) => Promise<string>
   /** Restore a confirmed range export: only the numbers inside its range change. */
   importTvnRange: (document: import('../services/tvn-export.ts').TvnExport, onProgress?: (note: string) => void) => Promise<string>
   /**

@@ -20,6 +20,7 @@ import { notePhase, notePress } from '../player/tune-timing.ts'
 import { commitTune } from './tune-commit.ts'
 import { liveAiring } from '../player/viewing.ts'
 import { clearManual, manualAiring, onScreen, pickTunes, resumeProgramme, selectProgramme } from '../player/manual.ts'
+import { resumeFromPause, takePausedClip, unpauseSeconds } from '../view/resume-from-pause.ts'
 import { afterRefusal, arrive, fallbackProgramme, giveUp, type Recovery } from '../player/refusal-fallback.ts'
 import type { PlayerHandle, PlayerStatus } from '../player/types.ts'
 import { liveKey } from '../scheduler/calculate.ts'
@@ -568,6 +569,10 @@ export function TvProvider({ children }: { children: ReactNode }) {
     const held = pausedWebRef.current
     pausedWebRef.current = null
     if (held && current?.number === held.channelNumber) resumeProgramme(held.channelNumber, held.programme, held.elapsedSeconds, Date.now(), held.slot)
+    // Playback on: the clip carries on from where pause held it. Off: the Guide timeline, as before.
+    const clip = takePausedClip()
+    const seconds = current ? unpauseSeconds(resumeFromPause(), clip, current.number) : null
+    if (clip && seconds !== null) selectProgramme(clip.channelNumber, clip.programme, Date.now(), clip.slot, undefined, seconds)
     const player = playerRef.current
     loadedKey.current = ''
     if (!current || !player || multiviewRef.current !== '1' || tuningRef.current || !playerReadyRef.current) return
@@ -1486,6 +1491,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     exportUserNetwork,
     exportTvn,
     exportRange,
+    exportPicked,
     scopeOf,
     importUserNetwork,
     importTvn,
@@ -1976,6 +1982,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       exportTvn,
       importTvn,
       exportRange,
+      exportPicked,
       importTvnRange,
       openChannelEdit,
       saveChannelEdit,
@@ -2054,6 +2061,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       exportTvn,
       importTvn,
       exportRange,
+      exportPicked,
       importTvnRange,
       activateGuide,
       channel,

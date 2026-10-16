@@ -173,8 +173,8 @@ function ColourPicker({ settings, onChange }: { settings: TransitionSettings; on
       </Row>
       <p className="options-note">
         {colours.length > 1
-          ? `${colours.length} of ${MAX_TRANSITION_COLOURS} colours, swept through in the order picked.`
-          : `Pick up to ${MAX_TRANSITION_COLOURS} colours to sweep through them; Mono for none.`}
+          ? `${colours.length} of ${MAX_TRANSITION_COLOURS} colours on the static blocks: each grey speck becomes a shade of one of them, from black through the colour to white.`
+          : `Pick up to ${MAX_TRANSITION_COLOURS} colours for the static blocks (black → colour → white); Mono keeps ordinary grey snow.`}
       </p>
     </>
   )

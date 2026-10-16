@@ -8,7 +8,8 @@ import { isLiveStreamChannel } from '../../dynamic/stream.ts'
 import { historyStep, type ViewingHistory } from '../history.ts'
 import { clampGuideSplit, type GuideMode } from '../../view/guide-mode.ts'
 import { PIP_SIZE_STEP, cycleMultiview, focusStep, gridDelta, loadPipChannel, multiviewLayout, planMultiview } from '../../view/multiview.ts'
-import { clearManual, manualAiring, onScreen } from '../../player/manual.ts'
+import { clearManual, manualAiring, onScreen, seekable } from '../../player/manual.ts'
+import { holdPausedClip, resumeFromPause } from '../../view/resume-from-pause.ts'
 import { clipFlags } from '../../view/clip-flags.ts'
 import { guideTabLabel, nextGuideTab } from '../guide-tabs.ts'
 import { SLEEP_CHOICES, nextSleepMinutes } from '../sleep.ts'
@@ -542,6 +543,14 @@ export function useTvCommands({
             here && airing && (airing.programme.programmeType === 'website' || airing.programme.programmeType === 'social-post')
               ? { channelNumber: here.number, programme: airing.programme, elapsedSeconds: airing.elapsedSeconds, slot: { startMs: airing.startMs, endMs: airing.endMs } }
               : null
+          // Playback on: remember where this clip actually is, so unpausing does not jump to the Guide.
+          const at = playerRef.current?.currentTime()
+          const seconds = typeof at === 'number' && Number.isFinite(at) && at > 0 ? at : airing?.seekSeconds
+          holdPausedClip(
+            resumeFromPause() && here && airing && seekable(here, airing.programme) && seconds !== undefined
+              ? { channelNumber: here.number, programme: airing.programme, seconds, slot: { startMs: airing.startMs, endMs: airing.endMs } }
+              : null,
+          )
           pausedRef.current = true
           setPaused(true)
           pauseViewing(playerRef.current)

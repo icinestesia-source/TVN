@@ -2,7 +2,8 @@ import { SLEEP_CHOICES } from '../state/sleep.ts'
 import { SURF_LIMIT_MAX, SURF_LIMIT_MIN, type SurfRange } from '../state/surf.ts'
 import { TRANSITION_IDS, transitionSettingsErrors, type TransitionId, type TransitionSettings } from '../state/transitions.ts'
 import { CORNERS, SHORTCUT_IDS, type ShortcutAssignment } from '../view/info-shortcuts.ts'
-import { isOwnNumber, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber, LOW_USER_FIRST, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
+import { currentNetworkBase } from '../data/user-overlay.ts'
 import { tvnChannelSettingsErrors, type TvnChannelSettings } from '../tvn/tvn-channel.ts'
 import { buildCentralCuration, checkCentralCuration, type CentralCuration } from './central-curation.ts'
 import type { StoredSource } from './channels-import.ts'
@@ -74,8 +75,11 @@ export interface TvnExport {
   /**
    * A range export: only the channels numbered first–last, with their sources, running orders, editorial
    * notes, overrides and Favourites; no settings and no Guides. Its restore changes only those numbers.
+   * `picked`, when present, is a selection packed into a new list with no gaps: restore adds that list
+   * after the channels already there, and leaves those channels as they are.
    */
   range?: ChannelRange
+  picked?: number[]
 }
 
 export interface ExportApp {
@@ -130,21 +134,20 @@ export function buildTvnExport({ stored, users, favourites, settings, now, app, 
   }
 }
 
-/** The complete export cut down to the channels numbered first–last (either way round). */
-export function buildRangeExport(input: Omit<TvnExportInput, 'settings' | 'guides'>, from: number, to: number): TvnExport {
-  const range = { first: Math.min(from, to), last: Math.max(from, to) }
+/** The complete export cut down to the channels a test keeps. */
+function exportSlice(input: Omit<TvnExportInput, 'settings' | 'guides'>, keep: (number: number) => boolean, range: ChannelRange, picked?: number[]): TvnExport {
   const { stored, users, favourites, now, app, uploaderOf, curated = [], shippedOf = () => [], originalsOf = () => [] } = input
   const network = buildUserNetworkExport(stored, now, uploaderOf, users)
-  const channels = network.channels.filter((channel) => inRange(channel.number, range))
+  const channels = network.channels.filter((channel) => keep(channel.number))
   const numbers = new Set(channels.map((channel) => channel.number))
-  const edits = curated.filter((edit) => inRange(edit.channelNumber, range))
+  const edits = curated.filter((edit) => keep(edit.channelNumber))
   return {
     format: TVN_EXPORT_FORMAT,
     version: TVN_EXPORT_VERSION,
     exportedAt: now.toISOString(),
     ...(app ? { app: { commit: app.commit, build: app.build } } : {}),
     userNetwork: { ...network, channels },
-    favourites: favourites.filter((number) => inRange(number, range)),
+    favourites: favourites.filter((number) => keep(number)),
     settings: {},
     central: buildCentralCuration(edits, uploaderOf),
     manifests: [
@@ -155,7 +158,44 @@ export function buildRangeExport(input: Omit<TvnExportInput, 'settings' | 'guide
         .map(userChannelManifest),
     ],
     range,
+    ...(picked ? { picked } : {}),
   }
+}
+
+/** The complete export cut down to the channels numbered first–last (either way round). */
+export function buildRangeExport(input: Omit<TvnExportInput, 'settings' | 'guides'>, from: number, to: number): TvnExport {
+  const range = { first: Math.min(from, to), last: Math.max(from, to) }
+  return exportSlice(input, (number) => inRange(number, range), range)
+}
+
+/**
+ * The channels the viewer ticked, in number order, renumbered into one new list with nothing missing between
+ * them. 1001 and 1005 become 1001 and 1002. Restoring adds that list on the end; it does not punch holes
+ * where the channels that were not ticked used to be.
+ */
+export function buildPickedExport(input: Omit<TvnExportInput, 'settings' | 'guides'>, numbers: readonly number[]): TvnExport {
+  const wanted = [...new Set(numbers)].filter((number) => Number.isInteger(number)).sort((a, b) => a - b)
+  const start = currentNetworkBase() === 'new' ? LOW_USER_FIRST : USER_NUMBER_START
+  const byNumber = new Map(input.stored.filter((record) => record.channelNumber !== null).map((record) => [record.channelNumber, record]))
+  const chosen = wanted.filter((number) => byNumber.has(number))
+  if (chosen.length === 0) throw new Error('Choose a channel to export')
+  const packed = chosen.map((number, index) => ({ ...byNumber.get(number)!, channelNumber: start + index }))
+  const listing = packed.map((record) => record.channelNumber!)
+  const moved = new Map(chosen.map((number, index) => [number, listing[index]]))
+  return exportSlice(
+    { ...input, stored: packed, favourites: input.favourites.map((number) => moved.get(number)).filter((number): number is number => number !== undefined), curated: [] },
+    (number) => listing.includes(number),
+    { first: listing[0], last: listing[listing.length - 1] },
+    listing,
+  )
+}
+
+/** `TVN_Selection_4_YYYY-MM-DD.json`, or one channel's number when only that one was ticked. */
+export function pickedExportFilename(now: Date, numbers: readonly number[]): string {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const listed = [...numbers].sort((a, b) => a - b)
+  const tag = listed.length === 1 ? String(listed[0]).padStart(4, '0') : String(listed.length)
+  return `TVN_Selection_${tag}_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`
 }
 
 /** `TVN_Channels_0950-0970_YYYY-MM-DD.json`. */
@@ -240,6 +280,14 @@ function checkRange(data: Record<string, unknown>, errors: string[]): void {
     ...(Array.isArray(data.favourites) ? data.favourites : []),
   ].filter((number) => typeof number === 'number' && !inRange(number, bounds))
   if (outside.length) errors.push(`range ${bounds.first}–${bounds.last} does not hold channel ${String(outside[0])}`)
+  if (data.picked === undefined) return
+  if (!Array.isArray(data.picked) || data.picked.some((number) => !isInt(number, bounds.first, bounds.last)) || new Set(data.picked).size !== data.picked.length) {
+    errors.push('picked is not the channel numbers chosen inside the range')
+    return
+  }
+  const chosen = new Set(data.picked)
+  const stray = [...numbers(network, (channel) => channel.number), ...numbers(central, (override) => override.number)].find((number) => typeof number === 'number' && !chosen.has(number))
+  if (stray !== undefined) errors.push(`picked does not include channel ${String(stray)}`)
 }
 
 export function validateTvnExport(data: unknown): { ok: true; value: TvnExport } | { ok: false; errors: string[] } {

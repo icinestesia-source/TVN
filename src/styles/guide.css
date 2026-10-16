@@ -1907,20 +1907,24 @@ a.info-creator:focus-visible {
   text-transform: uppercase;
 }
 
+/* Columns pack short panels under each other; wide ones (Users, Channel change) span the row. */
 .options-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 14px;
-  align-items: start;
+  column-width: 320px;
+  column-gap: 14px;
 }
 
 .options-card {
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 14px;
   padding: 14px 16px 12px;
   border: 1px solid #1d4c78;
   background: var(--guide-column);
+  vertical-align: top;
+  break-inside: avoid;
 }
 
-.options-card.is-wide { grid-column: 1 / -1; }
+.options-card.is-wide { column-span: all; }
 
 .options-head {
   margin: 0 0 10px;
@@ -2295,7 +2299,9 @@ a.info-creator:focus-visible {
 .network-star.is-on { color: var(--gold); }
 .network-star:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .network-moves { display: flex; align-items: center; gap: 4px; }
-.network-head .tabs .network-order { display: inline-flex; gap: 6px; margin-left: auto; }
+.network-head .tabs .network-order { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.network-pick { width: 1.05em; height: 1.05em; margin: 0; accent-color: var(--gold); }
+.network-list.is-picking .network-row { grid-template-columns: 1.4em 5.4em minmax(0, 1fr) 7em 2.4em 15.5em 5.8em 5em; }
 .network-target {
   width: 4.6em;
   min-height: 30px;
@@ -2316,6 +2322,7 @@ a.info-creator:focus-visible {
 .network-delete:disabled { opacity: 0.25; }
 @media (max-width: 720px) {
   .network-row { grid-template-columns: 4.6em minmax(0, 1fr) 2.2em auto 4.4em 3.6em; }
+  .network-list.is-picking .network-row { grid-template-columns: 1.4em 4.6em minmax(0, 1fr) 2.2em auto 4.4em 3.6em; }
   .network-status { display: none; }
   .network-move-to { display: none; }
   .network-detail { margin-left: 0; }

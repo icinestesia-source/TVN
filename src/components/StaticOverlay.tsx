@@ -8,9 +8,47 @@ const GRAIN_SIZE: Record<TransitionGrain, [number, number]> = {
   fine: [320, 180],
 }
 
+export type Rgb = readonly [number, number, number]
+
+/** A `#rrggbb` colour as 0…255 channels; anything else is ignored. */
+export function parseHex(hex: string): Rgb | null {
+  const match = /^#([0-9a-fA-F]{6})$/.exec(hex.trim())
+  if (!match) return null
+  const value = Number.parseInt(match[1], 16)
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
+}
+
+/**
+ * One grey static pixel as a shade of a chosen colour: black at 0, the colour at 128, white at 255.
+ * That is what Colour in Channel change paints — the blocks themselves, not a filter over them.
+ */
+export function shadeTowards([red, green, blue]: Rgb, level: number): Rgb {
+  const amount = Math.max(0, Math.min(255, Math.round(level)))
+  if (amount <= 128) {
+    const mix = amount / 128
+    return [Math.round(red * mix), Math.round(green * mix), Math.round(blue * mix)]
+  }
+  const mix = (amount - 128) / 127
+  return [
+    Math.round(red + (255 - red) * mix),
+    Math.round(green + (255 - green) * mix),
+    Math.round(blue + (255 - blue) * mix),
+  ]
+}
+
 /** Television snow. `heavy` is brighter, with more tearing: the analogue static transition. */
-export function Noise({ grain = 'normal', heavy = false }: { grain?: TransitionGrain; heavy?: boolean } = {}) {
+export function Noise({
+  grain = 'normal',
+  heavy = false,
+  colours = [],
+}: {
+  grain?: TransitionGrain
+  heavy?: boolean
+  /** Hex shades for the snow blocks; empty keeps ordinary grey static. */
+  colours?: readonly string[]
+} = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const paletteKey = colours.join('|')
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -22,29 +60,37 @@ export function Noise({ grain = 'normal', heavy = false }: { grain?: TransitionG
     canvas.width = width
     canvas.height = height
     const image = context.createImageData(width, height)
+    const palette = (paletteKey ? paletteKey.split('|') : []).map(parseHex).filter((rgb): rgb is Rgb => rgb !== null)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const tearEvery = heavy ? 5 : 12
     let frame = 0
     let raf = 0
 
+    const paint = (data: Uint8ClampedArray, index: number, level: number) => {
+      if (palette.length === 0) {
+        data[index] = level
+        data[index + 1] = level
+        data[index + 2] = level
+      } else {
+        // Several colours: each block picks one, so the field is a mix of their shades, not a tint over grey.
+        const [red, green, blue] = shadeTowards(palette[Math.floor(Math.random() * palette.length)], level)
+        data[index] = red
+        data[index + 1] = green
+        data[index + 2] = blue
+      }
+      data[index + 3] = 255
+    }
+
     const draw = () => {
       const data = image.data
       const level = heavy ? 205 + Math.random() * 50 : 150 + Math.random() * 40
       for (let index = 0; index < data.length; index += 4) {
-        const value = Math.random() * level
-        data[index] = value
-        data[index + 1] = value
-        data[index + 2] = value
-        data[index + 3] = 255
+        paint(data, index, Math.random() * level)
       }
       if (!reduce && frame % 8 === 0) {
         const y = Math.floor(Math.random() * (height - 2))
         for (let x = 0; x < width; x += 1) {
-          const pixel = (y * width + x) * 4
-          const value = 190 + Math.random() * 50
-          data[pixel] = value
-          data[pixel + 1] = value
-          data[pixel + 2] = value
+          paint(data, (y * width + x) * 4, 190 + Math.random() * 50)
         }
       }
       context.putImageData(image, 0, 0)
@@ -60,7 +106,7 @@ export function Noise({ grain = 'normal', heavy = false }: { grain?: TransitionG
 
     draw()
     return () => window.cancelAnimationFrame(raf)
-  }, [grain, heavy])
+  }, [grain, heavy, paletteKey])
 
   return <canvas ref={canvasRef} className="static-noise" />
 }

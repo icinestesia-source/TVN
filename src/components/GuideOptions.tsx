@@ -13,6 +13,7 @@ import { useTv } from '../state/tv-context.ts'
 import { rememberSupported, setRememberMedia, useRememberMedia } from '../session/remembered-media.ts'
 import { DISPLAY_QUALITIES, setDisplayQuality, useDisplayQuality } from '../view/display-quality.ts'
 import { setFillEdges, useFillEdges } from '../view/fill-edges.ts'
+import { setResumeFromPause, useResumeFromPause } from '../view/resume-from-pause.ts'
 import { setLoadingLogo, useLoadingLogo } from '../view/loading-logo.ts'
 import { setFlagAt, useFlagAt } from '../view/clip-flags.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
@@ -208,6 +209,7 @@ export function GuideOptions() {
   const quality = useDisplayQuality()
   const remember = useRememberMedia()
   const fill = useFillEdges()
+  const holdPause = useResumeFromPause()
   const logo = useLoadingLogo()
   const flagWhere = useFlagAt()
   const [status, setStatus] = useState<string | null>(null)
@@ -279,6 +281,14 @@ export function GuideOptions() {
           </Row>
           <Row label="Sound">{toggle(tv.muted, ['Muted', 'On'], () => tv.dispatch({ type: 'mute' }))}</Row>
           <Row label="Subtitles">{toggle(tv.subtitles, ['On', 'Off'], () => tv.dispatch({ type: 'subtitles' }))}</Row>
+        </Card>
+
+        <Card title="Playback">
+          <p className="options-note">
+            When this is on, unpausing a clip continues from the moment you paused it. When it is off, unpausing rejoins wherever the Guide
+            timeline has moved on to.
+          </p>
+          <Row label="Resume where paused">{toggle(holdPause, ['On', 'Off'], () => setResumeFromPause(!holdPause))}</Row>
         </Card>
 
         <Card title="Display">

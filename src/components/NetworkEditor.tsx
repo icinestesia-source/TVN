@@ -39,6 +39,8 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState<number | null>(null)
   const [confirm, setConfirm] = useState<'alphabetical' | 'shuffle' | null>(null)
+  const [picking, setPicking] = useState(false)
+  const [picked, setPicked] = useState<ReadonlySet<number>>(() => new Set())
   // X asks once: the channel id waiting for its second press.
   const [deleting, setDeleting] = useState<string | null>(null)
   const [targets, setTargets] = useState<Record<string, string>>({})
@@ -221,6 +223,41 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
     }
   }
 
+  const stopPicking = () => {
+    setPicking(false)
+    setPicked(new Set())
+  }
+
+  /** EXPORT on the User tab: tick the channels, then the same button saves just those as a JSON file. */
+  const exportChosen = async () => {
+    if (!picking) {
+      setConfirm(null)
+      setPicking(true)
+      setPicked(new Set())
+      return
+    }
+    const numbers = users.map((channel) => channel.number).filter((number) => picked.has(number))
+    if (numbers.length === 0 || busy) return
+    setBusy(true)
+    try {
+      setNote(await tv.exportPicked(numbers))
+      stopPicking()
+    } catch (caught) {
+      setNote(viewerMessage(caught, 'THE EXPORT COULD NOT BE SAVED'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const togglePicked = (number: number) => {
+    setPicked((current) => {
+      const next = new Set(current)
+      if (next.has(number)) next.delete(number)
+      else next.add(number)
+      return next
+    })
+  }
+
   const neighbour = (channel: Channel, step: -1 | 1) => users[users.findIndex((item) => item.number === channel.number) + step]?.number
 
   const rowKey = (event: KeyboardEvent<HTMLLIElement>, channel: Channel) => {
@@ -270,6 +307,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               onClick={() => {
                 setList(id)
                 setConfirm(null)
+                stopPicking()
               }}
             >
               {label}
@@ -283,11 +321,41 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               <button type="button" className={confirm === 'shuffle' ? 'tab is-on' : 'tab'} disabled={busy || users.length < 2} onKeyDown={keepKey} onClick={() => void arrange('shuffle')} title="Shuffle the User Network once and renumber from 1001">
                 {confirm === 'shuffle' ? 'Randomise User Network?' : 'Randomise'}
               </button>
+              <button
+                type="button"
+                className={picking ? 'tab is-on' : 'tab'}
+                disabled={busy || users.length === 0 || (picking && picked.size === 0)}
+                onKeyDown={keepKey}
+                onClick={() => void exportChosen()}
+                title="Choose User channels, then save them as a new list with no gaps"
+              >
+                {picking ? `Export ${picked.size}` : 'Export'}
+              </button>
+              {picking ? (
+                <>
+                  <button
+                    type="button"
+                    className="tab"
+                    disabled={busy}
+                    onKeyDown={keepKey}
+                    onClick={() => setPicked(picked.size === users.length ? new Set() : new Set(users.map((channel) => channel.number)))}
+                  >
+                    {picked.size === users.length ? 'None' : 'All'}
+                  </button>
+                  <button type="button" className="tab" disabled={busy} onKeyDown={keepKey} onClick={stopPicking}>
+                    Cancel
+                  </button>
+                </>
+              ) : null}
             </span>
           ) : null}
         </div>
         <p className="network-hint">
-          {canMove ? 'Move your channels with ↑ ↓, MOVE TO, Alt+↑ ↓ or by dragging: the User Network renumbers from 1001. TVN’s own 001–999 keep their numbers.' : 'Favourites are listed in your own order.'}
+          {picking
+            ? 'Tick the channels to include, then Export. They are saved as a new list, numbered one after another, with no gaps where a channel was left out.'
+            : canMove
+              ? 'Move your channels with ↑ ↓, MOVE TO, Alt+↑ ↓ or by dragging: the User Network renumbers from 1001. TVN’s own 001–999 keep their numbers.'
+              : 'Favourites are listed in your own order.'}
         </p>
         {note ? (
           <p className="options-status" role="status">
@@ -295,7 +363,7 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
           </p>
         ) : null}
       </div>
-      <ol ref={listRef} className="network-list" aria-label="Channels">
+      <ol ref={listRef} className={picking ? 'network-list is-picking' : 'network-list'} aria-label="Channels">
         {rows.map((channel) => {
           const user = isUser(channel)
           const favourite = tv.favourites.includes(channel.number)
@@ -318,6 +386,15 @@ export function NetworkEditor({ onEdit }: { onEdit: (channelNumber: number) => v
               onDrop={movable ? (event) => drop(event, channel) : undefined}
               onKeyDown={(event) => rowKey(event, channel)}
             >
+              {picking && user ? (
+                <input
+                  type="checkbox"
+                  className="network-pick"
+                  checked={picked.has(channel.number)}
+                  aria-label={`Export ${channel.name}`}
+                  onChange={() => togglePicked(channel.number)}
+                />
+              ) : null}
               <button
                 type="button"
                 className={opened === channel.id ? 'network-number network-open is-on' : 'network-number network-open'}

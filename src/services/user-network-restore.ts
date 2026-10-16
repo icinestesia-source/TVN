@@ -1,9 +1,9 @@
-import { isOwnNumber, USER_NUMBER_START } from '../data/network.ts'
+import { isOwnNumber, USER_NUMBER_LIMIT, USER_NUMBER_START } from '../data/network.ts'
 import { cleanEditorial, cleanFilter, rescanned, SOURCE_MODES, sourceModeOf, type SourceMode } from './channel-curation.ts'
 import { cleanName, keptOrder, widenSources, withPlaylistVideos } from './channel-editor.ts'
 import { canonicalYouTubeUrl, inventoryOf, singleVideoId, type ChannelSource } from './channel-sources.ts'
 import { EMPTY_SLOT_NAME, emptySlotRecord, sourceIdFor, videoCreator, type ImportedVideo, type StoredSource } from './channels-import.ts'
-import { ADDED_PREFIX } from './user-network.ts'
+import { ADDED_PREFIX, nextUserNumber } from './user-network.ts'
 import { TVN_OWNER, type NetworkUser } from '../data/user-network/users.ts'
 import { CHANNEL_ID, publicMediaAddress, shareableUrl, storedKindOf, validateUserNetworkExport, type ExportChannel, type ExportSource, type UserNetworkExport } from './user-network-export.ts'
 
@@ -353,10 +353,45 @@ export const inRange = (number: number | null | undefined, range: ChannelRange):
  * A range restore: the viewer's own channels inside the range become exactly the file's; every channel
  * outside it stays as it is. A record elsewhere with the same id as a restored channel gives way to it.
  */
-export function restoreChannelRange(existing: readonly StoredSource[], restored: readonly StoredSource[], range: ChannelRange): StoredSource[] {
-  const incoming = restored.filter((record) => isOwnNumber(record.channelNumber) && inRange(record.channelNumber, range))
+/**
+ * A ticked selection joins the end of the User Network as its own list: the next free number, then the one
+ * after, with no gaps. Channels already there stay, including any that sat between the ones that were ticked.
+ */
+export function appendPackedChannels(existing: readonly StoredSource[], incoming: readonly StoredSource[]): { sources: StoredSource[]; placed: StoredSource[] } {
+  const filled = incoming.filter((record) => isOwnNumber(record.channelNumber) && !record.emptySlot).sort((a, b) => (a.channelNumber ?? 0) - (b.channelNumber ?? 0))
+  const start = nextUserNumber(existing)
+  if (start === null || start + filled.length >= USER_NUMBER_LIMIT) throw new Error('The User Network is full')
+  const used = new Set(existing.map((record) => record.id))
+  const placed = filled.map((record, index) => {
+    const channelNumber = start + index
+    let id = record.id
+    let extra = 2
+    while (used.has(id)) {
+      id = `${record.id}:${channelNumber}${extra === 2 ? '' : `:${extra}`}`
+      extra += 1
+    }
+    used.add(id)
+    return { ...record, id, channelNumber }
+  })
+  return { sources: [...existing, ...placed], placed }
+}
+
+/** Favourites for a selection added as a new list: the file's, moved onto the numbers just given, plus every Favourite already kept. */
+export function favouritesAfterAppend(current: readonly number[], fromFile: readonly number[], fileNumbers: readonly number[], placedNumbers: readonly number[]): number[] {
+  const moved = new Map(fileNumbers.map((number, index) => [number, placedNumbers[index]]))
+  const added = fromFile.flatMap((number) => {
+    const next = moved.get(number)
+    return next !== undefined && !current.includes(next) ? [next] : []
+  })
+  return [...current, ...added]
+}
+
+export function restoreChannelRange(existing: readonly StoredSource[], restored: readonly StoredSource[], range: ChannelRange, picked?: readonly number[]): StoredSource[] {
+  const chosen = picked ? new Set(picked) : null
+  const touches = (number: number | null) => isOwnNumber(number) && (chosen ? chosen.has(number) : inRange(number, range))
+  const incoming = restored.filter((record) => touches(record.channelNumber))
   const ids = new Set(incoming.map((record) => record.id))
-  const kept = existing.filter((record) => !(isOwnNumber(record.channelNumber) && inRange(record.channelNumber, range)) && !ids.has(record.id))
+  const kept = existing.filter((record) => !touches(record.channelNumber) && !ids.has(record.id))
   return [...kept, ...incoming]
 }
 
@@ -367,9 +402,11 @@ export function usersAfterRangeRestore(current: readonly NetworkUser[], doc: Use
 }
 
 /** Favourites inside the range become the file's; every other Favourite stays. */
-export function favouritesAfterRangeRestore(current: readonly number[], fromFile: readonly number[], range: ChannelRange): number[] {
-  const kept = current.filter((number) => !inRange(number, range))
-  return [...kept, ...fromFile.filter((number) => inRange(number, range) && !kept.includes(number))]
+export function favouritesAfterRangeRestore(current: readonly number[], fromFile: readonly number[], range: ChannelRange, picked?: readonly number[]): number[] {
+  const chosen = picked ? new Set(picked) : null
+  const touches = (number: number) => (chosen ? chosen.has(number) : inRange(number, range))
+  const kept = current.filter((number) => !touches(number))
+  return [...kept, ...fromFile.filter((number) => touches(number) && !kept.includes(number))]
 }
 
 /**

@@ -14,30 +14,6 @@
 
 @keyframes fx-reveal { to { opacity: 0; } }
 
-.fx-tint {
-  position: absolute;
-  inset: 0;
-  background: var(--fx-tint);
-  mix-blend-mode: multiply;
-}
-.fx-tint.is-blend {
-  background-size: 300% 300%;
-  animation: fx-tint-sweep var(--fx-ms) linear infinite;
-}
-@keyframes fx-tint-sweep {
-  from {
-    background-position: 0% 50%;
-  }
-  to {
-    background-position: 100% 50%;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .fx-tint.is-blend {
-    animation: none;
-  }
-}
-
 /* Analogue static: scan lines and a rolling hold bar over heavy snow. */
 .fx-scan {
   position: absolute;
@@ -63,9 +39,12 @@
 .fx-beam {
   position: absolute;
   inset: 0;
-  background: #f2f6ff;
-  box-shadow: 0 0 40px 12px rgba(220, 235, 255, 0.85);
+  background: var(--fx-fill, #f2f6ff);
+  box-shadow: 0 0 40px 12px color-mix(in srgb, var(--fx-fill, #f2f6ff) 85%, transparent);
   animation: fx-collapse var(--fx-ms) cubic-bezier(0.6, 0, 0.4, 1) forwards;
+}
+.fx.has-fill .fx-beam {
+  background-size: 200% 200%;
 }
 
 @keyframes fx-collapse {
@@ -119,8 +98,11 @@
 .fx-flash-light {
   position: absolute;
   inset: 0;
-  background: #fff;
+  background: var(--fx-fill, #fff);
   animation: fx-flash var(--fx-ms) ease-out forwards;
+}
+.fx.has-fill .fx-flash-light {
+  background-size: 200% 200%;
 }
 
 @keyframes fx-flash {
