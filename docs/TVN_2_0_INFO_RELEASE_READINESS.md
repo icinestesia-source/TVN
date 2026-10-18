@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-18  
 **Branch:** `main`  
-**Local HEAD:** `1a3e072`  
+**Local HEAD:** `4662ad5`  
 **Production tip (origin/main):** `6aefa9f` — *v2.3*  
 **This document does not authorise push or deploy.**
 
