@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { FOOTBALL_COMPETITIONS, competitionDef, competitionsByRegion, isKnockoutCompetition } from '../../info/football/competitions.ts'
 import { diagnoseFootballEmpty } from '../../info/football/empty-state.ts'
 import { loadFootballSnapshot, type FootballLoadState } from '../../info/football/load.ts'
-import { daysWithMatches, matchesForCompetition } from '../../info/football/match-lists.ts'
+import { chronologicalMatches, daysWithMatches, matchesForCompetition, nextDayWithMatches } from '../../info/football/match-lists.ts'
 import { kickoffLocalDayIso, matchesOnDay, statusLabel, todayIso } from '../../info/football/normalize.ts'
 import { isFootballEntitlementError } from '../../info/football/snapshot-safety.ts'
 import { favouriteFromTeam, latestResult, nextFixture, searchTeams, teamsFromSnapshot } from '../../info/football/teams.ts'
@@ -139,11 +139,17 @@ export function FootballPanel() {
 
   useEffect(() => {
     let live = true
-    void loadFootballSnapshot().then((next) => {
-      if (live) setState(next)
-    })
+    const pull = () => {
+      void loadFootballSnapshot().then((next) => {
+        if (live) setState(next)
+      })
+    }
+    pull()
+    // The published snapshot can change without a site rebuild. Refresh quietly while Info is open.
+    const id = window.setInterval(pull, 5 * 60 * 1000)
     return () => {
       live = false
+      window.clearInterval(id)
     }
   }, [])
 
@@ -173,8 +179,9 @@ export function FootballPanel() {
     return matchesForCompetition(snapshot.matches, competitionId)
   }, [snapshot, competitionId])
 
-  const dayMatches = useMemo(() => matchesOnDay(filtered, selectedDayIso), [filtered, selectedDayIso])
+  const dayMatches = useMemo(() => chronologicalMatches(matchesOnDay(filtered, selectedDayIso)), [filtered, selectedDayIso])
   const dataDays = useMemo(() => daysWithMatches(filtered), [filtered])
+  const nextMatchDay = useMemo(() => nextDayWithMatches(dataDays, selectedDayIso), [dataDays, selectedDayIso])
 
   const competitionName = (id: string) =>
     competitionDef(id)?.name ?? snapshot?.competitions.find((entry) => entry.id === id)?.name ?? id
@@ -657,12 +664,12 @@ export function FootballPanel() {
           <div className="info-day-nav" role="group" aria-label="Match date">
             <button
               type="button"
-              className="tab"
+              className="tab info-day-arrow"
               aria-label="Previous day"
               onKeyDown={keepKey}
               onClick={() => setSelectedDayIso((day) => shiftSelectedDay(day, -1))}
             >
-              Previous day
+              ‹
             </button>
             <p className="info-day-nav-date" aria-live="polite">
               {formatSelectedDayLabel(selectedDayIso)}
@@ -670,15 +677,27 @@ export function FootballPanel() {
             </p>
             <button
               type="button"
-              className="tab"
+              className="tab info-day-arrow"
               aria-label="Next day"
               onKeyDown={keepKey}
               onClick={() => setSelectedDayIso((day) => shiftSelectedDay(day, 1))}
             >
-              Next day
+              ›
             </button>
             <button type="button" className={selectedDayIso === today ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={goToday}>
               Today
+            </button>
+            <button
+              type="button"
+              className="tab"
+              disabled={nextMatchDay === null}
+              title={nextMatchDay ? `Next matches · ${formatSelectedDayLabel(nextMatchDay)}` : 'No later matches in the published snapshot'}
+              onKeyDown={keepKey}
+              onClick={() => {
+                if (nextMatchDay) setSelectedDayIso(nextMatchDay)
+              }}
+            >
+              Next matches
             </button>
             <DayCalendar selectedDayIso={selectedDayIso} onSelect={setSelectedDayIso} daysWithData={dataDays} />
           </div>

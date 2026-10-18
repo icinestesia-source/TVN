@@ -228,14 +228,14 @@ describe('GUIDE and NOW in the header', () => {
 })
 
 describe('LOADING RING in Firefox', () => {
-  it('fills each rim without relying on textLength alone: spare length is shared between the letters as dx', () => {
+  it('fits one copy of each phrase to the circle from its measured length', () => {
     const ring = read('src/components/StartupScreen.tsx')
     expect(ring).toContain('getComputedTextLength')
-    expect(ring).toContain('(length - 0.5 - natural) / Math.max(1, letters.length)')
-    expect(ring).toContain('dx={gap && index > 0 ? gap.toFixed(3) : undefined}')
-    expect(ring).toContain('textLength={length - 0.5} lengthAdjust="spacing"')
+    expect(ring).toContain('(length - 1) / natural')
+    expect(ring).not.toContain('lengthAdjust')
     expect(ring).toContain('OUTER_RING_COPY')
     expect(ring).toContain('INNER_RING_COPY')
+    expect(ring).not.toContain('SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · SIGNAL ACTIVE')
   })
 })
 

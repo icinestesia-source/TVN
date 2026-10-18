@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { WeatherPanel } from './components/info/WeatherPanel.tsx'
 import { INFO_MODULES } from './components/InfoCentre.tsx'
+import { NATIONAL_MAPS, projectPlace, readingsFromPayload } from './info/weather/national-maps.ts'
 import { forecastFromPayload, searchWeatherLocations, weatherConditionLabel } from './info/weather/open-meteo.ts'
 import { pickActiveLocation } from './info/weather/storage.ts'
 import { DEFAULT_WEATHER_LOCATION, type WeatherLocation } from './info/weather/types.ts'
@@ -21,6 +22,21 @@ describe('INFO weather', () => {
     expect(INFO_MODULES.map((module) => module.id)).toContain('weather')
     const markup = renderToStaticMarkup(createElement(WeatherPanel))
     expect(markup).toMatch(/Weather|Loading weather|Open-Meteo/i)
+    expect(markup).toContain('>Map<')
+  })
+
+  it('plots national maps from Open-Meteo readings and does not invent a missing temperature', () => {
+    const uk = NATIONAL_MAPS.find((region) => region.id === 'uk')!
+    expect(NATIONAL_MAPS.map((region) => region.id)).toEqual(['uk', 'ireland', 'france', 'germany', 'spain', 'italy', 'europe', 'usa'])
+    const london = projectPlace(uk, { latitude: uk.north, longitude: uk.west })
+    expect(london.y).toBeLessThan(20)
+    const readings = readingsFromPayload(uk, [
+      { current: { temperature_2m: 11, weather_code: 2 } },
+      { current: { temperature_2m: null, weather_code: 0 } },
+    ])
+    expect(readings[0]).toMatchObject({ name: 'Lerwick', temperatureC: 11, weatherCode: 2 })
+    expect(readings[1].temperatureC).toBeNull()
+    expect(readings).toHaveLength(uk.places.length)
   })
 
   it('parses Open-Meteo payloads and never invents temperatures', () => {

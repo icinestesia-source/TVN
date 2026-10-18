@@ -2,7 +2,10 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { SESSION_LOGO } from './logos.ts'
 import { pointerAngle, releaseSpin, slowedSpin, turnBetween, useLoadingLogo, wheelSpin } from '../view/loading-logo.ts'
 import type { StartupPhase } from '../state/startup.ts'
-import { ringColour } from './ring-colour.ts'
+import { RING_COLOURS, ringColour } from './ring-colour.ts'
+import { parseHex, shadeTowards } from './StaticOverlay.tsx'
+import { snowColours } from './TransitionOverlay.tsx'
+import { DEFAULT_TRANSITION_SETTINGS, loadTransitionSettings, TRANSITIONS } from '../state/transitions.ts'
 
 export const BRAND = 'TVN'
 
@@ -27,8 +30,7 @@ export const STARTUP_STATUS_LINES = [
 export const OUTER_RING_COPY =
   'TVN · INDEPENDENT TELEVISION NETWORK · BROADCASTING CONTINUOUSLY · TELEVISION WITHOUT BOUNDARIES · CHANNELS · CULTURE · MUSIC · CINEMA · ENTERTAINMENT · '
 
-export const INNER_RING_COPY =
-  'SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · '
+export const INNER_RING_COPY = 'SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · '
 
 const NOISE_FRAMES = 4
 
@@ -36,8 +38,9 @@ const NOISE_FRAMES = 4
  * Static for the startup screen: a few frames drawn once and stepped through by a CSS transform, which keeps
  * running while the network is still being worked out on the main thread.
  */
-function StartupNoise() {
+function StartupNoise({ colours }: { colours: readonly string[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const paletteKey = colours.join('|')
   useEffect(() => {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d', { alpha: false })
@@ -48,22 +51,24 @@ function StartupNoise() {
     canvas.height = height * NOISE_FRAMES
     const image = context.createImageData(width, height * NOISE_FRAMES)
     const data = image.data
+    const palette = (paletteKey ? paletteKey.split('|') : []).map(parseHex).filter((rgb) => rgb !== null)
     for (let frame = 0; frame < NOISE_FRAMES; frame += 1) {
       const level = 150 + Math.random() * 40
       const band = frame * height + Math.floor(Math.random() * (height - 2))
       for (let row = frame * height; row < (frame + 1) * height; row += 1) {
         for (let x = 0; x < width; x += 1) {
           const pixel = (row * width + x) * 4
-          const value = row === band ? 190 + Math.random() * 50 : Math.random() * level
-          data[pixel] = value
-          data[pixel + 1] = value
-          data[pixel + 2] = value
+          const grey = row === band ? 190 + Math.random() * 50 : Math.random() * level
+          const [red, green, blue] = palette.length ? shadeTowards(palette[Math.floor(Math.random() * palette.length)]!, grey) : [grey, grey, grey]
+          data[pixel] = red
+          data[pixel + 1] = green
+          data[pixel + 2] = blue
           data[pixel + 3] = 255
         }
       }
     }
     context.putImageData(image, 0, 0)
-  }, [])
+  }, [paletteKey])
   return (
     <div className="startup-noise" aria-hidden="true">
       <canvas ref={canvasRef} className="startup-noise-frames" />
@@ -106,13 +111,16 @@ function RingText({
   phrase: string
   className: string
 }) {
-  const letters = [...phrase]
   const measure = useRef<SVGTextElement>(null)
-  const [gap, setGap] = useState(0)
+  const [size, setSize] = useState<number | null>(null)
   useLayoutEffect(() => {
-    const natural = measure.current?.getComputedTextLength?.() ?? 0
-    setGap(natural > 0 ? (length - 0.5 - natural) / Math.max(1, letters.length) : 0)
-  }, [phrase, length, letters.length])
+    const node = measure.current
+    const natural = node?.getComputedTextLength?.() ?? 0
+    if (!node || natural <= 0) return
+    const current = Number.parseFloat(window.getComputedStyle(node).fontSize) || 3.55
+    // One copy of the phrase around the circle. Growing and shrinking both stay on a single lap.
+    setSize(Math.max(1.7, Math.min(5.2, current * ((length - 1) / natural))))
+  }, [phrase, length])
 
   return (
     <>
@@ -120,16 +128,10 @@ function RingText({
         <path id={id} d={path} />
       </defs>
       <text ref={measure} className={className} visibility="hidden" xmlSpace="preserve">
-        {letters.join('')}
+        {phrase}
       </text>
-      <text className={className}>
-        <textPath href={`#${id}`} textLength={length - 0.5} lengthAdjust="spacing">
-          {letters.map((letter, index) => (
-            <tspan key={index} dx={gap && index > 0 ? gap.toFixed(3) : undefined}>
-              {letter}
-            </tspan>
-          ))}
-        </textPath>
+      <text className={className} style={size ? { fontSize: `${size}px` } : undefined}>
+        <textPath href={`#${id}`}>{phrase}</textPath>
       </text>
     </>
   )
@@ -200,10 +202,16 @@ function CalibrationLayer() {
  * Dual typographic rings around the logo — broadcast outer copy, technical inner copy.
  * Percent is not drawn on the rings (real progress stays in the accessible status text).
  */
-export function LoadingRing({ percent: _percent }: { percent?: number }) {
-  const [colour] = useState(() => ringColour())
+export function LoadingRing({ percent: _percent, colours = [] }: { percent?: number; colours?: readonly string[] }) {
+  const [fallback] = useState(() => ringColour())
+  const outer = colours[0] ?? fallback
+  const inner = colours[1] ?? colours[0] ?? '#5ce1ff'
   return (
-    <div className="startup-rings" aria-hidden="true" style={{ ['--ring-colour' as string]: colour } as CSSProperties}>
+    <div
+      className="startup-rings"
+      aria-hidden="true"
+      style={{ ['--ring-colour' as string]: outer, ['--ring-colour-inner' as string]: inner } as CSSProperties}
+    >
       <CalibrationLayer />
       <svg className="startup-ring startup-ring-outer" viewBox="0 0 100 100" focusable="false">
         <RingText id="startup-ring-outer-path" path={OUTER_PATH} length={OUTER_LENGTH} phrase={OUTER_RING_COPY} className="startup-ring-text startup-ring-text-outer" />
@@ -324,6 +332,11 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
   const loading = phase === 'loading'
   const logo = useLoadingLogo()
   const percent = useCountUp(Math.round(Math.min(100, Math.max(0, progress))))
+  const look = useState(() => {
+    const saved = loadTransitionSettings()
+    const visual = saved.id === 'instant' || !TRANSITIONS[saved.id] ? DEFAULT_TRANSITION_SETTINGS : saved
+    return snowColours(visual.colours, visual.custom, visual)
+  })[0]
   const leftRef = useRef(false)
   const leave = () => {
     if (leftRef.current) return
@@ -354,12 +367,11 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
         if (event.target === event.currentTarget && phase === 'ready') leave()
       }}
     >
-      <StartupNoise />
-      <div className="startup-veil" aria-hidden="true" />
+      <StartupNoise colours={look} />
       <div className="startup-ident">
         <div className="startup-emblem">
           {logo === 'spin' && !failed ? <SpinLogo /> : <img className="startup-logo" src={SESSION_LOGO} alt={BRAND} width={640} height={640} />}
-          {failed ? null : <LoadingRing percent={percent} />}
+          {failed ? null : <LoadingRing percent={percent} colours={look.length ? look : RING_COLOURS} />}
         </div>
         {failed ? (
           <>
@@ -372,7 +384,7 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
         ) : (
           <>
             <StartupStatus />
-            <p className="startup-message sr">
+            <p className="startup-message startup-progress">
               {STARTUP_COPY.loading}
               <span className="startup-percent" aria-label={`${percent} percent loaded`}>
                 {percent}%

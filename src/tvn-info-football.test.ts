@@ -27,7 +27,7 @@ import {
   shouldWriteFootballBlob,
 } from './info/football/snapshot-safety.ts'
 import { shiftSelectedDay } from './components/info/DayCalendar.tsx'
-import { footballIngestForced, footballSlotDue, FOOTBALL_SCHEDULE_SLOTS } from './info/football/schedule.ts'
+import { footballIngestForced, footballSlotDue } from './info/football/schedule.ts'
 import type { FootballMatch } from './info/football/types.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
@@ -132,28 +132,24 @@ describe('INFO football', () => {
   })
 
   it('gates scheduled refresh in Europe/London including weekend match windows', () => {
-    expect(FOOTBALL_SCHEDULE_SLOTS).toHaveLength(12)
     // Monday 22:05 BST (2026-10-19 is a Monday; BST ends 25 Oct 2026)
     const monday = footballSlotDue(new Date('2026-10-19T21:05:00.000Z'))
     expect(monday?.key).toContain('T22:00')
+    // Same half hour is one publish, so a second run does not call the provider again.
+    expect(footballSlotDue(new Date('2026-10-19T21:20:00.000Z'))?.key).toBe(monday?.key)
     // Saturday 17:10 BST
     const satAfternoon = footballSlotDue(new Date('2026-10-17T16:10:00.000Z'))
     expect(satAfternoon?.key).toContain('T17:00')
     // Saturday 19:40 BST — 17:30 kick-offs are full time
     const satEvening = footballSlotDue(new Date('2026-10-17T18:40:00.000Z'))
     expect(satEvening?.key).toContain('T19:30')
-    // Saturday 22:40 BST
-    const satLate = footballSlotDue(new Date('2026-10-17T21:40:00.000Z'))
-    expect(satLate?.key).toContain('T22:30')
-    // Sunday 18:05 BST (2026-10-18) — requested afternoon/evening score refresh
+    // Sunday 18:05 BST (2026-10-18)
     const sundaySix = footballSlotDue(new Date('2026-10-18T17:05:00.000Z'))
     expect(sundaySix?.key).toContain('T18:00')
-    const sundayFour = footballSlotDue(new Date('2026-10-18T15:05:00.000Z'))
-    expect(sundayFour?.key).toContain('T16:00')
-    const sundayEight = footballSlotDue(new Date('2026-10-18T19:05:00.000Z'))
-    expect(sundayEight?.key).toContain('T20:00')
-    // Midday — not due
+    // Weekday midday — not due
     expect(footballSlotDue(new Date('2026-10-19T12:00:00.000Z'))).toBeNull()
+    // Weekend midday is due (La Liga and Premier League kick-offs)
+    expect(footballSlotDue(new Date('2026-10-18T12:10:00.000Z'))?.key).toContain('T13:00')
     // GMT winter: Sunday 18:05 GMT = 18:05Z on 2026-11-01
     const winterSunday = footballSlotDue(new Date('2026-11-01T18:05:00.000Z'))
     expect(winterSunday?.key).toContain('T18:00')
@@ -161,7 +157,10 @@ describe('INFO football', () => {
     expect(winter?.key).toContain('T22:00')
     expect(footballIngestForced({ FOOTBALL_INGEST_FORCE: '1' })).toBe(true)
     expect(footballIngestForced({})).toBe(false)
-    expect(read('.github/workflows/info-ingest.yml')).toContain('15,16,17,18,19,20,21,22')
+    expect(read('.github/workflows/info-ingest.yml')).toContain('Blobs only')
+    expect(read('src/components/info/FootballPanel.tsx')).toContain('Next matches')
+    expect(read('src/components/info/FootballPanel.tsx')).toContain('aria-label="Previous day"')
+    expect(read('src/info/football/competitions.ts')).toContain("code: 'PD'")
   })
 
   it('normalises mocked provider fixtures, including empty competitions and delayed in-play', async () => {

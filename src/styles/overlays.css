@@ -267,7 +267,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .startup-noise-frames {
@@ -280,15 +280,6 @@
 
 @keyframes startup-noise {
   to { transform: translateY(-100%); }
-}
-
-.startup-veil {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 55% 50% at 50% 46%, rgba(18, 22, 28, 0.15) 0%, rgba(7, 8, 10, 0.72) 62%, #07080a 100%),
-    linear-gradient(180deg, rgba(120, 24, 24, 0.08), transparent 28%, transparent 72%, rgba(20, 70, 90, 0.1));
 }
 
 .startup-ident {
@@ -405,12 +396,12 @@
 
 .startup-ring-text-outer {
   font-size: 3.55px;
-  fill: rgba(245, 246, 248, 0.92);
+  fill: var(--ring-colour, #ffd15c);
 }
 
 .startup-ring-text-inner {
   font-size: 3.05px;
-  fill: rgba(130, 210, 220, 0.88);
+  fill: var(--ring-colour-inner, #5ce1ff);
 }
 
 .startup-status {

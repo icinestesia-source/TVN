@@ -31,3 +31,13 @@ export function daysWithMatches(matches: readonly FootballMatch[]): Set<string> 
   for (const match of matches) days.add(kickoffLocalDayIso(match.kickoffIso))
   return days
 }
+
+/** The next local day after `fromIso` that has at least one match, or null. */
+export function nextDayWithMatches(days: ReadonlySet<string>, fromIso: string): string | null {
+  let next: string | null = null
+  for (const day of days) {
+    if (day <= fromIso) continue
+    if (next === null || day < next) next = day
+  }
+  return next
+}

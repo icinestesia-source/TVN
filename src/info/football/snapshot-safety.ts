@@ -48,6 +48,9 @@ export function entitlementSkipCodes(prior: FootballSnapshot | null): string[] {
     if (!isFootballEntitlementError(entry)) continue
     const code = entry.split(/\s/)[0]
     if (!code) continue
+    // Only League One is held back after an entitlement error. La Liga, Premier League and the
+    // other free-plan competitions are always requested again so one refusal cannot hide them.
+    if (code !== 'EL1') continue
     if (prior.matches.some((match) => match.competitionId === code)) continue
     if (prior.tables.some((table) => table.competitionId === code)) continue
     out.push(code)

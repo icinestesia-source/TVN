@@ -12,13 +12,15 @@ import {
   type WeatherProviderId,
 } from '../../info/preferences.ts'
 import { keepKey } from '../keep-key.ts'
+import { WeatherMap } from './WeatherMap.tsx'
 
-type Section = 'today' | 'hourly' | 'week' | 'locations'
+type Section = 'today' | 'hourly' | 'week' | 'map' | 'locations'
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'today', label: 'Today' },
   { id: 'hourly', label: 'Hourly' },
   { id: 'week', label: '7 days' },
+  { id: 'map', label: 'Map' },
   { id: 'locations', label: 'Locations' },
 ]
 
@@ -292,6 +294,8 @@ export function WeatherPanel() {
           </button>
           <p className="info-panel-meta">Precise device location is never requested automatically.</p>
         </div>
+      ) : section === 'map' ? (
+        <WeatherMap tempUnit={tempUnit} />
       ) : status === 'loading' && !forecast ? (
         <p className="options-note">Loading weather…</p>
       ) : status === 'error' || !forecast ? (
