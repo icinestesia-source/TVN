@@ -1,15 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { fetchMetNorwayForecast, MET_NORWAY_BROWSER_LIMITATION } from '../../info/weather/met-norway.ts'
 import { fetchWeatherForecast, searchWeatherLocations, weatherConditionLabel, weatherSymbol } from '../../info/weather/open-meteo.ts'
-import {
-  loadActiveLocationId,
-  loadSavedLocations,
-  pickActiveLocation,
-  readForecastCache,
-  saveActiveLocationId,
-  saveLocations,
-  writeForecastCache,
-} from '../../info/weather/storage.ts'
+import { readForecastCache, writeForecastCache } from '../../info/weather/storage.ts'
 import type { WeatherForecast, WeatherLocation } from '../../info/weather/types.ts'
+import { formatTemp, formatWind } from '../../info/weather/units.ts'
+import {
+  defaultInfoPreferences,
+  loadInfoPreferences,
+  saveInfoPreferences,
+  type InfoPreferences,
+  type WeatherProviderId,
+} from '../../info/preferences.ts'
 import { keepKey } from '../keep-key.ts'
 
 type Section = 'today' | 'hourly' | 'week' | 'locations'
@@ -20,10 +21,6 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: 'week', label: '7 days' },
   { id: 'locations', label: 'Locations' },
 ]
-
-function formatTemp(value: number): string {
-  return `${Math.round(value)}°`
-}
 
 function formatWhen(iso: string): string {
   const ms = Date.parse(iso)
@@ -44,18 +41,35 @@ function formatDay(date: string): string {
 }
 
 function locationLabel(location: WeatherLocation): string {
-  const parts = [location.name, location.admin1, location.country].filter(Boolean)
-  return parts.join(', ')
+  return [location.name, location.admin1, location.country].filter(Boolean).join(', ')
+}
+
+function orderedLocations(prefs: InfoPreferences): WeatherLocation[] {
+  const map = new Map(prefs.weather.locations.map((entry) => [entry.id, entry]))
+  const ordered = prefs.weather.locationOrder.map((id) => map.get(id)).filter(Boolean) as WeatherLocation[]
+  for (const entry of prefs.weather.locations) {
+    if (!ordered.some((row) => row.id === entry.id)) ordered.push(entry)
+  }
+  return ordered
+}
+
+async function loadForecast(location: WeatherLocation, provider: WeatherProviderId): Promise<WeatherForecast> {
+  if (provider === 'met-norway') return fetchMetNorwayForecast(location)
+  return fetchWeatherForecast(location)
 }
 
 /**
- * INFO → Weather. Open-Meteo is queried from the browser for the selected location only.
- * Failures stay inside this panel and never touch television playback.
+ * INFO → Weather. Preferences (units, locations, provider) are local; forecasts are fetched per location.
  */
 export function WeatherPanel() {
+  const [prefs, setPrefs] = useState<InfoPreferences>(() => {
+    try {
+      return loadInfoPreferences()
+    } catch {
+      return defaultInfoPreferences()
+    }
+  })
   const [section, setSection] = useState<Section>('today')
-  const [saved, setSaved] = useState<WeatherLocation[]>(() => loadSavedLocations())
-  const [activeId, setActiveId] = useState<string | null>(() => loadActiveLocationId())
   const [forecast, setForecast] = useState<WeatherForecast | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [message, setMessage] = useState<string | null>(null)
@@ -63,7 +77,14 @@ export function WeatherPanel() {
   const [results, setResults] = useState<WeatherLocation[]>([])
   const [searching, setSearching] = useState(false)
 
-  const active = pickActiveLocation(saved, activeId)
+  const locations = orderedLocations(prefs)
+  const activeId = prefs.weather.defaultLocationId ?? locations[0]?.id
+  const active = locations.find((entry) => entry.id === activeId) ?? locations[0] ?? defaultInfoPreferences().weather.locations[0]
+
+  const persist = (next: InfoPreferences) => {
+    saveInfoPreferences(next)
+    setPrefs(next)
+  }
 
   useEffect(() => {
     let live = true
@@ -71,11 +92,10 @@ export function WeatherPanel() {
     if (cached) {
       setForecast(cached)
       setStatus('ready')
-      setMessage(null)
     } else {
       setStatus('loading')
     }
-    void fetchWeatherForecast(active)
+    void loadForecast(active, prefs.weather.provider)
       .then((next) => {
         if (!live) return
         writeForecastCache(next)
@@ -85,26 +105,23 @@ export function WeatherPanel() {
       })
       .catch((caught) => {
         if (!live) return
+        const detail = caught instanceof Error ? caught.message : 'Weather unavailable'
+        if (prefs.weather.provider === 'met-norway') {
+          setMessage(`${detail}. ${MET_NORWAY_BROWSER_LIMITATION}`)
+        } else {
+          setMessage(detail)
+        }
         if (cached) {
           setForecast(cached)
           setStatus('ready')
-          setMessage('Showing cached forecast · live update failed')
         } else {
           setStatus('error')
-          setMessage(caught instanceof Error ? caught.message : 'Weather unavailable')
         }
       })
     return () => {
       live = false
     }
-  }, [active.id, active.latitude, active.longitude, active.timezone])
-
-  const persistSaved = (next: WeatherLocation[], nextActive: string) => {
-    setSaved(next)
-    setActiveId(nextActive)
-    saveLocations(next)
-    saveActiveLocationId(nextActive)
-  }
+  }, [active.id, active.latitude, active.longitude, active.timezone, prefs.weather.provider])
 
   const onSearch = async (event: FormEvent) => {
     event.preventDefault()
@@ -123,21 +140,48 @@ export function WeatherPanel() {
   }
 
   const selectLocation = (location: WeatherLocation) => {
-    const next = saved.some((entry) => entry.id === location.id) ? saved : [...saved, location].slice(0, 12)
-    persistSaved(next, location.id)
+    const nextLocations = locations.some((entry) => entry.id === location.id) ? locations : [...locations, location].slice(0, 12)
+    persist({
+      ...prefs,
+      weather: {
+        ...prefs.weather,
+        locations: nextLocations,
+        locationOrder: nextLocations.map((entry) => entry.id),
+        defaultLocationId: location.id,
+      },
+    })
     setSection('today')
     setResults([])
     setQuery('')
   }
 
   const removeLocation = (id: string) => {
-    const next = saved.filter((entry) => entry.id !== id)
-    const nextActive = activeId === id ? (next[0]?.id ?? '') : (activeId ?? '')
-    persistSaved(next, nextActive)
+    const nextLocations = locations.filter((entry) => entry.id !== id)
+    const nextOrder = nextLocations.map((entry) => entry.id)
+    persist({
+      ...prefs,
+      weather: {
+        ...prefs.weather,
+        locations: nextLocations.length ? nextLocations : defaultInfoPreferences().weather.locations,
+        locationOrder: nextOrder.length ? nextOrder : defaultInfoPreferences().weather.locationOrder,
+        defaultLocationId: activeId === id ? nextOrder[0] ?? defaultInfoPreferences().weather.defaultLocationId : prefs.weather.defaultLocationId,
+      },
+    })
+  }
+
+  const moveLocation = (id: string, dir: -1 | 1) => {
+    const order = [...prefs.weather.locationOrder]
+    const index = order.indexOf(id)
+    if (index < 0) return
+    const next = index + dir
+    if (next < 0 || next >= order.length) return
+    ;[order[index], order[next]] = [order[next], order[index]]
+    persist({ ...prefs, weather: { ...prefs.weather, locationOrder: order } })
   }
 
   const todayMax = forecast?.daily[0]?.tempMaxC
   const tonightMin = forecast?.daily[0]?.tempMinC
+  const { tempUnit, windUnit } = prefs.weather
 
   return (
     <div className="info-panel">
@@ -146,6 +190,8 @@ export function WeatherPanel() {
         {forecast ? ` · Updated ${formatWhen(forecast.updatedIso)}` : ''}
         {message ? ` · ${message}` : ''}
         {forecast ? ` · ${forecast.attribution}` : ' · Weather data by Open-Meteo.com'}
+        {' · '}
+        Provider: {prefs.weather.provider === 'met-norway' ? 'MET Norway' : 'Open-Meteo'}
       </p>
       <div className="tabs" role="tablist" aria-label="Weather sections">
         {SECTIONS.map((entry) => (
@@ -165,19 +211,39 @@ export function WeatherPanel() {
 
       {section === 'locations' ? (
         <div className="info-weather-locations">
+          <p className="info-item-meta">Units</p>
+          <div className="tabs" role="tablist" aria-label="Temperature unit">
+            <button type="button" className={tempUnit === 'celsius' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => persist({ ...prefs, weather: { ...prefs.weather, tempUnit: 'celsius' } })}>
+              °C
+            </button>
+            <button type="button" className={tempUnit === 'fahrenheit' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => persist({ ...prefs, weather: { ...prefs.weather, tempUnit: 'fahrenheit' } })}>
+              °F
+            </button>
+          </div>
+          <div className="tabs" role="tablist" aria-label="Wind unit">
+            <button type="button" className={windUnit === 'kmh' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => persist({ ...prefs, weather: { ...prefs.weather, windUnit: 'kmh' } })}>
+              km/h
+            </button>
+            <button type="button" className={windUnit === 'mph' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => persist({ ...prefs, weather: { ...prefs.weather, windUnit: 'mph' } })}>
+              mph
+            </button>
+          </div>
+          <p className="info-item-meta">Provider</p>
+          <div className="tabs" role="tablist" aria-label="Weather provider">
+            <button type="button" className={prefs.weather.provider === 'open-meteo' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => persist({ ...prefs, weather: { ...prefs.weather, provider: 'open-meteo' } })}>
+              Open-Meteo
+            </button>
+            <button type="button" className={prefs.weather.provider === 'met-norway' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => persist({ ...prefs, weather: { ...prefs.weather, provider: 'met-norway' } })}>
+              MET Norway
+            </button>
+          </div>
+          <p className="info-panel-meta">{MET_NORWAY_BROWSER_LIMITATION}</p>
           <form className="info-weather-search" onSubmit={onSearch}>
             <label className="info-item-meta" htmlFor="weather-search">
               Search town or city
             </label>
             <div className="info-weather-search-row">
-              <input
-                id="weather-search"
-                className="info-weather-input"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="e.g. Manchester"
-                autoComplete="off"
-              />
+              <input id="weather-search" className="info-weather-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. Manchester" autoComplete="off" />
               <button type="submit" className="tab" disabled={searching || query.trim().length < 2} onKeyDown={keepKey}>
                 {searching ? 'Searching…' : 'Search'}
               </button>
@@ -195,27 +261,35 @@ export function WeatherPanel() {
             </ul>
           ) : null}
           <p className="info-item-meta">Saved locations</p>
-          {saved.length === 0 ? (
-            <p className="options-note">No saved locations yet. Search above, or use the default ({DEFAULT_LABEL}).</p>
-          ) : (
-            <ul className="info-list">
-              {saved.map((location) => (
-                <li key={location.id} className="info-item info-weather-saved">
-                  <button
-                    type="button"
-                    className={location.id === active.id ? 'info-item-title is-active' : 'info-item-title'}
-                    onKeyDown={keepKey}
-                    onClick={() => persistSaved(saved, location.id)}
-                  >
-                    {locationLabel(location)}
+          <ul className="info-list">
+            {locations.map((location) => (
+              <li key={location.id} className="info-item info-weather-saved">
+                <button
+                  type="button"
+                  className={location.id === active.id ? 'info-item-title is-active' : 'info-item-title'}
+                  onKeyDown={keepKey}
+                  onClick={() => persist({ ...prefs, weather: { ...prefs.weather, defaultLocationId: location.id } })}
+                >
+                  {locationLabel(location)}
+                  {location.id === prefs.weather.defaultLocationId ? ' · default' : ''}
+                </button>
+                <div className="info-weather-search-row">
+                  <button type="button" className="tab" onKeyDown={keepKey} onClick={() => moveLocation(location.id, -1)}>
+                    Up
+                  </button>
+                  <button type="button" className="tab" onKeyDown={keepKey} onClick={() => moveLocation(location.id, 1)}>
+                    Down
                   </button>
                   <button type="button" className="tab" onKeyDown={keepKey} onClick={() => removeLocation(location.id)}>
                     Remove
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="tab" onKeyDown={keepKey} onClick={() => persist({ ...prefs, weather: defaultInfoPreferences().weather })}>
+            Reset weather preferences
+          </button>
           <p className="info-panel-meta">Precise device location is never requested automatically.</p>
         </div>
       ) : status === 'loading' && !forecast ? (
@@ -230,17 +304,17 @@ export function WeatherPanel() {
             <span className="info-weather-symbol" aria-hidden>
               {weatherSymbol(forecast.current.weatherCode)}
             </span>
-            {formatTemp(forecast.current.temperatureC)}
+            {formatTemp(forecast.current.temperatureC, tempUnit)}
           </p>
           <p className="info-item-desc">{weatherConditionLabel(forecast.current.weatherCode)}</p>
           <ul className="info-list">
             <li className="info-item">
               <span className="info-item-meta">Feels like</span>
-              <span className="info-item-title">{formatTemp(forecast.current.feelsLikeC)}</span>
+              <span className="info-item-title">{formatTemp(forecast.current.feelsLikeC, tempUnit)}</span>
             </li>
             <li className="info-item">
               <span className="info-item-meta">Wind</span>
-              <span className="info-item-title">{Math.round(forecast.current.windSpeedKmh)} km/h</span>
+              <span className="info-item-title">{formatWind(forecast.current.windSpeedKmh, windUnit)}</span>
             </li>
             <li className="info-item">
               <span className="info-item-meta">Precipitation chance</span>
@@ -250,11 +324,11 @@ export function WeatherPanel() {
             </li>
             <li className="info-item">
               <span className="info-item-meta">Today’s high</span>
-              <span className="info-item-title">{todayMax == null ? '—' : formatTemp(todayMax)}</span>
+              <span className="info-item-title">{todayMax == null ? '—' : formatTemp(todayMax, tempUnit)}</span>
             </li>
             <li className="info-item">
               <span className="info-item-meta">Tonight’s low</span>
-              <span className="info-item-title">{tonightMin == null ? '—' : formatTemp(tonightMin)}</span>
+              <span className="info-item-title">{tonightMin == null ? '—' : formatTemp(tonightMin, tempUnit)}</span>
             </li>
           </ul>
         </div>
@@ -268,7 +342,7 @@ export function WeatherPanel() {
                 <span className="info-item-meta">{formatHour(point.timeIso)}</span>
                 <span className="info-item-title">
                   <span aria-hidden>{weatherSymbol(point.weatherCode)} </span>
-                  {formatTemp(point.temperatureC)}
+                  {formatTemp(point.temperatureC, tempUnit)}
                   {point.precipitationProbability != null ? ` · ${Math.round(point.precipitationProbability)}%` : ''}
                 </span>
               </li>
@@ -284,7 +358,7 @@ export function WeatherPanel() {
               <span className="info-item-meta">{formatDay(day.date)}</span>
               <span className="info-item-title">
                 <span aria-hidden>{weatherSymbol(day.weatherCode)} </span>
-                {formatTemp(day.tempMaxC)} / {formatTemp(day.tempMinC)}
+                {formatTemp(day.tempMaxC, tempUnit)} / {formatTemp(day.tempMinC, tempUnit)}
                 {day.precipitationProbabilityMax != null ? ` · ${Math.round(day.precipitationProbabilityMax)}%` : ''}
               </span>
             </li>
@@ -294,5 +368,3 @@ export function WeatherPanel() {
     </div>
   )
 }
-
-const DEFAULT_LABEL = 'London, United Kingdom'
