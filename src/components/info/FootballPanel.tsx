@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
+import { competitionsByRegion } from '../../info/football/competitions.ts'
 import { loadFootballSnapshot, type FootballLoadState } from '../../info/football/load.ts'
 import { matchesOnDay, statusLabel, todayIso } from '../../info/football/normalize.ts'
 import type { FootballMatch } from '../../info/football/types.ts'
 import { keepKey } from '../keep-key.ts'
 
-type Section = 'today' | 'fixtures' | 'results' | 'tables' | 'competitions'
+type Section = 'today' | 'results' | 'fixtures' | 'tables' | 'leagues'
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'today', label: 'Today' },
-  { id: 'fixtures', label: 'Fixtures' },
   { id: 'results', label: 'Results' },
+  { id: 'fixtures', label: 'Fixtures' },
   { id: 'tables', label: 'Tables' },
-  { id: 'competitions', label: 'Competitions' },
+  { id: 'leagues', label: 'Leagues' },
 ]
+
+const COMPETITION_KEY = 'tvn.info.football.competition.v1'
 
 function formatKickoff(iso: string): string {
   const ms = Date.parse(iso)
@@ -24,6 +27,22 @@ function formatUpdated(iso: string): string {
   const ms = Date.parse(iso)
   if (!Number.isFinite(ms)) return iso
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(ms)
+}
+
+function readStoredCompetition(): string {
+  try {
+    return localStorage.getItem(COMPETITION_KEY) ?? 'all'
+  } catch {
+    return 'all'
+  }
+}
+
+function writeStoredCompetition(id: string): void {
+  try {
+    localStorage.setItem(COMPETITION_KEY, id)
+  } catch {
+    /* ignore */
+  }
 }
 
 function MatchRow({ match, competition, liveReliable }: { match: FootballMatch; competition: string; liveReliable: boolean }) {
@@ -39,7 +58,7 @@ function MatchRow({ match, competition, liveReliable }: { match: FootballMatch; 
       </span>
       <span className="info-match-away">{match.away}</span>
       <span className="info-match-status">
-        {statusLabel(match.status, liveReliable)} · {formatKickoff(match.kickoffIso)}
+        {competition} · {statusLabel(match.status, liveReliable)} · {formatKickoff(match.kickoffIso)}
       </span>
     </li>
   )
@@ -51,7 +70,7 @@ function MatchRow({ match, competition, liveReliable }: { match: FootballMatch; 
 export function FootballPanel() {
   const [state, setState] = useState<FootballLoadState>({ status: 'loading' })
   const [section, setSection] = useState<Section>('today')
-  const [competitionId, setCompetitionId] = useState<string>('all')
+  const [competitionId, setCompetitionId] = useState<string>(() => readStoredCompetition())
 
   useEffect(() => {
     let live = true
@@ -62,6 +81,11 @@ export function FootballPanel() {
       live = false
     }
   }, [])
+
+  const selectCompetition = (id: string) => {
+    setCompetitionId(id)
+    writeStoredCompetition(id)
+  }
 
   const day = todayIso()
   const ready = state.status === 'ready' ? state : null
@@ -74,6 +98,7 @@ export function FootballPanel() {
   }, [snapshot, competitionId])
 
   const competitionName = (id: string) => snapshot?.competitions.find((entry) => entry.id === id)?.name ?? id
+  const regionGroups = competitionsByRegion()
 
   if (state.status === 'loading') {
     return (
@@ -105,12 +130,16 @@ export function FootballPanel() {
   }
 
   const today = matchesOnDay(filtered, day)
-  const fixtures = filtered.filter((match) => match.status === 'scheduled' || (match.status === 'in-play' && match.kickoffIso.slice(0, 10) >= day))
-  const results = filtered.filter((match) => match.status === 'finished').slice().reverse()
+  const fixtures = filtered
+    .filter((match) => match.status === 'scheduled' || (match.status === 'in-play' && match.kickoffIso.slice(0, 10) >= day))
+    .slice()
+    .sort((a, b) => a.kickoffIso.localeCompare(b.kickoffIso))
+  const results = filtered
+    .filter((match) => match.status === 'finished')
+    .slice()
+    .sort((a, b) => b.kickoffIso.localeCompare(a.kickoffIso))
   const tables =
-    competitionId === 'all'
-      ? snapshot.tables
-      : snapshot.tables.filter((table) => table.competitionId === competitionId)
+    competitionId === 'all' ? snapshot.tables : snapshot.tables.filter((table) => table.competitionId === competitionId)
 
   return (
     <div className="info-panel">
@@ -138,9 +167,16 @@ export function FootballPanel() {
           </button>
         ))}
       </div>
-      {section !== 'competitions' ? (
+      {section !== 'leagues' ? (
         <div className="tabs" role="tablist" aria-label="Competitions filter">
-          <button type="button" role="tab" aria-selected={competitionId === 'all'} className={competitionId === 'all' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => setCompetitionId('all')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={competitionId === 'all'}
+            className={competitionId === 'all' ? 'tab is-on' : 'tab'}
+            onKeyDown={keepKey}
+            onClick={() => selectCompetition('all')}
+          >
             All
           </button>
           {snapshot.competitions.map((entry) => (
@@ -151,7 +187,7 @@ export function FootballPanel() {
               aria-selected={competitionId === entry.id}
               className={competitionId === entry.id ? 'tab is-on' : 'tab'}
               onKeyDown={keepKey}
-              onClick={() => setCompetitionId(entry.id)}
+              onClick={() => selectCompetition(entry.id)}
             >
               {entry.name}
             </button>
@@ -159,17 +195,40 @@ export function FootballPanel() {
         </div>
       ) : null}
 
-      {section === 'competitions' ? (
-        <ul className="info-list">
-          {snapshot.competitions.map((entry) => (
-            <li key={entry.id} className="info-item">
-              <span className="info-item-title">{entry.name}</span>
-              <span className="info-item-meta">
-                {entry.area ?? 'International'} · {entry.code}
-              </span>
-            </li>
+      {section === 'leagues' ? (
+        <div className="info-leagues">
+          {regionGroups.map((group) => (
+            <div key={group.region}>
+              <p className="info-item-meta">{group.region}</p>
+              <ul className="info-list">
+                {group.competitions.map((entry) => {
+                  const available = snapshot.competitions.some((comp) => comp.code === entry.code)
+                  return (
+                    <li key={entry.code} className="info-item info-league-row">
+                      <button
+                        type="button"
+                        className={competitionId === entry.code ? 'info-item-title is-active' : 'info-item-title'}
+                        disabled={!available}
+                        onKeyDown={keepKey}
+                        onClick={() => {
+                          selectCompetition(entry.code)
+                          setSection('tables')
+                        }}
+                      >
+                        {entry.name}
+                      </button>
+                      <span className="info-item-meta">
+                        {entry.area}
+                        {available ? '' : ' · not in snapshot'}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           ))}
-        </ul>
+          <p className="info-panel-meta">Select a league to open its table. Competition choice is remembered on this device.</p>
+        </div>
       ) : section === 'tables' ? (
         tables.length === 0 ? (
           <p className="options-note">No league tables in this selection.</p>
@@ -212,18 +271,35 @@ export function FootballPanel() {
         (() => {
           const list = section === 'today' ? today : section === 'results' ? results : fixtures
           if (list.length === 0) {
-            return <p className="options-note">{section === 'today' ? 'No matches today in this selection.' : section === 'results' ? 'No results in this selection.' : 'No fixtures in this selection.'}</p>
+            return (
+              <p className="options-note">
+                {section === 'today'
+                  ? 'No matches today in this selection.'
+                  : section === 'results'
+                    ? 'No results in this selection.'
+                    : 'No fixtures in this selection.'}
+              </p>
+            )
           }
           return (
             <ul className="info-list">
               {list.map((match) => (
-                <MatchRow key={match.id} match={match} competition={competitionName(match.competitionId)} liveReliable={snapshot.liveReliable} />
+                <MatchRow
+                  key={match.id}
+                  match={match}
+                  competition={competitionName(match.competitionId)}
+                  liveReliable={snapshot.liveReliable}
+                />
               ))}
             </ul>
           )
         })()
       )}
-      {snapshot.errors?.length ? <p className="info-panel-meta is-stale">{snapshot.errors.length} update {snapshot.errors.length === 1 ? 'warning' : 'warnings'}</p> : null}
+      {snapshot.errors?.length ? (
+        <p className="info-panel-meta is-stale">
+          {snapshot.errors.length} update {snapshot.errors.length === 1 ? 'warning' : 'warnings'}
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { FOOTBALL_COMPETITIONS } from './info/football/competitions.ts'
 import { ingestFootballDataOrg } from './info/football/football-data-org.ts'
 import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
 import { matchStatusOf, statusLabel, buildFootballSnapshot, asFootballSnapshot, emptyFootballSnapshot } from './info/football/normalize.ts'
+import { footballIngestForced, footballSlotDue, FOOTBALL_SCHEDULE_SLOTS } from './info/football/schedule.ts'
 import type { FootballMatch } from './info/football/types.ts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
@@ -72,8 +73,10 @@ describe('INFO football', () => {
   })
 
   it('covers free-tier competitions and keeps API tokens out of client files', () => {
-    expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).toEqual(expect.arrayContaining(['PL', 'ELC', 'CL']))
-    expect(FOOTBALL_COMPETITIONS.some((entry) => entry.code === 'PL')).toBe(true)
+    expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).toEqual(
+      expect.arrayContaining(['PL', 'ELC', 'CL', 'BL1', 'SA', 'PD', 'FL1', 'DED', 'PPL']),
+    )
+    expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).not.toContain('EL1')
     expect(INFO_MODULES.some((module) => module.id === 'sports')).toBe(true)
     for (const path of [
       'src/components/info/FootballPanel.tsx',
@@ -96,7 +99,29 @@ describe('INFO football', () => {
     expect(ingest).not.toMatch(/X-Auth-Token['"]\s*:\s*['"][a-f0-9]{10,}/i)
     expect(read('.github/workflows/info-ingest.yml')).toContain('secrets.FOOTBALL_DATA_TOKEN')
     expect(read('.github/workflows/info-ingest.yml')).toContain('info:publish')
+    expect(read('.github/workflows/info-ingest.yml')).toContain('workflow_dispatch')
+    expect(read('.github/workflows/info-ingest.yml')).toContain('FOOTBALL_INGEST_FORCE')
     expect(read('.github/workflows/info-ingest.yml')).not.toContain('git push')
+  })
+
+  it('gates scheduled refresh in Europe/London including Saturday dual slots', () => {
+    expect(FOOTBALL_SCHEDULE_SLOTS).toHaveLength(8)
+    // Monday 22:05 BST (2026-10-19 is a Monday; BST ends 25 Oct 2026)
+    const monday = footballSlotDue(new Date('2026-10-19T21:05:00.000Z'))
+    expect(monday?.key).toContain('T22:00')
+    // Saturday 17:10 BST
+    const satAfternoon = footballSlotDue(new Date('2026-10-17T16:10:00.000Z'))
+    expect(satAfternoon?.key).toContain('T17:00')
+    // Saturday 22:40 BST
+    const satEvening = footballSlotDue(new Date('2026-10-17T21:40:00.000Z'))
+    expect(satEvening?.key).toContain('T22:30')
+    // Midday — not due
+    expect(footballSlotDue(new Date('2026-10-19T12:00:00.000Z'))).toBeNull()
+    // GMT winter: Monday 22:05 GMT = 22:05Z on 2026-11-02
+    const winter = footballSlotDue(new Date('2026-11-02T22:05:00.000Z'))
+    expect(winter?.key).toContain('T22:00')
+    expect(footballIngestForced({ FOOTBALL_INGEST_FORCE: '1' })).toBe(true)
+    expect(footballIngestForced({})).toBe(false)
   })
 
   it('normalises mocked provider fixtures, including empty competitions and delayed in-play', async () => {
@@ -105,10 +130,10 @@ describe('INFO football', () => {
       const url = String(input)
       const headers = init?.headers as Record<string, string> | undefined
       if (headers?.['X-Auth-Token']) tokens.push(headers['X-Auth-Token'])
-      if (url.includes('/matches') && url.includes('PL')) {
+      if (url.includes('/competitions/PL/matches')) {
         return new Response(JSON.stringify(SAMPLE_MATCHES), { status: 200 })
       }
-      if (url.includes('/standings') && url.includes('PL')) {
+      if (url.includes('/competitions/PL/standings')) {
         return new Response(JSON.stringify(SAMPLE_STANDINGS), { status: 200 })
       }
       if (url.includes('/matches')) return new Response(JSON.stringify(SAMPLE_EMPTY), { status: 200 })

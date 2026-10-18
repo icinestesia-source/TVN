@@ -28,9 +28,11 @@ async function main(): Promise<void> {
   }
   const news = readOptional(join(root, 'public/info/news.json'))
   const football = readOptional(join(root, 'public/info/football.json'))
+  const publishFootball = process.env.INFO_PUBLISH_FOOTBALL
+  const includeFootball = publishFootball == null || publishFootball === '' ? true : publishFootball === '1' || publishFootball === 'true'
   const body: Record<string, unknown> = {}
   if (news) body.news = news
-  if (football) body.football = football
+  if (football && includeFootball) body.football = football
   if (!Object.keys(body).length) throw new Error('No public/info snapshots to publish')
 
   const response = await fetch(url, {
