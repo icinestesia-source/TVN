@@ -23,6 +23,8 @@ export function matchStatusOf(raw: string | undefined | null): MatchStatus {
   if (value === 'POSTPONED') return 'postponed'
   if (value === 'CANCELLED' || value === 'CANCELED' || value === 'SUSPENDED') return 'cancelled'
   if (value === 'IN_PLAY' || value === 'PAUSED' || value === 'LIVE' || value === 'HALFTIME') return 'in-play'
+  // SCHEDULED, TIMED, and any other pre-kickoff status stay on the fixture list.
+  if (value === 'SCHEDULED' || value === 'TIMED' || value === 'RESERVED') return 'scheduled'
   return 'scheduled'
 }
 
@@ -63,7 +65,9 @@ export function emptyFootballSnapshot(reason: string, updatedIso = new Date().to
     competitions: [],
     matches: [],
     tables: [],
-    unavailableReason: reason,
+    unavailableReason:
+      reason ||
+      'Football fixtures and results have not been published yet. Configure FOOTBALL_DATA_TOKEN, run INFO ingest, then publish to Netlify Blobs.',
   }
 }
 

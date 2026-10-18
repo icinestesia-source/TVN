@@ -50,7 +50,7 @@ export function latestResult(matches: readonly FootballMatch[], teamId: string):
 
 export function nextFixture(matches: readonly FootballMatch[], teamId: string): FootballMatch | null {
   const upcoming = matchesForTeam(matches, teamId)
-    .filter((match) => match.status === 'scheduled' || match.status === 'in-play')
+    .filter((match) => match.status === 'scheduled' || match.status === 'in-play' || match.status === 'postponed')
     .sort((a, b) => a.kickoffIso.localeCompare(b.kickoffIso))
   return upcoming[0] ?? null
 }

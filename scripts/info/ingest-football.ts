@@ -84,7 +84,9 @@ async function main(): Promise<void> {
     const snapshot =
       prior && (prior.matches.length || prior.tables.length)
         ? prior
-        : emptyFootballSnapshot('Add FOOTBALL_DATA_TOKEN to run football ingest (free token from football-data.org).')
+        : emptyFootballSnapshot(
+            'DATA NOT YET PUBLISHED — Add FOOTBALL_DATA_TOKEN to run football ingest (free token from football-data.org), then publish the snapshot.',
+          )
     if (!prior) writeSnapshot(snapshot)
     console.error(snapshot.unavailableReason ?? 'FOOTBALL_DATA_TOKEN missing; kept previous snapshot.')
     emitWrote(false)

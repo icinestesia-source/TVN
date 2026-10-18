@@ -37,6 +37,37 @@ export const SAMPLE_MATCHES = {
       awayTeam: { id: 402, name: 'Brentford' },
       score: { fullTime: { home: null, away: null } },
     },
+    {
+      id: 1005,
+      utcDate: '2026-10-20T19:45:00Z',
+      status: 'SCHEDULED',
+      matchday: 9,
+      homeTeam: { id: 66, shortName: 'Man United', name: 'Manchester United FC' },
+      awayTeam: { id: 65, shortName: 'Man City', name: 'Manchester City FC' },
+      score: { fullTime: { home: null, away: null } },
+    },
+  ],
+}
+
+/** Second competition — Championship — for multi-league ingest tests. */
+export const SAMPLE_MATCHES_ELC = {
+  matches: [
+    {
+      id: 2001,
+      utcDate: '2026-10-18T14:00:00Z',
+      status: 'TIMED',
+      homeTeam: { id: 328, shortName: 'Burnley', name: 'Burnley FC' },
+      awayTeam: { id: 341, shortName: 'Leeds', name: 'Leeds United FC' },
+      score: { fullTime: { home: null, away: null } },
+    },
+    {
+      id: 2002,
+      utcDate: '2026-10-16T19:00:00Z',
+      status: 'FINISHED',
+      homeTeam: { id: 343, shortName: 'Middlesbrough', name: 'Middlesbrough FC' },
+      awayTeam: { id: 351, shortName: 'Nottm Forest', name: 'Nottingham Forest FC' },
+      score: { fullTime: { home: 0, away: 0 } },
+    },
   ],
 }
 

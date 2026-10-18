@@ -6,7 +6,9 @@ import { FootballPanel } from './components/info/FootballPanel.tsx'
 import { INFO_MODULES } from './components/InfoCentre.tsx'
 import { FOOTBALL_COMPETITIONS } from './info/football/competitions.ts'
 import { ingestFootballDataOrg } from './info/football/football-data-org.ts'
-import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
+import { diagnoseFootballEmpty } from './info/football/empty-state.ts'
+import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_MATCHES_ELC, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
+import { fixtureMatches, matchesForCompetition, resultMatches } from './info/football/match-lists.ts'
 import { matchStatusOf, statusLabel, buildFootballSnapshot, asFootballSnapshot, emptyFootballSnapshot } from './info/football/normalize.ts'
 import { footballIngestForced, footballSlotDue, FOOTBALL_SCHEDULE_SLOTS } from './info/football/schedule.ts'
 import type { FootballMatch } from './info/football/types.ts'
@@ -16,6 +18,7 @@ const read = (path: string) => readFileSync(path, 'utf8')
 describe('INFO football', () => {
   it('maps provider statuses and never labels delayed in-play as Live', () => {
     expect(matchStatusOf('SCHEDULED')).toBe('scheduled')
+    expect(matchStatusOf('TIMED')).toBe('scheduled')
     expect(matchStatusOf('FINISHED')).toBe('finished')
     expect(matchStatusOf('POSTPONED')).toBe('postponed')
     expect(matchStatusOf('CANCELLED')).toBe('cancelled')
@@ -162,5 +165,107 @@ describe('INFO football', () => {
     expect(snapshot.tables[0].rows).toHaveLength(2)
     expect(snapshot.tables[0].rows[0]).toMatchObject({ team: 'Arsenal', points: 19, goalDifference: 12 })
     expect(tokens[0]).toBe('test-token')
+  })
+
+  it('splits fixtures and results from representative provider payloads across competitions', async () => {
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = String(input)
+      if (url.includes('/competitions/PL/matches')) return new Response(JSON.stringify(SAMPLE_MATCHES), { status: 200 })
+      if (url.includes('/competitions/ELC/matches')) return new Response(JSON.stringify(SAMPLE_MATCHES_ELC), { status: 200 })
+      if (url.includes('/competitions/PL/standings')) return new Response(JSON.stringify(SAMPLE_STANDINGS), { status: 200 })
+      if (url.includes('/matches')) return new Response(JSON.stringify(SAMPLE_EMPTY), { status: 200 })
+      if (url.includes('/standings')) return new Response(JSON.stringify({ standings: [] }), { status: 200 })
+      return new Response('nope', { status: 404 })
+    }
+    const snapshot = await ingestFootballDataOrg({
+      token: 'test-token',
+      dateFrom: '2026-10-11',
+      dateTo: '2026-11-08',
+      nowIso: '2026-10-18T12:00:00.000Z',
+      delayMs: 0,
+      fetchImpl,
+    })
+    const pl = matchesForCompetition(snapshot.matches, 'PL')
+    const elc = matchesForCompetition(snapshot.matches, 'ELC')
+    expect(fixtureMatches(pl).map((match) => match.status).sort()).toEqual(['in-play', 'postponed', 'scheduled', 'scheduled'])
+    expect(resultMatches(pl)).toHaveLength(1)
+    expect(resultMatches(pl)[0]?.score).toEqual({ home: 2, away: 1 })
+    expect(fixtureMatches(elc)).toHaveLength(1)
+    expect(resultMatches(elc)).toHaveLength(1)
+    expect(matchesForCompetition(snapshot.matches, 'BL1')).toEqual([])
+    expect(
+      diagnoseFootballEmpty({
+        section: 'fixtures',
+        competitionId: 'BL1',
+        snapshot: { ...snapshot, errors: ['BL1 matches: 403 Forbidden'] },
+        loadStatus: 'ready',
+      }).kind,
+    ).toBe('competition-unavailable')
+  })
+
+  it('does not treat unpublished snapshots as “no matches in selection”', () => {
+    const empty = emptyFootballSnapshot('DATA NOT YET PUBLISHED — waiting for ingest')
+    expect(
+      diagnoseFootballEmpty({
+        section: 'fixtures',
+        competitionId: 'PL',
+        snapshot: empty,
+        loadStatus: 'unavailable',
+      }).kind,
+    ).toBe('not-published')
+    expect(
+      diagnoseFootballEmpty({
+        section: 'results',
+        competitionId: 'all',
+        snapshot: empty,
+        loadStatus: 'unavailable',
+      }).message,
+    ).toMatch(/NOT YET PUBLISHED|ingest|publish/i)
+    const readyEmpty = buildFootballSnapshot({
+      updatedIso: '2026-10-18T12:00:00.000Z',
+      provider: 'football-data.org',
+      attribution: 'Football data provided by football-data.org',
+      liveReliable: false,
+      competitions: [{ id: 'PL', code: 'PL', name: 'Premier League' }],
+      matches: [],
+      tables: [],
+    })
+    expect(
+      diagnoseFootballEmpty({
+        section: 'fixtures',
+        competitionId: 'PL',
+        snapshot: readyEmpty,
+        loadStatus: 'ready',
+      }).kind,
+    ).toBe('no-matches')
+  })
+
+  it('keeps unsupported competitions empty without inventing fixtures', async () => {
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = String(input)
+      if (url.includes('/competitions/EL1/matches')) {
+        return new Response(JSON.stringify({ message: 'The resource you are looking for is restricted' }), { status: 403 })
+      }
+      if (url.includes('/matches')) return new Response(JSON.stringify(SAMPLE_EMPTY), { status: 200 })
+      if (url.includes('/standings')) return new Response(JSON.stringify({ standings: [] }), { status: 200 })
+      return new Response('nope', { status: 404 })
+    }
+    const snapshot = await ingestFootballDataOrg({
+      token: 'test-token',
+      dateFrom: '2026-10-11',
+      dateTo: '2026-11-08',
+      delayMs: 0,
+      fetchImpl,
+    })
+    expect(snapshot.matches.filter((match) => match.competitionId === 'EL1')).toHaveLength(0)
+    expect(snapshot.errors?.some((entry) => entry.startsWith('EL1 matches:'))).toBe(true)
+    expect(
+      diagnoseFootballEmpty({
+        section: 'fixtures',
+        competitionId: 'EL1',
+        snapshot,
+        loadStatus: 'ready',
+      }).kind,
+    ).toBe('competition-unavailable')
   })
 })

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FOOTBALL_COMPETITIONS, competitionDef, competitionsByRegion, isKnockoutCompetition } from '../../info/football/competitions.ts'
+import { diagnoseFootballEmpty } from '../../info/football/empty-state.ts'
 import { loadFootballSnapshot, type FootballLoadState } from '../../info/football/load.ts'
+import { fixtureMatches, matchesForCompetition, resultMatches } from '../../info/football/match-lists.ts'
 import { addDaysIso, matchesOnDay, statusLabel, todayIso } from '../../info/football/normalize.ts'
 import { favouriteFromTeam, latestResult, nextFixture, searchTeams, teamsFromSnapshot } from '../../info/football/teams.ts'
 import type { FootballMatch } from '../../info/football/types.ts'
@@ -128,8 +130,7 @@ export function FootballPanel() {
 
   const filtered = useMemo(() => {
     if (!snapshot) return []
-    if (competitionId === 'all') return snapshot.matches
-    return snapshot.matches.filter((match) => match.competitionId === competitionId)
+    return matchesForCompetition(snapshot.matches, competitionId)
   }, [snapshot, competitionId])
 
   const competitionName = (id: string) =>
@@ -168,12 +169,27 @@ export function FootballPanel() {
 
   const today = matchesOnDay(filtered, day)
   const yesterdayResults = matchesOnDay(filtered, yesterday).filter((match) => match.status === 'finished')
-  const fixtures = filtered
-    .filter((match) => match.status === 'scheduled' || match.status === 'in-play')
-    .sort((a, b) => a.kickoffIso.localeCompare(b.kickoffIso))
-  const results = filtered
-    .filter((match) => match.status === 'finished')
-    .sort((a, b) => b.kickoffIso.localeCompare(a.kickoffIso))
+  const fixtures = fixtureMatches(filtered)
+  const results = resultMatches(filtered)
+  const loadStatus = state.status === 'unavailable' ? 'unavailable' : 'ready'
+  const emptyFixtures = diagnoseFootballEmpty({
+    section: 'fixtures',
+    competitionId,
+    snapshot,
+    loadStatus,
+  })
+  const emptyResults = diagnoseFootballEmpty({
+    section: 'results',
+    competitionId,
+    snapshot,
+    loadStatus,
+  })
+  const emptyToday = diagnoseFootballEmpty({
+    section: 'today',
+    competitionId,
+    snapshot,
+    loadStatus,
+  })
   const tables =
     competitionId === 'all'
       ? snapshot.tables
@@ -289,6 +305,13 @@ export function FootballPanel() {
         {' · '}
         {snapshot.attribution}
       </p>
+      {state.status === 'unavailable' || (snapshot.matches.length === 0 && snapshot.tables.length === 0) ? (
+        <p className="options-note" role="alert">
+          {snapshot.unavailableReason ||
+            (state.status === 'unavailable' ? state.message : null) ||
+            'DATA NOT YET PUBLISHED — Fixtures and results require a published football snapshot.'}
+        </p>
+      ) : null}
       <div className="tabs" role="tablist" aria-label="Football sections">
         {SECTIONS.map((entry) => (
           <button
@@ -574,13 +597,11 @@ export function FootballPanel() {
           const list =
             section === 'today' ? today : section === 'results' ? [...yesterdayResults, ...results.filter((match) => match.kickoffIso.slice(0, 10) !== yesterday)] : fixtures
           if (list.length === 0) {
+            const empty =
+              section === 'today' ? emptyToday : section === 'results' ? emptyResults : emptyFixtures
             return (
-              <p className="options-note">
-                {section === 'today'
-                  ? 'No matches today in this selection.'
-                  : section === 'results'
-                    ? 'No results in this selection.'
-                    : 'No fixtures in this selection.'}
+              <p className="options-note" role="status" data-empty-kind={empty.kind}>
+                {empty.message}
               </p>
             )
           }

@@ -1,1 +1,12 @@
-{"format":"tvn-info-football-v1","updatedIso":"2026-10-18T12:36:57.744Z","staleAfterMinutes":180,"provider":"football-data.org","attribution":"Data from football-data.org","liveReliable":false,"competitions":[],"matches":[],"tables":[],"unavailableReason":"Add FOOTBALL_DATA_TOKEN to run football ingest (free token from football-data.org)."}
+{
+  "format": "tvn-info-football-v1",
+  "updatedIso": "2026-10-18T12:36:57.744Z",
+  "staleAfterMinutes": 180,
+  "provider": "football-data.org",
+  "attribution": "Data from football-data.org",
+  "liveReliable": false,
+  "competitions": [],
+  "matches": [],
+  "tables": [],
+  "unavailableReason": "DATA NOT YET PUBLISHED — Football fixtures and results appear after FOOTBALL_DATA_TOKEN is used by INFO ingest and the snapshot is published to Netlify Blobs. League names below are navigation only until then."
+}
