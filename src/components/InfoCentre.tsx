@@ -1,10 +1,13 @@
 import { useState, type ComponentType } from 'react'
+import { BusinessPanel } from './info/BusinessPanel.tsx'
+import { EntertainmentPanel } from './info/EntertainmentPanel.tsx'
 import { NewsPanel } from './info/NewsPanel.tsx'
+import { OnThisDayPanel } from './info/OnThisDayPanel.tsx'
 import { SportsPanel } from './info/SportsPanel.tsx'
 import { WeatherPanel } from './info/WeatherPanel.tsx'
 import { keepKey } from './keep-key.ts'
 
-export type InfoModuleId = 'news' | 'sports' | 'weather'
+export type InfoModuleId = 'news' | 'sports' | 'weather' | 'entertainment' | 'business' | 'on-this-day'
 
 export interface InfoModule {
   id: InfoModuleId
@@ -13,19 +16,18 @@ export interface InfoModule {
 }
 
 /**
- * Modules that are ready to show. News, Sports and Weather are Phase B.2.
- * INFO still opens as a Guide panel over the picture when the list is empty.
+ * INFO modules. Opening INFO does not retune or remount the player.
+ * Tool id is `infocentre` so it never collides with the picture information bar (`info` / V).
  */
 export const INFO_MODULES: readonly InfoModule[] = [
   { id: 'news', label: 'News', Panel: NewsPanel },
   { id: 'sports', label: 'Sports', Panel: SportsPanel },
   { id: 'weather', label: 'Weather', Panel: WeatherPanel },
+  { id: 'entertainment', label: 'Entertainment', Panel: EntertainmentPanel },
+  { id: 'business', label: 'Business', Panel: BusinessPanel },
+  { id: 'on-this-day', label: 'On this day', Panel: OnThisDayPanel },
 ]
 
-/**
- * INFO: news and sports in the Guide, over the picture. Opening it does not retune or remount the player.
- * Tool id is `infocentre` so it never collides with the picture information bar (`info` / V).
- */
 export function InfoCentre() {
   const modules = INFO_MODULES
   const [moduleId, setModuleId] = useState<InfoModuleId | null>(() => modules[0]?.id ?? null)
@@ -59,7 +61,7 @@ export function InfoCentre() {
           <Panel />
         </div>
       ) : (
-        <p className="options-note">News, Sports and Weather open here when their information is ready.</p>
+        <p className="options-note">Info modules open here when ready.</p>
       )}
     </div>
   )

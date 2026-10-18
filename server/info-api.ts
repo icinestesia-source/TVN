@@ -45,6 +45,102 @@ export function infoFootballMiddleware(_request: IncomingMessage, res: ServerRes
   send(res, 200, snapshot)
 }
 
+function readUrl(req: IncomingMessage): URL {
+  return new URL(req.url ?? '/', 'http://localhost')
+}
+
+/** Dev proxy for TMDB — same allowlist and secret as netlify/functions/info-tmdb.ts */
+export async function infoTmdbMiddleware(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method !== 'GET') {
+    send(res, 405, { error: 'GET only' })
+    return
+  }
+  const token = process.env.TMDB_API_TOKEN?.trim()
+  if (!token) {
+    send(res, 503, { error: 'TMDB_API_TOKEN is not configured' })
+    return
+  }
+  const url = readUrl(req)
+  const path = url.searchParams.get('path') ?? ''
+  const allow = [
+    /^\/movie\/popular$/,
+    /^\/movie\/now_playing$/,
+    /^\/tv\/popular$/,
+    /^\/tv\/on_the_air$/,
+    /^\/trending\/all\/week$/,
+    /^\/search\/multi$/,
+    /^\/discover\/movie$/,
+    /^\/discover\/tv$/,
+  ]
+  if (!allow.some((rule) => rule.test(path))) {
+    send(res, 400, { error: 'Path not allowed' })
+    return
+  }
+  const upstream = new URL(`https://api.themoviedb.org/3${path}`)
+  upstream.searchParams.set('api_key', token)
+  for (const [key, value] of url.searchParams) {
+    if (key === 'path' || key === 'api_key') continue
+    upstream.searchParams.set(key, value)
+  }
+  try {
+    const response = await fetch(upstream.toString(), { headers: { Accept: 'application/json' } })
+    const text = await response.text()
+    res.statusCode = response.status
+    res.setHeader('content-type', 'application/json; charset=utf-8')
+    res.setHeader('cache-control', 'public, max-age=900')
+    res.end(text)
+  } catch (caught) {
+    send(res, 502, { error: caught instanceof Error ? caught.message : 'Upstream failed' })
+  }
+}
+
+/** Dev proxy for Alpha Vantage — same secret as netlify/functions/info-finance.ts */
+export async function infoFinanceMiddleware(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method !== 'GET') {
+    send(res, 405, { error: 'GET only' })
+    return
+  }
+  const key = process.env.ALPHA_VANTAGE_API_KEY?.trim()
+  if (!key) {
+    send(res, 503, { error: 'ALPHA_VANTAGE_API_KEY is not configured' })
+    return
+  }
+  const url = readUrl(req)
+  const action = url.searchParams.get('action') ?? 'quote'
+  const symbol = (url.searchParams.get('symbol') ?? '').trim().toUpperCase()
+  const upstream = new URL('https://www.alphavantage.co/query')
+  upstream.searchParams.set('apikey', key)
+  if (action === 'quote') {
+    if (!/^[A-Z0-9.^_-]{1,16}$/.test(symbol)) {
+      send(res, 400, { error: 'Invalid symbol' })
+      return
+    }
+    upstream.searchParams.set('function', 'GLOBAL_QUOTE')
+    upstream.searchParams.set('symbol', symbol)
+  } else if (action === 'search') {
+    const keywords = (url.searchParams.get('keywords') ?? '').trim()
+    if (keywords.length < 2) {
+      send(res, 400, { error: 'Invalid keywords' })
+      return
+    }
+    upstream.searchParams.set('function', 'SYMBOL_SEARCH')
+    upstream.searchParams.set('keywords', keywords)
+  } else {
+    send(res, 400, { error: 'Unknown action' })
+    return
+  }
+  try {
+    const response = await fetch(upstream.toString(), { headers: { Accept: 'application/json' } })
+    const text = await response.text()
+    res.statusCode = response.status
+    res.setHeader('content-type', 'application/json; charset=utf-8')
+    res.setHeader('cache-control', 'public, max-age=1800')
+    res.end(text)
+  } catch (caught) {
+    send(res, 502, { error: caught instanceof Error ? caught.message : 'Upstream failed' })
+  }
+}
+
 export function infoPublishMiddleware(req: IncomingMessage, res: ServerResponse): void {
   if (req.method !== 'POST') {
     send(res, 405, { error: 'POST only' })

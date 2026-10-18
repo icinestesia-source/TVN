@@ -128,10 +128,19 @@ describe('INFO news', () => {
     for (const feed of NEWS_FEEDS) {
       expect(feed.feedUrl.startsWith('https://')).toBe(true)
     }
-    expect(INFO_MODULES.map((module) => module.id)).toEqual(['news', 'sports', 'weather'])
+    expect(INFO_MODULES.map((module) => module.id)).toEqual([
+      'news',
+      'sports',
+      'weather',
+      'entertainment',
+      'business',
+      'on-this-day',
+    ])
     const markup = renderToStaticMarkup(createElement(InfoCentre))
     expect(markup).toContain('News')
     expect(markup).toContain('Sports')
     expect(markup).toContain('Weather')
+    expect(markup).toContain('Entertainment')
+    expect(markup).toContain('Business')
   })
 })

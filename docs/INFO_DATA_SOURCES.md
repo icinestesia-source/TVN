@@ -52,6 +52,10 @@ Primeira Liga (PPL) is deferred so League One fits the free-tier slot count.
 | `FOOTBALL_DATA_TOKEN` | GitHub Actions | football-data.org free API token |
 | `INFO_PUBLISH_SECRET` | GitHub Actions **and** Netlify env | Bearer token for `/api/info/publish` |
 | `INFO_PUBLISH_URL` | GitHub Actions | e.g. `https://<your-site>.netlify.app/api/info/publish` |
+| `TMDB_API_TOKEN` | Netlify (functions) | TMDB v3 API key for `/api/info/tmdb` (Phase C Entertainment) |
+| `ALPHA_VANTAGE_API_KEY` | Netlify (functions) | Alpha Vantage key for `/api/info/finance` (Phase C Business stocks/indices) |
+
+Currencies use keyless Frankfurter. On This Day uses Wikimedia’s public feed (no secret).
 
 ### Product-owner setup
 

@@ -4,7 +4,13 @@ import type { Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { feedMiddleware } from './server/podcast-feed.ts'
 import { channelMiddleware } from './server/youtube-channel.ts'
-import { infoFootballMiddleware, infoNewsMiddleware, infoPublishMiddleware } from './server/info-api.ts'
+import {
+  infoFinanceMiddleware,
+  infoFootballMiddleware,
+  infoNewsMiddleware,
+  infoPublishMiddleware,
+  infoTmdbMiddleware,
+} from './server/info-api.ts'
 
 /** The Add Channel lookup, served by the dev and preview servers as the Netlify Function serves it in production. */
 function channelApi(): Plugin {
@@ -16,6 +22,8 @@ function channelApi(): Plugin {
       server.middlewares.use('/api/info/news', infoNewsMiddleware)
       server.middlewares.use('/api/info/football', infoFootballMiddleware)
       server.middlewares.use('/api/info/publish', infoPublishMiddleware)
+      server.middlewares.use('/api/info/tmdb', (req, res) => void infoTmdbMiddleware(req, res))
+      server.middlewares.use('/api/info/finance', (req, res) => void infoFinanceMiddleware(req, res))
     },
     configurePreviewServer(server) {
       server.middlewares.use('/api/channel', channelMiddleware)
@@ -23,6 +31,8 @@ function channelApi(): Plugin {
       server.middlewares.use('/api/info/news', infoNewsMiddleware)
       server.middlewares.use('/api/info/football', infoFootballMiddleware)
       server.middlewares.use('/api/info/publish', infoPublishMiddleware)
+      server.middlewares.use('/api/info/tmdb', (req, res) => void infoTmdbMiddleware(req, res))
+      server.middlewares.use('/api/info/finance', (req, res) => void infoFinanceMiddleware(req, res))
     },
   }
 }
