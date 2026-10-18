@@ -29,6 +29,18 @@ Scheduled: `.github/workflows/info-ingest.yml` commits updated JSON so Netlify r
 Provider: [football-data.org](https://www.football-data.org/) free tier (fixtures, delayed scores, tables).  
 Auth: `FOOTBALL_DATA_TOKEN` as a **GitHub Actions secret** and optional local env var — never in the browser.
 
-Competitions (free tier codes): PL, ELC, CL, and other free-tier leagues as configured in `src/info/football/competitions.ts`.
+### Product-owner setup
+
+1. Register at https://www.football-data.org/client/register for a free token.  
+2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**  
+   - Name: `FOOTBALL_DATA_TOKEN`  
+   - Value: the token  
+3. Run **Actions → INFO ingest → Run workflow**, or wait for the schedule.  
+4. Locally (optional): `FOOTBALL_DATA_TOKEN=… npm run info:football`
+
+Competitions (free tier codes in `src/info/football/competitions.ts`): PL, ELC, CL, BL1, SA, PD, FL1.  
+Not on free tier (excluded): EFL League One/Two, FA Cup, Scottish Premiership.
+
+`liveReliable` is always `false` on this tier — the UI shows **Delayed**, never **Live**.
 
 Ingest: `npm run info:football` → `public/info/football.json`.

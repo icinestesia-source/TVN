@@ -25,18 +25,12 @@ jobs:
       - name: Ingest football
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
-        run: |
-          if [ -f scripts/info/ingest-football.ts ]; then
-            npm run info:football
-          else
-            echo 'Football ingest not installed yet'
-          fi
-        continue-on-error: true
+        run: npm run info:football
       - name: Commit published snapshots
         run: |
           git config user.name 'tvn-info-bot'
           git config user.email 'tvn-info-bot@users.noreply.github.com'
-          git add public/info/*.json 2>/dev/null || true
+          git add public/info/news.json public/info/football.json
           if git diff --staged --quiet; then
             echo 'No INFO snapshot changes'
             exit 0

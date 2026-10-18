@@ -74,9 +74,10 @@ describe('INFO news', () => {
     for (const feed of NEWS_FEEDS) {
       expect(feed.feedUrl.startsWith('https://')).toBe(true)
     }
-    expect(INFO_MODULES.map((module) => module.id)).toEqual(['news'])
+    expect(INFO_MODULES.map((module) => module.id)).toEqual(['news', 'sports'])
     const markup = renderToStaticMarkup(createElement(InfoCentre))
     expect(markup).toContain('News')
+    expect(markup).toContain('Sports')
     expect(markup).not.toMatch(/Chat|Games|Weather|Events/)
   })
 })
