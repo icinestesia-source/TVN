@@ -74,9 +74,10 @@ describe('INFO football', () => {
 
   it('covers free-tier competitions and keeps API tokens out of client files', () => {
     expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).toEqual(
-      expect.arrayContaining(['PL', 'ELC', 'EL1', 'CL', 'BL1', 'SA', 'PD', 'FL1', 'DED', 'PPL']),
+      expect.arrayContaining(['PL', 'ELC', 'EL1', 'CL', 'BL1', 'SA', 'PD', 'FL1', 'DED']),
     )
     expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).toContain('EL1')
+    expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).not.toContain('PPL')
     expect(INFO_MODULES.some((module) => module.id === 'sports')).toBe(true)
     for (const path of [
       'src/components/info/FootballPanel.tsx',

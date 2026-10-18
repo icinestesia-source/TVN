@@ -83,8 +83,10 @@ describe('INFO Phase B.3 preferences', () => {
 describe('INFO Phase B.3 football', () => {
   it('lists every configured competition including League One and does not invent knockout tables', () => {
     expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).toEqual(
-      expect.arrayContaining(['PL', 'ELC', 'EL1', 'CL', 'BL1', 'SA', 'PD', 'FL1', 'DED', 'PPL', 'BSA', 'WC', 'EC']),
+      expect.arrayContaining(['PL', 'ELC', 'EL1', 'CL', 'BL1', 'SA', 'PD', 'FL1', 'DED', 'BSA', 'WC', 'EC']),
     )
+    expect(FOOTBALL_COMPETITIONS.map((entry) => entry.code)).not.toContain('PPL')
+    expect(FOOTBALL_COMPETITIONS).toHaveLength(12)
     expect(FOOTBALL_COMPETITIONS.find((entry) => entry.code === 'EL1')?.name).toBe('League One')
     expect(isKnockoutCompetition('CL')).toBe(true)
     expect(isKnockoutCompetition('PL')).toBe(false)

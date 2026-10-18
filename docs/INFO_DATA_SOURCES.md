@@ -42,7 +42,8 @@ Headlines older than **14 days** are dropped at ingest. Descriptions are truncat
 Provider: [football-data.org](https://www.football-data.org/) free tier (fixtures, delayed scores, tables).  
 `liveReliable` is always `false` — UI shows **Delayed**, never **Live**.
 
-Competitions (`src/info/football/competitions.ts`): PL, ELC, CL, BL1, SA, PD, FL1.
+Competitions (`src/info/football/competitions.ts`): PL, ELC, EL1, CL, BL1, SA, PD, FL1, DED, BSA, WC, EC (12).  
+Primeira Liga (PPL) is deferred so League One fits the free-tier slot count.
 
 ### Secrets (GitHub Actions + Netlify)
 

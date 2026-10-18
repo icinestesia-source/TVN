@@ -1,5 +1,5 @@
 # Secure live verification of football-data.org entitlement (no token in logs).
-# Run after FOOTBALL_DATA_TOKEN and INFO publish secrets are configured.
+# Manual only. Does not call info:publish — production Blobs are not modified.
 # Does not push; does not deploy the SPA.
 name: INFO football verify
 
@@ -28,23 +28,31 @@ jobs:
             echo "FOOTBALL_DATA_TOKEN secret is not set"
             exit 1
           fi
+          # Ingest into the runner workspace only — no publish step.
           npm run info:football
           node --input-type=module -e "
             import { readFileSync } from 'node:fs';
             const snap = JSON.parse(readFileSync('public/info/football.json','utf8'));
             const codes = (snap.competitions||[]).map(c => c.code).sort();
-            const tables = (snap.tables||[]).map(t => t.competitionId);
+            const tables = new Set((snap.tables||[]).map(t => t.competitionId));
+            const matchCodes = new Set((snap.matches||[]).map(m => m.competitionId));
             const errors = snap.errors||[];
             console.log('competitions_in_snapshot=' + codes.join(','));
-            console.log('tables=' + [...new Set(tables)].sort().join(','));
+            console.log('tables=' + [...tables].sort().join(','));
             console.log('match_count=' + (snap.matches||[]).length);
             console.log('error_count=' + errors.length);
             for (const e of errors) {
-              // Strip any accidental token-like substrings
               console.log('error=' + String(e).replace(/[a-f0-9]{20,}/gi, '[redacted]'));
             }
-            const want = ['PL','ELC','EL1','CL','BL1','SA','PD','FL1','DED','PPL','BSA','WC','EC'];
+            const want = ['PL','ELC','EL1','CL','BL1','SA','PD','FL1','DED','BSA','WC','EC'];
+            const deferred = ['PPL'];
             for (const code of want) {
-              console.log('configured_' + code + '=' + (codes.includes(code) ? 'present' : 'missing'));
+              const hasData = tables.has(code) || matchCodes.has(code);
+              const hasErr = errors.some(e => String(e).startsWith(code));
+              const status = hasData ? 'data_ok' : hasErr ? 'unavailable' : codes.includes(code) ? 'empty' : 'not_configured';
+              console.log('competition_' + code + '=' + status);
+            }
+            for (const code of deferred) {
+              console.log('deferred_' + code + '=held_aside');
             }
           "
