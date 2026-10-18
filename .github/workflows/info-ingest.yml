@@ -34,7 +34,9 @@ jobs:
       - name: Restore football slot marker
         uses: actions/cache@v4
         with:
-          path: .cache/info-football-slot
+          path: |
+            .cache/info-football-slot
+            .cache/info-football-el1-day
           key: tvn-football-slot-${{ github.run_id }}
           restore-keys: |
             tvn-football-slot-

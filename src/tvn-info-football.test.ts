@@ -6,6 +6,7 @@ import { FootballPanel } from './components/info/FootballPanel.tsx'
 import { INFO_MODULES } from './components/InfoCentre.tsx'
 import { FOOTBALL_COMPETITIONS } from './info/football/competitions.ts'
 import { ingestFootballDataOrg } from './info/football/football-data-org.ts'
+import { applyLeagueOneSupplement, matchesFromEspnScoreboard, tableFromEspnStandings } from './info/football/league-one-source.ts'
 import { diagnoseFootballEmpty } from './info/football/empty-state.ts'
 import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_MATCHES_ELC, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
 import { chronologicalMatches, fixtureMatches, matchesForCompetition, resultMatches } from './info/football/match-lists.ts'
@@ -519,5 +520,89 @@ describe('INFO football', () => {
         selectedDayIso: '2026-12-01',
       }).kind,
     ).toBe('out-of-range')
+  })
+})
+
+describe('League One daily scoreboard', () => {
+  it('keeps a full-time score and ignores a scheduled 0–0', () => {
+    const matches = matchesFromEspnScoreboard({
+      events: [
+        {
+          id: '1',
+          date: '2026-10-17T11:30:00Z',
+          competitions: [
+            {
+              status: { type: { name: 'STATUS_FULL_TIME', state: 'post', completed: true } },
+              competitors: [
+                { homeAway: 'home', score: '2', team: { id: '390', displayName: 'Milton Keynes Dons' } },
+                { homeAway: 'away', score: '1', team: { id: '301', displayName: 'Luton Town' } },
+              ],
+            },
+          ],
+        },
+        {
+          id: '2',
+          date: '2026-10-24T11:30:00Z',
+          competitions: [
+            {
+              status: { type: { name: 'STATUS_SCHEDULED', state: 'pre', completed: false } },
+              competitors: [
+                { homeAway: 'home', score: '0', team: { id: '1', displayName: 'Huddersfield Town' } },
+                { homeAway: 'away', score: '0', team: { id: '2', displayName: 'Wigan Athletic' } },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    expect(matches[0]).toMatchObject({ id: 'espn-1', competitionId: 'EL1', status: 'finished', score: { home: 2, away: 1 } })
+    expect(matches[1]?.status).toBe('scheduled')
+    expect(matches[1]?.score).toBeUndefined()
+  })
+
+  it('reads the League One table and clears the entitlement error once rows arrive', () => {
+    const table = tableFromEspnStandings(
+      {
+        children: [
+          {
+            standings: {
+              entries: [
+                {
+                  team: { id: '387', displayName: 'Bradford City' },
+                  stats: [
+                    { abbreviation: 'R', value: 1 },
+                    { abbreviation: 'GP', value: 10 },
+                    { abbreviation: 'W', value: 6 },
+                    { abbreviation: 'D', value: 2 },
+                    { abbreviation: 'L', value: 2 },
+                    { abbreviation: 'F', value: 10 },
+                    { abbreviation: 'A', value: 5 },
+                    { abbreviation: 'GD', value: 5 },
+                    { abbreviation: 'P', value: 20 },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      },
+      '2026-10-18T18:00:00.000Z',
+    )
+    expect(table?.rows[0]).toMatchObject({ team: 'Bradford City', points: 20, played: 10 })
+    const prior = buildFootballSnapshot({
+      updatedIso: '2026-10-18T12:00:00.000Z',
+      provider: 'football-data.org',
+      attribution: 'Football data provided by football-data.org',
+      liveReliable: false,
+      competitions: [{ id: 'PL', code: 'PL', name: 'Premier League' }],
+      matches: [],
+      tables: [],
+      errors: ['EL1 matches: 403 restricted'],
+    })
+    const merged = applyLeagueOneSupplement(prior, { matches: [], tables: table ? [table] : [], errors: [] }, { fromIso: '2026-10-11', toIso: '2026-11-08' })
+    expect(merged.tables[0]?.competitionId).toBe('EL1')
+    expect(merged.errors ?? []).not.toEqual(expect.arrayContaining([expect.stringContaining('EL1')]))
+    expect(merged.attribution).toContain('ESPN')
+    expect(merged.liveReliable).toBe(false)
   })
 })

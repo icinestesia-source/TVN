@@ -40,6 +40,7 @@ Headlines older than **14 days** are dropped at ingest. Descriptions are truncat
 ## Football
 
 Provider: [football-data.org](https://www.football-data.org/) free tier (fixtures, delayed scores, tables).  
+League One (EL1) is not on that plan. Once per Europe/London day, ingest reads the public ESPN scoreboard and table for English League One (`eng.3`) and merges those rows into the same snapshot. No extra token. `liveReliable` stays `false`.  
 `liveReliable` is always `false` — UI shows **Delayed**, never **Live**.
 
 Competitions (`src/info/football/competitions.ts`): PL, ELC, EL1, CL, BL1, SA, PD, FL1, DED, BSA, WC, EC (12).  

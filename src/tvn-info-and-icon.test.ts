@@ -168,13 +168,19 @@ describe('the TVN icon', () => {
 describe('the loading ring', () => {
   it('runs dual broadcast typography rings on circular paths, spaced over the whole circle', () => {
     const ring = renderToStaticMarkup(createElement(LoadingRing, { percent: 42 }))
-    const paths = [...ring.matchAll(/<path id="(startup-ring-(?:outer|inner)-path)" d="([^"]+)"/g)]
-    expect(paths).toHaveLength(2)
-    for (const [, , d] of paths) {
-      expect(d).toContain('A 46,46')
-      expect(d).toContain('A 37.5,37.5')
-    }
-    expect(paths[0][2]).not.toBe(paths[1][2])
+    expect(ring).toContain('d="M 50,4 a 46,46 0 1,1 0,92 a 46,46 0 1,1 0,-92"')
+    expect(ring).toContain('d="M 50,12.5 a 37.5,37.5 0 1,1 0,75 a 37.5,37.5 0 1,1 0,-75"')
+    expect(ring).toContain('is-moving')
+    expect(ring).not.toContain('is-coloured')
+    expect(ring).not.toContain('is-flare')
+    expect(ring).toContain('attributeName="startOffset"')
+    const early = renderToStaticMarkup(createElement(LoadingRing, { percent: 10 }))
+    expect(early).not.toContain('is-moving')
+    expect(early).not.toContain('attributeName="startOffset"')
+    const late = renderToStaticMarkup(createElement(LoadingRing, { percent: 80 }))
+    expect(late).toContain('is-moving')
+    expect(late).toContain('is-coloured')
+    expect(late).toContain('is-flare')
     expect(ring.match(/startup-ring-outer-path/g)?.length).toBeGreaterThan(0)
     expect(ring).toContain('textLength=')
     expect(ring).toContain('lengthAdjust="spacing"')
@@ -193,7 +199,7 @@ describe('the loading ring', () => {
 
   it('sits round the logo on the loading screen, not on the off-air card, and the status text stays readable', () => {
     const loading = renderToStaticMarkup(createElement(StartupScreen, { phase: 'loading', progress: 42 }))
-    expect(loading).toMatch(/class="startup-emblem">[\s\S]*class="startup-rings"/)
+    expect(loading).toMatch(/class="startup-emblem">[\s\S]*class="startup-rings/)
     expect(loading).toContain('startup-status')
     expect(loading).toContain('INITIALISING TVN')
     expect(loading).toContain(`<p class="startup-message startup-progress">${STARTUP_COPY.loading}`)

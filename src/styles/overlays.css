@@ -389,6 +389,15 @@
   letter-spacing: 0;
   text-transform: uppercase;
   stroke: none;
+  fill: rgba(236, 240, 244, 0.78);
+}
+
+/* Colour arrives with the load, after halfway, using the viewer's transition shades. */
+.startup-rings.is-coloured .startup-ring-text-outer { fill: url(#startup-wash-outer); }
+.startup-rings.is-coloured .startup-ring-text-inner { fill: url(#startup-wash-inner); }
+
+.startup-rings.is-flare .startup-ring-text {
+  animation: ring-flare 2.6s ease-in-out infinite;
 }
 
 .startup-status {
@@ -541,6 +550,11 @@
   to { transform: rotate(-360deg); }
 }
 
+@keyframes ring-flare {
+  0%, 100% { opacity: 0.78; filter: drop-shadow(0 0 0 transparent); }
+  50% { opacity: 1; filter: drop-shadow(0 0 5px rgba(255, 226, 170, 0.9)); }
+}
+
 @keyframes ring-in {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
@@ -566,6 +580,7 @@
   .startup[aria-busy='true'] .startup-logo:not(.is-spinner),
   .startup-rings,
   .startup-ring,
+  .startup-rings.is-flare .startup-ring-text,
   .startup-cal-beacon,
   .startup-status-line,
   .startup-noise-frames { animation: none; }

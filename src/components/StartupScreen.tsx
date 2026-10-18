@@ -87,74 +87,16 @@ function useCountUp(target: number): number {
   return Math.min(shown, target)
 }
 
-const RING_CENTRE = 50
+function circlePath(radius: number): string {
+  return `M 50,${50 - radius} a ${radius},${radius} 0 1,1 0,${radius * 2} a ${radius},${radius} 0 1,1 0,-${radius * 2}`
+}
+
 const OUTER_RADIUS = 46
 const INNER_RADIUS = 37.5
-/** How far past each side the lane change sits, so the two paths cross instead of meeting on a radius. */
-const LANE_CROSS = 0.42
-
-function lanePoint(radius: number, angle: number): [number, number] {
-  return [RING_CENTRE + radius * Math.cos(angle), RING_CENTRE - radius * Math.sin(angle)]
-}
-
-function laneTangent(radius: number, angle: number): [number, number] {
-  return [-radius * Math.sin(angle), -radius * Math.cos(angle)]
-}
-
-function crossCurve(from: [number, number], fromTangent: [number, number], to: [number, number], toTangent: [number, number]): string {
-  const scale = (tangent: [number, number]) => {
-    const length = Math.hypot(tangent[0], tangent[1]) || 1
-    return [tangent[0] / length, tangent[1] / length] as [number, number]
-  }
-  const [sx, sy] = scale(fromTangent)
-  const [ex, ey] = scale(toTangent)
-  const handle = 11
-  const n = (value: number) => value.toFixed(2)
-  return `C ${n(from[0] + sx * handle)},${n(from[1] + sy * handle)} ${n(to[0] - ex * handle)},${n(to[1] - ey * handle)} ${n(to[0])},${n(to[1])}`
-}
-
-function curveLength(start: [number, number], command: string): number {
-  const values = command
-    .slice(1)
-    .trim()
-    .split(/[,\s]+/)
-    .map(Number)
-  const controls: [number, number][] = [start, [values[0], values[1]], [values[2], values[3]], [values[4], values[5]]]
-  let length = 0
-  let [x, y] = start
-  for (let step = 1; step <= 16; step += 1) {
-    const t = step / 16
-    const u = 1 - t
-    const nx = u ** 3 * controls[0][0] + 3 * u ** 2 * t * controls[1][0] + 3 * u * t ** 2 * controls[2][0] + t ** 3 * controls[3][0]
-    const ny = u ** 3 * controls[0][1] + 3 * u ** 2 * t * controls[1][1] + 3 * u * t ** 2 * controls[2][1] + t ** 3 * controls[3][1]
-    length += Math.hypot(nx - x, ny - y)
-    x = nx
-    y = ny
-  }
-  return length
-}
-
-/**
- * One closed lap that spends half its length on the outer lane and half on the inner.
- * `outerFirst` takes the outer lane across the top; the other path takes it across the bottom, so they cross at each side.
- */
-function weavePath(outerFirst: boolean): { d: string; length: number } {
-  const top = outerFirst ? OUTER_RADIUS : INNER_RADIUS
-  const bottom = outerFirst ? INNER_RADIUS : OUTER_RADIUS
-  const span = Math.PI - 2 * LANE_CROSS
-  const start = lanePoint(top, LANE_CROSS)
-  const topEnd = lanePoint(top, Math.PI - LANE_CROSS)
-  const bottomStart = lanePoint(bottom, Math.PI + LANE_CROSS)
-  const bottomEnd = lanePoint(bottom, -LANE_CROSS)
-  const n = (value: number) => value.toFixed(2)
-  const toTop = crossCurve(bottomEnd, laneTangent(bottom, -LANE_CROSS), start, laneTangent(top, LANE_CROSS))
-  const toBottom = crossCurve(topEnd, laneTangent(top, Math.PI - LANE_CROSS), bottomStart, laneTangent(bottom, Math.PI + LANE_CROSS))
-  const d = `M ${n(start[0])},${n(start[1])} A ${top},${top} 0 0 0 ${n(topEnd[0])},${n(topEnd[1])} ${toBottom} A ${bottom},${bottom} 0 0 0 ${n(bottomEnd[0])},${n(bottomEnd[1])} ${toTop}`
-  return { d, length: top * span + bottom * span + curveLength(topEnd, toBottom) + curveLength(bottomEnd, toTop) }
-}
-
-const OUTER_WEAVE = weavePath(true)
-const INNER_WEAVE = weavePath(false)
+const OUTER_PATH = circlePath(OUTER_RADIUS)
+const INNER_PATH = circlePath(INNER_RADIUS)
+const OUTER_LENGTH = 2 * Math.PI * OUTER_RADIUS
+const INNER_LENGTH = 2 * Math.PI * INNER_RADIUS
 
 /** Lift a chosen colour toward white so the ring reads as light rather than a solid band. */
 function liftColour(hex: string, toward = 0.42): string {
@@ -200,6 +142,8 @@ function RingText({
   className,
   fontSize,
   fill,
+  travel,
+  travelDur,
 }: {
   id: string
   path: string
@@ -208,6 +152,9 @@ function RingText({
   className: string
   fontSize: number
   fill: string
+  /** From 25% loaded, the words travel their own circle as well as the ring turning. */
+  travel: boolean
+  travelDur: string
 }) {
   const textRef = useRef<SVGTextElement>(null)
   const [gap, setGap] = useState<number | null>(null)
@@ -221,6 +168,7 @@ function RingText({
 
   const spare = gap
   const letters = spare == null ? null : [...phrase]
+  const reduce = typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)
   return (
     <>
       <path id={id} d={path} fill="none" />
@@ -238,6 +186,7 @@ function RingText({
                 </tspan>
               ))
             : phrase}
+          {travel && !reduce ? <animate attributeName="startOffset" from="0%" to="100%" dur={travelDur} repeatCount="indefinite" /> : null}
         </textPath>
       </text>
     </>
@@ -306,12 +255,17 @@ function CalibrationLayer() {
 }
 
 /**
- * Dual typographic rings around the logo — broadcast outer copy, technical inner copy.
- * Percent is not drawn on the rings (real progress stays in the accessible status text).
+ * Two separate rings, turning opposite ways. The loaded share changes them:
+ * at 25% the words travel the circle, after 50% they take colour, and at 75% they flare.
+ * The percentage itself stays in the status line.
  */
-export function LoadingRing({ percent: _percent, colours = [] }: { percent?: number; colours?: readonly string[] }) {
+export function LoadingRing({ percent = 0, colours = [] }: { percent?: number; colours?: readonly string[] }) {
+  const moving = percent >= 25
+  const coloured = percent >= 50
+  const flare = percent >= 75
+  const stage = ['startup-rings', moving ? 'is-moving' : '', coloured ? 'is-coloured' : '', flare ? 'is-flare' : ''].filter(Boolean).join(' ')
   return (
-    <div className="startup-rings" aria-hidden="true">
+    <div className={stage} aria-hidden="true">
       <CalibrationLayer />
       <svg className="startup-ring startup-ring-outer" viewBox="0 0 100 100" focusable="false">
         <defs>
@@ -319,12 +273,14 @@ export function LoadingRing({ percent: _percent, colours = [] }: { percent?: num
         </defs>
         <RingText
           id="startup-ring-outer-path"
-          path={OUTER_WEAVE.d}
-          length={OUTER_WEAVE.length}
+          path={OUTER_PATH}
+          length={OUTER_LENGTH}
           phrase={OUTER_RING_COPY}
           className="startup-ring-text startup-ring-text-outer"
-          fontSize={2.2}
+          fontSize={2.35}
           fill="url(#startup-wash-outer)"
+          travel={moving}
+          travelDur="22s"
         />
       </svg>
       <svg className="startup-ring startup-ring-inner" viewBox="0 0 100 100" focusable="false">
@@ -333,12 +289,14 @@ export function LoadingRing({ percent: _percent, colours = [] }: { percent?: num
         </defs>
         <RingText
           id="startup-ring-inner-path"
-          path={INNER_WEAVE.d}
-          length={INNER_WEAVE.length}
+          path={INNER_PATH}
+          length={INNER_LENGTH}
           phrase={INNER_RING_COPY}
           className="startup-ring-text startup-ring-text-inner"
-          fontSize={2.2}
+          fontSize={2.05}
           fill="url(#startup-wash-inner)"
+          travel={moving}
+          travelDur="16s"
         />
       </svg>
     </div>

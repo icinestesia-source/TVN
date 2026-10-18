@@ -1,7 +1,9 @@
 /**
- * National weather maps: a few real places on a simple geographic plot.
- * One Open-Meteo request per country. No tile server and no extra dependency.
+ * National weather maps: city readings on a real coastline.
+ * Coastlines are Natural Earth 1:50m. One Open-Meteo request per country.
  */
+import { MAP_SHAPES } from './map-shapes.ts'
+
 
 export interface MapPlace {
   name: string
@@ -17,6 +19,8 @@ export interface NationalMapRegion {
   west: number
   east: number
   places: readonly MapPlace[]
+  /** Real coastline in the map's 0–100 frame. Natural Earth, public domain. */
+  shape: string
 }
 
 export interface MapReading {
@@ -30,8 +34,9 @@ export interface MapReading {
 export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   {
     id: 'uk',
+    shape: MAP_SHAPES.uk,
     name: 'United Kingdom',
-    north: 59.5,
+    north: 61.2,
     south: 49.5,
     west: -8.5,
     east: 2.2,
@@ -50,6 +55,7 @@ export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   },
   {
     id: 'ireland',
+    shape: MAP_SHAPES.ireland,
     name: 'Ireland',
     north: 55.6,
     south: 51.3,
@@ -65,6 +71,7 @@ export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   },
   {
     id: 'france',
+    shape: MAP_SHAPES.france,
     name: 'France',
     north: 51.4,
     south: 42.2,
@@ -84,6 +91,7 @@ export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   },
   {
     id: 'germany',
+    shape: MAP_SHAPES.germany,
     name: 'Germany',
     north: 55.2,
     south: 47.2,
@@ -100,6 +108,7 @@ export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   },
   {
     id: 'spain',
+    shape: MAP_SHAPES.spain,
     name: 'Spain',
     north: 43.9,
     south: 36.0,
@@ -117,6 +126,7 @@ export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   },
   {
     id: 'italy',
+    shape: MAP_SHAPES.italy,
     name: 'Italy',
     north: 47.1,
     south: 36.6,
@@ -134,6 +144,7 @@ export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   },
   {
     id: 'europe',
+    shape: MAP_SHAPES.europe,
     name: 'Europe',
     north: 71,
     south: 35,
@@ -157,6 +168,7 @@ export const NATIONAL_MAPS: readonly NationalMapRegion[] = [
   },
   {
     id: 'usa',
+    shape: MAP_SHAPES.usa,
     name: 'United States',
     north: 49.5,
     south: 24.5,
@@ -181,12 +193,13 @@ export function nationalMapById(id: string): NationalMapRegion {
   return NATIONAL_MAPS.find((region) => region.id === id) ?? NATIONAL_MAPS[0]
 }
 
-/** Position on a 0–100 plot. North is up. */
-export function projectPlace(region: NationalMapRegion, place: Pick<MapPlace, 'latitude' | 'longitude'>): { x: number; y: number } {
+/** Position on a 0–100 plot. North is up. Places are inset so labels stay inside the frame. */
+export function projectPlace(region: NationalMapRegion, place: Pick<MapPlace, 'latitude' | 'longitude'>, inset = true): { x: number; y: number } {
   const width = region.east - region.west
   const height = region.north - region.south
   const x = width === 0 ? 50 : ((place.longitude - region.west) / width) * 100
   const y = height === 0 ? 50 : ((region.north - place.latitude) / height) * 100
+  if (!inset) return { x, y }
   return { x: Math.min(96, Math.max(4, x)), y: Math.min(94, Math.max(8, y)) }
 }
 

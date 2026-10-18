@@ -704,7 +704,9 @@ export function FootballPanel() {
           {competitionId !== 'all' && competitionUnavailable(snapshot, competitionId) ? (
             <p className="options-note" role="status" data-empty-kind="competition-unavailable">
               COMPETITION NOT INCLUDED IN CURRENT API PLAN — {competitionName(competitionId)}
-              {competitionId === 'EL1' ? ' (League One)' : ''} is unavailable under the current football-data.org entitlement.
+              {competitionId === 'EL1'
+                ? ' (League One) is not on the football-data.org plan, and the daily public scoreboard did not return fixtures.'
+                : ' is unavailable under the current football-data.org entitlement.'}
             </p>
           ) : dayMatches.length === 0 ? (
             <p className="options-note" role="status" data-empty-kind={emptyMatches.kind}>

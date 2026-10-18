@@ -37,6 +37,8 @@ describe('INFO weather', () => {
     expect(readings[0]).toMatchObject({ name: 'Lerwick', temperatureC: 11, weatherCode: 2 })
     expect(readings[1].temperatureC).toBeNull()
     expect(readings).toHaveLength(uk.places.length)
+    expect(uk.shape.startsWith('M ')).toBe(true)
+    expect(uk.shape.length).toBeGreaterThan(500)
   })
 
   it('parses Open-Meteo payloads and never invents temperatures', () => {

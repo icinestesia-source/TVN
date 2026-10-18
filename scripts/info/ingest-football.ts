@@ -11,6 +11,12 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ingestFootballDataOrg } from '../../src/info/football/football-data-org.ts'
+import {
+  applyLeagueOneSupplement,
+  fetchLeagueOneSupplement,
+  LEAGUE_ONE_CODE,
+  londonFootballDay,
+} from '../../src/info/football/league-one-source.ts'
 import { addDaysIso, emptyFootballSnapshot, todayIso } from '../../src/info/football/normalize.ts'
 import { footballIngestForced, footballSlotDue } from '../../src/info/football/schedule.ts'
 import {
@@ -23,6 +29,7 @@ import type { FootballSnapshot } from '../../src/info/football/types.ts'
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const outPath = join(root, 'public/info/football.json')
 const slotPath = join(root, '.cache/info-football-slot')
+const leagueOneDayPath = join(root, '.cache/info-football-el1-day')
 
 function previousSnapshot(): FootballSnapshot | null {
   try {
@@ -51,6 +58,19 @@ function rememberSlotKey(key: string): void {
   writeFileSync(slotPath, `${key}\n`, 'utf8')
 }
 
+function lastLeagueOneDay(): string | null {
+  try {
+    return readFileSync(leagueOneDayPath, 'utf8').trim() || null
+  } catch {
+    return null
+  }
+}
+
+function rememberLeagueOneDay(day: string): void {
+  mkdirSync(dirname(leagueOneDayPath), { recursive: true })
+  writeFileSync(leagueOneDayPath, `${day}\n`, 'utf8')
+}
+
 function emitWrote(wrote: boolean): void {
   const marker = join(root, '.cache/info-football-wrote')
   mkdirSync(dirname(marker), { recursive: true })
@@ -74,9 +94,25 @@ function shouldIngestNow(): { run: boolean; reason: string; slotKey?: string } {
   return { run: true, reason: `schedule ${due.key}`, slotKey: due.key }
 }
 
+async function addDailyLeagueOne(snapshot: FootballSnapshot, from: string, to: string, due: boolean): Promise<FootballSnapshot> {
+  if (!due) return snapshot
+  const supplement = await fetchLeagueOneSupplement({ dateFrom: from, dateTo: to })
+  rememberLeagueOneDay(londonFootballDay(new Date()))
+  const leagueMatches = supplement.matches.filter((match) => match.competitionId === LEAGUE_ONE_CODE).length
+  console.log(`League One daily scoreboard: ${leagueMatches} matches, ${supplement.tables.length} tables` + (supplement.errors.length ? ` · ${supplement.errors.length} warnings` : ''))
+  return applyLeagueOneSupplement(snapshot, supplement, { fromIso: from, toIso: to })
+}
+
 async function main(): Promise<void> {
   const gate = shouldIngestNow()
-  if (!gate.run) {
+  const today = todayIso()
+  const from = addDaysIso(today, -7)
+  const to = addDaysIso(today, 21)
+  const forced = footballIngestForced(process.env)
+  const leagueOneDue = forced || lastLeagueOneDay() !== londonFootballDay(new Date())
+  const prior = previousSnapshot()
+
+  if (!gate.run && !leagueOneDue) {
     console.log(`Football ingest skipped: ${gate.reason}`)
     emitWrote(false)
     process.exitCode = 0
@@ -84,26 +120,36 @@ async function main(): Promise<void> {
   }
 
   const token = process.env.FOOTBALL_DATA_TOKEN?.trim()
-  const prior = previousSnapshot()
-  if (!token) {
-    const snapshot =
+  if (!gate.run || !token) {
+    const base =
       prior && (prior.matches.length || prior.tables.length)
         ? prior
         : emptyFootballSnapshot(
             'DATA NOT YET PUBLISHED — Add FOOTBALL_DATA_TOKEN to run football ingest (free token from football-data.org), then publish the snapshot.',
           )
-    if (!prior) writeSnapshot(snapshot)
-    console.error(snapshot.unavailableReason ?? 'FOOTBALL_DATA_TOKEN missing; kept previous snapshot.')
-    emitWrote(false)
-    process.exitCode = 0
+    if (!token && gate.run) console.error(base.unavailableReason ?? 'FOOTBALL_DATA_TOKEN missing; kept previous snapshot.')
+    if (!gate.run) console.log(`Football ingest skipped: ${gate.reason}`)
+    if (!leagueOneDue) {
+      if (!prior) writeSnapshot(base)
+      emitWrote(false)
+      process.exitCode = 0
+      return
+    }
+    const snapshot = await addDailyLeagueOne(base, from, to, true)
+    const gained = snapshot.matches.some((match) => match.competitionId === LEAGUE_ONE_CODE) || snapshot.tables.some((table) => table.competitionId === LEAGUE_ONE_CODE)
+    if (!gained && prior) {
+      emitWrote(false)
+      process.exitCode = 0
+      return
+    }
+    writeSnapshot(snapshot)
+    emitWrote(true)
+    console.log(`Wrote League One daily update to ${outPath}`)
     return
   }
-
-  const today = todayIso()
-  const from = addDaysIso(today, -7)
-  const to = addDaysIso(today, 21)
-  // Forced ingest retries every competition; scheduled runs skip known entitlement failures.
-  const skipCodes = footballIngestForced(process.env) ? [] : entitlementSkipCodes(prior)
+  // Forced ingest retries every competition. Scheduled runs skip known entitlement failures.
+  // League One is filled from the daily public scoreboard, so it is not requested here unless forced.
+  const skipCodes = forced ? [] : [...new Set([...entitlementSkipCodes(prior), LEAGUE_ONE_CODE])]
   const skipErrorMessages =
     prior?.errors?.filter((entry) => skipCodes.some((code) => entry.startsWith(`${code} matches:`))) ?? []
   try {
@@ -115,7 +161,9 @@ async function main(): Promise<void> {
       skipErrorMessages,
     })
     // Merge: failed comps + match-id dedupe + retain history outside the rolling window.
-    const snapshot = mergeFootballSnapshots(prior, fetched, { fetchFromIso: from, fetchToIso: to, today })
+    let snapshot = mergeFootballSnapshots(prior, fetched, { fetchFromIso: from, fetchToIso: to, today })
+    const providerHasLeagueOne = fetched.matches.some((match) => match.competitionId === LEAGUE_ONE_CODE)
+    snapshot = await addDailyLeagueOne(snapshot, from, to, leagueOneDue && !providerHasLeagueOne)
     if (footballSnapshotIsEmpty(snapshot) && prior && !footballSnapshotIsEmpty(prior)) {
       console.error('Football ingest empty; keeping previous snapshot.', fetched.errors?.join('; '))
       emitWrote(false)

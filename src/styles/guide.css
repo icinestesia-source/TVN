@@ -2398,11 +2398,21 @@ a.info-creator:focus-visible {
   .info-competition-tabs .tab { max-width: 5.5rem; }
 }
 .info-more-stories { align-self: flex-start; }
-.info-weather-map { display: flex; flex-direction: column; gap: 10px; }
-.info-weather-map-plot { width: 100%; height: auto; max-height: min(70vh, 520px); background: rgb(8 12 18); }
-.info-weather-map-field { fill: rgb(16 22 32); stroke: rgb(255 255 255 / 10%); }
-.info-weather-map-name { fill: rgb(232 236 242); font-size: 2.4px; font-family: var(--font-ui); }
-.info-weather-map-temp { fill: rgb(198 206 216); font-size: 2.15px; font-family: var(--font-ui); }
+.info-weather-map { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.info-weather-map-plot {
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  aspect-ratio: 1;
+  max-height: min(68vh, 560px);
+  flex: 0 0 auto;
+  align-self: center;
+  background: rgb(8 12 18);
+}
+.info-weather-map-field { fill: rgb(12 22 36); stroke: rgb(255 255 255 / 12%); }
+.info-weather-map-land { fill: rgb(46 64 82); stroke: rgb(214 224 234 / 55%); stroke-width: 0.45; stroke-linejoin: round; }
+.info-weather-map-name { fill: rgb(244 247 250); font-family: var(--font-ui); font-weight: 600; }
+.info-weather-map-temp { fill: rgb(214 222 230); font-family: var(--font-ui); }
 .info-weather-temp { margin: 0; font-size: 2rem; font-weight: 650; letter-spacing: 0.02em; display: flex; align-items: baseline; gap: 10px; }
 .info-weather-symbol { font-size: 1.4rem; line-height: 1; }
 .info-weather-search { display: grid; gap: 6px; }

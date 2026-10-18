@@ -64,7 +64,7 @@ export function WeatherMap({ tempUnit }: { tempUnit: TempUnit }) {
           </button>
         ))}
       </div>
-      <p className="info-panel-meta">Current temperature · Weather data by Open-Meteo.com</p>
+      <p className="info-panel-meta">Current temperature · Weather data by Open-Meteo.com · Coastline by Natural Earth</p>
       {status === 'loading' ? <p className="options-note">Loading map…</p> : null}
       {status === 'error' ? (
         <p className="options-note" role="status">
@@ -78,18 +78,19 @@ export function WeatherMap({ tempUnit }: { tempUnit: TempUnit }) {
 
 function MapPlot({ region, readings, tempUnit }: { region: NationalMapRegion; readings: MapReading[]; tempUnit: TempUnit }) {
   return (
-    <svg className="info-weather-map-plot" viewBox="0 0 100 100" role="img" aria-label={`${region.name} weather map`}>
+    <svg className="info-weather-map-plot" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${region.name} weather map`}>
       <rect className="info-weather-map-field" x="0" y="0" width="100" height="100" rx="1.5" />
+      <path className="info-weather-map-land" fillRule="evenodd" d={region.shape} />
       {readings.map((reading) => {
         const point = projectPlace(region, reading)
         const label = reading.temperatureC == null ? '—' : formatTemp(reading.temperatureC, tempUnit)
         return (
           <g key={reading.name} transform={`translate(${point.x} ${point.y})`}>
-            <circle r="1.35" fill={tempColour(reading.temperatureC)} />
-            <text className="info-weather-map-name" y="-2.2" textAnchor="middle">
+            <circle r="1.6" fill={tempColour(reading.temperatureC)} stroke="rgba(8, 12, 18, 0.8)" strokeWidth="0.25" />
+            <text className="info-weather-map-name" y="-2.4" textAnchor="middle" fontSize="2.6">
               {reading.name}
             </text>
-            <text className="info-weather-map-temp" y="3.6" textAnchor="middle">
+            <text className="info-weather-map-temp" y="3.8" textAnchor="middle" fontSize="2.3">
               {reading.weatherCode == null ? '' : `${weatherSymbol(reading.weatherCode)} `}
               {label}
             </text>
