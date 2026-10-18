@@ -11,7 +11,7 @@
 | | Commit |
 |--|--------|
 | **Phase E start** | `373243c` — Record Phase D.1 final commit in the completion report. |
-| **Phase E end** | *(recorded after commit — see §2 / git log)* |
+| **Phase E end** | `0b64f80` — Stabilise TVN 2.0 INFO for the Phase E release candidate. |
 
 Prior INFO work included (local, ahead of `origin/main`): Phases B–D.1 (23 commits at Phase E start).
 
