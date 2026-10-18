@@ -1,7 +1,7 @@
 /**
  * Fetch allowlisted RSS feeds and write public/info/news.json.
  * Run: npm run info:news
- * Scheduled CI commits the file so Netlify deploys an updated snapshot.
+ * Publish via Netlify Blobs (info:publish) — does not rebuild the app.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   for (const feed of NEWS_FEEDS) {
     try {
       const xml = await fetchText(feed.feedUrl)
-      const found = itemsFromFeedXml(xml, feed)
+      const found = itemsFromFeedXml(xml, { sourceId: feed.id, publisher: feed.publisher, category: feed.category })
       if (found.length === 0) errors.push(`${feed.id}: no items`)
       else items.push(...found)
     } catch (caught) {

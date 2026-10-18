@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { loadNewsSnapshot, type NewsLoadState } from '../../info/news/load.ts'
-import { NEWS_CATEGORIES, type NewsCategory } from '../../info/news/types.ts'
+import { expandedLimitFor, initialLimitFor, populatedCategories, selectHeadlines } from '../../info/news/select.ts'
+import { NEWS_CATEGORIES, type NewsCategory, type NewsItem } from '../../info/news/types.ts'
 import { keepKey } from '../keep-key.ts'
 
 function formatWhen(iso: string | null): string {
@@ -10,12 +11,31 @@ function formatWhen(iso: string | null): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(ms)
 }
 
+function HeadlineList({ items }: { items: readonly NewsItem[] }) {
+  return (
+    <ul className="info-list">
+      {items.map((item) => (
+        <li key={item.id} className="info-item">
+          <a className="info-item-title" href={item.url} target="_blank" rel="noopener noreferrer">
+            {item.title}
+          </a>
+          {item.description ? <p className="info-item-desc">{item.description}</p> : null}
+          <span className="info-item-meta">
+            {item.publisher} · {formatWhen(item.publishedAt)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /**
  * INFO → News: headlines from the published snapshot. Failures stay inside this panel.
  */
 export function NewsPanel() {
   const [state, setState] = useState<NewsLoadState>({ status: 'loading' })
-  const [category, setCategory] = useState<NewsCategory | 'all'>('all')
+  const [category, setCategory] = useState<NewsCategory>('top')
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -26,6 +46,24 @@ export function NewsPanel() {
       live = false
     }
   }, [])
+
+  useEffect(() => {
+    setExpanded(false)
+  }, [category])
+
+  const ready = state.status === 'ready' ? state : null
+  const categories = useMemo(() => {
+    if (!ready) return []
+    const present = new Set(populatedCategories(ready.snapshot.items))
+    return NEWS_CATEGORIES.filter((entry) => present.has(entry.id))
+  }, [ready])
+
+  useEffect(() => {
+    if (!categories.length) return
+    if (!categories.some((entry) => entry.id === category)) {
+      setCategory(categories[0].id)
+    }
+  }, [categories, category])
 
   if (state.status === 'loading') {
     return (
@@ -46,7 +84,10 @@ export function NewsPanel() {
   }
 
   const { snapshot, stale, fromCache } = state
-  const items = category === 'all' ? snapshot.items : snapshot.items.filter((item) => item.category === category)
+  const pool = snapshot.items.filter((item) => item.category === category)
+  const limit = expanded ? expandedLimitFor(category) : initialLimitFor(category)
+  const items = selectHeadlines(pool, { limit })
+  const canExpand = pool.length > initialLimitFor(category)
 
   return (
     <div className="info-panel">
@@ -57,10 +98,7 @@ export function NewsPanel() {
         {snapshot.errors?.length ? ` · ${snapshot.errors.length} feed ${snapshot.errors.length === 1 ? 'warning' : 'warnings'}` : ''}
       </p>
       <div className="tabs" role="tablist" aria-label="News categories">
-        <button type="button" role="tab" aria-selected={category === 'all'} className={category === 'all' ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={() => setCategory('all')}>
-          All
-        </button>
-        {NEWS_CATEGORIES.map((entry) => (
+        {categories.map((entry) => (
           <button
             key={entry.id}
             type="button"
@@ -77,19 +115,20 @@ export function NewsPanel() {
       {items.length === 0 ? (
         <p className="options-note">No headlines in this category.</p>
       ) : (
-        <ul className="info-list">
-          {items.map((item) => (
-            <li key={item.id} className="info-item">
-              <a className="info-item-title" href={item.url} target="_blank" rel="noopener noreferrer">
-                {item.title}
-              </a>
-              {item.description ? <p className="info-item-desc">{item.description}</p> : null}
-              <span className="info-item-meta">
-                {item.publisher} · {NEWS_CATEGORIES.find((entry) => entry.id === item.category)?.label ?? item.category} · {formatWhen(item.publishedAt)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <HeadlineList items={items} />
+          {canExpand ? (
+            <button
+              type="button"
+              className="tab info-more-stories"
+              onKeyDown={keepKey}
+              onClick={() => setExpanded((value) => !value)}
+              aria-expanded={expanded}
+            >
+              {expanded ? 'Show fewer' : 'More stories'}
+            </button>
+          ) : null}
+        </>
       )}
     </div>
   )
