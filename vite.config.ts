@@ -4,6 +4,7 @@ import type { Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { feedMiddleware } from './server/podcast-feed.ts'
 import { channelMiddleware } from './server/youtube-channel.ts'
+import { infoFootballMiddleware, infoNewsMiddleware, infoPublishMiddleware } from './server/info-api.ts'
 
 /** The Add Channel lookup, served by the dev and preview servers as the Netlify Function serves it in production. */
 function channelApi(): Plugin {
@@ -12,10 +13,16 @@ function channelApi(): Plugin {
     configureServer(server) {
       server.middlewares.use('/api/channel', channelMiddleware)
       server.middlewares.use('/api/feed', feedMiddleware)
+      server.middlewares.use('/api/info/news', infoNewsMiddleware)
+      server.middlewares.use('/api/info/football', infoFootballMiddleware)
+      server.middlewares.use('/api/info/publish', infoPublishMiddleware)
     },
     configurePreviewServer(server) {
       server.middlewares.use('/api/channel', channelMiddleware)
       server.middlewares.use('/api/feed', feedMiddleware)
+      server.middlewares.use('/api/info/news', infoNewsMiddleware)
+      server.middlewares.use('/api/info/football', infoFootballMiddleware)
+      server.middlewares.use('/api/info/publish', infoPublishMiddleware)
     },
   }
 }

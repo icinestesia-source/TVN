@@ -1,14 +1,15 @@
-# Refresh INFO snapshots and push so Netlify rebuilds with new public/info/*.json.
+# Refresh INFO snapshots into Netlify Blobs via /api/info/publish.
+# Does NOT commit JSON to git and does NOT trigger a Netlify application rebuild.
 name: INFO ingest
 
 on:
   schedule:
-    # About every 20 minutes (GitHub schedule is best-effort).
-    - cron: '5,25,45 * * * *'
+    # About every 30 minutes (GitHub schedule is best-effort).
+    - cron: '7,37 * * * *'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   ingest:
@@ -26,14 +27,8 @@ jobs:
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
         run: npm run info:football
-      - name: Commit published snapshots
-        run: |
-          git config user.name 'tvn-info-bot'
-          git config user.email 'tvn-info-bot@users.noreply.github.com'
-          git add public/info/news.json public/info/football.json
-          if git diff --staged --quiet; then
-            echo 'No INFO snapshot changes'
-            exit 0
-          fi
-          git commit -m "Refresh INFO news and football snapshots."
-          git push
+      - name: Publish to Netlify Blobs
+        env:
+          INFO_PUBLISH_URL: ${{ secrets.INFO_PUBLISH_URL }}
+          INFO_PUBLISH_SECRET: ${{ secrets.INFO_PUBLISH_SECRET }}
+        run: npm run info:publish

@@ -1,8 +1,24 @@
-# INFO data sources (Phase B)
+# INFO data sources and delivery (Phase B / B.1)
+
+## Delivery architecture (no site rebuild)
+
+```
+RSS / football-data.org
+  → GitHub Actions (npm run info:news / info:football)
+  → POST /api/info/publish  (Bearer INFO_PUBLISH_SECRET)
+  → Netlify Blobs (site-wide store `tvn-info`)
+  → GET /api/info/news | /api/info/football
+  → INFO panels in the browser
+```
+
+Static seeds `public/info/*.json` ship with application deploys as **fallback only**.  
+Refreshing INFO **does not** commit to `main` and **does not** trigger a Netlify production rebuild.
+
+Local/dev: Vite serves the same `/api/info/*` paths from `public/info/*.json`.
 
 ## News
 
-Allowlisted public RSS/Atom feeds (see `src/info/news/feeds.ts`):
+Allowlisted public RSS/Atom feeds (`src/info/news/feeds.ts`):
 
 | Id | Publisher | Category | Feed |
 |----|-----------|----------|------|
@@ -19,28 +35,30 @@ Allowlisted public RSS/Atom feeds (see `src/info/news/feeds.ts`):
 | guardian-business | The Guardian | Business | https://www.theguardian.com/uk/business/rss |
 | guardian-science | The Guardian | Science | https://www.theguardian.com/science/rss |
 
-TVN stores **headline, publisher, time, short description, category, and link** only. Full articles remain on the publisher site.
-
-Ingest: `npm run info:news` → `public/info/news.json`.  
-Scheduled: `.github/workflows/info-ingest.yml` commits updated JSON so Netlify redeploys.
+Headlines older than **14 days** are dropped at ingest. Descriptions are truncated to 280 characters. Full articles stay on the publisher site.
 
 ## Football
 
 Provider: [football-data.org](https://www.football-data.org/) free tier (fixtures, delayed scores, tables).  
-Auth: `FOOTBALL_DATA_TOKEN` as a **GitHub Actions secret** and optional local env var — never in the browser.
+`liveReliable` is always `false` — UI shows **Delayed**, never **Live**.
+
+Competitions (`src/info/football/competitions.ts`): PL, ELC, CL, BL1, SA, PD, FL1.
+
+### Secrets (GitHub Actions + Netlify)
+
+| Secret | Where | Purpose |
+|--------|-------|---------|
+| `FOOTBALL_DATA_TOKEN` | GitHub Actions | football-data.org free API token |
+| `INFO_PUBLISH_SECRET` | GitHub Actions **and** Netlify env | Bearer token for `/api/info/publish` |
+| `INFO_PUBLISH_URL` | GitHub Actions | e.g. `https://<your-site>.netlify.app/api/info/publish` |
 
 ### Product-owner setup
 
-1. Register at https://www.football-data.org/client/register for a free token.  
-2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**  
-   - Name: `FOOTBALL_DATA_TOKEN`  
-   - Value: the token  
-3. Run **Actions → INFO ingest → Run workflow**, or wait for the schedule.  
-4. Locally (optional): `FOOTBALL_DATA_TOKEN=… npm run info:football`
+1. Register at https://www.football-data.org/client/register → free token.  
+2. GitHub → Settings → Secrets → Actions: add `FOOTBALL_DATA_TOKEN`, `INFO_PUBLISH_SECRET`, `INFO_PUBLISH_URL`.  
+3. Netlify → Site configuration → Environment variables: add `INFO_PUBLISH_SECRET` (same value).  
+4. Deploy the application once so `/api/info/*` functions exist.  
+5. Actions → **INFO ingest** → Run workflow.  
+6. Open Guide → Info → News / Sports on the live site.
 
-Competitions (free tier codes in `src/info/football/competitions.ts`): PL, ELC, CL, BL1, SA, PD, FL1.  
-Not on free tier (excluded): EFL League One/Two, FA Cup, Scottish Premiership.
-
-`liveReliable` is always `false` on this tier — the UI shows **Delayed**, never **Live**.
-
-Ingest: `npm run info:football` → `public/info/football.json`.
+Never put tokens in the repo, Vite env, or chat.

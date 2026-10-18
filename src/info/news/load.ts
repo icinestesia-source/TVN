@@ -1,6 +1,9 @@
+import { loadPublishedSnapshot } from '../load-snapshot.ts'
 import { asNewsSnapshot, newsIsStale } from './normalize.ts'
 import type { NewsSnapshot } from './types.ts'
 import { NEWS_SNAPSHOT_URL } from './types.ts'
+
+export const NEWS_API_URL = '/api/info/news'
 
 const CACHE_KEY = 'tvn.info-news.v1'
 
@@ -26,18 +29,18 @@ function writeSessionCache(snapshot: NewsSnapshot): void {
 }
 
 /** Fetch the published news snapshot. Never throws; keeps the last good copy when the network fails. */
-export async function loadNewsSnapshot(url = NEWS_SNAPSHOT_URL): Promise<NewsLoadState> {
+export async function loadNewsSnapshot(): Promise<NewsLoadState> {
   const cached = typeof sessionStorage === 'undefined' ? null : readSessionCache()
-  try {
-    const response = await fetch(url, { cache: 'no-store' })
-    if (!response.ok) throw new Error(`News unavailable (${response.status})`)
-    const snapshot = asNewsSnapshot(await response.json())
-    if (!snapshot) throw new Error('News data could not be read')
-    if (typeof sessionStorage !== 'undefined') writeSessionCache(snapshot)
-    return { status: 'ready', snapshot, stale: newsIsStale(snapshot), fromCache: false }
-  } catch (caught) {
-    const message = caught instanceof Error ? caught.message : 'News unavailable'
-    if (cached) return { status: 'ready', snapshot: cached, stale: true, fromCache: true }
-    return { status: 'unavailable', message, snapshot: null }
+  const loaded = await loadPublishedSnapshot(NEWS_API_URL, NEWS_SNAPSHOT_URL, asNewsSnapshot)
+  if ('value' in loaded) {
+    if (typeof sessionStorage !== 'undefined') writeSessionCache(loaded.value)
+    return {
+      status: 'ready',
+      snapshot: loaded.value,
+      stale: newsIsStale(loaded.value) || loaded.fromStatic,
+      fromCache: false,
+    }
   }
+  if (cached) return { status: 'ready', snapshot: cached, stale: true, fromCache: true }
+  return { status: 'unavailable', message: loaded.error, snapshot: null }
 }

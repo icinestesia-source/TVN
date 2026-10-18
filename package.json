@@ -17,11 +17,13 @@
     "apps": "sh scripts/build-mac-app.sh && sh scripts/build-android-app.sh && sh scripts/build-mac-app.sh full && sh scripts/build-android-app.sh full",
     "harvester": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning harvester/cli.ts",
     "info:news": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning scripts/info/ingest-news.ts",
-    "info:football": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning scripts/info/ingest-football.ts"
+    "info:football": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning scripts/info/ingest-football.ts",
+    "info:publish": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning scripts/info/publish-info.ts"
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
+    "@netlify/blobs": "^9.1.6",
     "mpegts.js": "^1.8.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
