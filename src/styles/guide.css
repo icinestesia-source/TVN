@@ -2231,6 +2231,51 @@ a.info-creator:focus-visible {
 
 /* NETWORK EDITOR: the network as one list per tab, in the Guide's own row vocabulary. */
 .network-editor { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+
+/* INFO: news and sports over the picture — same Guide chrome as Options / Network. */
+.info-centre { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; }
+.info-centre-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; }
+.info-centre-head .options-head { margin: 0; }
+.info-centre-head .tabs { justify-content: flex-start; }
+.info-centre-body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.info-panel { display: flex; flex-direction: column; gap: 10px; }
+.info-panel-meta { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.info-panel-meta.is-stale { color: #c98b6b; }
+.info-list { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none; }
+.info-item {
+  display: grid;
+  gap: 2px 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
+}
+.info-item-title { font-size: 15px; font-weight: 600; color: inherit; text-decoration: none; }
+.info-item-title:hover { color: var(--gold); }
+.info-item-title:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.info-item-desc { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.info-item-meta { color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.info-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
+  font-size: 14px;
+}
+.info-match-home { text-align: right; }
+.info-match-away { text-align: left; }
+.info-match-score { font-variant-numeric: tabular-nums; letter-spacing: 0.06em; white-space: nowrap; }
+.info-match-status { color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.info-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.info-table th,
+.info-table td { padding: 6px 8px; border-bottom: 1px solid rgb(255 255 255 / 7%); text-align: left; }
+.info-table th { color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+.info-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) {
+  .info-match { grid-template-columns: minmax(0, 1fr) auto; }
+  .info-match-away { grid-column: 1; }
+  .info-match-status { grid-column: 2; }
+}
 .network-head { display: grid; gap: 8px; padding: 0 4px; }
 .network-head .options-head { margin: 0; }
 .network-head .tabs { justify-content: flex-start; }

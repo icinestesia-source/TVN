@@ -22,12 +22,13 @@ function folderSupported(): boolean {
 
 /** A short line for the viewer; anything that is not one reads as a plain failure. */
 /**
- * NETWORK · GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in the
- * Guide itself. NETWORK is the Network Editor (curate the channels); GUIDE is the television listings (what is
- * on), and a right-click or a hold on it opens the viewer's programmable Guide (saved Maps: create, edit, play,
- * resume, duplicate, delete). GUIDE reads green while one of those Maps is being followed. OPTIONS holds the
- * users and every viewer setting. ADD opens the Add Channel row, MEDIA builds 1000 Local Media from local files.
- * New users and channel-list imports live behind the + tab (after TVN and the users, before FAV).
+ * NETWORK · INFO · GUIDE · OPTIONS · NOW · ADD · MEDIA: ordinary Guide actions beside SEARCH, each opening in
+ * the Guide itself. NETWORK is the Network Editor (curate the channels); INFO is news and sports information
+ * over the picture; GUIDE is the television listings (what is on), and a right-click or a hold on it opens the
+ * viewer's programmable Guide (saved Maps: create, edit, play, resume, duplicate, delete). GUIDE reads green
+ * while one of those Maps is being followed. OPTIONS holds the users and every viewer setting. ADD opens the
+ * Add Channel row, MEDIA builds 1000 Local Media from local files. New users and channel-list imports live
+ * behind the + tab (after TVN and the users, before FAV).
  */
 export function GuideActions({
   tool,
@@ -55,6 +56,7 @@ export function GuideActions({
   return (
     <div className="guide-import guide-actions">
       {action('Network', tool === 'editor', () => onTool('editor'), 'Network Editor: arrange and edit the channels')}
+      {action('Info', tool === 'infocentre', () => onTool('infocentre'), 'Info: news and sports')}
       <GuideTab tool={tool} following={following} onTool={onTool} onClose={onClose} />
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
       {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'The channel playing, now · press again for the picture')}

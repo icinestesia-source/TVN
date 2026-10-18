@@ -762,7 +762,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** The + (new user) or OPTIONS panel standing in the Guide, if either is. */
   panelOpenRef.current = () => {
     const held = guideToolRef.current
-    if (held?.kind === 'guides' || held?.kind === 'editor') return held.kind
+    if (held?.kind === 'guides' || held?.kind === 'editor' || held?.kind === 'infocentre') return held.kind
     return held && (held.kind === 'users' || held.kind === 'options' || held.kind === 'bookmarks' || held.kind === 'flags') && held.cursor === cursorRef.current ? held.kind : null
   }
 

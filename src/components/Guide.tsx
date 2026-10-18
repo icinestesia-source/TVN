@@ -41,6 +41,7 @@ import { historyActions, InfoActions, type HistoryActions } from './InfoActions.
 import { ProgrammeInfo } from './ProgrammeInfo.tsx'
 import { BookmarksPanel } from './BookmarksPanel.tsx'
 import { GuideOptions } from './GuideOptions.tsx'
+import { InfoCentre } from './InfoCentre.tsx'
 import { loadGuideActionsAll, saveGuideActionsAll } from '../view/guide-actions-store.ts'
 import { NetworkEditor } from './NetworkEditor.tsx'
 import { GuidePanel } from './GuidePanel.tsx'
@@ -219,7 +220,13 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   // MEDIA, IMPORT and ADD hold only while the Guide cursor is where they put it; moving on returns to the listings.
   // GUIDE (the viewer's viewing Guides) stays open while the cursor roams the grid to add to it.
   const tool =
-    tv.guideTool && (tv.guideTool.kind === 'guides' || tv.guideTool.kind === 'editor' || tv.guideTool.cursor === tv.guideCursor) ? tv.guideTool.kind : null
+    tv.guideTool &&
+    (tv.guideTool.kind === 'guides' ||
+      tv.guideTool.kind === 'editor' ||
+      tv.guideTool.kind === 'infocentre' ||
+      tv.guideTool.cursor === tv.guideCursor)
+      ? tv.guideTool.kind
+      : null
   // A channel opened from the Network Editor is edited over it, and closing the Channel Editor goes back to it.
   const [fromEditor, setFromEditor] = useState(false)
   const lastTool = useRef(tool)
@@ -447,7 +454,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
   const editOn = tool === 'edit'
   // One tab is underlined at a time: ♡, ⚑ and EDIT stand in for the listings' filter while they are open.
   const filterTabsOn = !bookmarksOn && !flagsOn && !editOn
-  const gridShown = tool !== 'options' && !bookmarksOn && !flagsOn && !networkShown && tv.visibleChannels.length > 0
+  const infoShown = tool === 'infocentre'
+  const gridShown = tool !== 'options' && !bookmarksOn && !flagsOn && !networkShown && !infoShown && tv.visibleChannels.length > 0
   const gridHidden = useRef(false)
   useLayoutEffect(() => {
     if (!gridShown) {
@@ -756,6 +764,8 @@ export function Guide({ closing = false }: { closing?: boolean }) {
 
       {tool === 'options' ? (
         <GuideOptions />
+      ) : infoShown ? (
+        <InfoCentre />
       ) : tool === 'bookmarks' ? (
         <BookmarksPanel />
       ) : tool === 'flags' ? (
@@ -1025,7 +1035,7 @@ export function Guide({ closing = false }: { closing?: boolean }) {
           onWatch={(channelNumber) => tv.dispatch({ type: 'tune', channelNumber })}
           onClose={() => tv.dispatch({ type: 'guide-tool', tool: 'media' })}
         />
-      ) : tool === 'options' || tool === 'editor' || tool === 'bookmarks' || tool === 'flags' ? null : tool === 'users' ? (
+      ) : tool === 'options' || tool === 'infocentre' || tool === 'editor' || tool === 'bookmarks' || tool === 'flags' ? null : tool === 'users' ? (
         <NewUserTools
           name={newUserName}
           note={newUserNote}

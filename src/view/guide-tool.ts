@@ -18,7 +18,18 @@ export function guideToolTarget(
   nowMs: number,
   requested?: number,
 ): { filter: GuideFilter; cursor: { channelNumber: number; timeMs: number } } {
-  if (kind === 'edit' || kind === 'users' || kind === 'options' || kind === 'bookmarks' || kind === 'flags' || kind === 'guides' || kind === 'editor') return { filter, cursor: { channelNumber: requested ?? cursor.channelNumber, timeMs: cursor.timeMs } }
+  if (
+    kind === 'edit' ||
+    kind === 'users' ||
+    kind === 'options' ||
+    kind === 'bookmarks' ||
+    kind === 'flags' ||
+    kind === 'guides' ||
+    kind === 'editor' ||
+    kind === 'infocentre'
+  ) {
+    return { filter, cursor: { channelNumber: requested ?? cursor.channelNumber, timeMs: cursor.timeMs } }
+  }
   if (kind === 'media') {
     const number = requested !== undefined && isLocalMediaNumber(requested) ? requested : isLocalMediaNumber(cursor.channelNumber) ? cursor.channelNumber : SESSION_CHANNEL_NUMBER
     const session = channels.find((item) => item.number === number)

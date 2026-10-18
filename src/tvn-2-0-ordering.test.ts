@@ -179,9 +179,9 @@ describe('EDITOR TABS and TERMINOLOGY', () => {
     expect(tabs).not.toMatch(/'TVN'|'User'|001–999|0–999|'tvn'/)
   })
 
-  it('the header reads NETWORK · GUIDE · OPTIONS · NOW · ADD · MEDIA: no MY GUIDE and no CH GUIDE', () => {
+  it('the header reads NETWORK · INFO · GUIDE · OPTIONS · NOW · ADD · MEDIA: no MY GUIDE and no CH GUIDE', () => {
     const html = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect([...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Info', 'Guide', 'Options', 'Now', 'Add', 'Media'])
     const editorOpen = renderToStaticMarkup(createElement(GuideActions, { tool: 'editor', picked: false, onNow: () => {}, onTool: () => {} }))
     expect(editorOpen).toMatch(/class="tab is-on"[^>]*>Network</)
     const following = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, following: true, onNow: () => {}, onTool: () => {} }))
