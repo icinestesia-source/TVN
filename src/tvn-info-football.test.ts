@@ -10,6 +10,7 @@ import { diagnoseFootballEmpty } from './info/football/empty-state.ts'
 import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_MATCHES_ELC, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
 import { fixtureMatches, matchesForCompetition, resultMatches } from './info/football/match-lists.ts'
 import { matchStatusOf, statusLabel, buildFootballSnapshot, asFootballSnapshot, emptyFootballSnapshot } from './info/football/normalize.ts'
+import { mergeFootballSnapshots, shouldWriteFootballBlob } from './info/football/snapshot-safety.ts'
 import { footballIngestForced, footballSlotDue, FOOTBALL_SCHEDULE_SLOTS } from './info/football/schedule.ts'
 import type { FootballMatch } from './info/football/types.ts'
 
@@ -238,6 +239,90 @@ describe('INFO football', () => {
         loadStatus: 'ready',
       }).kind,
     ).toBe('no-matches')
+  })
+
+  it('keeps prior competition data when another competition fails, and refuses empty blob overwrites', () => {
+    const prior = buildFootballSnapshot({
+      updatedIso: '2026-10-17T12:00:00.000Z',
+      provider: 'football-data.org',
+      attribution: 'Football data provided by football-data.org',
+      liveReliable: false,
+      competitions: [
+        { id: 'PL', code: 'PL', name: 'Premier League' },
+        { id: 'ELC', code: 'ELC', name: 'Championship' },
+      ],
+      matches: [
+        {
+          id: 'pl1',
+          competitionId: 'PL',
+          kickoffIso: '2026-10-18T14:00:00.000Z',
+          status: 'scheduled',
+          home: 'Arsenal',
+          away: 'Chelsea',
+        },
+        {
+          id: 'elc1',
+          competitionId: 'ELC',
+          kickoffIso: '2026-10-18T15:00:00.000Z',
+          status: 'finished',
+          home: 'Burnley',
+          away: 'Leeds',
+          score: { home: 1, away: 0 },
+        },
+      ],
+      tables: [
+        {
+          competitionId: 'ELC',
+          type: 'TOTAL',
+          updatedIso: null,
+          rows: [
+            {
+              position: 1,
+              team: 'Burnley',
+              played: 1,
+              won: 1,
+              drawn: 0,
+              lost: 0,
+              goalsFor: 1,
+              goalsAgainst: 0,
+              goalDifference: 1,
+              points: 3,
+            },
+          ],
+        },
+      ],
+    })
+    const next = buildFootballSnapshot({
+      updatedIso: '2026-10-18T12:00:00.000Z',
+      provider: 'football-data.org',
+      attribution: 'Football data provided by football-data.org',
+      liveReliable: false,
+      competitions: [
+        { id: 'PL', code: 'PL', name: 'Premier League' },
+        { id: 'ELC', code: 'ELC', name: 'Championship' },
+      ],
+      matches: [
+        {
+          id: 'pl2',
+          competitionId: 'PL',
+          kickoffIso: '2026-10-19T14:00:00.000Z',
+          status: 'scheduled',
+          home: 'Liverpool',
+          away: 'Everton',
+        },
+      ],
+      tables: [],
+      errors: ['ELC matches: 403 Forbidden', 'ELC table: 403 Forbidden'],
+    })
+    const merged = mergeFootballSnapshots(prior, next)
+    expect(merged.matches.some((match) => match.id === 'pl2')).toBe(true)
+    expect(merged.matches.some((match) => match.id === 'elc1')).toBe(true)
+    expect(merged.tables.some((table) => table.competitionId === 'ELC')).toBe(true)
+    expect(shouldWriteFootballBlob(emptyFootballSnapshot('failed'), prior)).toEqual({
+      write: false,
+      reason: 'football: refused to replace last valid snapshot with empty data',
+    })
+    expect(shouldWriteFootballBlob(merged, prior).write).toBe(true)
   })
 
   it('keeps unsupported competitions empty without inventing fixtures', async () => {

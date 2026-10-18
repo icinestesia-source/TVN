@@ -297,9 +297,12 @@ export function FootballPanel() {
   return (
     <div className="info-panel">
       <p className={ready?.stale || ready?.fromCache ? 'info-panel-meta is-stale' : 'info-panel-meta'} role="status">
-        Updated {formatUpdated(snapshot.updatedIso)}
+        Last update {formatUpdated(snapshot.updatedIso)}
         {ready?.stale ? ' · stale' : ''}
         {ready?.fromCache ? ' · last good copy' : ''}
+        {state.status === 'unavailable' && snapshot.matches.length + snapshot.tables.length > 0
+          ? ' · showing last successful data'
+          : ''}
         {' · '}
         {snapshot.liveReliable ? 'Live scores on' : 'Delayed scores · not Live'}
         {' · '}

@@ -1,6 +1,7 @@
 import { asFootballSnapshot } from '../../src/info/football/normalize.ts'
+import { shouldWriteFootballBlob } from '../../src/info/football/snapshot-safety.ts'
 import { asNewsSnapshot } from '../../src/info/news/normalize.ts'
-import { jsonResponse, writeFootballBlob, writeNewsBlob } from '../../server/info-blobs.ts'
+import { jsonResponse, readFootballBlob, writeFootballBlob, writeNewsBlob } from '../../server/info-blobs.ts'
 
 /**
  * POST /api/info/publish — CI writes INFO snapshots into Netlify Blobs.
@@ -46,8 +47,13 @@ export default async (request: Request): Promise<Response> => {
     const football = asFootballSnapshot(doc.football)
     if (!football) errors.push('football: invalid snapshot')
     else {
-      await writeFootballBlob(football)
-      written.push('football')
+      const existing = await readFootballBlob()
+      const decision = shouldWriteFootballBlob(football, existing)
+      if (!decision.write) errors.push(decision.reason)
+      else {
+        await writeFootballBlob(football)
+        written.push('football')
+      }
     }
   }
   if (!written.length && !errors.length) {

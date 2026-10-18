@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { ingestFootballDataOrg } from '../../src/info/football/football-data-org.ts'
 import { addDaysIso, emptyFootballSnapshot, todayIso } from '../../src/info/football/normalize.ts'
 import { footballIngestForced, footballSlotDue } from '../../src/info/football/schedule.ts'
+import { footballSnapshotIsEmpty, mergeFootballSnapshots } from '../../src/info/football/snapshot-safety.ts'
 import type { FootballSnapshot } from '../../src/info/football/types.ts'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -97,9 +98,11 @@ async function main(): Promise<void> {
   const from = addDaysIso(todayIso(), -7)
   const to = addDaysIso(todayIso(), 21)
   try {
-    const snapshot = await ingestFootballDataOrg({ token, dateFrom: from, dateTo: to })
-    if (snapshot.matches.length === 0 && snapshot.tables.length === 0 && prior && (prior.matches.length || prior.tables.length)) {
-      console.error('Football ingest empty; keeping previous snapshot.', snapshot.errors?.join('; '))
+    const fetched = await ingestFootballDataOrg({ token, dateFrom: from, dateTo: to })
+    // Keep prior rows for competitions whose match/table requests failed this run.
+    const snapshot = mergeFootballSnapshots(prior, fetched)
+    if (footballSnapshotIsEmpty(snapshot) && prior && !footballSnapshotIsEmpty(prior)) {
+      console.error('Football ingest empty; keeping previous snapshot.', fetched.errors?.join('; '))
       emitWrote(false)
       process.exitCode = 0
       return
@@ -113,7 +116,7 @@ async function main(): Promise<void> {
         ` · ${gate.reason}`,
     )
   } catch (caught) {
-    if (prior && (prior.matches.length || prior.tables.length)) {
+    if (prior && !footballSnapshotIsEmpty(prior)) {
       console.error('Football ingest failed; keeping previous snapshot.', caught instanceof Error ? caught.message : caught)
       emitWrote(false)
       process.exitCode = 0

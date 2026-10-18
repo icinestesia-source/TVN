@@ -7,6 +7,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { join } from 'node:path'
 import { applyTmdbCredential, resolveTmdbCredential } from '../src/info/entertainment/tmdb-auth.ts'
 import { asFootballSnapshot } from '../src/info/football/normalize.ts'
+import { shouldWriteFootballBlob } from '../src/info/football/snapshot-safety.ts'
 import { asNewsSnapshot } from '../src/info/news/normalize.ts'
 
 const root = process.cwd()
@@ -187,6 +188,9 @@ export function infoPublishMiddleware(req: IncomingMessage, res: ServerResponse)
       if ('football' in body) {
         const football = asFootballSnapshot(body.football)
         if (!football) throw new Error('football: invalid snapshot')
+        const existing = asFootballSnapshot(readJson(footballPath))
+        const decision = shouldWriteFootballBlob(football, existing)
+        if (!decision.write) throw new Error(decision.reason)
         writeFileSync(footballPath, `${JSON.stringify(football)}\n`, 'utf8')
         written.push('football')
       }
