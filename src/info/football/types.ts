@@ -16,6 +16,9 @@ export interface FootballMatch {
   status: MatchStatus
   home: string
   away: string
+  /** Provider team id when available — use for favourites, never name alone. */
+  homeTeamId?: string
+  awayTeamId?: string
   score?: { home: number; away: number }
   matchday?: number
 }
@@ -23,6 +26,7 @@ export interface FootballMatch {
 export interface LeagueTableRow {
   position: number
   team: string
+  teamId?: string
   played: number
   won: number
   drawn: number
@@ -31,6 +35,8 @@ export interface LeagueTableRow {
   goalsAgainst: number
   goalDifference: number
   points: number
+  /** Provider form string when present (e.g. WDLWD). */
+  form?: string
 }
 
 export interface LeagueTable {

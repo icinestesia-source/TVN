@@ -30,6 +30,13 @@ function teamName(value: unknown): string {
   return typeof name === 'string' && name.trim() ? name.trim() : 'Unknown'
 }
 
+function teamIdOf(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const id = (value as Json).id
+  if (typeof id === 'number' || typeof id === 'string') return String(id)
+  return undefined
+}
+
 function scoreOf(match: Json): FootballMatch['score'] | undefined {
   const score = match.score as Json | undefined
   const full = score?.fullTime as Json | undefined
@@ -49,6 +56,8 @@ function matchesFromPayload(payload: Json, competitionId: string): FootballMatch
     const utc = match.utcDate
     if (typeof id !== 'number' && typeof id !== 'string') continue
     if (typeof utc !== 'string') continue
+    const homeTeamId = teamIdOf(match.homeTeam)
+    const awayTeamId = teamIdOf(match.awayTeam)
     out.push({
       id: String(id),
       competitionId,
@@ -56,6 +65,8 @@ function matchesFromPayload(payload: Json, competitionId: string): FootballMatch
       status: matchStatusOf(typeof match.status === 'string' ? match.status : null),
       home: teamName(match.homeTeam),
       away: teamName(match.awayTeam),
+      ...(homeTeamId ? { homeTeamId } : {}),
+      ...(awayTeamId ? { awayTeamId } : {}),
       score: scoreOf(match),
       ...(typeof match.matchday === 'number' ? { matchday: match.matchday } : {}),
     })
@@ -77,9 +88,12 @@ function tablesFromPayload(payload: Json, competitionId: string): LeagueTable[] 
     for (const row of table) {
       if (!row || typeof row !== 'object') continue
       const entry = row as Json
+      const tid = teamIdOf(entry.team)
+      const form = typeof entry.form === 'string' ? entry.form : undefined
       rows.push({
         position: Number(entry.position) || rows.length + 1,
         team: teamName(entry.team),
+        ...(tid ? { teamId: tid } : {}),
         played: Number(entry.playedGames) || 0,
         won: Number(entry.won) || 0,
         drawn: Number(entry.draw) || 0,
@@ -88,6 +102,7 @@ function tablesFromPayload(payload: Json, competitionId: string): LeagueTable[] 
         goalsAgainst: Number(entry.goalsAgainst) || 0,
         goalDifference: Number(entry.goalDifference) || 0,
         points: Number(entry.points) || 0,
+        ...(form ? { form } : {}),
       })
     }
     if (rows.length) {

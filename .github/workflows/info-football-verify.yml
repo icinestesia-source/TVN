@@ -1,0 +1,50 @@
+# Secure live verification of football-data.org entitlement (no token in logs).
+# Run after FOOTBALL_DATA_TOKEN and INFO publish secrets are configured.
+# Does not push; does not deploy the SPA.
+name: INFO football verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Probe competitions (token never printed)
+        env:
+          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          FOOTBALL_INGEST_FORCE: '1'
+        run: |
+          if [ -z "$FOOTBALL_DATA_TOKEN" ]; then
+            echo "FOOTBALL_DATA_TOKEN secret is not set"
+            exit 1
+          fi
+          npm run info:football
+          node --input-type=module -e "
+            import { readFileSync } from 'node:fs';
+            const snap = JSON.parse(readFileSync('public/info/football.json','utf8'));
+            const codes = (snap.competitions||[]).map(c => c.code).sort();
+            const tables = (snap.tables||[]).map(t => t.competitionId);
+            const errors = snap.errors||[];
+            console.log('competitions_in_snapshot=' + codes.join(','));
+            console.log('tables=' + [...new Set(tables)].sort().join(','));
+            console.log('match_count=' + (snap.matches||[]).length);
+            console.log('error_count=' + errors.length);
+            for (const e of errors) {
+              // Strip any accidental token-like substrings
+              console.log('error=' + String(e).replace(/[a-f0-9]{20,}/gi, '[redacted]'));
+            }
+            const want = ['PL','ELC','EL1','CL','BL1','SA','PD','FL1','DED','PPL','BSA','WC','EC'];
+            for (const code of want) {
+              console.log('configured_' + code + '=' + (codes.includes(code) ? 'present' : 'missing'));
+            }
+          "
