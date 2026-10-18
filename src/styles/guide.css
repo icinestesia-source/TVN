@@ -127,6 +127,13 @@
   font-family: var(--font-ui);
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Section tabs keep their whole label on one line and scroll sideways when the row is narrow. */
+.info-centre .tabs .tab,
+.info-panel .tabs .tab {
+  flex: none;
 }
 
 .tab-short { display: none; }

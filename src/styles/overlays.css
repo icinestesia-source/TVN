@@ -385,23 +385,10 @@
 
 .startup-ring-text {
   font-family: var(--font-ui);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0;
   text-transform: uppercase;
-  fill: var(--ring-colour, #f2f2f2);
-  paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.8);
-  stroke-width: 0.9px;
-}
-
-.startup-ring-text-outer {
-  font-size: 3.55px;
-  fill: var(--ring-colour, #ffd15c);
-}
-
-.startup-ring-text-inner {
-  font-size: 3.05px;
-  fill: var(--ring-colour-inner, #5ce1ff);
+  stroke: none;
 }
 
 .startup-status {
@@ -526,8 +513,6 @@
   .startup-logo { width: min(52vw, 300px); }
   .startup-emblem { width: min(52vw, 300px); }
   .startup-rings { inset: -20%; width: 140%; height: 140%; }
-  .startup-ring-text-outer { font-size: 3.2px; }
-  .startup-ring-text-inner { font-size: 2.75px; }
   .startup-status-line { letter-spacing: 0.16em; font-size: clamp(11px, 3.2vw, 13px); }
 }
 

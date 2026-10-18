@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SESSION_LOGO } from './logos.ts'
 import { pointerAngle, releaseSpin, slowedSpin, turnBetween, useLoadingLogo, wheelSpin } from '../view/loading-logo.ts'
 import type { StartupPhase } from '../state/startup.ts'
-import { RING_COLOURS, ringColour } from './ring-colour.ts'
-import { parseHex, shadeTowards } from './StaticOverlay.tsx'
+import { RING_COLOURS } from './ring-colour.ts'
+import { GRAIN_SIZE, parseHex, shadeTowards } from './StaticOverlay.tsx'
 import { snowColours } from './TransitionOverlay.tsx'
-import { DEFAULT_TRANSITION_SETTINGS, loadTransitionSettings, TRANSITIONS } from '../state/transitions.ts'
+import { DEFAULT_TRANSITION_SETTINGS, loadTransitionSettings, TRANSITIONS, type TransitionGrain } from '../state/transitions.ts'
 
 export const BRAND = 'TVN'
 
@@ -30,7 +30,8 @@ export const STARTUP_STATUS_LINES = [
 export const OUTER_RING_COPY =
   'TVN · INDEPENDENT TELEVISION NETWORK · BROADCASTING CONTINUOUSLY · TELEVISION WITHOUT BOUNDARIES · CHANNELS · CULTURE · MUSIC · CINEMA · ENTERTAINMENT · '
 
-export const INNER_RING_COPY = 'SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · '
+export const INNER_RING_COPY =
+  'SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · PICTURE LOCKED · AUDIO IN SYNC · GUIDE PREPARED · NETWORK STABLE · BROADCAST CONTINUING · '
 
 const NOISE_FRAMES = 4
 
@@ -38,15 +39,14 @@ const NOISE_FRAMES = 4
  * Static for the startup screen: a few frames drawn once and stepped through by a CSS transform, which keeps
  * running while the network is still being worked out on the main thread.
  */
-function StartupNoise({ colours }: { colours: readonly string[] }) {
+function StartupNoise({ colours, grain }: { colours: readonly string[]; grain: TransitionGrain }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const paletteKey = colours.join('|')
   useEffect(() => {
     const canvas = canvasRef.current
     const context = canvas?.getContext('2d', { alpha: false })
     if (!canvas || !context) return
-    const width = 180
-    const height = 102
+    const [width, height] = GRAIN_SIZE[grain]
     canvas.width = width
     canvas.height = height * NOISE_FRAMES
     const image = context.createImageData(width, height * NOISE_FRAMES)
@@ -68,9 +68,9 @@ function StartupNoise({ colours }: { colours: readonly string[] }) {
       }
     }
     context.putImageData(image, 0, 0)
-  }, [paletteKey])
+  }, [paletteKey, grain])
   return (
-    <div className="startup-noise" aria-hidden="true">
+    <div className="startup-noise" data-grain={grain} aria-hidden="true">
       <canvas ref={canvasRef} className="startup-noise-frames" />
     </div>
   )
@@ -87,16 +87,110 @@ function useCountUp(target: number): number {
   return Math.min(shown, target)
 }
 
-function circlePath(radius: number): string {
-  return `M 50,${50 - radius} a ${radius},${radius} 0 1,1 0,${radius * 2} a ${radius},${radius} 0 1,1 0,-${radius * 2}`
-}
-
+const RING_CENTRE = 50
 const OUTER_RADIUS = 46
 const INNER_RADIUS = 37.5
-const OUTER_PATH = circlePath(OUTER_RADIUS)
-const INNER_PATH = circlePath(INNER_RADIUS)
-const OUTER_LENGTH = 2 * Math.PI * OUTER_RADIUS
-const INNER_LENGTH = 2 * Math.PI * INNER_RADIUS
+/** How far past each side the lane change sits, so the two paths cross instead of meeting on a radius. */
+const LANE_CROSS = 0.42
+
+function lanePoint(radius: number, angle: number): [number, number] {
+  return [RING_CENTRE + radius * Math.cos(angle), RING_CENTRE - radius * Math.sin(angle)]
+}
+
+function laneTangent(radius: number, angle: number): [number, number] {
+  return [-radius * Math.sin(angle), -radius * Math.cos(angle)]
+}
+
+function crossCurve(from: [number, number], fromTangent: [number, number], to: [number, number], toTangent: [number, number]): string {
+  const scale = (tangent: [number, number]) => {
+    const length = Math.hypot(tangent[0], tangent[1]) || 1
+    return [tangent[0] / length, tangent[1] / length] as [number, number]
+  }
+  const [sx, sy] = scale(fromTangent)
+  const [ex, ey] = scale(toTangent)
+  const handle = 11
+  const n = (value: number) => value.toFixed(2)
+  return `C ${n(from[0] + sx * handle)},${n(from[1] + sy * handle)} ${n(to[0] - ex * handle)},${n(to[1] - ey * handle)} ${n(to[0])},${n(to[1])}`
+}
+
+function curveLength(start: [number, number], command: string): number {
+  const values = command
+    .slice(1)
+    .trim()
+    .split(/[,\s]+/)
+    .map(Number)
+  const controls: [number, number][] = [start, [values[0], values[1]], [values[2], values[3]], [values[4], values[5]]]
+  let length = 0
+  let [x, y] = start
+  for (let step = 1; step <= 16; step += 1) {
+    const t = step / 16
+    const u = 1 - t
+    const nx = u ** 3 * controls[0][0] + 3 * u ** 2 * t * controls[1][0] + 3 * u * t ** 2 * controls[2][0] + t ** 3 * controls[3][0]
+    const ny = u ** 3 * controls[0][1] + 3 * u ** 2 * t * controls[1][1] + 3 * u * t ** 2 * controls[2][1] + t ** 3 * controls[3][1]
+    length += Math.hypot(nx - x, ny - y)
+    x = nx
+    y = ny
+  }
+  return length
+}
+
+/**
+ * One closed lap that spends half its length on the outer lane and half on the inner.
+ * `outerFirst` takes the outer lane across the top; the other path takes it across the bottom, so they cross at each side.
+ */
+function weavePath(outerFirst: boolean): { d: string; length: number } {
+  const top = outerFirst ? OUTER_RADIUS : INNER_RADIUS
+  const bottom = outerFirst ? INNER_RADIUS : OUTER_RADIUS
+  const span = Math.PI - 2 * LANE_CROSS
+  const start = lanePoint(top, LANE_CROSS)
+  const topEnd = lanePoint(top, Math.PI - LANE_CROSS)
+  const bottomStart = lanePoint(bottom, Math.PI + LANE_CROSS)
+  const bottomEnd = lanePoint(bottom, -LANE_CROSS)
+  const n = (value: number) => value.toFixed(2)
+  const toTop = crossCurve(bottomEnd, laneTangent(bottom, -LANE_CROSS), start, laneTangent(top, LANE_CROSS))
+  const toBottom = crossCurve(topEnd, laneTangent(top, Math.PI - LANE_CROSS), bottomStart, laneTangent(bottom, Math.PI + LANE_CROSS))
+  const d = `M ${n(start[0])},${n(start[1])} A ${top},${top} 0 0 0 ${n(topEnd[0])},${n(topEnd[1])} ${toBottom} A ${bottom},${bottom} 0 0 0 ${n(bottomEnd[0])},${n(bottomEnd[1])} ${toTop}`
+  return { d, length: top * span + bottom * span + curveLength(topEnd, toBottom) + curveLength(bottomEnd, toTop) }
+}
+
+const OUTER_WEAVE = weavePath(true)
+const INNER_WEAVE = weavePath(false)
+
+/** Lift a chosen colour toward white so the ring reads as light rather than a solid band. */
+function liftColour(hex: string, toward = 0.42): string {
+  const rgb = parseHex(hex)
+  if (!rgb) return '#d5ecff'
+  const channel = (value: number) => Math.round(value + (255 - value) * toward).toString(16).padStart(2, '0')
+  return `#${channel(rgb[0])}${channel(rgb[1])}${channel(rgb[2])}`
+}
+
+/** Three soft stops. The viewer's colours travel around the ring; a mono transition gets a pale set. */
+function washStops(colours: readonly string[]): [string, string, string] {
+  const lifted = (colours.length ? colours : RING_COLOURS).map((hex) => liftColour(hex))
+  return [lifted[0] ?? '#f4e4b0', lifted[1] ?? liftColour(lifted[0] ?? '#9fdfff', 0.35), lifted[2] ?? lifted[0] ?? '#e4c6ff']
+}
+
+function RingWash({ id, phraseColours, duration, reverse }: { id: string; phraseColours: readonly string[]; duration: string; reverse: boolean }) {
+  const [a, b, c] = washStops(phraseColours)
+  const reduce = typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)
+  return (
+    <linearGradient id={id} gradientUnits="userSpaceOnUse" x1="8" y1="50" x2="92" y2="50">
+      <stop offset="0%" stopColor={a} stopOpacity="0.42" />
+      <stop offset="46%" stopColor={b} stopOpacity="0.92" />
+      <stop offset="100%" stopColor={c} stopOpacity="0.48" />
+      {reduce ? null : (
+        <animateTransform
+          attributeName="gradientTransform"
+          type="rotate"
+          from={reverse ? '360 50 50' : '0 50 50'}
+          to={reverse ? '0 50 50' : '360 50 50'}
+          dur={duration}
+          repeatCount="indefinite"
+        />
+      )}
+    </linearGradient>
+  )
+}
 
 function RingText({
   id,
@@ -104,34 +198,47 @@ function RingText({
   length,
   phrase,
   className,
+  fontSize,
+  fill,
 }: {
   id: string
   path: string
   length: number
   phrase: string
   className: string
+  fontSize: number
+  fill: string
 }) {
-  const measure = useRef<SVGTextElement>(null)
-  const [size, setSize] = useState<number | null>(null)
+  const textRef = useRef<SVGTextElement>(null)
+  const [gap, setGap] = useState<number | null>(null)
   useLayoutEffect(() => {
-    const node = measure.current
-    const natural = node?.getComputedTextLength?.() ?? 0
-    if (!node || natural <= 0) return
-    const current = Number.parseFloat(window.getComputedStyle(node).fontSize) || 3.55
-    // One copy of the phrase around the circle. Growing and shrinking both stay on a single lap.
-    setSize(Math.max(1.7, Math.min(5.2, current * ((length - 1) / natural))))
+    const rendered = textRef.current?.getComputedTextLength?.() ?? 0
+    // textLength already spans the circle in browsers that honour it. Firefox does not, so the spare
+    // length is shared once, as dx, and textLength is dropped on the next paint so the two never stack.
+    if (rendered <= 0 || Math.abs(rendered - length) < 2) return
+    setGap((length - rendered) / Math.max(1, [...phrase].length))
   }, [phrase, length])
 
+  const spare = gap
+  const letters = spare == null ? null : [...phrase]
   return (
     <>
-      <defs>
-        <path id={id} d={path} />
-      </defs>
-      <text ref={measure} className={className} visibility="hidden" xmlSpace="preserve">
-        {phrase}
-      </text>
-      <text className={className} style={size ? { fontSize: `${size}px` } : undefined}>
-        <textPath href={`#${id}`}>{phrase}</textPath>
+      <path id={id} d={path} fill="none" />
+      <text ref={textRef} className={className} fontSize={fontSize} fill={fill}>
+        <textPath
+          href={`#${id}`}
+          textLength={gap == null ? length : undefined}
+          lengthAdjust={gap == null ? 'spacing' : undefined}
+          startOffset="0"
+        >
+          {letters
+            ? letters.map((letter, index) => (
+                <tspan key={index} dx={index > 0 && spare != null ? spare.toFixed(3) : undefined}>
+                  {letter}
+                </tspan>
+              ))
+            : phrase}
+        </textPath>
       </text>
     </>
   )
@@ -203,21 +310,36 @@ function CalibrationLayer() {
  * Percent is not drawn on the rings (real progress stays in the accessible status text).
  */
 export function LoadingRing({ percent: _percent, colours = [] }: { percent?: number; colours?: readonly string[] }) {
-  const [fallback] = useState(() => ringColour())
-  const outer = colours[0] ?? fallback
-  const inner = colours[1] ?? colours[0] ?? '#5ce1ff'
   return (
-    <div
-      className="startup-rings"
-      aria-hidden="true"
-      style={{ ['--ring-colour' as string]: outer, ['--ring-colour-inner' as string]: inner } as CSSProperties}
-    >
+    <div className="startup-rings" aria-hidden="true">
       <CalibrationLayer />
       <svg className="startup-ring startup-ring-outer" viewBox="0 0 100 100" focusable="false">
-        <RingText id="startup-ring-outer-path" path={OUTER_PATH} length={OUTER_LENGTH} phrase={OUTER_RING_COPY} className="startup-ring-text startup-ring-text-outer" />
+        <defs>
+          <RingWash id="startup-wash-outer" phraseColours={colours} duration="28s" reverse={false} />
+        </defs>
+        <RingText
+          id="startup-ring-outer-path"
+          path={OUTER_WEAVE.d}
+          length={OUTER_WEAVE.length}
+          phrase={OUTER_RING_COPY}
+          className="startup-ring-text startup-ring-text-outer"
+          fontSize={2.2}
+          fill="url(#startup-wash-outer)"
+        />
       </svg>
       <svg className="startup-ring startup-ring-inner" viewBox="0 0 100 100" focusable="false">
-        <RingText id="startup-ring-inner-path" path={INNER_PATH} length={INNER_LENGTH} phrase={INNER_RING_COPY} className="startup-ring-text startup-ring-text-inner" />
+        <defs>
+          <RingWash id="startup-wash-inner" phraseColours={colours.length > 1 ? [...colours].reverse() : colours} duration="19s" reverse />
+        </defs>
+        <RingText
+          id="startup-ring-inner-path"
+          path={INNER_WEAVE.d}
+          length={INNER_WEAVE.length}
+          phrase={INNER_RING_COPY}
+          className="startup-ring-text startup-ring-text-inner"
+          fontSize={2.2}
+          fill="url(#startup-wash-inner)"
+        />
       </svg>
     </div>
   )
@@ -335,7 +457,7 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
   const look = useState(() => {
     const saved = loadTransitionSettings()
     const visual = saved.id === 'instant' || !TRANSITIONS[saved.id] ? DEFAULT_TRANSITION_SETTINGS : saved
-    return snowColours(visual.colours, visual.custom, visual)
+    return { colours: snowColours(visual.colours, visual.custom, visual), grain: saved.grain }
   })[0]
   const leftRef = useRef(false)
   const leave = () => {
@@ -367,11 +489,11 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
         if (event.target === event.currentTarget && phase === 'ready') leave()
       }}
     >
-      <StartupNoise colours={look} />
+      <StartupNoise colours={look.colours} grain={look.grain} />
       <div className="startup-ident">
         <div className="startup-emblem">
           {logo === 'spin' && !failed ? <SpinLogo /> : <img className="startup-logo" src={SESSION_LOGO} alt={BRAND} width={640} height={640} />}
-          {failed ? null : <LoadingRing percent={percent} colours={look.length ? look : RING_COLOURS} />}
+          {failed ? null : <LoadingRing percent={percent} colours={look.colours} />}
         </div>
         {failed ? (
           <>

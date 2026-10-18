@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { TransitionGrain } from '../state/transitions.ts'
 
 /** The noise field's own resolution; the canvas is scaled up, so fewer pixels read as coarser grain. */
-const GRAIN_SIZE: Record<TransitionGrain, [number, number]> = {
+export const GRAIN_SIZE: Record<TransitionGrain, [number, number]> = {
   coarse: [96, 54],
   normal: [180, 102],
   fine: [320, 180],

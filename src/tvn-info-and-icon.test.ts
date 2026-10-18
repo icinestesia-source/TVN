@@ -168,10 +168,19 @@ describe('the TVN icon', () => {
 describe('the loading ring', () => {
   it('runs dual broadcast typography rings on circular paths, spaced over the whole circle', () => {
     const ring = renderToStaticMarkup(createElement(LoadingRing, { percent: 42 }))
-    expect(ring).toContain('d="M 50,4 a 46,46 0 1,1 0,92 a 46,46 0 1,1 0,-92"')
-    expect(ring).toContain('d="M 50,12.5 a 37.5,37.5 0 1,1 0,75 a 37.5,37.5 0 1,1 0,-75"')
-    expect(ring.match(/startup-ring-outer-path">/g)).toHaveLength(1)
-    expect(ring.match(/SIGNAL ACTIVE/g)).toHaveLength(2)
+    const paths = [...ring.matchAll(/<path id="(startup-ring-(?:outer|inner)-path)" d="([^"]+)"/g)]
+    expect(paths).toHaveLength(2)
+    for (const [, , d] of paths) {
+      expect(d).toContain('A 46,46')
+      expect(d).toContain('A 37.5,37.5')
+    }
+    expect(paths[0][2]).not.toBe(paths[1][2])
+    expect(ring.match(/startup-ring-outer-path/g)?.length).toBeGreaterThan(0)
+    expect(ring).toContain('textLength=')
+    expect(ring).toContain('lengthAdjust="spacing"')
+    expect(ring).toContain('startup-wash-outer')
+    expect(ring).toContain('startup-wash-inner')
+    expect(ring.match(/SIGNAL ACTIVE/g)).toHaveLength(1)
     expect(ring).toContain('aria-hidden="true"')
     expect(ring).toContain('startup-ring-outer')
     expect(ring).toContain('startup-ring-inner')

@@ -88,7 +88,7 @@ describe('startup loading presentation', () => {
   })
 
   it('B3: the static behind the logo keeps moving while the start is busy: its frames are stepped by a CSS transform', () => {
-    expect(screen('loading')).toContain('<div class="startup-noise" aria-hidden="true"><canvas class="startup-noise-frames"></canvas></div>')
+    expect(screen('loading')).toContain('<div class="startup-noise" data-grain="normal" aria-hidden="true"><canvas class="startup-noise-frames"></canvas></div>')
     const css = readFileSync('src/styles/overlays.css', 'utf8')
     expect(css).toMatch(/\.startup-noise-frames \{[^}]*animation: startup-noise 0\.26s steps\(4\) infinite;/)
     expect(css).toMatch(/@keyframes startup-noise \{\s*to \{ transform: translateY\(-100%\); \}/)
