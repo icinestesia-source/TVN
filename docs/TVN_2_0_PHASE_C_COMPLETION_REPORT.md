@@ -10,7 +10,7 @@
 | | Commit |
 |--|--------|
 | **Start** | `7108ba2` — Avoid self-referential HEAD SHA in the release readiness report. |
-| **End** | Tip of local Phase C commits (see `git log`) |
+| **End** | `17fa94c`
 
 ---
 
