@@ -176,6 +176,7 @@ export function normalizeInfoPreferences(raw: unknown): InfoPreferences {
   const publishers = defaults.news.publisherOrder
   const enabled = asStringArray(news.enabledPublisherIds)
   const order = asStringArray(news.publisherOrder)
+  const newlyListed = order.length ? publishers.filter((id) => !order.includes(id)) : []
   const categoryOrder = asStringArray(news.categoryOrder).filter((id): id is NewsCategory =>
     NEWS_CATEGORIES.some((entry) => entry.id === id),
   )
@@ -216,7 +217,7 @@ export function normalizeInfoPreferences(raw: unknown): InfoPreferences {
   return {
     version: INFO_PREFS_VERSION,
     news: {
-      enabledPublisherIds: enabled.length ? enabled : publishers,
+      enabledPublisherIds: enabled.length ? [...new Set([...enabled, ...newlyListed])] : publishers,
       publisherOrder: order.length ? [...order, ...publishers.filter((id) => !order.includes(id))] : publishers,
       categoryOrder: categoryOrder.length
         ? [...categoryOrder, ...defaults.news.categoryOrder.filter((id) => !categoryOrder.includes(id))]

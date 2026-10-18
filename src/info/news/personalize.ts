@@ -35,7 +35,8 @@ export function selectPersonalized(
 ): NewsItem[] {
   const pool = personalizeNewsItems(items, prefs).filter((item) => item.category === category)
   const limit = expanded ? NEWS_EXPANDED_LIMIT : category === 'top' ? NEWS_TOP_LIMIT : NEWS_CATEGORY_LIMIT
-  const maxPer = Math.max(2, Math.ceil(limit / 3))
+  // The first screen is one lead headline per publisher. More can add a second from each.
+  const maxPer = expanded ? 2 : 1
   return selectHeadlines(pool, { limit, maxPerPublisher: maxPer })
 }
 

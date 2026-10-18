@@ -44,7 +44,7 @@ describe('KEYBOARD: P pauses, Space surfs, a held Space switches the surf scope'
   })
 
   it('the remaining keys keep their meaning: A favourite, - = zoom, / multi, , . previous / next, C cycles the Guide tabs', () => {
-    expect(commandFromKey('a', plain, false)).toEqual({ type: 'favourite' })
+    expect(commandFromKey('y', plain, false)).toEqual({ type: 'favourite' })
     expect(commandFromKey('-', plain, true)).toEqual({ type: 'guide-zoom', direction: -1 })
     expect(commandFromKey('=', plain, true)).toEqual({ type: 'guide-zoom', direction: 1 })
     expect(commandFromKey('/', plain, false)).toEqual({ type: 'multiview' })

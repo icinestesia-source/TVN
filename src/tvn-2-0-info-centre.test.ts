@@ -29,11 +29,11 @@ describe('INFO centre (Phase B1)', () => {
     expect(read('src/components/Guide.tsx')).toContain("tool === 'infocentre'")
   })
 
-  it('does not steal V (picture info); I opens Info and Y opens Add', () => {
+  it('does not steal V (picture info); I opens Info and A opens Add', () => {
     const plain = { meta: false, ctrl: false, alt: false }
     expect(commandFromKey('v', plain, true)).toEqual({ type: 'info' })
     expect(commandFromKey('V', plain, false)).toEqual({ type: 'info' })
-    expect(commandFromKey('y', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
+    expect(commandFromKey('a', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
     expect(commandFromKey('i', plain, false)).toEqual({ type: 'guide-tool', tool: 'infocentre' })
     expect(commandFromKey('I', plain, true)).toEqual({ type: 'guide-tool', tool: 'infocentre' })
   })

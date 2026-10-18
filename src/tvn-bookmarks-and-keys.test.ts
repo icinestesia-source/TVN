@@ -16,10 +16,10 @@ const plain = { meta: false, ctrl: false, alt: false }
 const channel = { number: 42, name: 'Science', origin: 'tvn' } as unknown as Channel
 const programme = { id: 'p-1', title: 'A Clip', description: '', videoId: 'YrZyJuaBfKA', durationSeconds: 600, channelId: 'c', category: 'Science', source: 'imported', kind: 'programme', playbackMode: 'linear' } as Programme
 
-describe('KEYS: Y Add, U Media, E Export ALL, O Options, D Bookmark', () => {
+describe('KEYS: A Add, U Media, E Export ALL, O Options, D Bookmark', () => {
   it('binds each, Guide open or not', () => {
     for (const guideOpen of [false, true]) {
-      expect(commandFromKey('y', plain, guideOpen)).toEqual({ type: 'guide-tool', tool: 'add' })
+      expect(commandFromKey('a', plain, guideOpen)).toEqual({ type: 'guide-tool', tool: 'add' })
       expect(commandFromKey('U', plain, guideOpen)).toEqual({ type: 'media' })
       expect(commandFromKey('e', plain, guideOpen)).toEqual({ type: 'export-all' })
       expect(commandFromKey('O', plain, guideOpen)).toEqual({ type: 'guide-tool', tool: 'options' })
@@ -32,9 +32,9 @@ describe('KEYS: Y Add, U Media, E Export ALL, O Options, D Bookmark', () => {
 
   it('the keyboard on the welcome screen and the hints say so', () => {
     const keys = read('src/legal/entry-keys.ts')
-    for (const label of ["letter('X', 'Edit')", "letter('Q', 'Reload')", "letter('Y', 'Add')", "letter('I', 'Info')", "letter('U', 'Media')", "letter('E', 'Export ALL')", "letter('O', 'Options')", "letter('D', 'Bookmark')"]) expect(keys).toContain(label)
+    for (const label of ["letter('X', 'Edit')", "letter('Q', 'Reload')", "letter('A', 'Add')", "letter('Y', 'Fav')", "letter('I', 'Info')", "letter('U', 'Media')", "letter('E', 'Export ALL')", "letter('O', 'Options')", "letter('D', 'Bookmark')"]) expect(keys).toContain(label)
     const hints = read('src/components/Hints.tsx')
-    for (const part of ['X Edit · R Refresh · Q Reload', 'D Bookmark', 'Y Add · U Media', 'I Info', 'E Export ALL · O Options']) expect(hints).toContain(part)
+    for (const part of ['X Edit · R Refresh · Q Reload', 'D Bookmark', 'A Add · U Media', 'Y Favourite', 'I Info', 'E Export ALL · O Options']) expect(hints).toContain(part)
   })
 })
 

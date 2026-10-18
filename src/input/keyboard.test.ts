@@ -17,7 +17,7 @@ describe('commandFromKey', () => {
     expect(commandFromKey('3', { meta: true, ctrl: false, alt: false }, false)).toBeNull()
   })
 
-  it('uses M for mute, / for multiview, B and N for previous and next channel, comma and full stop for programme, and Y for Add', () => {
+  it('uses M for mute, / for multiview, B and N for previous and next channel, comma and full stop for programme, and A for Add', () => {
     expect(commandFromKey('m', plain, false)).toEqual({ type: 'mute' })
     expect(commandFromKey('M', plain, false)).toEqual({ type: 'mute' })
     expect(commandFromKey('K', plain, false)).toBeNull()
@@ -26,17 +26,17 @@ describe('commandFromKey', () => {
     expect(commandFromKey('N', plain, false)).toEqual({ type: 'history-forward' })
     expect(commandFromKey(',', plain, false)).toEqual({ type: 'step', direction: -1 })
     expect(commandFromKey('.', plain, false)).toEqual({ type: 'step', direction: 1 })
-    expect(commandFromKey('y', plain, false)).toEqual({ type: 'guide-tool', tool: 'add' })
+    expect(commandFromKey('a', plain, false)).toEqual({ type: 'guide-tool', tool: 'add' })
     expect(commandFromKey('g', plain, false)).toEqual({ type: 'guide' })
     expect(commandFromKey('ArrowLeft', plain, false, true)).toEqual({ type: 'focus-move', direction: 'left' })
     expect(commandFromKey('ArrowUp', plain, true, true)).toEqual({ type: 'nav', direction: 'up' })
   })
 
-  it('C cycles the tabs, S subtitles, A favourites, V info, U media, E exports ALL, O options, D bookmarks, and R L Z X arrange a schedule, Guide open or not', () => {
+  it('C cycles the tabs, S subtitles, Y favourites, V info, U media, E exports ALL, O options, D bookmarks, and R L Z X arrange a schedule, Guide open or not', () => {
     for (const guideOpen of [false, true]) {
       expect(commandFromKey('c', plain, guideOpen)).toEqual({ type: 'guide-cycle' })
       expect(commandFromKey('S', plain, guideOpen)).toEqual({ type: 'subtitles' })
-      expect(commandFromKey('a', plain, guideOpen)).toEqual({ type: 'favourite' })
+      expect(commandFromKey('y', plain, guideOpen)).toEqual({ type: 'favourite' })
       expect(commandFromKey('V', plain, guideOpen)).toEqual({ type: 'info' })
       expect(commandFromKey('u', plain, guideOpen)).toEqual({ type: 'media' })
       expect(commandFromKey('e', plain, guideOpen)).toEqual({ type: 'export-all' })

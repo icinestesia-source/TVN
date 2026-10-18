@@ -35,7 +35,7 @@ Allowlisted public RSS/Atom feeds (`src/info/news/feeds.ts`):
 | guardian-business | The Guardian | Business | https://www.theguardian.com/uk/business/rss |
 | guardian-science | The Guardian | Science | https://www.theguardian.com/science/rss |
 
-Headlines older than **14 days** are dropped at ingest. Descriptions are truncated to 280 characters. Full articles stay on the publisher site.
+UK and World also include Channel 4 News, the Financial Times, i, the Scotsman, NPR, PBS, CBC, ABC (Australia and US), the New York Times, Le Monde, Der Spiegel, Africanews, UN News, and others in `feeds.ts`. Each outlet’s newest headline is the one shown first, so one publisher does not fill the list. Headlines older than **14 days** are dropped at ingest. Descriptions are truncated to 280 characters. Full articles stay on the publisher site.
 
 ## Football
 

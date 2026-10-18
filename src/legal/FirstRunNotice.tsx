@@ -39,7 +39,7 @@ function EntryKeys() {
         ))}
       </ul>
       <p className="kb-note">
-        0–9 tune a channel · ↑ ↓ channel · ← → volume · G Guide · Space Surf (hold to change what it covers) · P Pause · C All / User / Fav · U Media · Y Add · I Info · R
+        0–9 tune a channel · ↑ ↓ channel · ← → volume · G Guide · Space Surf (hold to change what it covers) · P Pause · C All / User / Fav · U Media · A Add · Y Favourite · I Info · R
         Refresh, L Latest, Z A to Z and Q Reload the selected channel's schedule · X Edit Channel · E Export ALL · O Options · D Bookmark · B N Prev/Next channel · , . programme · H Help · − and = zoom the Guide
       </p>
     </div>

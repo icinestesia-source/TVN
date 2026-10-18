@@ -82,8 +82,12 @@ function MatchRow({
       <span className="info-match-away">{match.away}</span>
       <span className="info-match-status">
         <span className="info-match-comp">{competition}</span>
-        <span aria-hidden="true"> · </span>
-        <span>{status}</span>
+        {status ? (
+          <>
+            <span aria-hidden="true"> · </span>
+            <span>{status}</span>
+          </>
+        ) : null}
         <span aria-hidden="true"> · </span>
         <span>{detail}</span>
       </span>

@@ -6,7 +6,7 @@ export function Hints() {
 
   return (
     <p className="hints">
-      ↑↓ Channel · G Guide · V Picture info · I Info · 0–9 Tune · ⌫ Last · B N Prev/Next · , . Programme · Space Surf (hold: ALL / network) · P Pause · A Favourite · D Bookmark · S Subtitles · M Mute · / Multi · \ Single · Y Add · U Media · C All / User / Fav · X Edit · R Refresh · Q Reload · L Latest · Z A to Z · E Export ALL · O Options · T Cycle · − = Guide zoom · Home now
+      ↑↓ Channel · G Guide · V Picture info · I Info · 0–9 Tune · ⌫ Last · B N Prev/Next · , . Programme · Space Surf (hold: ALL / network) · P Pause · Y Favourite · D Bookmark · S Subtitles · M Mute · / Multi · \ Single · A Add · U Media · C All / User / Fav · X Edit · R Refresh · Q Reload · L Latest · Z A to Z · E Export ALL · O Options · T Cycle · − = Guide zoom · Home now
     </p>
   )
 }

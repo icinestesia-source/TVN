@@ -81,7 +81,7 @@ describe('subtitles toggle', () => {
     expect(commandFromKey('s', plain, false)).toEqual({ type: 'subtitles' })
     expect(commandFromKey('S', plain, false)).toEqual({ type: 'subtitles' })
     expect(commandFromKey('s', plain, true)).toEqual({ type: 'subtitles' })
-    expect(commandFromKey('a', plain, false)).toEqual({ type: 'favourite' })
+    expect(commandFromKey('y', plain, false)).toEqual({ type: 'favourite' })
 
     const youtube = captionPlayer()
     const controller = new CaptionController(false, 'en')

@@ -45,11 +45,11 @@ export function scoreboardStatus(type: Json | string | null): ScoreboardStatus {
 }
 
 export function statusText(status: ScoreboardStatus): string {
-  if (status === 'finished') return 'Finished'
+  if (status === 'finished') return 'FT'
   if (status === 'in-play') return 'In progress'
   if (status === 'postponed') return 'Postponed'
   if (status === 'cancelled') return 'Cancelled'
-  return 'Scheduled'
+  return ''
 }
 
 /** Full-time and in-play lines only. */

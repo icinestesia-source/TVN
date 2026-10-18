@@ -85,7 +85,7 @@ export function commandFromKey(
       return { type: 'fullscreen' }
     case 'a':
     case 'A':
-      return { type: 'favourite' }
+      return { type: 'guide-tool', tool: 'add' }
     case 's':
     case 'S':
       return { type: 'subtitles' }
@@ -103,7 +103,7 @@ export function commandFromKey(
       return { type: 'guide-tool', tool: 'options' }
     case 'y':
     case 'Y':
-      return { type: 'guide-tool', tool: 'add' }
+      return { type: 'favourite' }
     case 'c':
     case 'C':
       return { type: 'guide-cycle' }

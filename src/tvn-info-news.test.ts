@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { INFO_MODULES, InfoCentre } from './components/InfoCentre.tsx'
 import { NEWS_FEEDS } from './info/news/feeds.ts'
+import { defaultInfoPreferences, normalizeInfoPreferences } from './info/preferences.ts'
 import {
   asNewsSnapshot,
   buildNewsSnapshot,
@@ -111,6 +112,8 @@ describe('INFO news', () => {
     const bbc = selected.filter((row) => row.publisher === 'BBC News').length
     expect(bbc).toBeLessThanOrEqual(2)
     expect(new Set(selected.map((row) => row.publisher)).size).toBeGreaterThanOrEqual(3)
+    const leads = selectHeadlines(pool, { limit: 6, maxPerPublisher: 1 })
+    expect(new Set(leads.map((row) => row.publisher)).size).toBe(leads.length)
   })
 
   it('expands the allowlist across categories with publisher attribution fields', () => {
@@ -121,10 +124,16 @@ describe('INFO news', () => {
     }
     expect(NEWS_CATEGORIES.some((entry) => entry.id === 'top')).toBe(true)
     const publishers = new Set(NEWS_FEEDS.map((feed) => feed.publisher))
-    for (const name of ['BBC News', 'The Guardian', 'Sky News', 'The Independent', 'Al Jazeera English', 'France 24', 'Deutsche Welle', 'Ars Technica', 'The Register', 'New Scientist']) {
+    for (const name of ['BBC News', 'The Guardian', 'Sky News', 'The Independent', 'Al Jazeera English', 'France 24', 'Deutsche Welle', 'Ars Technica', 'The Register', 'New Scientist', 'Channel 4 News', 'NPR', 'Financial Times', 'The New York Times', 'Africanews']) {
       expect(publishers.has(name)).toBe(true)
     }
     expect([...publishers].some((name) => /reuters/i.test(name))).toBe(false)
+    const stored = defaultInfoPreferences()
+    stored.news.enabledPublisherIds = ['BBC News']
+    stored.news.publisherOrder = ['BBC News']
+    const migrated = normalizeInfoPreferences(stored)
+    expect(migrated.news.enabledPublisherIds).toContain('NPR')
+    expect(migrated.news.enabledPublisherIds).toContain('BBC News')
     for (const feed of NEWS_FEEDS) {
       expect(feed.feedUrl.startsWith('https://')).toBe(true)
     }

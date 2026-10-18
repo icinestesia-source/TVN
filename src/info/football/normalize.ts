@@ -29,11 +29,11 @@ export function matchStatusOf(raw: string | undefined | null): MatchStatus {
 }
 
 export function statusLabel(status: MatchStatus, liveReliable: boolean): string {
-  if (status === 'finished') return 'Finished'
+  if (status === 'finished') return 'FT'
   if (status === 'postponed') return 'Postponed'
   if (status === 'cancelled') return 'Cancelled'
   if (status === 'in-play') return liveReliable ? 'Live' : 'Delayed'
-  return 'Scheduled'
+  return ''
 }
 
 /** Viewer-local calendar day as YYYY-MM-DD (avoids UTC day-boundary shifts). */

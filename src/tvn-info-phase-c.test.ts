@@ -27,7 +27,7 @@ describe('INFO Phase C', () => {
     expect(markup).toContain('Shopping')
     const plain = { meta: false, ctrl: false, alt: false }
     expect(commandFromKey('v', plain, true)).toEqual({ type: 'info' })
-    expect(commandFromKey('y', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
+    expect(commandFromKey('a', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
   })
 
   it('parses TMDB list payloads without inventing titles', () => {

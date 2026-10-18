@@ -49,7 +49,7 @@ async function main(): Promise<void> {
       const xml = await fetchText(feed.feedUrl)
       const found = itemsFromFeedXml(xml, { sourceId: feed.id, publisher: feed.publisher, category: feed.category })
       if (found.length === 0) errors.push(`${feed.id}: no items`)
-      else items.push(...found)
+      else items.push(...found.slice(0, 8))
     } catch (caught) {
       errors.push(`${feed.id}: ${caught instanceof Error ? caught.message : 'failed'}`)
     }

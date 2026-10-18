@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { SportsPanel } from './components/info/SportsPanel.tsx'
-import { eventsFromCricketHeader, eventsFromEspnScoreboard } from './info/sports/scoreboard.ts'
+import { eventsFromCricketHeader, eventsFromEspnScoreboard, statusText } from './info/sports/scoreboard.ts'
 
 describe('INFO sports scoreboards', () => {
   it('lists NFL, NBA, NHL and cricket beside football', () => {
@@ -49,6 +49,8 @@ describe('INFO sports scoreboards', () => {
     expect(events[0]).toMatchObject({ status: 'finished', homeScore: '22', awayScore: '6', detail: 'Final' })
     expect(events[1]?.homeScore).toBeUndefined()
     expect(events[1]?.status).toBe('scheduled')
+    expect(statusText('finished')).toBe('FT')
+    expect(statusText('scheduled')).toBe('')
   })
 
   it('reads cricket scores from the series header', () => {

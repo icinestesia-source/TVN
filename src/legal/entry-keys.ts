@@ -67,7 +67,7 @@ export const KEYBOARD_ROWS: readonly (readonly KeyboardKey[])[] = [
     letter('E', 'Export ALL'),
     letter('R', 'Refresh'),
     letter('T', 'Cycle'),
-    letter('Y', 'Add'),
+    letter('Y', 'Fav'),
     letter('U', 'Media'),
     letter('I', 'Info'),
     letter('O', 'Options'),
@@ -78,7 +78,7 @@ export const KEYBOARD_ROWS: readonly (readonly KeyboardKey[])[] = [
   ],
   [
     { cap: 'Caps', size: 1.75 },
-    letter('A', 'Fav'),
+    letter('A', 'Add'),
     letter('S', 'Subs'),
     letter('D', 'Bookmark'),
     letter('F', 'Full screen'),

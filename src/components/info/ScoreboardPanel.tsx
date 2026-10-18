@@ -14,6 +14,13 @@ function centre(event: ScoreboardEvent): string {
   return 'v'
 }
 
+/** Drop a status word when the kickoff time already says the match has not started, or when FT is already shown. */
+function lineDetail(event: ScoreboardEvent): string {
+  const raw = event.detail.trim()
+  if (event.status === 'scheduled' || /^(scheduled|final|finished|full time|ft)$/i.test(raw)) return formatStart(event.startIso)
+  return raw
+}
+
 function rank(event: ScoreboardEvent): number {
   if (event.status === 'in-play') return 0
   if (event.status === 'scheduled') return 1
@@ -105,10 +112,14 @@ export function ScoreboardPanel({
               <span className="info-match-away">{event.away}</span>
               <span className="info-match-status">
                 <span className="info-match-comp">{event.competition}</span>
+                {statusText(event.status) ? (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    <span>{statusText(event.status)}</span>
+                  </>
+                ) : null}
                 <span aria-hidden="true"> · </span>
-                <span>{statusText(event.status)}</span>
-                <span aria-hidden="true"> · </span>
-                <span>{event.detail === statusText(event.status) ? formatStart(event.startIso) : event.detail}</span>
+                <span>{lineDetail(event)}</span>
               </span>
             </li>
           ))}

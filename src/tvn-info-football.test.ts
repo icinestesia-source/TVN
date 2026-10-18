@@ -43,7 +43,8 @@ describe('INFO football', () => {
     expect(matchStatusOf('IN_PLAY')).toBe('in-play')
     expect(statusLabel('in-play', false)).toBe('Delayed')
     expect(statusLabel('in-play', true)).toBe('Live')
-    expect(statusLabel('finished', false)).toBe('Finished')
+    expect(statusLabel('finished', false)).toBe('FT')
+    expect(statusLabel('scheduled', false)).toBe('')
   })
 
   it('builds snapshots, keeps empty failure states, and rejects bad documents', () => {
