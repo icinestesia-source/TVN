@@ -50,7 +50,7 @@ describe('INFO Phase D.1 Shopping', () => {
     expect(markup).toContain('On this day')
     const plain = { meta: false, ctrl: false, alt: false }
     expect(commandFromKey('v', plain, true)).toEqual({ type: 'info' })
-    expect(commandFromKey('i', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
+    expect(commandFromKey('y', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
   })
 
   it('renders Shopping navigation sections and keeps the product catalogue empty until authorised', () => {

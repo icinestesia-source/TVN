@@ -26,7 +26,7 @@ describe('INFO Phase E release candidate', () => {
     }
     const plain = { meta: false, ctrl: false, alt: false }
     expect(commandFromKey('v', plain, true)).toEqual({ type: 'info' })
-    expect(commandFromKey('i', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
+    expect(commandFromKey('y', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
   })
 
   it('does not remount the player when INFO opens', () => {

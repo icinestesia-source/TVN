@@ -188,6 +188,47 @@ export async function fetchLeagueOneSupplement(options: {
 }
 
 /**
+ * Same League One read as ingest, in parallel, for the Sports panel when the published
+ * snapshot has no League One rows yet.
+ */
+export async function fetchLeagueOneDisplay(options: {
+  dateFrom: string
+  dateTo: string
+  fetchImpl?: typeof fetch
+  nowIso?: string
+}): Promise<{ matches: FootballMatch[]; tables: LeagueTable[]; errors: string[] }> {
+  const fetchImpl = options.fetchImpl ?? fetch
+  const errors: string[] = []
+  const matches: FootballMatch[] = []
+  const get = async (url: string) => {
+    const response = await fetchImpl(url, { headers: { accept: 'application/json' } })
+    if (!response.ok) throw new Error(`${response.status}`)
+    return response.json() as Promise<unknown>
+  }
+  const days = daysBetween(options.dateFrom, options.dateTo)
+  const batch = 6
+  for (let index = 0; index < days.length; index += batch) {
+    await Promise.all(
+      days.slice(index, index + batch).map(async (day) => {
+        try {
+          matches.push(...matchesFromEspnScoreboard(await get(`${SCOREBOARD}${day.replace(/-/g, '')}`)))
+        } catch (caught) {
+          errors.push(`EL1 matches ${day}: ${caught instanceof Error ? caught.message : 'failed'}`)
+        }
+      }),
+    )
+  }
+  const tables: LeagueTable[] = []
+  try {
+    const table = tableFromEspnStandings(await get(STANDINGS), options.nowIso ?? new Date().toISOString())
+    if (table) tables.push(table)
+  } catch (caught) {
+    errors.push(`EL1 table: ${caught instanceof Error ? caught.message : 'failed'}`)
+  }
+  return { matches, tables, errors }
+}
+
+/**
  * Fold a daily League One supplement into the football snapshot.
  * Rows outside the fetched window are kept. Entitlement errors are dropped once real rows arrive.
  */

@@ -79,7 +79,7 @@ export function commandFromKey(
       return { type: 'history-forward' }
     case 'i':
     case 'I':
-      return { type: 'guide-tool', tool: 'add' }
+      return { type: 'guide-tool', tool: 'infocentre' }
     case 'f':
     case 'F':
       return { type: 'fullscreen' }
@@ -103,7 +103,7 @@ export function commandFromKey(
       return { type: 'guide-tool', tool: 'options' }
     case 'y':
     case 'Y':
-      return { type: 'guide-tool', tool: 'infocentre' }
+      return { type: 'guide-tool', tool: 'add' }
     case 'c':
     case 'C':
       return { type: 'guide-cycle' }

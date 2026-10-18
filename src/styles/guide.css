@@ -2377,6 +2377,7 @@ a.info-creator:focus-visible {
 .info-match-home { text-align: right; }
 .info-match-away { text-align: left; }
 .info-match-score { font-variant-numeric: tabular-nums; letter-spacing: 0.06em; white-space: nowrap; font-weight: 600; }
+.info-match-score.is-long { white-space: normal; letter-spacing: 0; font-size: 0.85em; text-align: center; max-width: 9rem; }
 .info-match-status {
   grid-column: 1 / -1;
   color: var(--muted);

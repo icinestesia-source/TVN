@@ -17,7 +17,7 @@ describe('commandFromKey', () => {
     expect(commandFromKey('3', { meta: true, ctrl: false, alt: false }, false)).toBeNull()
   })
 
-  it('uses M for mute, / for multiview, B and N for previous and next channel, comma and full stop for programme, and I for Add', () => {
+  it('uses M for mute, / for multiview, B and N for previous and next channel, comma and full stop for programme, and Y for Add', () => {
     expect(commandFromKey('m', plain, false)).toEqual({ type: 'mute' })
     expect(commandFromKey('M', plain, false)).toEqual({ type: 'mute' })
     expect(commandFromKey('K', plain, false)).toBeNull()
@@ -26,7 +26,7 @@ describe('commandFromKey', () => {
     expect(commandFromKey('N', plain, false)).toEqual({ type: 'history-forward' })
     expect(commandFromKey(',', plain, false)).toEqual({ type: 'step', direction: -1 })
     expect(commandFromKey('.', plain, false)).toEqual({ type: 'step', direction: 1 })
-    expect(commandFromKey('i', plain, false)).toEqual({ type: 'guide-tool', tool: 'add' })
+    expect(commandFromKey('y', plain, false)).toEqual({ type: 'guide-tool', tool: 'add' })
     expect(commandFromKey('g', plain, false)).toEqual({ type: 'guide' })
     expect(commandFromKey('ArrowLeft', plain, false, true)).toEqual({ type: 'focus-move', direction: 'left' })
     expect(commandFromKey('ArrowUp', plain, true, true)).toEqual({ type: 'nav', direction: 'up' })
