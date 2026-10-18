@@ -1,4 +1,5 @@
 import { useState, type ComponentType } from 'react'
+import { NewsPanel } from './info/NewsPanel.tsx'
 import { keepKey } from './keep-key.ts'
 
 export type InfoModuleId = 'news' | 'sports'
@@ -10,10 +11,10 @@ export interface InfoModule {
 }
 
 /**
- * Modules that are ready to show. Phase B adds News then Sports; later phases append here.
- * Empty until those panels are wired — INFO still opens as a Guide panel over the picture.
+ * Modules that are ready to show. News is live; Sports follows when its snapshot is wired.
+ * INFO still opens as a Guide panel over the picture when the list is empty.
  */
-export const INFO_MODULES: readonly InfoModule[] = []
+export const INFO_MODULES: readonly InfoModule[] = [{ id: 'news', label: 'News', Panel: NewsPanel }]
 
 /**
  * INFO: news and sports in the Guide, over the picture. Opening it does not retune or remount the player.

@@ -15,7 +15,8 @@
     "mac-app:full": "sh scripts/build-mac-app.sh full",
     "android-app:full": "sh scripts/build-android-app.sh full",
     "apps": "sh scripts/build-mac-app.sh && sh scripts/build-android-app.sh && sh scripts/build-mac-app.sh full && sh scripts/build-android-app.sh full",
-    "harvester": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning harvester/cli.ts"
+    "harvester": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning harvester/cli.ts",
+    "info:news": "node --import ./harvester/register.mjs --disable-warning=ExperimentalWarning scripts/info/ingest-news.ts"
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",

@@ -30,7 +30,7 @@ describe('INFO centre (Phase B1)', () => {
   })
 
   it('does not steal V (picture info) or I (Add)', () => {
-    const plain = { altKey: false, ctrlKey: false, metaKey: false, shiftKey: false }
+    const plain = { meta: false, ctrl: false, alt: false }
     expect(commandFromKey('v', plain, true)).toEqual({ type: 'info' })
     expect(commandFromKey('V', plain, false)).toEqual({ type: 'info' })
     expect(commandFromKey('i', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
@@ -54,6 +54,7 @@ describe('INFO centre (Phase B1)', () => {
     for (const module of INFO_MODULES) {
       expect(['news', 'sports']).toContain(module.id)
     }
+    expect(INFO_MODULES.every((module) => module.Panel)).toBe(true)
   })
 
   it('does not remount the player when INFO opens', () => {
