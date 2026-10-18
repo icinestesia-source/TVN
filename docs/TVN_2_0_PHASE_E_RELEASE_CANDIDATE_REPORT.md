@@ -13,7 +13,7 @@
 | **Phase E engineering start** | `373243c` — Record Phase D.1 final commit in the completion report. |
 | **Phase E stabilisation** | `0b64f80` — Stabilise TVN 2.0 INFO for the Phase E release candidate. |
 | **Sports empty-state fix** | `5e027e0` — Fix Sports fixtures empty state when football data is unpublished. |
-| **Phase E end (this RC)** | *(recorded after final commit)* |
+| **Phase E end (this RC)** | `5111979` — Finalise Phase E RC with football snapshot safety and Sports incorporation. |
 
 `origin/main` currently includes Phase E stabilisation through `c667a0f` (V1.98a). Local commits ahead incorporate the Sports diagnostic and snapshot-safety finalisation.
 
