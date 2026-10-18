@@ -2,9 +2,10 @@
 
 **Date:** 2026-10-18  
 **Branch:** `main`  
-**Local HEAD:** `4662ad5`  
+**Release-prep base:** `1a3e072` (EL1↔PPL swap + this readiness doc introduced)  
 **Production tip (origin/main):** `6aefa9f` — *v2.3*  
-**This document does not authorise push or deploy.**
+**This document does not authorise push or deploy.**  
+Confirm tip with `git rev-parse --short HEAD` before push.
 
 ---
 
