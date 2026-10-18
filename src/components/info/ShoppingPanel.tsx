@@ -106,8 +106,13 @@ export function ShoppingPanel() {
     ] as typeof SHOPPING_DEPARTMENTS
   }, [shopping.departmentOrder])
 
+  const hasOfficialPartners = RETAILERS.some((entry) => entry.officialPartner)
+
   const allRetailers = useMemo(() => {
-    const catalogue = shopping.showOfficialOnly ? RETAILERS.filter((entry) => entry.officialPartner) : [...RETAILERS]
+    const catalogue =
+      shopping.showOfficialOnly && hasOfficialPartners
+        ? RETAILERS.filter((entry) => entry.officialPartner)
+        : [...RETAILERS]
     const userAsRetailers: Retailer[] = shopping.userShops.map((shop) => ({
       id: shop.id,
       name: shop.name,
@@ -127,7 +132,7 @@ export function ShoppingPanel() {
       source: 'user' as const,
     }))
     return [...catalogue, ...userAsRetailers]
-  }, [shopping.showOfficialOnly, shopping.userShops])
+  }, [shopping.showOfficialOnly, shopping.userShops, hasOfficialPartners])
 
   const filteredRetailers = useMemo(() => {
     const byDept =
@@ -287,16 +292,18 @@ export function ShoppingPanel() {
                 </option>
               ))}
             </select>
-            <label className="info-item-meta">
-              <input
-                type="checkbox"
-                checked={shopping.showOfficialOnly}
-                onChange={(event) =>
-                  persist({ ...prefs, shopping: { ...shopping, showOfficialOnly: event.target.checked } })
-                }
-              />{' '}
-              Official partners only
-            </label>
+            {hasOfficialPartners ? (
+              <label className="info-item-meta">
+                <input
+                  type="checkbox"
+                  checked={shopping.showOfficialOnly}
+                  onChange={(event) =>
+                    persist({ ...prefs, shopping: { ...shopping, showOfficialOnly: event.target.checked } })
+                  }
+                />{' '}
+                Official partners only
+              </label>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -511,7 +518,10 @@ export function ShoppingPanel() {
             never scraped or invented.
           </p>
           {products.length === 0 ? (
-            <p className="options-note">No product catalogue entries yet. Browse shops or add favourites from the directory.</p>
+            <p className="options-note">
+              No authorised product listings are available yet. Product cards will appear here when an approved feed or curated
+              catalogue entry is configured. Browse Shops in the meantime — prices and stock are never fabricated.
+            </p>
           ) : (
             <ul className="info-list">
               {products.map((product) => (

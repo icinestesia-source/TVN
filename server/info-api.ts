@@ -5,6 +5,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { join } from 'node:path'
+import { applyTmdbCredential, resolveTmdbCredential } from '../src/info/entertainment/tmdb-auth.ts'
 import { asFootballSnapshot } from '../src/info/football/normalize.ts'
 import { asNewsSnapshot } from '../src/info/news/normalize.ts'
 
@@ -49,15 +50,17 @@ function readUrl(req: IncomingMessage): URL {
   return new URL(req.url ?? '/', 'http://localhost')
 }
 
-/** Dev proxy for TMDB — same allowlist and secret as netlify/functions/info-tmdb.ts */
+/** Dev proxy for TMDB — same allowlist and shape-based auth as netlify/functions/info-tmdb.ts */
 export async function infoTmdbMiddleware(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'GET') {
     send(res, 405, { error: 'GET only' })
     return
   }
-  const apiKey = process.env.TMDB_API_TOKEN?.trim()
-  const bearer = process.env.TMDB_READ_ACCESS_TOKEN?.trim()
-  if (!apiKey && !bearer) {
+  const credential = resolveTmdbCredential({
+    TMDB_API_TOKEN: process.env.TMDB_API_TOKEN,
+    TMDB_READ_ACCESS_TOKEN: process.env.TMDB_READ_ACCESS_TOKEN,
+  })
+  if (!credential) {
     send(res, 503, { error: 'TMDB_API_TOKEN or TMDB_READ_ACCESS_TOKEN is not configured' })
     return
   }
@@ -72,6 +75,8 @@ export async function infoTmdbMiddleware(req: IncomingMessage, res: ServerRespon
     /^\/search\/multi$/,
     /^\/discover\/movie$/,
     /^\/discover\/tv$/,
+    /^\/genre\/movie\/list$/,
+    /^\/genre\/tv\/list$/,
   ]
   if (!allow.some((rule) => rule.test(path))) {
     send(res, 400, { error: 'Path not allowed' })
@@ -79,8 +84,7 @@ export async function infoTmdbMiddleware(req: IncomingMessage, res: ServerRespon
   }
   const upstream = new URL(`https://api.themoviedb.org/3${path}`)
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (apiKey) upstream.searchParams.set('api_key', apiKey)
-  else if (bearer) headers.Authorization = `Bearer ${bearer}`
+  applyTmdbCredential(upstream, headers, credential)
   for (const [key, value] of url.searchParams) {
     if (key === 'path' || key === 'api_key') continue
     upstream.searchParams.set(key, value)
@@ -90,14 +94,17 @@ export async function infoTmdbMiddleware(req: IncomingMessage, res: ServerRespon
     const text = await response.text()
     res.statusCode = response.status
     res.setHeader('content-type', 'application/json; charset=utf-8')
-    res.setHeader('cache-control', 'public, max-age=900')
+    res.setHeader('cache-control', response.status === 429 ? 'public, max-age=60' : 'public, max-age=900')
     res.end(text)
   } catch (caught) {
     send(res, 502, { error: caught instanceof Error ? caught.message : 'Upstream failed' })
   }
 }
 
-/** Dev proxy for Alpha Vantage — same secret as netlify/functions/info-finance.ts */
+const financeCache = new Map<string, { expires: number; status: number; body: string }>()
+const FINANCE_CACHE_TTL_MS = 30 * 60 * 1000
+
+/** Dev proxy for Alpha Vantage — same secret + cache policy as netlify/functions/info-finance.ts */
 export async function infoFinanceMiddleware(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'GET') {
     send(res, 405, { error: 'GET only' })
@@ -113,6 +120,7 @@ export async function infoFinanceMiddleware(req: IncomingMessage, res: ServerRes
   const symbol = (url.searchParams.get('symbol') ?? '').trim().toUpperCase()
   const upstream = new URL('https://www.alphavantage.co/query')
   upstream.searchParams.set('apikey', key)
+  let cacheKey = `${action}:${symbol}`
   if (action === 'quote') {
     if (!/^[A-Z0-9.^_-]{1,16}$/.test(symbol)) {
       send(res, 400, { error: 'Invalid symbol' })
@@ -128,16 +136,30 @@ export async function infoFinanceMiddleware(req: IncomingMessage, res: ServerRes
     }
     upstream.searchParams.set('function', 'SYMBOL_SEARCH')
     upstream.searchParams.set('keywords', keywords)
+    cacheKey = `${action}:${keywords.toLowerCase()}`
   } else {
     send(res, 400, { error: 'Unknown action' })
+    return
+  }
+  const hit = financeCache.get(cacheKey)
+  if (hit && hit.expires > Date.now()) {
+    res.statusCode = hit.status
+    res.setHeader('content-type', 'application/json; charset=utf-8')
+    res.setHeader('cache-control', 'public, max-age=1800')
+    res.setHeader('x-tvn-finance-cache', 'hit')
+    res.end(hit.body)
     return
   }
   try {
     const response = await fetch(upstream.toString(), { headers: { Accept: 'application/json' } })
     const text = await response.text()
+    if (response.status === 200) {
+      financeCache.set(cacheKey, { expires: Date.now() + FINANCE_CACHE_TTL_MS, status: response.status, body: text })
+    }
     res.statusCode = response.status
     res.setHeader('content-type', 'application/json; charset=utf-8')
     res.setHeader('cache-control', 'public, max-age=1800')
+    res.setHeader('x-tvn-finance-cache', 'miss')
     res.end(text)
   } catch (caught) {
     send(res, 502, { error: caught instanceof Error ? caught.message : 'Upstream failed' })

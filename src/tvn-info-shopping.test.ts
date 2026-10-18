@@ -60,6 +60,7 @@ describe('INFO Phase D.1 Shopping', () => {
     }
     expect(markup).toContain('(external)')
     expect(markup).toContain('Directory listing only')
+    expect(markup).not.toContain('Official partners only')
     expect(CATALOGUE_PRODUCTS).toHaveLength(0)
   })
 

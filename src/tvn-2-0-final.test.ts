@@ -183,7 +183,10 @@ describe('TVN 2.0 final: GUIDE is the screen’s default section', () => {
   it('closing OPTIONS or the Network Editor brings the listings straight back where they were, never a blank grid', () => {
     const guide = readFileSync('src/components/Guide.tsx', 'utf8')
     expect(guide).toContain("const bookmarksOn = tool === 'bookmarks'")
-    expect(guide).toContain("const gridShown = tool !== 'options' && !bookmarksOn && !flagsOn && !networkShown && tv.visibleChannels.length > 0")
+    expect(guide).toContain("const infoShown = tool === 'infocentre'")
+    expect(guide).toContain(
+      "const gridShown = tool !== 'options' && !bookmarksOn && !flagsOn && !networkShown && !infoShown && tv.visibleChannels.length > 0",
+    )
     expect(guide).toMatch(/if \(!grid \|\| !gridHidden\.current\) return\s+gridHidden\.current = false\s+grid\.scrollLeft = scrollLeft\s+grid\.scrollTop = scrollTop/)
   })
 })

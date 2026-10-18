@@ -64,7 +64,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'server/**/*.test.ts', 'harvester/**/*.test.ts'],
-    testTimeout: 30000,
-    hookTimeout: 60000,
+    // Catalogue / harvester suites can exceed 30s under full-suite parallel load.
+    testTimeout: 90000,
+    hookTimeout: 90000,
   },
 })

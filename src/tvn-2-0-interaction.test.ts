@@ -178,7 +178,8 @@ describe('USER-NAMED NETWORK TAB', () => {
   it('the tab lists its own owner’s channels; named users keep theirs, and ordering stays on the one manifest', () => {
     const editor = read('src/components/NetworkEditor.tsx')
     expect(editor).not.toContain("if (list === 'user') return isUser(channel)")
-    expect(editor).toContain("list === 'user' ? (")
+    expect(editor).toContain('A User Network tab lists its own owner')
+    expect(editor).toContain('channelMatchesFilter')
     expect(editor).toContain("const canMove = list !== 'favourites'")
   })
 })

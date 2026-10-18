@@ -52,9 +52,11 @@ Primeira Liga (PPL) is deferred so League One fits the free-tier slot count.
 | `FOOTBALL_DATA_TOKEN` | GitHub Actions | football-data.org free API token |
 | `INFO_PUBLISH_SECRET` | GitHub Actions **and** Netlify env | Bearer token for `/api/info/publish` |
 | `INFO_PUBLISH_URL` | GitHub Actions | e.g. `https://<your-site>.netlify.app/api/info/publish` |
-| `TMDB_API_TOKEN` | Netlify (functions) | TMDB v3 API key for `/api/info/tmdb` (Phase C Entertainment); preferred when set |
-| `TMDB_READ_ACCESS_TOKEN` | GitHub Actions (optional Netlify) | TMDB v4 read access Bearer for `/api/info/tmdb` when v3 key absent |
-| `ALPHA_VANTAGE_API_KEY` | Netlify (functions) | Alpha Vantage key for `/api/info/finance` (Phase C Business stocks/indices) |
+| `TMDB_API_TOKEN` | Netlify (functions) | TMDB credential for `/api/info/tmdb`. May be a **v3 API key** or a **Read Access Token** (JWT). Auth mode is chosen by **shape**, not the variable name. |
+| `TMDB_READ_ACCESS_TOKEN` | GitHub Actions (optional Netlify) | Alternate TMDB credential (same shape rules). Bearer-shaped values are preferred when both are set. |
+| `ALPHA_VANTAGE_API_KEY` | Netlify (functions) | Alpha Vantage key for `/api/info/finance` (Phase C Business stocks/indices). Responses cached ~30 minutes server-side. |
+
+**TMDB auth (Phase E):** If `TMDB_API_TOKEN` holds the TMDB API Read Access Token (JWT starting `eyJ…`), the proxy sends `Authorization: Bearer` — it must **not** be passed as `api_key=`. Classic short alphanumeric v3 keys still use `api_key=`.
 
 Currencies use keyless Frankfurter. On This Day uses Wikimedia’s public feed (no secret).  
 Shopping (Phase D.1) uses a local curated retailer catalogue and user-saved shops — **no paid commerce API** and no server-side website fetch.

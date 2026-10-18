@@ -299,7 +299,15 @@ describe('EXPORT: the User Network as tvn-user-network-v1', () => {
     const labels = [...html.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
     expect(labels).toEqual(['Import', 'Export USER'])
     const actions = renderToStaticMarkup(createElement(GuideActions, { tool: null, picked: false, onNow: () => {}, onTool: () => {} }))
-    expect([...actions.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual(['Network', 'Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect([...actions.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])).toEqual([
+      'Network',
+      'Info',
+      'Guide',
+      'Options',
+      'Now',
+      'Add',
+      'Media',
+    ])
     const guide = read('src/components/Guide.tsx')
     expect(guide).not.toMatch(/<AddChannelForm [^>]*onExport=/)
     expect(guide).toMatch(/<UserNetworkTools[\s\S]*?onExport=\{tv\.exportUserNetwork\}/)

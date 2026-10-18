@@ -4,6 +4,12 @@
  * Free-tier football-data.org allows 12 competitions. Product allocation (release prep):
  * League One (EL1) replaces Primeira Liga (PPL) so the UK ladder fits the free slot count.
  * Live availability of EL1 still depends on the token — verify via INFO football verify.
+ *
+ * The free-tier slot count is a provider limit, not a permanent TVN architecture cap.
+ * DEFERRED_FOOTBALL_COMPETITIONS keeps PPL available to re-enable when entitlement allows.
+ *
+ * Post-deployment: run the football entitlement verify workflow and confirm EL1 (and any
+ * restored competitions) appear in the published snapshot before treating them as live.
  */
 export type CompetitionFormat = 'league' | 'cup'
 

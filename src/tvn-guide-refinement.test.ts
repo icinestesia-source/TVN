@@ -141,7 +141,7 @@ describe('MEDIA (1000 Local Media from local files)', () => {
   it('is a visible Guide action, after NOW and ADD', () => {
     const markup = renderToStaticMarkup(createElement(GuideActions, { tool: 'media', picked: false, onNow: () => undefined, onTool: () => undefined }))
     const labels = [...markup.matchAll(/<button[^>]*>([^<]+)<\/button>/g)].map((match) => match[1])
-    expect(labels).toEqual(['Network', 'Guide', 'Options', 'Now', 'Add', 'Media'])
+    expect(labels).toEqual(['Network', 'Info', 'Guide', 'Options', 'Now', 'Add', 'Media'])
     expect(markup).toMatch(/aria-pressed="true"[^>]*>Media</)
   })
 
@@ -283,7 +283,8 @@ describe('NOW', () => {
 
 describe('tuning', () => {
   it('every channel change ends a pick; only the tune that plays one keeps it', () => {
-    expect(provider).toMatch(/const requestTune = \(number: number, keepPick = false\) => \{[\s\S]{0,200}if \(!keepPick\) clearManual\(\)/)
+    // keepPick/clearManual remains the contract; off-air and missing-channel guards sit between the signature and clearManual.
+    expect(provider).toMatch(/const requestTune = \(number: number, keepPick = false\) => \{[\s\S]{0,600}if \(!keepPick\) clearManual\(\)/)
     const keeping = [...provider.matchAll(/requestTune\([^)]*, true\)/g)]
     expect(keeping).toHaveLength(1)
     const dispatch = provider.slice(provider.indexOf("case 'channel-up':"), provider.indexOf("case 'confirm':"))

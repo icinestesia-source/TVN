@@ -49,6 +49,7 @@ export function BusinessPanel() {
   const [symbol, setSymbol] = useState('IBM')
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [marketsLoaded, setMarketsLoaded] = useState(false)
 
   const persist = (next: InfoPreferences) => {
     saveInfoPreferences(next)
@@ -106,14 +107,21 @@ export function BusinessPanel() {
       }
     }
     setQuotes(out)
-    setStatus(errors[0] ?? (out.length ? null : 'Configure ALPHA_VANTAGE_API_KEY to load market indices.'))
+    setMarketsLoaded(true)
+    setStatus(
+      errors[0] ??
+        (out.length
+          ? null
+          : 'No market quotes returned. Indices need ALPHA_VANTAGE_API_KEY; free-tier symbols are limited and may be unsupported.'),
+    )
     setLoading(false)
   }
 
   useEffect(() => {
-    if (section === 'markets') void loadMarkets()
+    // Load markets once per panel session to conserve the Alpha Vantage free quota.
+    if (section === 'markets' && !marketsLoaded && !loading) void loadMarkets()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section])
+  }, [section, marketsLoaded, loading])
 
   const addWatch = (kind: 'index' | 'stock' | 'currency' | 'commodity', symbolValue: string, name: string) => {
     const id = `${kind}:${symbolValue}`
