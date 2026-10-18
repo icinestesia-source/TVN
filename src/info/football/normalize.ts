@@ -36,10 +36,26 @@ export function statusLabel(status: MatchStatus, liveReliable: boolean): string 
   return 'Scheduled'
 }
 
-export function todayIso(now = new Date()): string {
-  return now.toISOString().slice(0, 10)
+/** Viewer-local calendar day as YYYY-MM-DD (avoids UTC day-boundary shifts). */
+export function localDayIso(now = new Date()): string {
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
+export function todayIso(now = new Date()): string {
+  return localDayIso(now)
+}
+
+/** Local calendar day of a kickoff instant. */
+export function kickoffLocalDayIso(kickoffIso: string): string {
+  const ms = Date.parse(kickoffIso)
+  if (!Number.isFinite(ms)) return kickoffIso.slice(0, 10)
+  return localDayIso(new Date(ms))
+}
+
+/** Calendar-date arithmetic on YYYY-MM-DD strings (noon UTC anchor avoids DST edge cases). */
 export function addDaysIso(isoDate: string, days: number): string {
   const date = new Date(`${isoDate}T12:00:00.000Z`)
   date.setUTCDate(date.getUTCDate() + days)
@@ -47,7 +63,20 @@ export function addDaysIso(isoDate: string, days: number): string {
 }
 
 export function matchesOnDay(matches: readonly FootballMatch[], dayIso: string): FootballMatch[] {
-  return matches.filter((match) => match.kickoffIso.slice(0, 10) === dayIso)
+  return matches.filter((match) => kickoffLocalDayIso(match.kickoffIso) === dayIso)
+}
+
+/** Inclusive local-day range covered by match kickoffs in a snapshot. */
+export function snapshotLocalDayRange(matches: readonly FootballMatch[]): { fromIso: string; toIso: string } | null {
+  if (!matches.length) return null
+  let fromIso = kickoffLocalDayIso(matches[0]!.kickoffIso)
+  let toIso = fromIso
+  for (const match of matches) {
+    const day = kickoffLocalDayIso(match.kickoffIso)
+    if (day < fromIso) fromIso = day
+    if (day > toIso) toIso = day
+  }
+  return { fromIso, toIso }
 }
 
 export function sortMatches(matches: readonly FootballMatch[]): FootballMatch[] {

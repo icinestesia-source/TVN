@@ -130,6 +130,13 @@ export interface FootballIngestOptions {
    */
   delayMs?: number
   fetchImpl?: typeof fetch
+  /**
+   * Competition codes to skip (prior entitlement failures). Still listed with a carried error;
+   * forced ingest should pass an empty list to retry.
+   */
+  skipCompetitionCodes?: readonly string[]
+  /** Prior entitlement error lines to re-emit when a code is skipped. */
+  skipErrorMessages?: readonly string[]
 }
 
 const pause = (ms: number) => (ms > 0 ? new Promise<void>((resolve) => setTimeout(resolve, ms)) : Promise.resolve())
@@ -142,6 +149,15 @@ export async function ingestFootballDataOrg(options: FootballIngestOptions): Pro
   const tables: LeagueTable[] = []
   const delayMs = options.delayMs ?? 6500
   const fetchImpl = options.fetchImpl ?? fetch
+  const skip = new Set(options.skipCompetitionCodes ?? [])
+  const skipMessages = new Map(
+    (options.skipErrorMessages ?? [])
+      .map((entry) => {
+        const code = entry.split(/\s/)[0]
+        return code ? ([code, entry] as const) : null
+      })
+      .filter((entry): entry is readonly [string, string] => Boolean(entry)),
+  )
   let calls = 0
 
   const get = async (path: string) => {
@@ -153,6 +169,11 @@ export async function ingestFootballDataOrg(options: FootballIngestOptions): Pro
   for (const entry of FOOTBALL_COMPETITIONS) {
     const competitionId = entry.code
     competitions.push({ id: competitionId, code: entry.code, name: entry.name, area: entry.area })
+    if (skip.has(competitionId)) {
+      errors.push(skipMessages.get(competitionId) ?? `${competitionId} matches: skipped — prior entitlement error`)
+      errors.push(`${competitionId} table: skipped — prior entitlement error`)
+      continue
+    }
     try {
       const matchPayload = await get(`/competitions/${entry.code}/matches?dateFrom=${options.dateFrom}&dateTo=${options.dateTo}`)
       matches.push(...matchesFromPayload(matchPayload, competitionId))

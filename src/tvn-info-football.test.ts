@@ -8,9 +8,25 @@ import { FOOTBALL_COMPETITIONS } from './info/football/competitions.ts'
 import { ingestFootballDataOrg } from './info/football/football-data-org.ts'
 import { diagnoseFootballEmpty } from './info/football/empty-state.ts'
 import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_MATCHES_ELC, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
-import { fixtureMatches, matchesForCompetition, resultMatches } from './info/football/match-lists.ts'
-import { matchStatusOf, statusLabel, buildFootballSnapshot, asFootballSnapshot, emptyFootballSnapshot } from './info/football/normalize.ts'
-import { mergeFootballSnapshots, shouldWriteFootballBlob } from './info/football/snapshot-safety.ts'
+import { chronologicalMatches, fixtureMatches, matchesForCompetition, resultMatches } from './info/football/match-lists.ts'
+import {
+  addDaysIso,
+  asFootballSnapshot,
+  buildFootballSnapshot,
+  emptyFootballSnapshot,
+  kickoffLocalDayIso,
+  localDayIso,
+  matchStatusOf,
+  matchesOnDay,
+  statusLabel,
+  todayIso,
+} from './info/football/normalize.ts'
+import {
+  entitlementSkipCodes,
+  mergeFootballSnapshots,
+  shouldWriteFootballBlob,
+} from './info/football/snapshot-safety.ts'
+import { shiftSelectedDay } from './components/info/DayCalendar.tsx'
 import { footballIngestForced, footballSlotDue, FOOTBALL_SCHEDULE_SLOTS } from './info/football/schedule.ts'
 import type { FootballMatch } from './info/football/types.ts'
 
@@ -95,6 +111,12 @@ describe('INFO football', () => {
     }
     const markup = renderToStaticMarkup(createElement(FootballPanel))
     expect(markup).toMatch(/Loading football|Football/)
+    expect(read('src/components/info/FootballPanel.tsx')).toContain("label: 'Matches'")
+    expect(read('src/components/info/FootballPanel.tsx')).not.toContain("label: 'Fixtures'")
+    expect(read('src/components/info/FootballPanel.tsx')).not.toContain("label: 'Results'")
+    expect(read('src/components/info/DayCalendar.tsx')).toContain('role="dialog"')
+    expect(read('src/styles/guide.css')).toContain('.info-competition-tabs')
+    expect(read('src/styles/guide.css')).toContain('.info-day-nav')
   })
 
   it('documents the secret for CI and never embeds a token in the ingest script default', () => {
@@ -196,19 +218,27 @@ describe('INFO football', () => {
     expect(matchesForCompetition(snapshot.matches, 'BL1')).toEqual([])
     expect(
       diagnoseFootballEmpty({
-        section: 'fixtures',
+        section: 'matches',
         competitionId: 'BL1',
         snapshot: { ...snapshot, errors: ['BL1 matches: 403 Forbidden'] },
         loadStatus: 'ready',
       }).kind,
     ).toBe('competition-unavailable')
+    expect(
+      diagnoseFootballEmpty({
+        section: 'matches',
+        competitionId: 'BL1',
+        snapshot: { ...snapshot, errors: ['BL1 matches: 403 Forbidden'] },
+        loadStatus: 'ready',
+      }).message,
+    ).toMatch(/COMPETITION NOT INCLUDED IN CURRENT API PLAN/)
   })
 
   it('does not treat unpublished snapshots as “no matches in selection”', () => {
     const empty = emptyFootballSnapshot('DATA NOT YET PUBLISHED — waiting for ingest')
     expect(
       diagnoseFootballEmpty({
-        section: 'fixtures',
+        section: 'matches',
         competitionId: 'PL',
         snapshot: empty,
         loadStatus: 'unavailable',
@@ -216,7 +246,7 @@ describe('INFO football', () => {
     ).toBe('not-published')
     expect(
       diagnoseFootballEmpty({
-        section: 'results',
+        section: 'matches',
         competitionId: 'all',
         snapshot: empty,
         loadStatus: 'unavailable',
@@ -233,12 +263,22 @@ describe('INFO football', () => {
     })
     expect(
       diagnoseFootballEmpty({
-        section: 'fixtures',
+        section: 'matches',
         competitionId: 'PL',
         snapshot: readyEmpty,
         loadStatus: 'ready',
+        selectedDayIso: '2026-10-18',
       }).kind,
     ).toBe('no-matches')
+    expect(
+      diagnoseFootballEmpty({
+        section: 'matches',
+        competitionId: 'PL',
+        snapshot: readyEmpty,
+        loadStatus: 'ready',
+        selectedDayIso: '2026-10-18',
+      }).message,
+    ).toMatch(/NO MATCHES ON THIS DATE/)
   })
 
   it('keeps prior competition data when another competition fails, and refuses empty blob overwrites', () => {
@@ -346,11 +386,126 @@ describe('INFO football', () => {
     expect(snapshot.errors?.some((entry) => entry.startsWith('EL1 matches:'))).toBe(true)
     expect(
       diagnoseFootballEmpty({
-        section: 'fixtures',
+        section: 'matches',
         competitionId: 'EL1',
         snapshot,
         loadStatus: 'ready',
       }).kind,
     ).toBe('competition-unavailable')
+    expect(entitlementSkipCodes(snapshot)).toContain('EL1')
+  })
+
+  it('uses local calendar days for navigation and match day filtering', () => {
+    expect(todayIso()).toBe(localDayIso())
+    expect(shiftSelectedDay('2026-10-18', -1)).toBe('2026-10-17')
+    expect(shiftSelectedDay('2026-10-18', 1)).toBe('2026-10-19')
+    expect(addDaysIso('2026-03-01', -1)).toBe('2026-02-28')
+    const lateUtc = '2026-10-18T01:30:00.000Z'
+    const localDay = kickoffLocalDayIso(lateUtc)
+    expect(localDay).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    const matches: FootballMatch[] = [
+      {
+        id: 'a',
+        competitionId: 'PL',
+        kickoffIso: lateUtc,
+        status: 'scheduled',
+        home: 'A',
+        away: 'B',
+      },
+      {
+        id: 'b',
+        competitionId: 'PL',
+        kickoffIso: '2026-10-19T15:00:00.000Z',
+        status: 'cancelled',
+        home: 'C',
+        away: 'D',
+      },
+    ]
+    expect(matchesOnDay(matches, localDay).map((match) => match.id)).toContain('a')
+    expect(chronologicalMatches(matches).map((match) => match.id)).toEqual(['a', 'b'])
+  })
+
+  it('retains historical matches outside the rolling fetch window and dedupes by id', () => {
+    const prior = buildFootballSnapshot({
+      updatedIso: '2026-10-10T12:00:00.000Z',
+      provider: 'football-data.org',
+      attribution: 'Football data provided by football-data.org',
+      liveReliable: false,
+      competitions: [{ id: 'PL', code: 'PL', name: 'Premier League' }],
+      matches: [
+        {
+          id: 'old',
+          competitionId: 'PL',
+          kickoffIso: '2026-10-05T14:00:00.000Z',
+          status: 'finished',
+          home: 'Arsenal',
+          away: 'Fulham',
+          score: { home: 1, away: 0 },
+        },
+        {
+          id: 'same',
+          competitionId: 'PL',
+          kickoffIso: '2026-10-18T14:00:00.000Z',
+          status: 'scheduled',
+          home: 'Chelsea',
+          away: 'Spurs',
+        },
+      ],
+      tables: [],
+    })
+    const next = buildFootballSnapshot({
+      updatedIso: '2026-10-18T12:00:00.000Z',
+      provider: 'football-data.org',
+      attribution: 'Football data provided by football-data.org',
+      liveReliable: false,
+      competitions: [{ id: 'PL', code: 'PL', name: 'Premier League' }],
+      matches: [
+        {
+          id: 'same',
+          competitionId: 'PL',
+          kickoffIso: '2026-10-18T14:00:00.000Z',
+          status: 'finished',
+          home: 'Chelsea',
+          away: 'Spurs',
+          score: { home: 2, away: 2 },
+        },
+        {
+          id: 'new',
+          competitionId: 'PL',
+          kickoffIso: '2026-10-20T14:00:00.000Z',
+          status: 'scheduled',
+          home: 'Liverpool',
+          away: 'Everton',
+        },
+      ],
+      tables: [],
+    })
+    const merged = mergeFootballSnapshots(prior, next, {
+      fetchFromIso: '2026-10-11',
+      fetchToIso: '2026-11-08',
+      today: '2026-10-18',
+    })
+    expect(merged.matches.some((match) => match.id === 'old' && match.score?.home === 1)).toBe(true)
+    expect(merged.matches.find((match) => match.id === 'same')?.status).toBe('finished')
+    expect(merged.matches.find((match) => match.id === 'same')?.score).toEqual({ home: 2, away: 2 })
+    expect(merged.matches.some((match) => match.id === 'new')).toBe(true)
+    expect(
+      diagnoseFootballEmpty({
+        section: 'matches',
+        competitionId: 'PL',
+        snapshot: merged,
+        loadStatus: 'ready',
+        selectedDayIso: '2026-09-01',
+      }).kind,
+    ).toBe('historical-unavailable')
+    expect(
+      diagnoseFootballEmpty({
+        section: 'matches',
+        competitionId: 'PL',
+        snapshot: merged,
+        loadStatus: 'ready',
+        selectedDayIso: '2026-12-01',
+      }).kind,
+    ).toBe('out-of-range')
   })
 })

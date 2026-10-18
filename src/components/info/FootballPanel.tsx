@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { FOOTBALL_COMPETITIONS, competitionDef, competitionsByRegion, isKnockoutCompetition } from '../../info/football/competitions.ts'
 import { diagnoseFootballEmpty } from '../../info/football/empty-state.ts'
 import { loadFootballSnapshot, type FootballLoadState } from '../../info/football/load.ts'
-import { fixtureMatches, matchesForCompetition, resultMatches } from '../../info/football/match-lists.ts'
-import { addDaysIso, matchesOnDay, statusLabel, todayIso } from '../../info/football/normalize.ts'
+import { daysWithMatches, matchesForCompetition } from '../../info/football/match-lists.ts'
+import { kickoffLocalDayIso, matchesOnDay, statusLabel, todayIso } from '../../info/football/normalize.ts'
+import { isFootballEntitlementError } from '../../info/football/snapshot-safety.ts'
 import { favouriteFromTeam, latestResult, nextFixture, searchTeams, teamsFromSnapshot } from '../../info/football/teams.ts'
 import type { FootballMatch } from '../../info/football/types.ts'
 import {
@@ -14,19 +15,24 @@ import {
   type InfoPreferences,
 } from '../../info/preferences.ts'
 import { keepKey } from '../keep-key.ts'
+import { DayCalendar, formatSelectedDayLabel, shiftSelectedDay } from './DayCalendar.tsx'
 
-type Section = 'my-football' | 'today' | 'results' | 'fixtures' | 'tables' | 'leagues'
+type Section = 'my-football' | 'matches' | 'tables' | 'leagues'
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'my-football', label: 'My Football' },
-  { id: 'today', label: 'Today' },
-  { id: 'results', label: 'Results' },
-  { id: 'fixtures', label: 'Fixtures' },
+  { id: 'matches', label: 'Matches' },
   { id: 'tables', label: 'Tables' },
   { id: 'leagues', label: 'Leagues' },
 ]
 
-function formatKickoff(iso: string): string {
+function formatKickoffTime(iso: string): string {
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return iso
+  return new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(ms)
+}
+
+function formatKickoffFull(iso: string): string {
   const ms = Date.parse(iso)
   if (!Number.isFinite(ms)) return iso
   return new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(ms)
@@ -38,20 +44,47 @@ function formatUpdated(iso: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(ms)
 }
 
-function MatchRow({ match, competition, liveReliable }: { match: FootballMatch; competition: string; liveReliable: boolean }) {
-  const score =
-    match.score && (match.status === 'finished' || match.status === 'in-play')
-      ? `${match.score.home}–${match.score.away}`
-      : 'v'
+function matchCentreLabel(match: FootballMatch, liveReliable: boolean): string {
+  if (match.status === 'finished' && match.score) return `${match.score.home}–${match.score.away}`
+  if (match.status === 'postponed') return 'P–P'
+  if (match.status === 'cancelled') return '—'
+  if (match.status === 'in-play' && liveReliable && match.score) return `${match.score.home}–${match.score.away}`
+  return 'v'
+}
+
+function MatchRow({
+  match,
+  competition,
+  liveReliable,
+  showDate,
+}: {
+  match: FootballMatch
+  competition: string
+  liveReliable: boolean
+  showDate: boolean
+}) {
+  const status = statusLabel(match.status, liveReliable)
+  const detail =
+    match.status === 'postponed'
+      ? 'POSTPONED'
+      : match.status === 'cancelled'
+        ? 'CANCELLED'
+        : showDate
+          ? formatKickoffFull(match.kickoffIso)
+          : formatKickoffTime(match.kickoffIso)
   return (
     <li className="info-match">
       <span className="info-match-home">{match.home}</span>
-      <span className="info-match-score" title={competition}>
-        {score}
+      <span className="info-match-score" title={`${competition} · ${status}`}>
+        {matchCentreLabel(match, liveReliable)}
       </span>
       <span className="info-match-away">{match.away}</span>
       <span className="info-match-status">
-        {competition} · {statusLabel(match.status, liveReliable)} · {formatKickoff(match.kickoffIso)}
+        <span className="info-match-comp">{competition}</span>
+        <span aria-hidden="true"> · </span>
+        <span>{status}</span>
+        <span aria-hidden="true"> · </span>
+        <span>{detail}</span>
       </span>
     </li>
   )
@@ -61,9 +94,9 @@ function initialSection(prefs: InfoPreferences): Section {
   const hasFavs = prefs.football.favouriteTeamIds.length > 0 || prefs.football.favouriteCompetitionIds.length > 0
   const view = prefs.football.defaultView
   if (view === 'my-football') return 'my-football'
-  if (view === 'today') return 'today'
+  if (view === 'today') return 'matches'
   if (view === 'default-league' || view === 'last-viewed' || view === 'favourite-team-league') return 'tables'
-  return hasFavs ? 'my-football' : 'today'
+  return hasFavs ? 'my-football' : 'matches'
 }
 
 function resolveCompetition(prefs: InfoPreferences): string {
@@ -75,6 +108,13 @@ function resolveCompetition(prefs: InfoPreferences): string {
   }
   if (defaultView === 'default-league' && defaultCompetitionId) return defaultCompetitionId
   return defaultCompetitionId ?? 'PL'
+}
+
+function competitionUnavailable(snapshot: { errors?: string[]; matches: FootballMatch[]; tables: { competitionId: string }[] }, code: string): boolean {
+  const error = snapshot.errors?.find((entry) => entry.startsWith(`${code} `) || entry.startsWith(`${code}:`))
+  if (!error) return false
+  if (!isFootballEntitlementError(error) && !/skipped/i.test(error)) return false
+  return !snapshot.matches.some((match) => match.competitionId === code) && !snapshot.tables.some((table) => table.competitionId === code)
 }
 
 /**
@@ -91,6 +131,7 @@ export function FootballPanel() {
   })
   const [section, setSection] = useState<Section>(() => initialSection(prefs))
   const [competitionId, setCompetitionId] = useState<string>(() => resolveCompetition(prefs))
+  const [selectedDayIso, setSelectedDayIso] = useState(() => todayIso())
   const [leagueRegion, setLeagueRegion] = useState<string | null>(null)
   const [teamQuery, setTeamQuery] = useState('')
   const [showAllLeagues, setShowAllLeagues] = useState(false)
@@ -119,8 +160,6 @@ export function FootballPanel() {
     })
   }
 
-  const day = todayIso()
-  const yesterday = addDaysIso(day, -1)
   const ready = state.status === 'ready' ? state : null
   const snapshot = ready?.snapshot ?? (state.status === 'unavailable' ? state.snapshot : null)
 
@@ -132,6 +171,9 @@ export function FootballPanel() {
     if (!snapshot) return []
     return matchesForCompetition(snapshot.matches, competitionId)
   }, [snapshot, competitionId])
+
+  const dayMatches = useMemo(() => matchesOnDay(filtered, selectedDayIso), [filtered, selectedDayIso])
+  const dataDays = useMemo(() => daysWithMatches(filtered), [filtered])
 
   const competitionName = (id: string) =>
     competitionDef(id)?.name ?? snapshot?.competitions.find((entry) => entry.id === id)?.name ?? id
@@ -167,34 +209,20 @@ export function FootballPanel() {
     )
   }
 
-  const today = matchesOnDay(filtered, day)
-  const yesterdayResults = matchesOnDay(filtered, yesterday).filter((match) => match.status === 'finished')
-  const fixtures = fixtureMatches(filtered)
-  const results = resultMatches(filtered)
   const loadStatus = state.status === 'unavailable' ? 'unavailable' : 'ready'
-  const emptyFixtures = diagnoseFootballEmpty({
-    section: 'fixtures',
+  const emptyMatches = diagnoseFootballEmpty({
+    section: 'matches',
     competitionId,
     snapshot,
     loadStatus,
-  })
-  const emptyResults = diagnoseFootballEmpty({
-    section: 'results',
-    competitionId,
-    snapshot,
-    loadStatus,
-  })
-  const emptyToday = diagnoseFootballEmpty({
-    section: 'today',
-    competitionId,
-    snapshot,
-    loadStatus,
+    selectedDayIso,
   })
   const tables =
     competitionId === 'all'
       ? snapshot.tables
       : snapshot.tables.filter((table) => table.competitionId === competitionId)
   const knockout = competitionId !== 'all' && isKnockoutCompetition(competitionId)
+  const today = todayIso()
 
   const toggleFavouriteLeague = (code: string) => {
     const set = new Set(prefs.football.favouriteCompetitionIds)
@@ -224,7 +252,8 @@ export function FootballPanel() {
     const defaults = defaultInfoPreferences().football
     persist({ ...prefs, football: defaults })
     setCompetitionId(defaults.defaultCompetitionId ?? 'PL')
-    setSection('today')
+    setSection('matches')
+    setSelectedDayIso(todayIso())
   }
 
   const moveLeague = (code: string, dir: -1 | 1) => {
@@ -285,7 +314,10 @@ export function FootballPanel() {
   const setDefaultView = (defaultView: FootballDefaultView) => {
     persist({ ...prefs, football: { ...prefs.football, defaultView } })
     if (defaultView === 'my-football') setSection('my-football')
-    if (defaultView === 'today') setSection('today')
+    if (defaultView === 'today') {
+      setSection('matches')
+      setSelectedDayIso(todayIso())
+    }
     if (defaultView === 'default-league' || defaultView === 'last-viewed' || defaultView === 'favourite-team-league') {
       setCompetitionId(resolveCompetition({ ...prefs, football: { ...prefs.football, defaultView } }))
       setSection('tables')
@@ -293,6 +325,11 @@ export function FootballPanel() {
   }
 
   const regionGroups = competitionsByRegion(showAllLeagues ? FOOTBALL_COMPETITIONS : orderedPrimaryLeagues)
+
+  const goToday = () => {
+    setSelectedDayIso(todayIso())
+    setSection('matches')
+  }
 
   return (
     <div className="info-panel">
@@ -312,7 +349,7 @@ export function FootballPanel() {
         <p className="options-note" role="alert">
           {snapshot.unavailableReason ||
             (state.status === 'unavailable' ? state.message : null) ||
-            'DATA NOT YET PUBLISHED — Fixtures and results require a published football snapshot.'}
+            'DATA NOT YET PUBLISHED — Matches require a published football snapshot.'}
         </p>
       ) : null}
       <div className="tabs" role="tablist" aria-label="Football sections">
@@ -332,7 +369,7 @@ export function FootballPanel() {
       </div>
 
       {section !== 'leagues' && section !== 'my-football' ? (
-        <div className="tabs" role="tablist" aria-label="Competitions filter">
+        <div className="tabs info-competition-tabs" role="tablist" aria-label="Competitions filter">
           <button
             type="button"
             role="tab"
@@ -341,22 +378,35 @@ export function FootballPanel() {
             onKeyDown={keepKey}
             onClick={() => selectCompetition('all')}
           >
-            All
+            <span className="tab-full">All</span>
+            <span className="tab-short">All</span>
           </button>
-          {orderedPrimaryLeagues.map((entry) => (
-            <button
-              key={entry.code}
-              type="button"
-              role="tab"
-              aria-selected={competitionId === entry.code}
-              className={competitionId === entry.code ? 'tab is-on' : 'tab'}
-              onKeyDown={keepKey}
-              onClick={() => selectCompetition(entry.code)}
-              title={availableCodes.has(entry.code) ? entry.name : `${entry.name} · no data in snapshot`}
-            >
-              {entry.name}
-            </button>
-          ))}
+          {orderedPrimaryLeagues.map((entry) => {
+            const unavailable = competitionUnavailable(snapshot, entry.code)
+            return (
+              <button
+                key={entry.code}
+                type="button"
+                role="tab"
+                aria-selected={competitionId === entry.code}
+                className={[competitionId === entry.code ? 'tab is-on' : 'tab', unavailable ? 'is-unavailable' : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onKeyDown={keepKey}
+                onClick={() => selectCompetition(entry.code)}
+                title={
+                  unavailable
+                    ? `${entry.name} · unavailable under current API plan`
+                    : availableCodes.has(entry.code)
+                      ? entry.name
+                      : `${entry.name} · no data in snapshot`
+                }
+              >
+                <span className="tab-full">{entry.name}</span>
+                <span className="tab-short">{entry.code}</span>
+              </button>
+            )
+          })}
         </div>
       ) : null}
 
@@ -378,7 +428,7 @@ export function FootballPanel() {
                       {prefs.football.primaryTeamId === teamId ? ' · primary' : ''}
                     </span>
                     <span className="info-item-meta">
-                      Next: {next ? `${next.home} v ${next.away} · ${formatKickoff(next.kickoffIso)}` : '—'}
+                      Next: {next ? `${next.home} v ${next.away} · ${formatKickoffFull(next.kickoffIso)}` : '—'}
                       {' · '}
                       Last: {last ? `${last.home} ${last.score?.home ?? ''}–${last.score?.away ?? ''} ${last.away}` : '—'}
                     </span>
@@ -497,6 +547,7 @@ export function FootballPanel() {
                 {(regionGroups.find((group) => group.region === leagueRegion)?.competitions ?? []).map((entry) => {
                   const inSnapshot = availableCodes.has(entry.code)
                   const fav = prefs.football.favouriteCompetitionIds.includes(entry.code)
+                  const unavailable = competitionUnavailable(snapshot, entry.code)
                   return (
                     <li key={entry.code} className="info-item">
                       <button
@@ -505,7 +556,7 @@ export function FootballPanel() {
                         onKeyDown={keepKey}
                         onClick={() => {
                           selectCompetition(entry.code)
-                          setSection(isKnockoutCompetition(entry.code) ? 'fixtures' : 'tables')
+                          setSection(isKnockoutCompetition(entry.code) ? 'matches' : 'tables')
                         }}
                       >
                         {entry.name}
@@ -513,7 +564,9 @@ export function FootballPanel() {
                       <span className="info-item-meta">
                         {entry.area} · {entry.format}
                         {inSnapshot ? '' : ' · not in current snapshot'}
-                        {entry.code === 'EL1' && !inSnapshot ? ' · requires API entitlement' : ''}
+                        {unavailable || (entry.code === 'EL1' && !inSnapshot)
+                          ? ' · unavailable under current API plan'
+                          : ''}
                       </span>
                       <div className="info-weather-search-row">
                         <button type="button" className="tab" onKeyDown={keepKey} onClick={() => toggleFavouriteLeague(entry.code)}>
@@ -549,17 +602,20 @@ export function FootballPanel() {
       ) : section === 'tables' ? (
         knockout ? (
           <p className="options-note">
-            {competitionName(competitionId)} is a knockout competition. No league table is shown — use Fixtures and Results.
+            {competitionName(competitionId)} is a knockout competition. No league table is shown — use Matches.
           </p>
         ) : tables.length === 0 ? (
           <p className="options-note">
-            No league table for {competitionName(competitionId)}
-            {availableCodes.has(competitionId) ? '' : ' · competition not present in the published snapshot'}.
+            {competitionUnavailable(snapshot, competitionId)
+              ? `COMPETITION NOT INCLUDED IN CURRENT API PLAN — ${competitionName(competitionId)}.`
+              : `No league table for ${competitionName(competitionId)}${
+                  availableCodes.has(competitionId) ? '' : ' · competition not present in the published snapshot'
+                }.`}
           </p>
         ) : (
           tables.map((table) => (
             <div key={`${table.competitionId}-${table.type}`}>
-              <p className="info-panel-meta">{competitionName(table.competitionId)}</p>
+              <p className="info-panel-meta info-competition-heading">{competitionName(table.competitionId)}</p>
               <table className="info-table">
                 <thead>
                   <tr>
@@ -596,27 +652,58 @@ export function FootballPanel() {
           ))
         )
       ) : (
-        (() => {
-          const list =
-            section === 'today' ? today : section === 'results' ? [...yesterdayResults, ...results.filter((match) => match.kickoffIso.slice(0, 10) !== yesterday)] : fixtures
-          if (list.length === 0) {
-            const empty =
-              section === 'today' ? emptyToday : section === 'results' ? emptyResults : emptyFixtures
-            return (
-              <p className="options-note" role="status" data-empty-kind={empty.kind}>
-                {empty.message}
-              </p>
-            )
-          }
-          return (
+        <div className="info-matches">
+          <div className="info-day-nav" role="group" aria-label="Match date">
+            <button
+              type="button"
+              className="tab"
+              aria-label="Previous day"
+              onKeyDown={keepKey}
+              onClick={() => setSelectedDayIso((day) => shiftSelectedDay(day, -1))}
+            >
+              Previous day
+            </button>
+            <p className="info-day-nav-date" aria-live="polite">
+              {formatSelectedDayLabel(selectedDayIso)}
+              {selectedDayIso === today ? ' · Today' : ''}
+            </p>
+            <button
+              type="button"
+              className="tab"
+              aria-label="Next day"
+              onKeyDown={keepKey}
+              onClick={() => setSelectedDayIso((day) => shiftSelectedDay(day, 1))}
+            >
+              Next day
+            </button>
+            <button type="button" className={selectedDayIso === today ? 'tab is-on' : 'tab'} onKeyDown={keepKey} onClick={goToday}>
+              Today
+            </button>
+            <DayCalendar selectedDayIso={selectedDayIso} onSelect={setSelectedDayIso} daysWithData={dataDays} />
+          </div>
+          {competitionId !== 'all' && competitionUnavailable(snapshot, competitionId) ? (
+            <p className="options-note" role="status" data-empty-kind="competition-unavailable">
+              COMPETITION NOT INCLUDED IN CURRENT API PLAN — {competitionName(competitionId)}
+              {competitionId === 'EL1' ? ' (League One)' : ''} is unavailable under the current football-data.org entitlement.
+            </p>
+          ) : dayMatches.length === 0 ? (
+            <p className="options-note" role="status" data-empty-kind={emptyMatches.kind}>
+              {emptyMatches.message}
+            </p>
+          ) : (
             <ul className="info-list">
-              {section === 'results' && yesterdayResults.length ? <li className="info-item-meta">Yesterday</li> : null}
-              {list.map((match) => (
-                <MatchRow key={match.id} match={match} competition={competitionName(match.competitionId)} liveReliable={snapshot.liveReliable} />
+              {dayMatches.map((match) => (
+                <MatchRow
+                  key={match.id}
+                  match={match}
+                  competition={competitionName(match.competitionId)}
+                  liveReliable={snapshot.liveReliable}
+                  showDate={kickoffLocalDayIso(match.kickoffIso) !== selectedDayIso}
+                />
               ))}
             </ul>
-          )
-        })()
+          )}
+        </div>
       )}
       {snapshot.errors?.length ? (
         <p className="info-panel-meta is-stale">
@@ -626,3 +713,5 @@ export function FootballPanel() {
     </div>
   )
 }
+
+export const FOOTBALL_SECTIONS = SECTIONS

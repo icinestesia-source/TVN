@@ -13,7 +13,11 @@ import { fileURLToPath } from 'node:url'
 import { ingestFootballDataOrg } from '../../src/info/football/football-data-org.ts'
 import { addDaysIso, emptyFootballSnapshot, todayIso } from '../../src/info/football/normalize.ts'
 import { footballIngestForced, footballSlotDue } from '../../src/info/football/schedule.ts'
-import { footballSnapshotIsEmpty, mergeFootballSnapshots } from '../../src/info/football/snapshot-safety.ts'
+import {
+  entitlementSkipCodes,
+  footballSnapshotIsEmpty,
+  mergeFootballSnapshots,
+} from '../../src/info/football/snapshot-safety.ts'
 import type { FootballSnapshot } from '../../src/info/football/types.ts'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -95,12 +99,23 @@ async function main(): Promise<void> {
     return
   }
 
-  const from = addDaysIso(todayIso(), -7)
-  const to = addDaysIso(todayIso(), 21)
+  const today = todayIso()
+  const from = addDaysIso(today, -7)
+  const to = addDaysIso(today, 21)
+  // Forced ingest retries every competition; scheduled runs skip known entitlement failures.
+  const skipCodes = footballIngestForced(process.env) ? [] : entitlementSkipCodes(prior)
+  const skipErrorMessages =
+    prior?.errors?.filter((entry) => skipCodes.some((code) => entry.startsWith(`${code} matches:`))) ?? []
   try {
-    const fetched = await ingestFootballDataOrg({ token, dateFrom: from, dateTo: to })
-    // Keep prior rows for competitions whose match/table requests failed this run.
-    const snapshot = mergeFootballSnapshots(prior, fetched)
+    const fetched = await ingestFootballDataOrg({
+      token,
+      dateFrom: from,
+      dateTo: to,
+      skipCompetitionCodes: skipCodes,
+      skipErrorMessages,
+    })
+    // Merge: failed comps + match-id dedupe + retain history outside the rolling window.
+    const snapshot = mergeFootballSnapshots(prior, fetched, { fetchFromIso: from, fetchToIso: to, today })
     if (footballSnapshotIsEmpty(snapshot) && prior && !footballSnapshotIsEmpty(prior)) {
       console.error('Football ingest empty; keeping previous snapshot.', fetched.errors?.join('; '))
       emitWrote(false)
