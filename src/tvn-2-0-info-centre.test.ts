@@ -46,14 +46,13 @@ describe('INFO centre (Phase B1)', () => {
     })
   })
 
-  it('opens as a Guide panel and ships no unfinished module buttons', () => {
+  it('opens as a Guide panel with News, Sports and Weather only', () => {
     const markup = renderToStaticMarkup(createElement(InfoCentre))
     expect(markup).toContain('aria-label="Info centre"')
     expect(markup).toContain('Info')
-    expect(markup).not.toMatch(/Chat|Games|Weather|Events/i)
-    for (const module of INFO_MODULES) {
-      expect(['news', 'sports']).toContain(module.id)
-    }
+    expect(markup).toContain('Weather')
+    expect(markup).not.toMatch(/Chat|Games|Events/i)
+    expect(INFO_MODULES.map((module) => module.id)).toEqual(['news', 'sports', 'weather'])
     expect(INFO_MODULES.every((module) => module.Panel)).toBe(true)
   })
 

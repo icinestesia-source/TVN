@@ -1,9 +1,10 @@
 import { useState, type ComponentType } from 'react'
 import { NewsPanel } from './info/NewsPanel.tsx'
 import { SportsPanel } from './info/SportsPanel.tsx'
+import { WeatherPanel } from './info/WeatherPanel.tsx'
 import { keepKey } from './keep-key.ts'
 
-export type InfoModuleId = 'news' | 'sports'
+export type InfoModuleId = 'news' | 'sports' | 'weather'
 
 export interface InfoModule {
   id: InfoModuleId
@@ -12,12 +13,13 @@ export interface InfoModule {
 }
 
 /**
- * Modules that are ready to show. News and Sports are Phase B; later phases append here.
+ * Modules that are ready to show. News, Sports and Weather are Phase B.2.
  * INFO still opens as a Guide panel over the picture when the list is empty.
  */
 export const INFO_MODULES: readonly InfoModule[] = [
   { id: 'news', label: 'News', Panel: NewsPanel },
   { id: 'sports', label: 'Sports', Panel: SportsPanel },
+  { id: 'weather', label: 'Weather', Panel: WeatherPanel },
 ]
 
 /**
@@ -57,7 +59,7 @@ export function InfoCentre() {
           <Panel />
         </div>
       ) : (
-        <p className="options-note">News and Sports open here when their information is ready.</p>
+        <p className="options-note">News, Sports and Weather open here when their information is ready.</p>
       )}
     </div>
   )

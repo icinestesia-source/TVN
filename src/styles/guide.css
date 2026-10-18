@@ -2276,6 +2276,36 @@ a.info-creator:focus-visible {
   .info-match-away { grid-column: 1; }
   .info-match-status { grid-column: 2; }
 }
+.info-more-stories { align-self: flex-start; }
+.info-weather-temp { margin: 0; font-size: 2rem; font-weight: 650; letter-spacing: 0.02em; display: flex; align-items: baseline; gap: 10px; }
+.info-weather-symbol { font-size: 1.4rem; line-height: 1; }
+.info-weather-search { display: grid; gap: 6px; }
+.info-weather-search-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.info-weather-input {
+  flex: 1;
+  min-width: 12rem;
+  background: rgb(0 0 0 / 25%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  color: inherit;
+  padding: 8px 10px;
+  font: inherit;
+}
+.info-weather-input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.info-weather-pick,
+.info-item-title.is-active { color: var(--gold); }
+.info-weather-saved,
+.info-league-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+button.info-item-title {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.info-item-title:disabled { opacity: 0.45; cursor: not-allowed; }
+.info-leagues { display: grid; gap: 12px; }
 .network-head { display: grid; gap: 8px; padding: 0 4px; }
 .network-head .options-head { margin: 0; }
 .network-head .tabs { justify-content: flex-start; }
