@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { FootballPanel } from './components/info/FootballPanel.tsx'
 import { INFO_MODULES } from './components/InfoCentre.tsx'
 import { FOOTBALL_COMPETITIONS } from './info/football/competitions.ts'
+import { ingestFootballDataOrg } from './info/football/football-data-org.ts'
+import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
 import { matchStatusOf, statusLabel, buildFootballSnapshot, asFootballSnapshot, emptyFootballSnapshot } from './info/football/normalize.ts'
 import type { FootballMatch } from './info/football/types.ts'
 
@@ -93,5 +95,46 @@ describe('INFO football', () => {
     expect(ingest).toContain('process.env.FOOTBALL_DATA_TOKEN')
     expect(ingest).not.toMatch(/X-Auth-Token['"]\s*:\s*['"][a-f0-9]{10,}/i)
     expect(read('.github/workflows/info-ingest.yml')).toContain('secrets.FOOTBALL_DATA_TOKEN')
+    expect(read('.github/workflows/info-ingest.yml')).toContain('info:publish')
+    expect(read('.github/workflows/info-ingest.yml')).not.toContain('git push')
+  })
+
+  it('normalises mocked provider fixtures, including empty competitions and delayed in-play', async () => {
+    const tokens: string[] = []
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = String(input)
+      const headers = init?.headers as Record<string, string> | undefined
+      if (headers?.['X-Auth-Token']) tokens.push(headers['X-Auth-Token'])
+      if (url.includes('/matches') && url.includes('PL')) {
+        return new Response(JSON.stringify(SAMPLE_MATCHES), { status: 200 })
+      }
+      if (url.includes('/standings') && url.includes('PL')) {
+        return new Response(JSON.stringify(SAMPLE_STANDINGS), { status: 200 })
+      }
+      if (url.includes('/matches')) return new Response(JSON.stringify(SAMPLE_EMPTY), { status: 200 })
+      if (url.includes('/standings')) return new Response(JSON.stringify({ standings: [] }), { status: 200 })
+      return new Response('nope', { status: 404 })
+    }
+
+    const snapshot = await ingestFootballDataOrg({
+      token: 'test-token',
+      dateFrom: '2026-10-11',
+      dateTo: '2026-11-08',
+      nowIso: '2026-10-18T12:00:00.000Z',
+      delayMs: 0,
+      fetchImpl,
+    })
+    expect(snapshot.liveReliable).toBe(false)
+    expect(snapshot.attribution.toLowerCase()).toContain('football-data.org')
+    expect(snapshot.competitions.map((entry) => entry.code)).toEqual(FOOTBALL_COMPETITIONS.map((entry) => entry.code))
+    expect(snapshot.matches.some((match) => match.home === 'Arsenal' && match.status === 'scheduled')).toBe(true)
+    expect(snapshot.matches.some((match) => match.status === 'finished' && match.score?.home === 2)).toBe(true)
+    expect(snapshot.matches.some((match) => match.status === 'in-play')).toBe(true)
+    expect(snapshot.matches.some((match) => match.status === 'postponed')).toBe(true)
+    expect(statusLabel('in-play', snapshot.liveReliable)).toBe('Delayed')
+    expect(snapshot.tables).toHaveLength(1)
+    expect(snapshot.tables[0].rows).toHaveLength(2)
+    expect(snapshot.tables[0].rows[0]).toMatchObject({ team: 'Arsenal', points: 19, goalDifference: 12 })
+    expect(tokens[0]).toBe('test-token')
   })
 })

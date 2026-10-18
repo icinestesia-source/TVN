@@ -99,17 +99,28 @@ export function sortNewsItems(items: readonly NewsItem[]): NewsItem[] {
   })
 }
 
+/** Drop headlines older than `maxAgeDays` (keeps undated items). Default 14 days. */
+export function freshNewsItems(items: readonly NewsItem[], nowMs = Date.now(), maxAgeDays = 14): NewsItem[] {
+  const cutoff = nowMs - maxAgeDays * 86_400_000
+  return items.filter((item) => {
+    if (!item.publishedAt) return true
+    const ms = Date.parse(item.publishedAt)
+    return !Number.isFinite(ms) || ms >= cutoff
+  })
+}
+
 export function buildNewsSnapshot(
   items: readonly NewsItem[],
   sources: NewsSnapshot['sources'],
   updatedIso: string,
   errors: string[] = [],
+  nowMs = Date.parse(updatedIso) || Date.now(),
 ): NewsSnapshot {
   return {
     format: 'tvn-info-news-v1',
     updatedIso,
     staleAfterMinutes: NEWS_STALE_MINUTES,
-    items: sortNewsItems(dedupeNewsItems(items)),
+    items: sortNewsItems(dedupeNewsItems(freshNewsItems(items, nowMs))),
     sources,
     ...(errors.length ? { errors } : {}),
   }

@@ -6,11 +6,11 @@ const API = 'https://api.football-data.org/v4'
 
 type Json = Record<string, unknown>
 
-async function apiGet(path: string, token: string, timeoutMs = 12_000): Promise<Json> {
+async function apiGet(path: string, token: string, timeoutMs = 12_000, fetchImpl: typeof fetch = fetch): Promise<Json> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const response = await fetch(`${API}${path}`, {
+    const response = await fetchImpl(`${API}${path}`, {
       signal: controller.signal,
       headers: { 'X-Auth-Token': token, Accept: 'application/json' },
     })
@@ -109,7 +109,15 @@ export interface FootballIngestOptions {
   /** Inclusive dateTo YYYY-MM-DD */
   dateTo: string
   nowIso?: string
+  /**
+   * Pause between upstream calls. Free tier allows 10 calls/minute; default 6500ms stays under that.
+   * Tests pass `0`.
+   */
+  delayMs?: number
+  fetchImpl?: typeof fetch
 }
+
+const pause = (ms: number) => (ms > 0 ? new Promise<void>((resolve) => setTimeout(resolve, ms)) : Promise.resolve())
 
 /** Pull free-tier competitions from football-data.org into a TVN snapshot. */
 export async function ingestFootballDataOrg(options: FootballIngestOptions): Promise<FootballSnapshot> {
@@ -117,21 +125,27 @@ export async function ingestFootballDataOrg(options: FootballIngestOptions): Pro
   const competitions: FootballCompetition[] = []
   const matches: FootballMatch[] = []
   const tables: LeagueTable[] = []
+  const delayMs = options.delayMs ?? 6500
+  const fetchImpl = options.fetchImpl ?? fetch
+  let calls = 0
+
+  const get = async (path: string) => {
+    if (calls > 0) await pause(delayMs)
+    calls += 1
+    return apiGet(path, options.token, 12_000, fetchImpl)
+  }
 
   for (const entry of FOOTBALL_COMPETITIONS) {
     const competitionId = entry.code
     competitions.push({ id: competitionId, code: entry.code, name: entry.name, area: entry.area })
     try {
-      const matchPayload = await apiGet(
-        `/competitions/${entry.code}/matches?dateFrom=${options.dateFrom}&dateTo=${options.dateTo}`,
-        options.token,
-      )
+      const matchPayload = await get(`/competitions/${entry.code}/matches?dateFrom=${options.dateFrom}&dateTo=${options.dateTo}`)
       matches.push(...matchesFromPayload(matchPayload, competitionId))
     } catch (caught) {
       errors.push(`${entry.code} matches: ${caught instanceof Error ? caught.message : 'failed'}`)
     }
     try {
-      const tablePayload = await apiGet(`/competitions/${entry.code}/standings`, options.token)
+      const tablePayload = await get(`/competitions/${entry.code}/standings`)
       tables.push(...tablesFromPayload(tablePayload, competitionId))
     } catch (caught) {
       errors.push(`${entry.code} table: ${caught instanceof Error ? caught.message : 'failed'}`)

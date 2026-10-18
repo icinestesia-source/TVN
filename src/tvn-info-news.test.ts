@@ -7,6 +7,7 @@ import {
   asNewsSnapshot,
   buildNewsSnapshot,
   dedupeNewsItems,
+  freshNewsItems,
   itemsFromFeedXml,
   newsIsStale,
   stripMarkup,
@@ -66,6 +67,19 @@ describe('INFO news', () => {
     expect(itemsFromFeedXml('not xml', { sourceId: 'x', publisher: 'X', category: 'uk' })).toEqual([])
     const empty: NewsItem[] = []
     expect(buildNewsSnapshot(empty, [], '2024-01-01T00:00:00.000Z').items).toEqual([])
+  })
+
+  it('drops headlines older than fourteen days and keeps undated ones', () => {
+    const now = Date.parse('2026-10-18T12:00:00.000Z')
+    const kept = freshNewsItems(
+      [
+        { id: '1', title: 'New', publisher: 'P', publishedAt: '2026-10-17T00:00:00.000Z', description: null, category: 'uk', url: 'https://a.test/1', sourceId: 's' },
+        { id: '2', title: 'Old', publisher: 'P', publishedAt: '2026-09-01T00:00:00.000Z', description: null, category: 'uk', url: 'https://a.test/2', sourceId: 's' },
+        { id: '3', title: 'Undated', publisher: 'P', publishedAt: null, description: null, category: 'uk', url: 'https://a.test/3', sourceId: 's' },
+      ],
+      now,
+    )
+    expect(kept.map((item) => item.title)).toEqual(['New', 'Undated'])
   })
 
   it('lists allowlisted feeds and shows News in INFO without unfinished modules', () => {
