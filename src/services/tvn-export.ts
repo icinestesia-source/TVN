@@ -20,6 +20,7 @@ import {
 } from './user-network-export.ts'
 import { inRange, readUserNetworkFile, type ChannelRange, type ReadResult } from './user-network-restore.ts'
 import type { UploaderOf } from './user-network.ts'
+import { infoPreferencesErrors, type InfoPortablePrefs } from '../info/preferences.ts'
 
 /**
  * COMPLETE TVN EXPORT (OPTIONS → Your TVN): everything portable about one viewer's TVN in a single file.
@@ -51,6 +52,8 @@ export interface PortableSettings {
   transitionStyle: TransitionSettings
   /** 000 TVN's two settings; never its choices or history. Files from before them leave this browser's as they are. */
   tvnChannel?: TvnChannelSettings
+  /** INFO centre preferences (news/football/weather). Absent in older files: leave this browser's INFO prefs alone. */
+  info?: InfoPortablePrefs
 }
 
 export interface TvnExport {
@@ -261,6 +264,7 @@ function checkSettings(value: unknown, errors: string[]): void {
   }
   if (value.transitionStyle !== undefined) errors.push(...transitionSettingsErrors(value.transitionStyle, at('transitionStyle')))
   if (value.tvnChannel !== undefined) errors.push(...tvnChannelSettingsErrors(value.tvnChannel, at('tvnChannel')))
+  if (value.info !== undefined) errors.push(...infoPreferencesErrors(value.info, at('info')))
 }
 
 /** A range file holds nothing outside its own numbers, so its restore can never reach past them. */

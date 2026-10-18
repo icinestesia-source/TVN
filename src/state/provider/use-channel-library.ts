@@ -78,6 +78,7 @@ import {
 } from '../../services/tvn-export.ts'
 import { VOLUME_FULL } from '../../player/volume.ts'
 import { setTvnChannelSettings, tvnChannelSettings } from '../../tvn/tvn-channel.ts'
+import { applyInfoPortablePrefs, loadInfoPreferencesForExport } from '../../info/preferences.ts'
 import { BUILD_INFO } from '../../build-info.ts'
 import { padChannel } from '../../utils/time.ts'
 import { editorScope } from '../../view/channel-edit.ts'
@@ -703,6 +704,7 @@ export function useChannelLibrary({
         transition: transitionRef.current.id,
         transitionStyle: transitionRef.current,
         tvnChannel: tvnChannelSettings(),
+        info: loadInfoPreferencesForExport(),
       },
       now,
       app: { commit: BUILD_INFO.commit, build: BUILD_INFO.build },
@@ -933,6 +935,7 @@ export function useChannelLibrary({
       saveTransitionSettings(transitionRef.current)
       setTransitionState(transitionRef.current)
       if (settings.tvnChannel !== undefined) setTvnChannelSettings(settings.tvnChannel)
+      if (settings.info !== undefined) applyInfoPortablePrefs(settings.info)
       playerRef.current?.setAudible(!tuningRef.current, volumeRef.current, mutedRef.current)
       return `${restored.replace('USER NETWORK IMPORTED', 'TVN RESTORED')}${central}${guides ? ` · ${guides.saved.length} ${guides.saved.length === 1 ? 'GUIDE' : 'GUIDES'}` : ''}`
     },
