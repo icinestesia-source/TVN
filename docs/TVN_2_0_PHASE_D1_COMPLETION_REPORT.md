@@ -11,7 +11,7 @@
 | | Commit |
 |--|--------|
 | **Start** | `ec78add` — Record Phase C final commit in the completion report. |
-| **End** | *(this commit — recorded after `git commit`)* |
+| **End** | `1aced43` — Add INFO Shopping module and Virtual Mall foundations (Phase D.1). |
 
 ---
 
