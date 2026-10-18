@@ -10,7 +10,7 @@
 | | Commit | Subject |
 |---|--------|---------|
 | **Start** | `82e5c9e` | Record Phase B.2 commit SHAs in the completion report. |
-| **End** | *(Phase B.3 commits on local `main`)* | Personalised INFO, football navigation, prefs export |
+| **End** | `c0b458c` — Phase B.3 complete. | Personalised INFO, football navigation, prefs export |
 
 Logo asset churn remains unstaged.
 
