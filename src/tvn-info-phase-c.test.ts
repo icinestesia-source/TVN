@@ -18,11 +18,13 @@ describe('INFO Phase C', () => {
       'entertainment',
       'business',
       'on-this-day',
+      'shopping',
     ])
     const markup = renderToStaticMarkup(createElement(InfoCentre))
     expect(markup).toContain('Entertainment')
     expect(markup).toContain('Business')
     expect(markup).toContain('On this day')
+    expect(markup).toContain('Shopping')
     const plain = { meta: false, ctrl: false, alt: false }
     expect(commandFromKey('v', plain, true)).toEqual({ type: 'info' })
     expect(commandFromKey('i', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
@@ -87,9 +89,10 @@ describe('INFO Phase C', () => {
       football: defaultInfoPreferences().football,
       weather: defaultInfoPreferences().weather,
     })
-    expect(legacy.version).toBe(2)
+    expect(legacy.version).toBe(3)
     expect(legacy.entertainment.watchlist).toEqual([])
     expect(legacy.business.baseCurrency).toBe('GBP')
     expect(legacy.history.preferredCategories.length).toBeGreaterThan(3)
+    expect(legacy.shopping.departmentOrder.length).toBeGreaterThan(5)
   })
 })

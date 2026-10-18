@@ -52,18 +52,20 @@ Primeira Liga (PPL) is deferred so League One fits the free-tier slot count.
 | `FOOTBALL_DATA_TOKEN` | GitHub Actions | football-data.org free API token |
 | `INFO_PUBLISH_SECRET` | GitHub Actions **and** Netlify env | Bearer token for `/api/info/publish` |
 | `INFO_PUBLISH_URL` | GitHub Actions | e.g. `https://<your-site>.netlify.app/api/info/publish` |
-| `TMDB_API_TOKEN` | Netlify (functions) | TMDB v3 API key for `/api/info/tmdb` (Phase C Entertainment) |
+| `TMDB_API_TOKEN` | Netlify (functions) | TMDB v3 API key for `/api/info/tmdb` (Phase C Entertainment); preferred when set |
+| `TMDB_READ_ACCESS_TOKEN` | GitHub Actions (optional Netlify) | TMDB v4 read access Bearer for `/api/info/tmdb` when v3 key absent |
 | `ALPHA_VANTAGE_API_KEY` | Netlify (functions) | Alpha Vantage key for `/api/info/finance` (Phase C Business stocks/indices) |
 
-Currencies use keyless Frankfurter. On This Day uses Wikimedia’s public feed (no secret).
+Currencies use keyless Frankfurter. On This Day uses Wikimedia’s public feed (no secret).  
+Shopping (Phase D.1) uses a local curated retailer catalogue and user-saved shops — **no paid commerce API** and no server-side website fetch.
 
 ### Product-owner setup
 
 1. Register at https://www.football-data.org/client/register → free token.  
-2. GitHub → Settings → Secrets → Actions: add `FOOTBALL_DATA_TOKEN`, `INFO_PUBLISH_SECRET`, `INFO_PUBLISH_URL`.  
-3. Netlify → Site configuration → Environment variables: add `INFO_PUBLISH_SECRET` (same value).  
+2. GitHub → Settings → Secrets → Actions: add `FOOTBALL_DATA_TOKEN`, `INFO_PUBLISH_SECRET`, `INFO_PUBLISH_URL`, and optionally `TMDB_READ_ACCESS_TOKEN`.  
+3. Netlify → Site configuration → Environment variables: add `INFO_PUBLISH_SECRET` (same value), plus `TMDB_API_TOKEN` and `ALPHA_VANTAGE_API_KEY` for Entertainment/Business.  
 4. Deploy the application once so `/api/info/*` functions exist.  
 5. Actions → **INFO ingest** → Run workflow.  
-6. Open Guide → Info → News / Sports on the live site.
+6. Open Guide → Info → News / Sports / Shopping on the live site.
 
 Never put tokens in the repo, Vite env, or chat.

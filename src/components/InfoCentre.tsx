@@ -3,11 +3,19 @@ import { BusinessPanel } from './info/BusinessPanel.tsx'
 import { EntertainmentPanel } from './info/EntertainmentPanel.tsx'
 import { NewsPanel } from './info/NewsPanel.tsx'
 import { OnThisDayPanel } from './info/OnThisDayPanel.tsx'
+import { ShoppingPanel } from './info/ShoppingPanel.tsx'
 import { SportsPanel } from './info/SportsPanel.tsx'
 import { WeatherPanel } from './info/WeatherPanel.tsx'
 import { keepKey } from './keep-key.ts'
 
-export type InfoModuleId = 'news' | 'sports' | 'weather' | 'entertainment' | 'business' | 'on-this-day'
+export type InfoModuleId =
+  | 'news'
+  | 'sports'
+  | 'weather'
+  | 'entertainment'
+  | 'business'
+  | 'on-this-day'
+  | 'shopping'
 
 export interface InfoModule {
   id: InfoModuleId
@@ -26,6 +34,7 @@ export const INFO_MODULES: readonly InfoModule[] = [
   { id: 'entertainment', label: 'Entertainment', Panel: EntertainmentPanel },
   { id: 'business', label: 'Business', Panel: BusinessPanel },
   { id: 'on-this-day', label: 'On this day', Panel: OnThisDayPanel },
+  { id: 'shopping', label: 'Shopping', Panel: ShoppingPanel },
 ]
 
 export function InfoCentre() {

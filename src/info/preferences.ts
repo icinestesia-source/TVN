@@ -6,9 +6,15 @@ import type { DiscoveryMood, WatchlistEntry } from './entertainment/types.ts'
 import type { BusinessWatchEntry } from './business/types.ts'
 import type { HistoryCategory } from './history/types.ts'
 import { HISTORY_CATEGORIES } from './history/types.ts'
+import {
+  SHOPPING_DEPARTMENTS,
+  type ShoppingDepartmentId,
+  type ShoppingPreferences,
+  type UserShop,
+} from './shopping/types.ts'
 
 export const INFO_PREFS_KEY = 'tvn.info.preferences.v1'
-export const INFO_PREFS_VERSION = 2 as const
+export const INFO_PREFS_VERSION = 3 as const
 
 export type FootballDefaultView = 'my-football' | 'favourite-team-league' | 'default-league' | 'today' | 'last-viewed'
 export type WeatherProviderId = 'open-meteo' | 'met-norway'
@@ -76,6 +82,7 @@ export interface InfoPreferences {
     lastMonth: number | null
     lastDay: number | null
   }
+  shopping: ShoppingPreferences
 }
 
 export function defaultInfoPreferences(): InfoPreferences {
@@ -125,6 +132,14 @@ export function defaultInfoPreferences(): InfoPreferences {
       lastMonth: null,
       lastDay: null,
     },
+    shopping: {
+      favouriteShopIds: [],
+      favouriteProductIds: [],
+      favouriteDepartments: [],
+      userShops: [],
+      departmentOrder: SHOPPING_DEPARTMENTS.map((entry) => entry.id),
+      showOfficialOnly: false,
+    },
   }
 }
 
@@ -156,6 +171,7 @@ export function normalizeInfoPreferences(raw: unknown): InfoPreferences {
   const entertainment = isRecord(raw.entertainment) ? raw.entertainment : {}
   const business = isRecord(raw.business) ? raw.business : {}
   const history = isRecord(raw.history) ? raw.history : {}
+  const shopping = isRecord(raw.shopping) ? raw.shopping : {}
 
   const publishers = defaults.news.publisherOrder
   const enabled = asStringArray(news.enabledPublisherIds)
@@ -250,6 +266,42 @@ export function normalizeInfoPreferences(raw: unknown): InfoPreferences {
       lastMonth: typeof history.lastMonth === 'number' ? history.lastMonth : null,
       lastDay: typeof history.lastDay === 'number' ? history.lastDay : null,
     },
+    shopping: normalizeShoppingPreferences(shopping, defaults.shopping),
+  }
+}
+
+function isShoppingDepartmentId(value: unknown): value is ShoppingDepartmentId {
+  return typeof value === 'string' && SHOPPING_DEPARTMENTS.some((entry) => entry.id === value)
+}
+
+function isUserShop(value: unknown): value is UserShop {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.websiteUrl === 'string' &&
+    isShoppingDepartmentId(value.department) &&
+    typeof value.description === 'string' &&
+    typeof value.favourite === 'boolean' &&
+    /^https?:\/\//i.test(value.websiteUrl)
+  )
+}
+
+function normalizeShoppingPreferences(raw: Record<string, unknown>, defaults: ShoppingPreferences): ShoppingPreferences {
+  const departmentIds = SHOPPING_DEPARTMENTS.map((entry) => entry.id)
+  const storedOrder = asStringArray(raw.departmentOrder).filter(isShoppingDepartmentId)
+  const departmentOrder = storedOrder.length
+    ? [...storedOrder, ...departmentIds.filter((id) => !storedOrder.includes(id))]
+    : defaults.departmentOrder
+  const favouriteDepartments = asStringArray(raw.favouriteDepartments).filter(isShoppingDepartmentId)
+  const userShops = Array.isArray(raw.userShops) ? raw.userShops.filter(isUserShop) : []
+  return {
+    favouriteShopIds: asStringArray(raw.favouriteShopIds),
+    favouriteProductIds: asStringArray(raw.favouriteProductIds),
+    favouriteDepartments,
+    userShops,
+    departmentOrder,
+    showOfficialOnly: raw.showOfficialOnly === true,
   }
 }
 
@@ -340,12 +392,18 @@ export type InfoPortablePrefs = InfoPreferences
 export function infoPreferencesErrors(value: unknown, at = 'settings.info'): string[] {
   if (value === undefined) return []
   if (!isRecord(value)) return [`${at} is not an object`]
-  if (value.version !== undefined && value.version !== 1 && value.version !== INFO_PREFS_VERSION) {
+  if (
+    value.version !== undefined &&
+    value.version !== 1 &&
+    value.version !== 2 &&
+    value.version !== INFO_PREFS_VERSION
+  ) {
     return [`${at}.version is unsupported`]
   }
   if (value.news !== undefined && !isRecord(value.news)) return [`${at}.news is not an object`]
   if (value.football !== undefined && !isRecord(value.football)) return [`${at}.football is not an object`]
   if (value.weather !== undefined && !isRecord(value.weather)) return [`${at}.weather is not an object`]
+  if (value.shopping !== undefined && !isRecord(value.shopping)) return [`${at}.shopping is not an object`]
   return []
 }
 

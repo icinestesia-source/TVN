@@ -55,9 +55,10 @@ export async function infoTmdbMiddleware(req: IncomingMessage, res: ServerRespon
     send(res, 405, { error: 'GET only' })
     return
   }
-  const token = process.env.TMDB_API_TOKEN?.trim()
-  if (!token) {
-    send(res, 503, { error: 'TMDB_API_TOKEN is not configured' })
+  const apiKey = process.env.TMDB_API_TOKEN?.trim()
+  const bearer = process.env.TMDB_READ_ACCESS_TOKEN?.trim()
+  if (!apiKey && !bearer) {
+    send(res, 503, { error: 'TMDB_API_TOKEN or TMDB_READ_ACCESS_TOKEN is not configured' })
     return
   }
   const url = readUrl(req)
@@ -77,13 +78,15 @@ export async function infoTmdbMiddleware(req: IncomingMessage, res: ServerRespon
     return
   }
   const upstream = new URL(`https://api.themoviedb.org/3${path}`)
-  upstream.searchParams.set('api_key', token)
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (apiKey) upstream.searchParams.set('api_key', apiKey)
+  else if (bearer) headers.Authorization = `Bearer ${bearer}`
   for (const [key, value] of url.searchParams) {
     if (key === 'path' || key === 'api_key') continue
     upstream.searchParams.set(key, value)
   }
   try {
-    const response = await fetch(upstream.toString(), { headers: { Accept: 'application/json' } })
+    const response = await fetch(upstream.toString(), { headers })
     const text = await response.text()
     res.statusCode = response.status
     res.setHeader('content-type', 'application/json; charset=utf-8')

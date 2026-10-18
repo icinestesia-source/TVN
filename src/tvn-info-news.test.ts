@@ -135,6 +135,7 @@ describe('INFO news', () => {
       'entertainment',
       'business',
       'on-this-day',
+      'shopping',
     ])
     const markup = renderToStaticMarkup(createElement(InfoCentre))
     expect(markup).toContain('News')
@@ -142,5 +143,6 @@ describe('INFO news', () => {
     expect(markup).toContain('Weather')
     expect(markup).toContain('Entertainment')
     expect(markup).toContain('Business')
+    expect(markup).toContain('Shopping')
   })
 })

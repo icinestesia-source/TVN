@@ -56,7 +56,7 @@ export function GuideActions({
   return (
     <div className="guide-import guide-actions">
       {action('Network', tool === 'editor', () => onTool('editor'), 'Network Editor: arrange and edit the channels')}
-      {action('Info', tool === 'infocentre', () => onTool('infocentre'), 'Info: news and sports')}
+      {action('Info', tool === 'infocentre', () => onTool('infocentre'), 'Info: news, sports, shopping and more')}
       <GuideTab tool={tool} following={following} onTool={onTool} onClose={onClose} />
       {action('Options', tool === 'options', () => onTool('options'), 'Users and settings')}
       {action('Now', picked && !following, onNow, picked ? 'Back to the programme on air' : 'The channel playing, now · press again for the picture')}

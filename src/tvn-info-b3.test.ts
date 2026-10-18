@@ -34,7 +34,7 @@ const settingsBase = (): PortableSettings => ({
 describe('INFO Phase B.3 preferences', () => {
   it('normalises malformed prefs and keeps safe defaults', () => {
     const defaults = defaultInfoPreferences()
-    expect(normalizeInfoPreferences(null).version).toBe(2)
+    expect(normalizeInfoPreferences(null).version).toBe(3)
     expect(normalizeInfoPreferences({ version: 1, news: 'nope' }).news.enabledPublisherIds.length).toBeGreaterThan(0)
     expect(defaults.football.competitionOrder).toContain('EL1')
     expect(defaults.weather.tempUnit).toBe('celsius')
