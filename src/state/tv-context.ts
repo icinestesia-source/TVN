@@ -125,6 +125,9 @@ export interface TvContextValue {
   /** Puts an action in a corner, swapping it with the corner's current action. */
   setInfoShortcut: (corner: Corner, id: ShortcutId) => void
   resetInfoShortcuts: () => void
+  /** What Space does over the picture. */
+  spaceAction: import('../view/space-action.ts').SpaceAction
+  setSpaceAction: (action: import('../view/space-action.ts').SpaceAction) => void
   /** The channel being edited over the picture, outside the Guide; null when none is. */
   screenEdit: number | null
   /** The information bar's Watch over the picture: the channel at NOW. */

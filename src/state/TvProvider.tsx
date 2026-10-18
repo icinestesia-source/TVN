@@ -13,6 +13,7 @@ import { guideOpeningZoom } from '../epg/opening-zoom.ts'
 import { commandFromGamepad } from '../input/gamepad.ts'
 import { commandFromKeyEvent, isEditableTarget } from '../input/keyboard.ts'
 import { createSpaceHold } from '../input/space-hold.ts'
+import { commandForSpace, type SpaceAction } from '../view/space-action.ts'
 import { webInteraction } from '../player/web-interaction.ts'
 import { deliver, playbackCommand, type PlaybackCommand } from '../player/command.ts'
 import { notePlayback } from '../player/trace.ts'
@@ -282,6 +283,9 @@ export function TvProvider({ children }: { children: ReactNode }) {
   /** The timing of the tune in progress, fixed at its first press. */
   const tuneTiming = useRef<TransitionTiming>(transitionTiming(DEFAULT_TRANSITION_SETTINGS))
   const [infoShortcuts, setInfoShortcuts] = useState<ShortcutAssignment>(stored.infoShortcuts)
+  const [spaceAction, setSpaceAction] = useState<SpaceAction>(stored.spaceAction)
+  const spaceActionRef = useRef(spaceAction)
+  spaceActionRef.current = spaceAction
   const noticeSeen = useNoticeAcknowledged()
 
   const playerRef = useRef<PlayerHandle | null>(null)
@@ -779,6 +783,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       flash('OFF AIR')
       return
     }
+    if (target.liveFromMs !== undefined) void refreshLatestChannel(target.number)
     if (!keepPick) clearManual()
     if (!guideDrivingRef.current) guideEngine.current.suspend()
     const byViewer = !autoTuneRef.current
@@ -1281,8 +1286,13 @@ export function TvProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const space = createSpaceHold({
-      surf: () => dispatchRef.current({ type: 'random-channel' }),
-      toggle: () => toggleSurfScopeRef.current(),
+      surf: () => {
+        const action = spaceActionRef.current
+        dispatchRef.current(commandForSpace(action))
+      },
+      toggle: () => {
+        if (spaceActionRef.current === 'surf') toggleSurfScopeRef.current()
+      },
     })
     // Space alone, over the picture, outside a text field: the keyboard's TV Surf button.
     const surfKey = (event: KeyboardEvent) =>
@@ -1552,6 +1562,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
     rescanChannelEdit,
     arrangeChannel,
     latestFirst,
+    refreshLatestChannel,
+    sweepLatestChannels,
     reloadChannel,
     loadMoreChannelSource,
     loadAllAndExportUser,
@@ -1651,6 +1663,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
     setInfoShortcuts,
   })
 
+  // After the first picture is up, recheck LATEST channels one at a time. Tuning one also checks it.
+  const latestSwept = useRef(false)
+  useEffect(() => {
+    if (!startupSettled || latestSwept.current) return
+    latestSwept.current = true
+    sweepLatestChannels(channelRef.current)
+  }, [startupSettled, sweepLatestChannels])
+
   // Surfing hops without counting as the viewer's activity, so SLEEP still ends an unattended session.
   useEffect(() => {
     // A first visit stays on its first channel until the welcome notice is dismissed.
@@ -1707,6 +1727,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
       subtitles,
       sleepMinutes,
       infoShortcuts,
+      spaceAction,
       defaultFavouritesOffered: true,
     })
   }, [
@@ -1714,6 +1735,7 @@ export function TvProvider({ children }: { children: ReactNode }) {
     channelNumber,
     sleepMinutes,
     infoShortcuts,
+    spaceAction,
     favourites,
     guideFilter,
     guideSplit,
@@ -1932,6 +1954,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       infoShortcuts,
       setInfoShortcut,
       resetInfoShortcuts,
+      spaceAction,
+      setSpaceAction,
       screenEdit,
       screenAction,
       screenStep,
@@ -2120,6 +2144,8 @@ export function TvProvider({ children }: { children: ReactNode }) {
       infoShortcuts,
       setInfoShortcut,
       resetInfoShortcuts,
+      spaceAction,
+      setSpaceAction,
       screenEdit,
       screenAction,
       screenStep,

@@ -147,8 +147,8 @@ describe('guide filters', () => {
   })
 
   it('opens the user list from the keyboard', () => {
-    expect(commandFromKey('y', plain, false)).toEqual({ type: 'user-channels' })
-    expect(commandFromKey('Y', plain, true)).toEqual({ type: 'user-channels' })
+    expect(commandFromKey('y', plain, false)).toEqual({ type: 'guide-tool', tool: 'infocentre' })
+    expect(commandFromKey('Y', plain, true)).toEqual({ type: 'guide-tool', tool: 'infocentre' })
   })
 })
 

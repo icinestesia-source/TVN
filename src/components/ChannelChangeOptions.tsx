@@ -14,6 +14,7 @@ import {
   SPEEDS,
   TRANSITION_IDS,
   TRANSITIONS,
+  CUSTOM_COLOURS,
   DEFAULT_CUSTOM_COLOUR,
   toggledColour,
   transitionTiming,
@@ -152,24 +153,32 @@ function ColourPicker({ settings, onChange }: { settings: TransitionSettings; on
               </button>
             )
           })}
-          <label className={colours.includes('custom') ? 'tab is-on' : 'tab'}>
-            <input
-              type="color"
-              className="fx-custom"
-              aria-label="Custom colour"
-              value={settings.custom ?? DEFAULT_CUSTOM_COLOUR}
-              disabled={!colours.includes('custom') && full}
-              title={!colours.includes('custom') && full ? `Up to ${MAX_TRANSITION_COLOURS} colours: take one out first` : 'Your own colour for the static blocks'}
-              onChange={(event) => onChange(withCustomColour(settings, event.target.value))}
-            />
-            Custom
-            {colours.includes('custom') && colours.length > 1 ? <b className="fx-colour-order">{colours.indexOf('custom') + 1}</b> : null}
-          </label>
-          {colours.includes('custom') ? (
-            <button type="button" className="tab" aria-label="Remove custom colour" onClick={() => onChange(withColours(settings, toggledColour(colours, 'custom')))}>
-              Clear
-            </button>
-          ) : null}
+          {CUSTOM_COLOURS.map((slot, index) => {
+            const on = colours.includes(slot)
+            const label = index === 0 ? 'Custom' : `Custom ${index + 1}`
+            return (
+              <span key={slot} className="fx-custom-slot">
+                <label className={on ? 'tab is-on' : 'tab'}>
+                  <input
+                    type="color"
+                    className="fx-custom"
+                    aria-label={index === 0 ? 'Custom colour' : `Custom colour ${index + 1}`}
+                    value={settings[slot] ?? DEFAULT_CUSTOM_COLOUR}
+                    disabled={!on && full}
+                    title={!on && full ? `Up to ${MAX_TRANSITION_COLOURS} colours: take one out first` : 'Your own colour for the static blocks'}
+                    onChange={(event) => onChange(withCustomColour(settings, event.target.value, slot))}
+                  />
+                  {label}
+                  {on && colours.length > 1 ? <b className="fx-colour-order">{colours.indexOf(slot) + 1}</b> : null}
+                </label>
+                {on ? (
+                  <button type="button" className="tab" aria-label={`Remove ${label}`} onClick={() => onChange(withColours(settings, toggledColour(colours, slot)))}>
+                    Clear
+                  </button>
+                ) : null}
+              </span>
+            )
+          })}
         </span>
       </Row>
       <Row label="Combinations">

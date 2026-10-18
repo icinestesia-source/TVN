@@ -103,7 +103,7 @@ export function commandFromKey(
       return { type: 'guide-tool', tool: 'options' }
     case 'y':
     case 'Y':
-      return { type: 'user-channels' }
+      return { type: 'guide-tool', tool: 'infocentre' }
     case 'c':
     case 'C':
       return { type: 'guide-cycle' }

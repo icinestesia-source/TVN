@@ -37,13 +37,18 @@ function teamIdOf(value: unknown): string | undefined {
   return undefined
 }
 
-function scoreOf(match: Json): FootballMatch['score'] | undefined {
-  const score = match.score as Json | undefined
-  const full = score?.fullTime as Json | undefined
-  const home = full?.home
-  const away = full?.away
+function scorePair(block: unknown): FootballMatch['score'] | undefined {
+  if (!block || typeof block !== 'object') return undefined
+  const home = (block as Json).home
+  const away = (block as Json).away
   if (typeof home !== 'number' || typeof away !== 'number') return undefined
   return { home, away }
+}
+
+/** Prefer full time, then regular time. Do not treat a half-time pair as a final score. */
+function scoreOf(match: Json): FootballMatch['score'] | undefined {
+  const score = match.score as Json | undefined
+  return scorePair(score?.fullTime) ?? scorePair(score?.regularTime)
 }
 
 function matchesFromPayload(payload: Json, competitionId: string): FootballMatch[] {

@@ -39,6 +39,7 @@ import { clearManual } from '../../player/manual.ts'
 import { saveScheduleBeforeLatest, takeScheduleBeforeLatest } from '../../view/latest-mode-store.ts'
 import { airingSources, inventoryOf, type ChannelSource, type OrderKind } from '../../services/channel-sources.ts'
 import { alphabeticalVideos, latestVideos, rebuiltVideos, shuffledVideos } from '../../view/programme-order.ts'
+import { LATEST_SWEEP_GAP_MS, LATEST_SWEEP_LIMIT, latestRefreshOrder } from '../../view/latest-refresh.ts'
 import { USER_NUMBER_START, isLowUserNumber } from '../../data/network.ts'
 import { padChannel } from '../../utils/time.ts'
 import { curatedChannelManifest, manifestText, userChannelManifest } from '../../services/editorial-manifest.ts'
@@ -271,6 +272,72 @@ export function useChannelEditing({
     [openChannelEdit, rescanChannelEdit, saveChannelEdit],
   )
   const latestFirst = useCallback((number: number) => arrangeChannel(number, 'latest'), [arrangeChannel])
+
+  /** Channels already rechecked this session, so a tune and the startup sweep do not both hit the network. */
+  const latestChecked = useRef(new Set<number>())
+  const latestFlight = useRef(new Map<number, Promise<void>>())
+
+  /**
+   * A LATEST channel is read again and its newest programme put first. Playback restarts only when that
+   * first programme actually changed and this channel is the one on screen. Failures leave the schedule as it is.
+   */
+  const refreshLatestChannel = useCallback(
+    (number: number) => {
+      const existing = latestFlight.current.get(number)
+      if (existing) return existing
+      const channel = channelByNumber(number)
+      if (!channel || channel.liveFromMs === undefined) return Promise.resolve()
+      const job = (async () => {
+        try {
+          const edit = await openChannelEdit(number)
+          if (!edit || edit.orderKind !== 'latest' || edit.liveFromMs === undefined) return
+          const before = edit.order?.[0]
+          const result = await rescanChannelEdit(number, edit)
+          const next = result.edit
+          const pool = inventoryOf(airingSources(next.sources))
+          if (pool.length === 0) return
+          const order = latestVideos(pool).map((video) => video.id)
+          const headChanged = order[0] !== before
+          const latest = {
+            ...next,
+            order,
+            orderKind: 'latest' as const,
+            liveFromMs: headChanged ? Date.now() : next.liveFromMs,
+            scheduleSize: undefined,
+          }
+          await saveChannelEdit(number, { ...latest, compiled: eligibilityKey(latest) })
+          if (headChanged) replayIfWatching(number)
+        } catch {
+          // A failed check leaves the schedule already on air.
+        } finally {
+          latestChecked.current.add(number)
+          latestFlight.current.delete(number)
+        }
+      })()
+      latestFlight.current.set(number, job)
+      return job
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [openChannelEdit, rescanChannelEdit, saveChannelEdit],
+  )
+
+  /** After the first picture is up: recheck LATEST channels one at a time, the one on screen first. */
+  const sweepLatestChannels = useCallback(
+    (watching: number | null) => {
+      const numbers = listChannels()
+        .filter((channel) => channel.liveFromMs !== undefined)
+        .map((channel) => channel.number)
+      const ordered = latestRefreshOrder(numbers, watching, LATEST_SWEEP_LIMIT)
+      void (async () => {
+        for (const number of ordered) {
+          if (latestChecked.current.has(number)) continue
+          await refreshLatestChannel(number)
+          await new Promise((resolve) => window.setTimeout(resolve, LATEST_SWEEP_GAP_MS))
+        }
+      })()
+    },
+    [refreshLatestChannel],
+  )
 
   /**
    * RELOAD (X, no longer a Guide button): the channel rescanned and scheduled again. A running order arranged by
@@ -635,6 +702,8 @@ export function useChannelEditing({
     rescanChannelEdit,
     arrangeChannel,
     latestFirst,
+    refreshLatestChannel,
+    sweepLatestChannels,
     reloadChannel,
     loadMoreChannelSource,
     loadAllAndExportUser,

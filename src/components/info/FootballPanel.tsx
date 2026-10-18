@@ -44,11 +44,12 @@ function formatUpdated(iso: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(ms)
 }
 
-function matchCentreLabel(match: FootballMatch, liveReliable: boolean): string {
-  if (match.status === 'finished' && match.score) return `${match.score.home}–${match.score.away}`
+function matchCentreLabel(match: FootballMatch): string {
+  if ((match.status === 'finished' || match.status === 'in-play') && match.score) {
+    return `${match.score.home}–${match.score.away}`
+  }
   if (match.status === 'postponed') return 'P–P'
   if (match.status === 'cancelled') return '—'
-  if (match.status === 'in-play' && liveReliable && match.score) return `${match.score.home}–${match.score.away}`
   return 'v'
 }
 
@@ -76,7 +77,7 @@ function MatchRow({
     <li className="info-match">
       <span className="info-match-home">{match.home}</span>
       <span className="info-match-score" title={`${competition} · ${status}`}>
-        {matchCentreLabel(match, liveReliable)}
+        {matchCentreLabel(match)}
       </span>
       <span className="info-match-away">{match.away}</span>
       <span className="info-match-status">

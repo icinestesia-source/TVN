@@ -1,4 +1,5 @@
 import type { ShortcutAssignment } from '../view/info-shortcuts.ts'
+import type { SpaceAction } from '../view/space-action.ts'
 
 export type GuideFilter =
   | 'all'
@@ -48,6 +49,8 @@ export interface UserPreferences {
   sleepMinutes: number
   /** The actions in the corners of the information overlay's control pad. */
   infoShortcuts: ShortcutAssignment
+  /** What Space does over the picture. */
+  spaceAction: SpaceAction
   /** Set once the starter Favourites have been offered; from then on the list is the viewer's own, even if empty. */
   defaultFavouritesOffered?: boolean
 }

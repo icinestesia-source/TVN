@@ -76,6 +76,11 @@ describe('Channel change colours: more of them, and up to five at once', () => {
   it('a custom colour joins the five and paints the static blocks with that shade', () => {
     const html = renderToStaticMarkup(createElement(ChannelChangeOptions, { settings: DEFAULT_TRANSITION_SETTINGS, onChange: () => {} }))
     expect(html).toContain('aria-label="Custom colour"')
+    expect(html).toContain('aria-label="Custom colour 2"')
+    expect(html).toContain('aria-label="Custom colour 5"')
+    const four = withCustomColour(withCustomColour(DEFAULT_TRANSITION_SETTINGS, '#112233', 'custom2'), '#445566', 'custom4')
+    expect(four.colours).toEqual(['custom2', 'custom4'])
+    expect(snowColours(four.colours, four.custom, four)).toEqual(['#112233', '#445566'])
     const chosen = withCustomColour(DEFAULT_TRANSITION_SETTINGS, '#3366CC')
     expect(chosen.colours).toEqual(['custom'])
     expect(chosen.custom).toBe('#3366cc')

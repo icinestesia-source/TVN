@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { channelByNumber } from '../data/catalogue.ts'
 import { onScreen } from '../player/manual.ts'
-import { TRANSITIONS, transitionTiming, type CardAccent, type TransitionColour, type TransitionSettings } from '../state/transitions.ts'
+import { isCustomColour, TRANSITIONS, transitionTiming, type CardAccent, type CustomColour, type TransitionColour, type TransitionSettings } from '../state/transitions.ts'
 import { useClock } from '../utils/use-clock.ts'
 import { padChannel } from '../utils/time.ts'
 import { Noise } from './StaticOverlay.tsx'
@@ -27,12 +27,23 @@ export const TINTS: Record<TransitionColour, string | null> = {
   blue: '#86a8ff',
   teal: '#7ff5e1',
   custom: null,
+  custom2: null,
+  custom3: null,
+  custom4: null,
+  custom5: null,
 }
 
-/** The chosen colours as hex shades the snow (or CRT / flash) can paint with. Custom uses the viewer's own shade. */
-export function snowColours(colours: readonly TransitionColour[], custom: string | null = null): string[] {
+/** The chosen colours as hex shades the snow (or CRT / flash) can paint with. Each Custom slot uses the viewer's own shade. */
+export function snowColours(
+  colours: readonly TransitionColour[],
+  custom: string | null = null,
+  extra: Partial<Record<CustomColour, string | null>> = {},
+): string[] {
   return colours.flatMap((colour) => {
-    if (colour === 'custom') return custom ? [custom] : []
+    if (isCustomColour(colour)) {
+      const hex = colour === 'custom' ? custom : extra[colour]
+      return hex ? [hex] : []
+    }
     const shade = TINTS[colour]
     return shade ? [shade] : []
   })
@@ -42,8 +53,12 @@ export function snowColours(colours: readonly TransitionColour[], custom: string
  * A fill for effects with no snow (CRT beam, cut flash): one colour, or a band of several.
  * Kept for those layers only — the static transition colours the blocks themselves.
  */
-export function tintOf(colours: readonly TransitionColour[], custom: string | null = null): string | null {
-  const shades = snowColours(colours, custom)
+export function tintOf(
+  colours: readonly TransitionColour[],
+  custom: string | null = null,
+  extra: Partial<Record<CustomColour, string | null>> = {},
+): string | null {
+  const shades = snowColours(colours, custom, extra)
   if (shades.length === 0) return null
   if (shades.length === 1) return shades[0]
   return `linear-gradient(115deg, ${[...shades, shades[0]].join(', ')})`
@@ -99,8 +114,8 @@ export function TransitionOverlay({
 }) {
   const definition = TRANSITIONS[settings.id]
   const timing = transitionTiming(settings)
-  const shades = definition.colour ? snowColours(settings.colours, settings.custom) : []
-  const fill = definition.colour && !definition.grain ? tintOf(settings.colours, settings.custom) : null
+  const shades = definition.colour ? snowColours(settings.colours, settings.custom, settings) : []
+  const fill = definition.colour && !definition.grain ? tintOf(settings.colours, settings.custom, settings) : null
   const grain = definition.grain ? settings.grain : 'normal'
   const style = {
     '--fx-ms': `${Math.max(1, timing.durationMs)}ms`,

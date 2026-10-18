@@ -34,7 +34,8 @@ describe('INFO centre (Phase B1)', () => {
     expect(commandFromKey('v', plain, true)).toEqual({ type: 'info' })
     expect(commandFromKey('V', plain, false)).toEqual({ type: 'info' })
     expect(commandFromKey('i', plain, true)).toEqual({ type: 'guide-tool', tool: 'add' })
-    expect(read('src/input/keyboard.ts')).not.toMatch(/infocentre/)
+    expect(commandFromKey('y', plain, false)).toEqual({ type: 'guide-tool', tool: 'infocentre' })
+    expect(commandFromKey('Y', plain, true)).toEqual({ type: 'guide-tool', tool: 'infocentre' })
   })
 
   it('keeps the Guide filter and cursor when opening, like Options', () => {

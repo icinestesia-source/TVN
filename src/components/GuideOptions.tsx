@@ -17,6 +17,7 @@ import { setResumeFromPause, useResumeFromPause } from '../view/resume-from-paus
 import { setLoadingLogo, useLoadingLogo } from '../view/loading-logo.ts'
 import { setFlagAt, useFlagAt } from '../view/clip-flags.ts'
 import { CORNER_LABELS, CORNERS, SHORTCUT_IDS, SHORTCUTS, type ShortcutId } from '../view/info-shortcuts.ts'
+import { SPACE_ACTIONS, type SpaceAction } from '../view/space-action.ts'
 import { keepKey } from './keep-key.ts'
 import { viewerMessage } from './viewer-message.ts'
 
@@ -468,6 +469,22 @@ export function GuideOptions() {
           <Row label="Wait for the end">{toggle(tv.surfUntilEnd, ['On', 'Off'], () => tv.setSurfUntilEnd(!tv.surfUntilEnd))}</Row>
           <p className="options-note">With Wait for the end on, TV Surf lets each programme finish before it moves to the next channel; the wait above applies only where a programme has no end in reach.</p>
           <Row label="Random Cycle">{toggle(tv.surfing, ['Stop', 'Start'], tv.toggleSurf)}</Row>
+        </Card>
+
+        <Card title="Space bar">
+          <label className="options-row">
+            <span className="options-label">Space</span>
+            <span className="options-control">
+              <select aria-label="Space bar" value={tv.spaceAction} onChange={(event) => tv.setSpaceAction(event.target.value as SpaceAction)}>
+                {SPACE_ACTIONS.map((action) => (
+                  <option key={action.id} value={action.id}>
+                    {action.label}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </label>
+          <p className="options-note">A short press of Space over the picture. Surf is the default; holding Space still switches Surf between the whole network and the current user network.</p>
         </Card>
 
         <Card title="Information overlay shortcuts">

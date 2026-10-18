@@ -13,7 +13,23 @@ export type TransitionId = 'instant' | 'tv-tune' | 'analogue' | 'crt' | 'glitch'
 export type TransitionEffect = 'none' | 'tune' | 'analogue' | 'crt' | 'glitch' | 'fade' | 'flash'
 export type TransitionPhase = 'enter' | 'identify' | 'reveal'
 
-export type TransitionColour = 'mono' | 'warm' | 'cool' | 'green' | 'amber' | 'accent' | 'purple' | 'pink' | 'red' | 'blue' | 'teal' | 'custom'
+export type TransitionColour =
+  | 'mono'
+  | 'warm'
+  | 'cool'
+  | 'green'
+  | 'amber'
+  | 'accent'
+  | 'purple'
+  | 'pink'
+  | 'red'
+  | 'blue'
+  | 'teal'
+  | 'custom'
+  | 'custom2'
+  | 'custom3'
+  | 'custom4'
+  | 'custom5'
 export type TransitionGrain = 'coarse' | 'normal' | 'fine'
 export type CardPosition = 'centre' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 export type CardSize = 'small' | 'medium' | 'large'
@@ -157,7 +173,19 @@ export const COLOURS: readonly { value: TransitionColour; label: string }[] = [
   { value: 'blue', label: 'Blue' },
   { value: 'teal', label: 'Teal' },
   { value: 'custom', label: 'Custom' },
+  { value: 'custom2', label: 'Custom 2' },
+  { value: 'custom3', label: 'Custom 3' },
+  { value: 'custom4', label: 'Custom 4' },
+  { value: 'custom5', label: 'Custom 5' },
 ]
+
+/** The viewer's own shades: the original Custom, plus four more. */
+export const CUSTOM_COLOURS = ['custom', 'custom2', 'custom3', 'custom4', 'custom5'] as const
+export type CustomColour = (typeof CUSTOM_COLOURS)[number]
+
+export function isCustomColour(value: string): value is CustomColour {
+  return (CUSTOM_COLOURS as readonly string[]).includes(value)
+}
 
 /** The shade used until the viewer picks their own. */
 export const DEFAULT_CUSTOM_COLOUR = '#d8d8d8'
@@ -202,15 +230,20 @@ export function toggledColour(colours: readonly TransitionColour[], colour: Tran
 /** The settings with these colours. `colour` stays a named colour, so a copy of TVN from before Custom still reads it. */
 export function withColours(settings: TransitionSettings, colours: readonly TransitionColour[]): TransitionSettings {
   const clean = cleanColours(colours)
-  return { ...settings, colours: clean, colour: clean.find((item) => item !== 'custom') ?? 'mono' }
+  return { ...settings, colours: clean, colour: clean.find((item) => !isCustomColour(item)) ?? 'mono' }
 }
 
-/** Set the viewer's own colour and, unless it is already one of the five, add it. */
-export function withCustomColour(settings: TransitionSettings, hex: string): TransitionSettings {
+/** The saved hex for one custom slot. */
+export function customShade(settings: Pick<TransitionSettings, CustomColour>, slot: CustomColour): string | null {
+  return cleanCustom(settings[slot])
+}
+
+/** Set one of the viewer's own colours and, unless it is already one of the five, add it. */
+export function withCustomColour(settings: TransitionSettings, hex: string, slot: CustomColour = 'custom'): TransitionSettings {
   const custom = cleanCustom(hex)
   if (!custom) return settings
-  const colours = settings.colours.includes('custom') ? settings.colours : toggledColour(settings.colours, 'custom')
-  return withColours({ ...settings, custom }, colours)
+  const colours = settings.colours.includes(slot) ? settings.colours : toggledColour(settings.colours, slot)
+  return withColours({ ...settings, [slot]: custom }, colours)
 }
 export const GRAINS: readonly { value: TransitionGrain; label: string }[] = [
   { value: 'coarse', label: 'Coarse' },
@@ -270,8 +303,12 @@ export interface TransitionSettings {
   colour: TransitionColour
   /** One to five colours for the static blocks (or CRT / flash fill), in this order; none is Mono. */
   colours: TransitionColour[]
-  /** The viewer's own `#rrggbb`, used when `custom` is among `colours`. */
+  /** The viewer's own `#rrggbb` shades, one per custom slot that is among `colours`. */
   custom: string | null
+  custom2: string | null
+  custom3: string | null
+  custom4: string | null
+  custom5: string | null
   grain: TransitionGrain
   card: TitleCard
 }
@@ -295,6 +332,10 @@ export const DEFAULT_TRANSITION_SETTINGS: TransitionSettings = {
   colour: 'mono',
   colours: [],
   custom: null,
+  custom2: null,
+  custom3: null,
+  custom4: null,
+  custom5: null,
   grain: 'normal',
   card: DEFAULT_CARD,
 }
@@ -378,14 +419,22 @@ export function asTransitionSettings(value: unknown): TransitionSettings {
   const flag = (name: keyof TitleCard) => (typeof card[name] === 'boolean' ? (card[name] as boolean) : (DEFAULT_CARD[name] as boolean))
   const opacity = typeof card.opacity === 'number' && Number.isFinite(card.opacity) ? Math.min(1, Math.max(CARD_OPACITY_MIN, card.opacity)) : DEFAULT_CARD.opacity
   // A file from before colours could be combined has the one colour only.
-  const custom = cleanCustom(value.custom)
-  const colours = (Array.isArray(value.colours) ? cleanColours(value.colours) : cleanColours([value.colour])).filter((item) => item !== 'custom' || custom !== null)
+  const shades = {
+    custom: cleanCustom(value.custom),
+    custom2: cleanCustom(value.custom2),
+    custom3: cleanCustom(value.custom3),
+    custom4: cleanCustom(value.custom4),
+    custom5: cleanCustom(value.custom5),
+  }
+  const colours = (Array.isArray(value.colours) ? cleanColours(value.colours) : cleanColours([value.colour])).filter(
+    (item) => !isCustomColour(item) || shades[item] !== null,
+  )
   return {
     id: asTransition(value.id),
     speed: SPEEDS.some((speed) => speed.value === value.speed) ? (value.speed as number) : DEFAULT_TRANSITION_SETTINGS.speed,
-    colour: colours.find((item) => item !== 'custom') ?? 'mono',
+    colour: colours.find((item) => !isCustomColour(item)) ?? 'mono',
     colours,
-    custom,
+    ...shades,
     grain: oneOf(GRAINS, value.grain) ? value.grain : DEFAULT_TRANSITION_SETTINGS.grain,
     card: {
       show: flag('show'),
@@ -415,10 +464,11 @@ export function transitionSettingsErrors(value: unknown, at: string): string[] {
   ) {
     errors.push(`${at}.colours is not up to ${MAX_TRANSITION_COLOURS} colours`)
   }
-  const customShade = cleanCustom(value.custom)
-  const customPresent = value.custom !== undefined && value.custom !== null
-  const customChosen = Array.isArray(value.colours) && value.colours.includes('custom')
-  if ((customPresent && customShade === null) || (customChosen && customShade === null)) errors.push(`${at}.custom is not a #rrggbb colour`)
+  for (const slot of CUSTOM_COLOURS) {
+    const present = value[slot] !== undefined && value[slot] !== null
+    const chosen = Array.isArray(value.colours) && value.colours.includes(slot)
+    if ((present || chosen) && cleanCustom(value[slot]) === null) errors.push(`${at}.${slot} is not a #rrggbb colour`)
+  }
   if (value.grain !== undefined && !oneOf(GRAINS, value.grain)) errors.push(`${at}.grain is not a grain`)
   if (value.card === undefined) return errors
   if (!isRecord(value.card)) return [...errors, `${at}.card is not an object`]

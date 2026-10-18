@@ -11,16 +11,24 @@ export interface FootballScheduleSlot {
   minute: number
 }
 
-/** Initial UK-local refresh schedule from Phase B.2. */
+/**
+ * UK-local refresh. Weeknights stay at 22:00.
+ * Saturday and Sunday refresh through the match window so full-time scores
+ * land without waiting until late evening. Free-tier pacing stays in the ingest client.
+ */
 export const FOOTBALL_SCHEDULE_SLOTS: readonly FootballScheduleSlot[] = [
-  { weekday: 1, hour: 22, minute: 0 }, // Monday
+  { weekday: 1, hour: 22, minute: 0 },
   { weekday: 2, hour: 22, minute: 0 },
   { weekday: 3, hour: 22, minute: 0 },
   { weekday: 4, hour: 22, minute: 0 },
   { weekday: 5, hour: 22, minute: 0 },
-  { weekday: 6, hour: 17, minute: 0 }, // Saturday afternoon
-  { weekday: 6, hour: 22, minute: 30 }, // Saturday evening
-  { weekday: 0, hour: 22, minute: 0 }, // Sunday
+  { weekday: 6, hour: 17, minute: 0 },
+  { weekday: 6, hour: 19, minute: 30 },
+  { weekday: 6, hour: 22, minute: 30 },
+  { weekday: 0, hour: 16, minute: 0 },
+  { weekday: 0, hour: 18, minute: 0 },
+  { weekday: 0, hour: 20, minute: 0 },
+  { weekday: 0, hour: 22, minute: 0 },
 ]
 
 const LONDON = 'Europe/London'

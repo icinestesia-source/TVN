@@ -40,7 +40,7 @@ describe('KEYBOARD: P pauses, Space surfs, a held Space switches the surf scope'
     expect(commandFromKey(' ', plain, false)).toEqual({ type: 'random-channel' })
     expect(commandFromKey(' ', plain, true)).toBeNull()
     expect(provider.match(/case 'play-pause'/g)).toHaveLength(1)
-    expect(provider).toContain("dispatchRef.current({ type: 'random-channel' })")
+    expect(provider).toContain('dispatchRef.current(commandForSpace(action))')
   })
 
   it('the remaining keys keep their meaning: A favourite, - = zoom, / multi, , . previous / next, C cycles the Guide tabs', () => {
