@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { SESSION_LOGO } from './logos.ts'
 import { pointerAngle, releaseSpin, slowedSpin, turnBetween, useLoadingLogo, wheelSpin } from '../view/loading-logo.ts'
 import type { StartupPhase } from '../state/startup.ts'
@@ -12,6 +12,23 @@ export const STARTUP_COPY = {
   failedNote: 'SORRY FOR THE BREAK IN TRANSMISSION · PLEASE TRY AGAIN SHORTLY',
   retry: 'Try again',
 } as const
+
+/** Presentation status lines — not a claim that remote services have connected. */
+export const STARTUP_STATUS_LINES = [
+  'INITIALISING TVN',
+  'ESTABLISHING SIGNAL',
+  'SYNCHRONISING CHANNELS',
+  'PREPARING PROGRAMME GUIDE',
+  'CONNECTING TO THE NETWORK',
+  'BROADCAST SYSTEM READY',
+  'WELCOME TO TVN',
+] as const
+
+export const OUTER_RING_COPY =
+  'TVN · INDEPENDENT TELEVISION NETWORK · BROADCASTING CONTINUOUSLY · TELEVISION WITHOUT BOUNDARIES · CHANNELS · CULTURE · MUSIC · CINEMA · ENTERTAINMENT · '
+
+export const INNER_RING_COPY =
+  'SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · SIGNAL ACTIVE · SYSTEM READY · CHANNEL SYNC · TVN 2.0 · '
 
 const NOISE_FRAMES = 4
 
@@ -65,55 +82,148 @@ function useCountUp(target: number): number {
   return Math.min(shown, target)
 }
 
-const RING_RADIUS = 46
-const RING_LENGTH = 2 * Math.PI * RING_RADIUS
-/** From the top, clockwise, all the way round: letters stand on it with their feet towards the centre. */
-const RING_PATH = `M 50,${50 - RING_RADIUS} a ${RING_RADIUS},${RING_RADIUS} 0 1,1 0,${RING_RADIUS * 2} a ${RING_RADIUS},${RING_RADIUS} 0 1,1 0,-${RING_RADIUS * 2}`
+function circlePath(radius: number): string {
+  return `M 50,${50 - radius} a ${radius},${radius} 0 1,1 0,${radius * 2} a ${radius},${radius} 0 1,1 0,-${radius * 2}`
+}
 
-/**
- * LOADING TVN and the percentage, twice round the logo's rim, spaced evenly over the whole circle. The
- * ring turns clockwise and a brighter letter chases round it; the readable copy is the status text.
- */
-export function LoadingRing({ percent }: { percent: number }) {
-  const [colour] = useState(() => ringColour())
-  const phrase = `${STARTUP_COPY.loading.replace(/\.+$/, '')} · ${percent}% · `
-  const letters = [...phrase.repeat(2)]
-  // Firefox ignores textLength on a textPath, so the spare length is shared between the letters as dx.
+const OUTER_RADIUS = 46
+const INNER_RADIUS = 37.5
+const OUTER_PATH = circlePath(OUTER_RADIUS)
+const INNER_PATH = circlePath(INNER_RADIUS)
+const OUTER_LENGTH = 2 * Math.PI * OUTER_RADIUS
+const INNER_LENGTH = 2 * Math.PI * INNER_RADIUS
+
+function RingText({
+  id,
+  path,
+  length,
+  phrase,
+  className,
+}: {
+  id: string
+  path: string
+  length: number
+  phrase: string
+  className: string
+}) {
+  const letters = [...phrase]
   const measure = useRef<SVGTextElement>(null)
   const [gap, setGap] = useState(0)
   useLayoutEffect(() => {
     const natural = measure.current?.getComputedTextLength?.() ?? 0
-    setGap(natural > 0 ? (RING_LENGTH - 0.5 - natural) / letters.length : 0)
-  }, [phrase, letters.length])
-  const gold = new Set<number>()
-  letters.forEach((_, index) => {
-    const at = index % phrase.length
-    const start = phrase.indexOf(`${percent}%`)
-    if (at >= start && at < start + `${percent}%`.length) gold.add(index)
-  })
+    setGap(natural > 0 ? (length - 0.5 - natural) / Math.max(1, letters.length) : 0)
+  }, [phrase, length, letters.length])
+
   return (
-    <svg className="startup-ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false" style={{ ['--ring-colour' as string]: colour }}>
+    <>
       <defs>
-        <path id="startup-ring-path" d={RING_PATH} />
+        <path id={id} d={path} />
       </defs>
-      <text ref={measure} className="startup-ring-text" visibility="hidden" xmlSpace="preserve">
+      <text ref={measure} className={className} visibility="hidden" xmlSpace="preserve">
         {letters.join('')}
       </text>
-      <text className="startup-ring-text">
-        <textPath href="#startup-ring-path" textLength={RING_LENGTH - 0.5} lengthAdjust="spacing">
+      <text className={className}>
+        <textPath href={`#${id}`} textLength={length - 0.5} lengthAdjust="spacing">
           {letters.map((letter, index) => (
-            <tspan
-              key={index}
-              className={gold.has(index) ? 'is-gold' : undefined}
-              dx={gap && index > 0 ? gap.toFixed(3) : undefined}
-              style={{ animationDelay: `${(((index - letters.length) / letters.length) * 2.4).toFixed(3)}s` }}
-            >
+            <tspan key={index} dx={gap && index > 0 ? gap.toFixed(3) : undefined}>
               {letter}
             </tspan>
           ))}
         </textPath>
       </text>
+    </>
+  )
+}
+
+function CalibrationLayer() {
+  const ticks = Array.from({ length: 24 }, (_, index) => {
+    const angle = (index / 24) * Math.PI * 2 - Math.PI / 2
+    const outer = 48.6
+    const inner = index % 3 === 0 ? 45.2 : 46.4
+    return {
+      key: index,
+      x1: 50 + Math.cos(angle) * inner,
+      y1: 50 + Math.sin(angle) * inner,
+      x2: 50 + Math.cos(angle) * outer,
+      y2: 50 + Math.sin(angle) * outer,
+      major: index % 3 === 0,
+    }
+  })
+  const markers = [
+    { cx: 50, cy: 2.8, delay: '0s' },
+    { cx: 97.2, cy: 50, delay: '1.1s' },
+    { cx: 50, cy: 97.2, delay: '2.2s' },
+    { cx: 2.8, cy: 50, delay: '3.3s' },
+  ]
+  return (
+    <svg className="startup-calibration" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+      <circle className="startup-cal-ring" cx="50" cy="50" r="41.5" />
+      <circle className="startup-cal-ring is-fine" cx="50" cy="50" r="44" />
+      <circle className="startup-cal-ring is-fine" cx="50" cy="50" r="48.8" />
+      {ticks.map((tick) => (
+        <line
+          key={tick.key}
+          className={tick.major ? 'startup-cal-tick is-major' : 'startup-cal-tick'}
+          x1={tick.x1}
+          y1={tick.y1}
+          x2={tick.x2}
+          y2={tick.y2}
+        />
+      ))}
+      {markers.map((marker) => (
+        <circle
+          key={`${marker.cx}-${marker.cy}`}
+          className="startup-cal-beacon"
+          cx={marker.cx}
+          cy={marker.cy}
+          r="0.9"
+          style={{ animationDelay: marker.delay }}
+        />
+      ))}
+      <text className="startup-cal-label" x="50" y="8.2" textAnchor="middle">
+        001
+      </text>
+      <text className="startup-cal-label" x="92.5" y="51.2" textAnchor="middle">
+        CH
+      </text>
+      <text className="startup-cal-label" x="50" y="95.4" textAnchor="middle">
+        1001
+      </text>
+      <text className="startup-cal-label" x="7.5" y="51.2" textAnchor="middle">
+        Hz
+      </text>
     </svg>
+  )
+}
+
+/**
+ * Dual typographic rings around the logo — broadcast outer copy, technical inner copy.
+ * Percent is not drawn on the rings (real progress stays in the accessible status text).
+ */
+export function LoadingRing({ percent: _percent }: { percent?: number }) {
+  const [colour] = useState(() => ringColour())
+  return (
+    <div className="startup-rings" aria-hidden="true" style={{ ['--ring-colour' as string]: colour } as CSSProperties}>
+      <CalibrationLayer />
+      <svg className="startup-ring startup-ring-outer" viewBox="0 0 100 100" focusable="false">
+        <RingText id="startup-ring-outer-path" path={OUTER_PATH} length={OUTER_LENGTH} phrase={OUTER_RING_COPY} className="startup-ring-text startup-ring-text-outer" />
+      </svg>
+      <svg className="startup-ring startup-ring-inner" viewBox="0 0 100 100" focusable="false">
+        <RingText id="startup-ring-inner-path" path={INNER_PATH} length={INNER_LENGTH} phrase={INNER_RING_COPY} className="startup-ring-text startup-ring-text-inner" />
+      </svg>
+    </div>
+  )
+}
+
+function StartupStatus() {
+  return (
+    <div className="startup-status" aria-hidden="true">
+      {STARTUP_STATUS_LINES.map((line, index) => (
+        <span key={line} className="startup-status-line" style={{ animationDelay: `${index * 2.8}s` }}>
+          {line}
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -181,7 +291,6 @@ function SpinLogo() {
       run()
     }
     const wheel = (event: WheelEvent) => {
-      // A pinch is the browser's zoom; everything else here is the spinner's, not a page scroll or a swipe back.
       if (event.ctrlKey) return
       event.preventDefault()
       spin.speed = wheelSpin(spin.speed, event)
@@ -246,6 +355,7 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
       }}
     >
       <StartupNoise />
+      <div className="startup-veil" aria-hidden="true" />
       <div className="startup-ident">
         <div className="startup-emblem">
           {logo === 'spin' && !failed ? <SpinLogo /> : <img className="startup-logo" src={SESSION_LOGO} alt={BRAND} width={640} height={640} />}
@@ -260,12 +370,15 @@ export function StartupScreen({ phase, progress = 0, onLeft }: { phase: StartupP
             </button>
           </>
         ) : (
-          <p className="startup-message sr">
-            {STARTUP_COPY.loading}
-            <span className="startup-percent" aria-label={`${percent} percent loaded`}>
-              {percent}%
-            </span>
-          </p>
+          <>
+            <StartupStatus />
+            <p className="startup-message sr">
+              {STARTUP_COPY.loading}
+              <span className="startup-percent" aria-label={`${percent} percent loaded`}>
+                {percent}%
+              </span>
+            </p>
+          </>
         )}
       </div>
     </div>

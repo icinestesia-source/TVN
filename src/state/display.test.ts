@@ -89,7 +89,9 @@ describe('loading screen', () => {
   it('pulses the logo and shows the loaded percentage after LOADING', () => {
     const markup = screen(0)
     expect(markup).toContain('aria-busy="true"')
-    expect(readFileSync('src/styles/overlays.css', 'utf8')).toMatch(/\.startup\[aria-busy='true'\] \.startup-logo \{\s*animation: logo-pulse/)
+    expect(readFileSync('src/styles/overlays.css', 'utf8')).toMatch(
+      /\.startup\[aria-busy='true'\] \.startup-logo:not\(\.is-spinner\) \{\s*animation: logo-pulse/,
+    )
     expect(markup).toMatch(new RegExp(`${STARTUP_COPY.loading.replace(/\./g, '\\.')}<span class="startup-percent"[^>]*>0%</span>`))
     expect(screen(42)).toContain('>42%<')
     expect(screen(180)).toContain('>100%<')

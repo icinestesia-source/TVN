@@ -228,12 +228,14 @@ describe('GUIDE and NOW in the header', () => {
 })
 
 describe('LOADING RING in Firefox', () => {
-  it('fills the whole rim without textLength: the spare length is shared between the letters as dx', () => {
+  it('fills each rim without relying on textLength alone: spare length is shared between the letters as dx', () => {
     const ring = read('src/components/StartupScreen.tsx')
     expect(ring).toContain('getComputedTextLength')
-    expect(ring).toContain('(RING_LENGTH - 0.5 - natural) / letters.length')
+    expect(ring).toContain('(length - 0.5 - natural) / Math.max(1, letters.length)')
     expect(ring).toContain('dx={gap && index > 0 ? gap.toFixed(3) : undefined}')
-    expect(ring).toContain('textLength={RING_LENGTH - 0.5} lengthAdjust="spacing"')
+    expect(ring).toContain('textLength={length - 0.5} lengthAdjust="spacing"')
+    expect(ring).toContain('OUTER_RING_COPY')
+    expect(ring).toContain('INNER_RING_COPY')
   })
 })
 

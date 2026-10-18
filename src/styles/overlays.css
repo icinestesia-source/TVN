@@ -254,19 +254,20 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: #0a0a0a;
+  background: #07080a;
+  overflow: hidden;
 }
 
 .startup.is-leaving {
   pointer-events: none;
-  animation: startup-out 420ms ease-out forwards;
+  animation: startup-out 480ms ease-out forwards;
 }
 
 .startup-noise {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  opacity: 0.92;
+  opacity: 0.55;
 }
 
 .startup-noise-frames {
@@ -281,6 +282,14 @@
   to { transform: translateY(-100%); }
 }
 
+.startup-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 50% at 50% 46%, rgba(18, 22, 28, 0.15) 0%, rgba(7, 8, 10, 0.72) 62%, #07080a 100%),
+    linear-gradient(180deg, rgba(120, 24, 24, 0.08), transparent 28%, transparent 72%, rgba(20, 70, 90, 0.1));
+}
 
 .startup-ident {
   position: absolute;
@@ -289,59 +298,151 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(14px, 3vmin, 28px);
-  padding: 24px;
+  gap: clamp(16px, 3.2vmin, 30px);
+  padding: clamp(16px, 4vw, 32px);
   text-align: center;
 }
 
 .startup-logo {
   display: block;
-  width: min(46vmin, 440px);
+  width: min(42vmin, 400px);
   height: auto;
   aspect-ratio: 1;
   object-fit: contain;
-  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.7));
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.75));
 }
 
-/* The logo with LOADING TVN running round its rim, just outside the circle. */
+/* Centred logo with dual typographic rings and calibration marks outside the mark. */
 .startup-emblem {
   position: relative;
   display: grid;
   place-items: center;
-  width: min(46vmin, 440px);
+  width: min(42vmin, 400px);
+  max-width: min(86vw, 400px);
   aspect-ratio: 1;
 }
 
-/* The logo stands in front of the LOADING TVN ring wherever the two overlap. */
-.startup-emblem .startup-logo { position: relative; z-index: 1; width: 100%; }
+.startup-emblem .startup-logo {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
 
+.startup-rings {
+  position: absolute;
+  inset: -18%;
+  width: 136%;
+  height: 136%;
+  pointer-events: none;
+  z-index: 1;
+  animation: ring-in 700ms ease-out both;
+}
+
+.startup-calibration,
 .startup-ring {
   position: absolute;
-  inset: -13%;
-  width: 126%;
-  height: 126%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   pointer-events: none;
-  animation: ring-turn 18s linear infinite, ring-in 600ms ease-out both;
+}
+
+.startup-cal-ring {
+  fill: none;
+  stroke: rgba(242, 242, 242, 0.14);
+  stroke-width: 0.22;
+}
+
+.startup-cal-ring.is-fine {
+  stroke: rgba(90, 200, 220, 0.16);
+  stroke-width: 0.14;
+  stroke-dasharray: 0.8 1.6;
+}
+
+.startup-cal-tick {
+  stroke: rgba(242, 242, 242, 0.28);
+  stroke-width: 0.18;
+}
+
+.startup-cal-tick.is-major {
+  stroke: rgba(255, 196, 120, 0.55);
+  stroke-width: 0.28;
+}
+
+.startup-cal-beacon {
+  fill: rgba(255, 80, 70, 0.85);
+  animation: cal-beacon 4.4s ease-in-out infinite;
+}
+
+.startup-cal-label {
+  fill: rgba(230, 236, 240, 0.42);
+  font-family: var(--font-ui);
+  font-size: 2.4px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.startup-ring-outer {
+  animation: ring-turn 48s linear infinite;
+}
+
+.startup-ring-inner {
+  animation: ring-turn-reverse 36s linear infinite;
 }
 
 .startup-ring-text {
   font-family: var(--font-ui);
-  font-size: 5.4px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
   fill: var(--ring-colour, #f2f2f2);
   paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.85);
-  stroke-width: 1.1px;
+  stroke: rgba(0, 0, 0, 0.8);
+  stroke-width: 0.9px;
 }
 
-.startup-ring-text tspan {
-  animation: ring-chase 2.4s linear infinite;
+.startup-ring-text-outer {
+  font-size: 3.55px;
+  fill: rgba(245, 246, 248, 0.92);
 }
 
-.startup-ring-text tspan.is-gold { fill: var(--gold); }
+.startup-ring-text-inner {
+  font-size: 3.05px;
+  fill: rgba(130, 210, 220, 0.88);
+}
+
+.startup-status {
+  position: relative;
+  width: min(92vw, 34rem);
+  height: 1.55em;
+  margin: 0;
+  overflow: hidden;
+}
+
+.startup-status-line {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.2em 0.8em;
+  opacity: 0;
+  color: #f4f5f7;
+  font-family: var(--font-ui);
+  font-size: clamp(12px, 1.9vmin, 15px);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+  animation: status-cycle 19.6s linear infinite;
+}
+
+.startup-status-line:first-child {
+  opacity: 1;
+}
 
 .startup-message,
 .startup-note {
@@ -363,8 +464,8 @@
   animation: startup-pulse 1.6s ease-in-out infinite;
 }
 
-.startup[aria-busy='true'] .startup-logo {
-  animation: logo-pulse 2.8s ease-in-out infinite;
+.startup[aria-busy='true'] .startup-logo:not(.is-spinner) {
+  animation: logo-pulse 3.6s ease-in-out infinite;
 }
 
 /* LOADING LOGO set to Spin: no pulse; the logo turns only when it is flicked. */
@@ -431,8 +532,12 @@
 }
 
 @media (max-width: 600px) {
-  .startup-logo { width: min(62vw, 360px); }
-  .startup-emblem { width: min(58vw, 340px); }
+  .startup-logo { width: min(52vw, 300px); }
+  .startup-emblem { width: min(52vw, 300px); }
+  .startup-rings { inset: -20%; width: 140%; height: 140%; }
+  .startup-ring-text-outer { font-size: 3.2px; }
+  .startup-ring-text-inner { font-size: 2.75px; }
+  .startup-status-line { letter-spacing: 0.16em; font-size: clamp(11px, 3.2vw, 13px); }
 }
 
 @keyframes startup-pulse {
@@ -440,24 +545,40 @@
   50% { opacity: 0.45; }
 }
 
+/* Subtle luminosity only — no bounce or scale thrash. */
 @keyframes logo-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.78; transform: scale(0.975); }
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.75)) brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 14px 34px rgba(255, 180, 90, 0.16)) brightness(1.05);
+  }
 }
 
 @keyframes ring-turn {
   to { transform: rotate(360deg); }
 }
 
-@keyframes ring-in {
-  from { opacity: 0; scale: 0.94; }
+@keyframes ring-turn-reverse {
+  to { transform: rotate(-360deg); }
 }
 
-/* A brighter letter runs clockwise round the ring, the rest dimmed behind it. */
-@keyframes ring-chase {
-  0% { opacity: 1; }
-  12% { opacity: 0.75; }
-  100% { opacity: 0.75; }
+@keyframes ring-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cal-beacon {
+  0%, 70%, 100% { opacity: 0.25; }
+  78%, 86% { opacity: 1; }
+}
+
+@keyframes status-cycle {
+  0%, 1% { opacity: 0; }
+  3%, 12% { opacity: 1; }
+  15%, 100% { opacity: 0; }
 }
 
 @keyframes startup-out {
@@ -466,10 +587,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .startup-message.is-pulsing,
-  .startup[aria-busy='true'] .startup-logo,
+  .startup[aria-busy='true'] .startup-logo:not(.is-spinner),
+  .startup-rings,
   .startup-ring,
-  .startup-ring-text tspan,
+  .startup-cal-beacon,
+  .startup-status-line,
   .startup-noise-frames { animation: none; }
+  .startup-status-line { opacity: 0; }
+  .startup-status-line:first-child { opacity: 1; }
   .startup.is-leaving { animation-duration: 1ms; }
 }
 

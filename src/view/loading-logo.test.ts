@@ -65,7 +65,7 @@ describe('OPTIONS → Loading logo: Pulse, or a logo to flick and spin', () => {
   })
 
   it('the logo stands in front of the LOADING TVN ring', () => {
-    expect(readFileSync('src/styles/overlays.css', 'utf8')).toContain('.startup-emblem .startup-logo { position: relative; z-index: 1; width: 100%; }')
+    expect(readFileSync('src/styles/overlays.css', 'utf8')).toContain('.startup-emblem .startup-logo {\n  position: relative;\n  z-index: 2;\n  width: 100%;\n}')
   })
 
   it('the loading screen and OPTIONS offer it', () => {
