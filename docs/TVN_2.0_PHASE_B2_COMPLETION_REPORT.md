@@ -10,7 +10,9 @@
 | | Commit | Subject |
 |---|--------|---------|
 | **Start** | `db51a78` | Document Phase B.1 pre-deployment architecture and checks. |
-| **End** | *(this phase’s commits on `main`, local)* | Phase B.2 News / Football / Weather expansion |
+| News | `0361746` | Expand INFO news catalogue with diverse sources and category UI. |
+| Football | `7452db9` | Complete free football INFO service with London schedule gating. |
+| **End** | `51ef0ca` | Add INFO Weather via Open-Meteo and document Phase B.2. |
 
 Phase B and B.1 history is preserved. Logo asset churn was left unstaged.
 
