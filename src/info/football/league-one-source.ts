@@ -52,7 +52,7 @@ function scoreOf(status: MatchStatus, home: unknown, away: unknown): FootballMat
   return { home: homeScore, away: awayScore }
 }
 
-export function matchesFromEspnScoreboard(payload: unknown): FootballMatch[] {
+export function matchesFromEspnScoreboard(payload: unknown, competitionId: string = LEAGUE_ONE_CODE): FootballMatch[] {
   const doc = asJson(payload)
   const events = Array.isArray(doc?.events) ? doc.events : []
   const out: FootballMatch[] = []
@@ -79,7 +79,7 @@ export function matchesFromEspnScoreboard(payload: unknown): FootballMatch[] {
     const score = scoreOf(status, home.score, away.score)
     out.push({
       id: `espn-${id}`,
-      competitionId: LEAGUE_ONE_CODE,
+      competitionId,
       kickoffIso: new Date(kickoff).toISOString(),
       status,
       home: home.name,
@@ -101,7 +101,7 @@ function stat(entry: Json, code: string): number {
   return 0
 }
 
-export function tableFromEspnStandings(payload: unknown, updatedIso: string): LeagueTable | null {
+export function tableFromEspnStandings(payload: unknown, updatedIso: string, competitionId: string = LEAGUE_ONE_CODE): LeagueTable | null {
   const doc = asJson(payload)
   const child = asJson(Array.isArray(doc?.children) ? doc.children[0] : null)
   const standings = asJson(child?.standings)
@@ -130,7 +130,7 @@ export function tableFromEspnStandings(payload: unknown, updatedIso: string): Le
   }
   if (!rows.length) return null
   rows.sort((a, b) => a.position - b.position)
-  return { competitionId: LEAGUE_ONE_CODE, type: 'TOTAL', updatedIso, rows }
+  return { competitionId, type: 'TOTAL', updatedIso, rows }
 }
 
 function daysBetween(fromIso: string, toIso: string): string[] {

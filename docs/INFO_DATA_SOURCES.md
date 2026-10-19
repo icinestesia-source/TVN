@@ -40,7 +40,7 @@ UK and World also include Channel 4 News, the Financial Times, i, the Scotsman, 
 ## Football
 
 Provider: [football-data.org](https://www.football-data.org/) free tier (fixtures, delayed scores, tables).  
-League One (EL1) is not on that plan. Once per Europe/London day, ingest reads the public ESPN scoreboard and table for English League One (`eng.3`) and merges those rows into the same snapshot. Until that snapshot has League One rows, the Sports panel reads the same public scoreboard itself (the previous week through the next fortnight, plus the table). No extra token. `liveReliable` stays `false`. NFL, NBA, NHL and cricket in Sports read ESPN's public scoreboards in the browser. In-progress lines are labelled In progress, not Live.  
+League One (EL1) is not on that plan. Once per Europe/London day, ingest reads the public ESPN scoreboard and table for English League One (`eng.3`) and merges those rows into the same snapshot. Until a competition has rows in that snapshot — the Premier League, Serie A, and the other configured leagues, not only League One — the Sports panel reads ESPN's public scoreboard and table for it (the previous week through the next fortnight). A league the snapshot already returned is left as it was. No extra token. `liveReliable` stays `false`. NFL, NBA, NHL and cricket in Sports read ESPN's public scoreboards in the browser. In-progress lines are labelled In progress, not Live.  
 `liveReliable` is always `false` — UI shows **Delayed**, never **Live**.
 
 Competitions (`src/info/football/competitions.ts`): PL, ELC, EL1, CL, BL1, SA, PD, FL1, DED, BSA, WC, EC (12).  

@@ -6,6 +6,7 @@ import { FootballPanel } from './components/info/FootballPanel.tsx'
 import { INFO_MODULES } from './components/InfoCentre.tsx'
 import { FOOTBALL_COMPETITIONS } from './info/football/competitions.ts'
 import { ingestFootballDataOrg } from './info/football/football-data-org.ts'
+import { applyEspnFallback, leaguesMissingFromSnapshot } from './info/football/espn-fallback.ts'
 import { applyLeagueOneSupplement, matchesFromEspnScoreboard, tableFromEspnStandings } from './info/football/league-one-source.ts'
 import { diagnoseFootballEmpty } from './info/football/empty-state.ts'
 import { SAMPLE_EMPTY, SAMPLE_MATCHES, SAMPLE_MATCHES_ELC, SAMPLE_STANDINGS } from './info/football/fixtures/sample-responses.ts'
@@ -604,6 +605,82 @@ describe('League One daily scoreboard', () => {
     expect(merged.tables[0]?.competitionId).toBe('EL1')
     expect(merged.errors ?? []).not.toEqual(expect.arrayContaining([expect.stringContaining('EL1')]))
     expect(merged.attribution).toContain('ESPN')
+    expect(merged.liveReliable).toBe(false)
+  })
+})
+
+describe('ESPN fallback for leagues the snapshot did not return', () => {
+  it('asks ESPN for the Premier League and Serie A when they have no rows, and keeps a league that already has rows', () => {
+    const prior = buildFootballSnapshot({
+      updatedIso: '2026-10-18T12:00:00.000Z',
+      provider: 'football-data.org',
+      attribution: 'Data from football-data.org',
+      liveReliable: false,
+      competitions: [{ id: 'ELC', code: 'ELC', name: 'Championship' }],
+      matches: [
+        {
+          id: 'kept',
+          competitionId: 'ELC',
+          kickoffIso: '2026-10-18T14:00:00.000Z',
+          status: 'finished',
+          home: 'Leeds',
+          away: 'Burnley',
+          score: { home: 1, away: 0 },
+        },
+      ],
+      tables: [],
+    })
+    const missing = leaguesMissingFromSnapshot(prior).map((league) => league.code)
+    expect(missing).toContain('PL')
+    expect(missing).toContain('SA')
+    expect(missing).not.toContain('ELC')
+    const merged = applyEspnFallback(
+      prior,
+      {
+        matches: [
+          {
+            id: 'espn-pl',
+            competitionId: 'PL',
+            kickoffIso: '2026-10-18T14:00:00.000Z',
+            status: 'finished',
+            home: 'Arsenal',
+            away: 'Chelsea',
+            score: { home: 2, away: 1 },
+          },
+        ],
+        tables: [
+          {
+            competitionId: 'SA',
+            type: 'TOTAL',
+            updatedIso: '2026-10-18T18:00:00.000Z',
+            rows: [
+              {
+                position: 1,
+                team: 'Inter',
+                played: 7,
+                won: 5,
+                drawn: 1,
+                lost: 1,
+                goalsFor: 12,
+                goalsAgainst: 4,
+                goalDifference: 8,
+                points: 16,
+              },
+            ],
+          },
+        ],
+        errors: [],
+      },
+      [
+        { code: 'PL', slug: 'eng.1', name: 'Premier League', area: 'England' },
+        { code: 'SA', slug: 'ita.1', name: 'Serie A', area: 'Italy' },
+      ],
+      { fromIso: '2026-10-11', toIso: '2026-11-01' },
+    )
+    expect(merged.matches.find((match) => match.id === 'kept')?.home).toBe('Leeds')
+    expect(merged.matches.find((match) => match.competitionId === 'PL')?.score).toEqual({ home: 2, away: 1 })
+    expect(merged.tables.find((table) => table.competitionId === 'SA')?.rows[0]?.team).toBe('Inter')
+    expect(merged.competitions.map((entry) => entry.code)).toEqual(expect.arrayContaining(['ELC', 'PL', 'SA']))
     expect(merged.liveReliable).toBe(false)
   })
 })

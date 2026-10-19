@@ -9,7 +9,7 @@ describe('INFO sports scoreboards', () => {
   it('lists NFL, NBA, NHL and cricket beside football', () => {
     const markup = renderToStaticMarkup(createElement(SportsPanel))
     for (const label of ['Football', 'NFL', 'NBA', 'NHL', 'Cricket']) expect(markup).toContain(`>${label}<`)
-    expect(readFileSync('src/info/football/load.ts', 'utf8')).toContain('fetchLeagueOneDisplay')
+    expect(readFileSync('src/info/football/load.ts', 'utf8')).toContain('fetchEspnFallback')
   })
 
   it('keeps a finished NFL score and drops a scheduled zero', () => {
