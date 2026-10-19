@@ -15,8 +15,8 @@ const SPORTS: { id: Sport; label: string }[] = [
 ]
 
 /**
- * INFO → Sports. Football stays on the published snapshot, with League One filled from ESPN
- * when that snapshot has none. The other tabs read ESPN's public scoreboards directly.
+ * INFO → Sports. Football stays on the published snapshot, with missing leagues filled from ESPN.
+ * NFL, NBA, NHL and cricket read ESPN scoreboards by day (previous week through the next fortnight).
  */
 export function SportsPanel() {
   const [sport, setSport] = useState<Sport>('football')

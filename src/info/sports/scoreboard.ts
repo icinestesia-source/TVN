@@ -1,8 +1,11 @@
 /**
  * NFL, NBA, NHL and cricket from ESPN's public scoreboards. No key.
  * A scheduled 0 is not stored as a score. In-progress lines use the provider's
- * current scoreboard text and are not labelled Live.
+ * current scoreboard text and are not labelled Live. Scoreboards are read by day
+ * so the Sports panel can page through a calendar, as Football does.
  */
+
+import { addDaysIso, kickoffLocalDayIso, todayIso } from '../football/normalize.ts'
 
 export type ScoreboardStatus = 'scheduled' | 'in-play' | 'finished' | 'postponed' | 'cancelled'
 
@@ -10,6 +13,8 @@ export interface ScoreboardEvent {
   id: string
   competition: string
   startIso: string
+  /** Multi-day cricket fixtures include an end date when ESPN sends one. */
+  endIso?: string
   status: ScoreboardStatus
   detail: string
   home: string
@@ -91,10 +96,12 @@ export function eventsFromEspnScoreboard(payload: unknown, competition: string):
     const away = side(match?.competitors, 'away')
     const homeScore = scoreText(status, home.score)
     const awayScore = scoreText(status, away.score)
+    const end = typeof event.endDate === 'string' ? event.endDate : null
     out.push({
       id: `espn-${id}`,
       competition,
       startIso: new Date(start).toISOString(),
+      ...(end ? { endIso: new Date(end).toISOString() } : {}),
       status,
       detail,
       home: home.name,
@@ -128,10 +135,12 @@ export function eventsFromCricketHeader(payload: unknown): ScoreboardEvent[] {
         const away = side(event.competitors, 'away')
         const homeScore = scoreText(status, home.score)
         const awayScore = scoreText(status, away.score)
+        const end = typeof event.endDate === 'string' ? event.endDate : null
         out.push({
           id: `espn-${id}`,
           competition,
           startIso: new Date(start).toISOString(),
+          ...(end ? { endIso: new Date(end).toISOString() } : {}),
           status,
           detail: statusText(status),
           home: home.name,
@@ -145,22 +154,84 @@ export function eventsFromCricketHeader(payload: unknown): ScoreboardEvent[] {
   return out
 }
 
+/** True when the fixture falls on this local calendar day (multi-day cricket spans inclusive). */
+export function eventOnDay(event: ScoreboardEvent, dayIso: string): boolean {
+  const start = kickoffLocalDayIso(event.startIso)
+  const end = event.endIso ? kickoffLocalDayIso(event.endIso) : start
+  return dayIso >= start && dayIso <= end
+}
+
+export function daysWithEvents(events: readonly ScoreboardEvent[]): Set<string> {
+  const days = new Set<string>()
+  for (const event of events) {
+    let day = kickoffLocalDayIso(event.startIso)
+    const end = event.endIso ? kickoffLocalDayIso(event.endIso) : day
+    while (day <= end && days.size < 120) {
+      days.add(day)
+      day = addDaysIso(day, 1)
+    }
+  }
+  return days
+}
+
+export function nextDayWithEvents(days: ReadonlySet<string>, fromIso: string): string | null {
+  let next: string | null = null
+  for (const day of days) {
+    if (day <= fromIso) continue
+    if (next === null || day < next) next = day
+  }
+  return next
+}
+
+function daysBetween(fromIso: string, toIso: string): string[] {
+  const days: string[] = []
+  let day = fromIso
+  while (day <= toIso && days.length < 40) {
+    days.push(day)
+    day = addDaysIso(day, 1)
+  }
+  return days
+}
+
 async function readJson(url: string, fetchImpl: typeof fetch): Promise<unknown> {
   const response = await fetchImpl(url, { headers: { accept: 'application/json' } })
   if (!response.ok) throw new Error(`${response.status}`)
   return response.json() as Promise<unknown>
 }
 
-export async function fetchNflScoreboard(fetchImpl: typeof fetch = fetch): Promise<ScoreboardEvent[]> {
-  return eventsFromEspnScoreboard(await readJson(NFL, fetchImpl), 'NFL')
+async function fetchScoreboardDays(baseUrl: string, competition: string, dateFrom: string, dateTo: string, fetchImpl: typeof fetch): Promise<ScoreboardEvent[]> {
+  const byId = new Map<string, ScoreboardEvent>()
+  const days = daysBetween(dateFrom, dateTo)
+  const batch = 6
+  for (let index = 0; index < days.length; index += batch) {
+    await Promise.all(
+      days.slice(index, index + batch).map(async (day) => {
+        const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}dates=${day.replace(/-/g, '')}`
+        for (const event of eventsFromEspnScoreboard(await readJson(url, fetchImpl), competition)) {
+          byId.set(event.id, event)
+        }
+      }),
+    )
+  }
+  return [...byId.values()].sort((a, b) => a.startIso.localeCompare(b.startIso))
 }
 
-export async function fetchNbaScoreboard(fetchImpl: typeof fetch = fetch): Promise<ScoreboardEvent[]> {
-  return eventsFromEspnScoreboard(await readJson(NBA, fetchImpl), 'NBA')
+/** Default window matching Football: past week through the next fortnight. */
+export function scoreboardWindow(now = new Date()): { fromIso: string; toIso: string } {
+  const today = todayIso(now)
+  return { fromIso: addDaysIso(today, -7), toIso: addDaysIso(today, 14) }
 }
 
-export async function fetchNhlScoreboard(fetchImpl: typeof fetch = fetch): Promise<ScoreboardEvent[]> {
-  return eventsFromEspnScoreboard(await readJson(NHL, fetchImpl), 'NHL')
+export async function fetchNflScoreboard(fetchImpl: typeof fetch = fetch, window = scoreboardWindow()): Promise<ScoreboardEvent[]> {
+  return fetchScoreboardDays(NFL, 'NFL', window.fromIso, window.toIso, fetchImpl)
+}
+
+export async function fetchNbaScoreboard(fetchImpl: typeof fetch = fetch, window = scoreboardWindow()): Promise<ScoreboardEvent[]> {
+  return fetchScoreboardDays(NBA, 'NBA', window.fromIso, window.toIso, fetchImpl)
+}
+
+export async function fetchNhlScoreboard(fetchImpl: typeof fetch = fetch, window = scoreboardWindow()): Promise<ScoreboardEvent[]> {
+  return fetchScoreboardDays(NHL, 'NHL', window.fromIso, window.toIso, fetchImpl)
 }
 
 export async function fetchCricketScoreboard(fetchImpl: typeof fetch = fetch): Promise<ScoreboardEvent[]> {
