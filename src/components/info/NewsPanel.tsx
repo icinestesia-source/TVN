@@ -123,7 +123,10 @@ export function NewsPanel() {
   }
 
   const items = selectPersonalized(allItems, prefs, category, expanded)
-  const poolCount = allItems.filter((item) => item.category === category).length
+  // Top stories also draw from UK / World, matching selectPersonalized's pool.
+  const poolCount = allItems.filter((item) =>
+    category === 'top' ? item.category === 'top' || item.category === 'uk' || item.category === 'world' : item.category === category,
+  ).length
 
   const movePublisher = (publisher: string, dir: -1 | 1) => {
     const order = [...prefs.news.publisherOrder]

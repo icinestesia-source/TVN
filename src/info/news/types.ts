@@ -48,6 +48,12 @@ export const NEWS_CATEGORIES: { id: NewsCategory; label: string }[] = [
 
 export const NEWS_SNAPSHOT_URL = '/info/news.json'
 export const NEWS_STALE_MINUTES = 120
-export const NEWS_TOP_LIMIT = 16
+/** First screen of Top stories (round-robin across publishers). */
+export const NEWS_TOP_LIMIT = 24
 export const NEWS_CATEGORY_LIMIT = 32
-export const NEWS_EXPANDED_LIMIT = 40
+/** “More” on any News tab. */
+export const NEWS_EXPANDED_LIMIT = 48
+/** How many headlines from one publisher on Top stories before “More”. */
+export const NEWS_TOP_PER_PUBLISHER = 4
+/** How many from one publisher after “More” on Top stories. */
+export const NEWS_TOP_PER_PUBLISHER_EXPANDED = 6

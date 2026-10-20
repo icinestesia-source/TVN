@@ -13,9 +13,10 @@ import {
   newsIsStale,
   stripMarkup,
 } from './info/news/normalize.ts'
+import { selectPersonalized } from './info/news/personalize.ts'
 import { selectHeadlines, titleSimilarity } from './info/news/select.ts'
 import type { NewsItem } from './info/news/types.ts'
-import { NEWS_CATEGORIES, NEWS_TOP_LIMIT } from './info/news/types.ts'
+import { NEWS_CATEGORIES, NEWS_TOP_LIMIT, NEWS_TOP_PER_PUBLISHER } from './info/news/types.ts'
 
 const sampleRss = `<?xml version="1.0"?>
 <rss version="2.0"><channel>
@@ -114,6 +115,37 @@ describe('INFO news', () => {
     expect(new Set(selected.map((row) => row.publisher)).size).toBeGreaterThanOrEqual(3)
     const leads = selectHeadlines(pool, { limit: 6, maxPerPublisher: 1 })
     expect(new Set(leads.map((row) => row.publisher)).size).toBe(leads.length)
+  })
+
+  it('shows a full Top stories list, not one headline per top-feed publisher', () => {
+    const prefs = defaultInfoPreferences()
+    prefs.news.enabledPublisherIds = ['BBC News', 'The Guardian', 'Sky News', 'The Independent']
+    const publishers = ['BBC News', 'The Guardian', 'Sky News', 'The Independent'] as const
+    const pool: NewsItem[] = []
+    let n = 0
+    for (const publisher of publishers) {
+      for (let slot = 0; slot < 8; slot += 1) {
+        const id = `${publisher}-${slot}`
+        // Unique token sets per item (near-duplicate filter uses title word overlap).
+        pool.push({
+          id,
+          title: `Item${n}qzx publisher${publishers.indexOf(publisher)} slot${slot} unique${n}word`,
+          publisher,
+          publishedAt: `2026-10-18T${String(8 + slot).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}:00.000Z`,
+          description: null,
+          category: slot < 2 ? 'top' : 'uk',
+          url: `https://example.test/${encodeURIComponent(id)}`,
+          sourceId: 'test',
+        })
+        n += 1
+      }
+    }
+    const selected = selectPersonalized(pool, prefs, 'top', false)
+    expect(selected.length).toBeGreaterThan(4)
+    expect(selected.length).toBe(Math.min(NEWS_TOP_LIMIT, publishers.length * NEWS_TOP_PER_PUBLISHER))
+    for (const publisher of publishers) {
+      expect(selected.filter((row) => row.publisher === publisher).length).toBeLessThanOrEqual(NEWS_TOP_PER_PUBLISHER)
+    }
   })
 
   it('expands the allowlist across categories with publisher attribution fields', () => {

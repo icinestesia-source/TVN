@@ -1,7 +1,13 @@
 import type { InfoPreferences } from '../preferences.ts'
 import { selectHeadlines } from './select.ts'
 import type { NewsCategory, NewsItem } from './types.ts'
-import { NEWS_CATEGORY_LIMIT, NEWS_EXPANDED_LIMIT, NEWS_TOP_LIMIT } from './types.ts'
+import {
+  NEWS_CATEGORY_LIMIT,
+  NEWS_EXPANDED_LIMIT,
+  NEWS_TOP_LIMIT,
+  NEWS_TOP_PER_PUBLISHER,
+  NEWS_TOP_PER_PUBLISHER_EXPANDED,
+} from './types.ts'
 
 /** Filter and order central snapshot items by viewer news preferences. */
 export function personalizeNewsItems(items: readonly NewsItem[], prefs: InfoPreferences): NewsItem[] {
@@ -33,10 +39,22 @@ export function selectPersonalized(
   category: NewsCategory,
   expanded: boolean,
 ): NewsItem[] {
-  const pool = personalizeNewsItems(items, prefs).filter((item) => item.category === category)
+  const personalized = personalizeNewsItems(items, prefs)
+  // Top stories: use the dedicated top feeds, and fill from UK / World so the list is not stuck at one lead per outlet.
+  const pool =
+    category === 'top'
+      ? personalized.filter((item) => item.category === 'top' || item.category === 'uk' || item.category === 'world')
+      : personalized.filter((item) => item.category === category)
   const limit = expanded ? NEWS_EXPANDED_LIMIT : category === 'top' ? NEWS_TOP_LIMIT : NEWS_CATEGORY_LIMIT
-  // The first screen is one lead headline per publisher. More can add a second from each.
-  const maxPer = expanded ? 2 : 1
+  // Other tabs: one lead per publisher first; Top stories shows several from each so the first screen is full.
+  const maxPer =
+    category === 'top'
+      ? expanded
+        ? NEWS_TOP_PER_PUBLISHER_EXPANDED
+        : NEWS_TOP_PER_PUBLISHER
+      : expanded
+        ? 2
+        : 1
   return selectHeadlines(pool, { limit, maxPerPublisher: maxPer })
 }
 

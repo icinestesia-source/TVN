@@ -19,6 +19,10 @@ export const NEWS_FEEDS: readonly NewsFeed[] = [
   { id: 'guardian-top', publisher: 'The Guardian', category: 'top', feedUrl: 'https://www.theguardian.com/uk/rss' },
   { id: 'sky-home', publisher: 'Sky News', category: 'top', feedUrl: 'https://feeds.skynews.com/feeds/rss/home.xml' },
   { id: 'independent-top', publisher: 'The Independent', category: 'top', feedUrl: 'https://www.independent.co.uk/rss' },
+  { id: 'channel4-top', publisher: 'Channel 4 News', category: 'top', feedUrl: 'https://www.channel4.com/news/feed' },
+  { id: 'npr-top', publisher: 'NPR', category: 'top', feedUrl: 'https://feeds.npr.org/1001/rss.xml' },
+  { id: 'aljazeera-top', publisher: 'Al Jazeera English', category: 'top', feedUrl: 'https://www.aljazeera.com/xml/rss/all.xml' },
+  { id: 'france24-top', publisher: 'France 24', category: 'top', feedUrl: 'https://www.france24.com/en/rss' },
 
   // UK
   { id: 'bbc-uk', publisher: 'BBC News', category: 'uk', feedUrl: 'https://feeds.bbci.co.uk/news/uk/rss.xml' },
