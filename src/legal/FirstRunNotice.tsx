@@ -50,7 +50,7 @@ function EntryKeys() {
  * Shown once per browser; About · Sources · Legal stays in Settings afterwards. TVN - CONTINUE carries on with the network as
  * it is loaded, NEW USER goes to tvn.lol/tvn (TVN without the example channels, kept apart from this network) for a network
  * of the viewer's own, and there clears that network again; LEGAL opens About and returns here.
- * 000 TVN stays tuned behind it whichever is chosen.
+ * Channel 001 stays tuned behind it whichever is chosen; CONTINUE is the first click that lets sound start.
  */
 export function FirstRunNotice({
   startNewNetwork = async () => '',

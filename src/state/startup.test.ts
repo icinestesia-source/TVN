@@ -219,7 +219,7 @@ describe('initial tuned channel', () => {
   it('D/E: the fallback start (saved channel off air) is also the channel CH+/CH- step from', () => {
     const offAir = listChannels().find((channel) => channel.number < 1001 && !isOnAir(channel))!
     const tuned = start(offAir.number, null)
-    expect(tuned.channelNumber).toBe(0)
+    expect(tuned.channelNumber).toBe(1)
     expect(stepTarget(tuned, null, 1)).toBe(adjacentChannel(tuned.channelNumber, 1).number)
   })
 
@@ -278,13 +278,13 @@ describe('initial tuned channel', () => {
     }
   })
 
-  it('N: a start with nothing valid to resume is 000 TVN, never a random channel and never 1000', () => {
-    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(0)
-    expect(start(DEFAULT_PREFERENCES.lastChannelNumber).channelNumber).toBe(0)
-    expect(start(1500).channelNumber).toBe(0)
-    expect(start(99999, 225)).toEqual({ channelNumber: 0, previousNumber: 225 })
-    expect(start(1000, null).channelNumber).toBe(0)
-    expect(start(1000, 1000).channelNumber).toBe(0)
+  it('N: a start with nothing valid to resume is 001, never a random channel and never 1000; /tvn still opens on 000', () => {
+    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(1)
+    expect(start(DEFAULT_PREFERENCES.lastChannelNumber).channelNumber).toBe(1)
+    expect(start(1500).channelNumber).toBe(1)
+    expect(start(99999, 225)).toEqual({ channelNumber: 1, previousNumber: 225 })
+    expect(start(1000, null).channelNumber).toBe(1)
+    expect(start(1000, 1000).channelNumber).toBe(1)
     expect(resolveStartupTuning(createStartupRestore(), { lastChannelNumber: 225, previousChannelNumber: null }, 'tvn')!.channelNumber).toBe(0)
     for (const path of ['src/state/startup.ts', 'src/state/startup-channel.ts']) {
       expect(readFileSync(path, 'utf8')).not.toMatch(/Math\.random|randomChannel/)

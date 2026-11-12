@@ -9,11 +9,13 @@ export interface StartupRestore {
 }
 
 /**
- * Where a start with nothing to resume goes: 000 TVN, whose own surfing is the network's random start.
- * The first channel on air stands in only if 000 itself is missing.
+ * Where a start with nothing to resume goes: 001 when it is on air, otherwise the first ordinary channel on air.
+ * 000 TVN is only the start for the /tvn entry (see resolveStartupTuning), not a normal first visit.
  */
 export function startChannel(channels: readonly Channel[]): Channel | undefined {
-  return channels.find((channel) => channel.number === TVN_CHANNEL_NUMBER && channel.enabled) ?? firstOnAir(channels)
+  const one = channels.find((channel) => channel.number === 1 && channel.enabled)
+  if (one && isOnAir(one) && !isOffAir(1)) return one
+  return firstOnAir(channels) ?? channels.find((channel) => channel.number === TVN_CHANNEL_NUMBER && channel.enabled)
 }
 
 /** Startup restoration settles the first channel only until the viewer tunes; it never overrides an explicit choice. */

@@ -117,7 +117,7 @@ import { isOffAir } from '../data/off-air.ts'
 import { isOnAir } from '../network/airing.ts'
 import { confirmStart, soundHeld, soundRefused, viewerInteracted, type StartHold } from '../player/autoplay.ts'
 import { canGoBack, canGoForward, commitHistory, EMPTY_HISTORY, visit, type ViewingHistory } from './history.ts'
-import { useNoticeAcknowledged } from '../legal/about-store.ts'
+import { noticeAcknowledged, useNoticeAcknowledged } from '../legal/about-store.ts'
 import { VOLUME_FULL } from '../player/volume.ts'
 import { loadUsers, saveUsers, type NetworkUser } from '../data/user-network/users.ts'
 import {
@@ -864,12 +864,15 @@ export function TvProvider({ children }: { children: ReactNode }) {
   bootRef.current = () => {
     if (bootedRef.current) return
     if (multiviewRef.current !== '1') return
+    // First visit: wait for CONTINUE on the welcome (a real click) so the first play can start with sound.
+    // Returning visits already have the notice acknowledged and boot as soon as the player is ready.
+    if (!noticeAcknowledged()) return
     const current = channelByNumber(channelRef.current)
     if (!current || !playerRef.current) return
     bootedRef.current = true
-    // A browser that says outright it allows only muted play (Firefox) starts muted, rather than waiting on a
-    // refused start; any key or tap then brings the sound.
-    const refused = soundRefused()
+    // After a user gesture (welcome CONTINUE, or any earlier click/key), the browser usually allows sound.
+    // Only start muted when the browser still refuses unmuted autoplay and the viewer has not interacted.
+    const refused = soundRefused() && !viewerInteracted()
     if (refused) {
       startHoldRef.current = 'sound'
       setStartHold('sound')
@@ -904,8 +907,14 @@ export function TvProvider({ children }: { children: ReactNode }) {
     showOverlay('info', INFO_MS)
   }
 
-  // A click or key while the first start is still being checked (CONTINUE on the welcome notice) allows
-  // sound at once, rather than leaving the viewer to tap the picture again once the check ends.
+  // Welcome CONTINUE (or any later acknowledgement) retries boot once the notice is gone.
+  useEffect(() => {
+    if (!noticeSeen) return
+    if (catalogueReadyRef.current && playerReadyRef.current) bootRef.current()
+  }, [noticeSeen])
+
+  // A click or key while the first start is still being checked allows sound at once, rather than leaving
+  // the viewer to tap the picture again once the check ends.
   useEffect(() => {
     const early = () => {
       if (!startCheckRef.current) return

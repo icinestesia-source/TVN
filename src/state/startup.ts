@@ -37,7 +37,7 @@ export function resolveStartupTuning(
   stored: { lastChannelNumber: number; previousChannelNumber: number | null },
   entry: 'television' | 'tvn' = 'television',
 ): StartupTuning | null {
-  // The /tvn entry asks for surfing from the first moment, which is what 000 is.
+  // The /tvn entry still opens on 000 so surfing can start at once; a normal visit starts on 001 (or the saved channel).
   if (entry === 'tvn') stored = { lastChannelNumber: TVN_CHANNEL_NUMBER, previousChannelNumber: null }
   // A new session starts with an empty session channel, so it is never the place to resume: a viewer
   // who left on 000 comes back to the channel they watched before it.

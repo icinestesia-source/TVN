@@ -512,7 +512,7 @@ describe('isolation and privacy', () => {
     expect(readFileSync('src/state/startup.ts', 'utf8')).not.toMatch(/session\/import|replaceSession|sessionActive/)
     const restore = () => createStartupRestore()
     expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: 225 })).toEqual({ channelNumber: 225, previousNumber: null })
-    expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: null })?.channelNumber).toBe(0)
+    expect(resolveStartupTuning(restore(), { lastChannelNumber: 1000, previousChannelNumber: null })?.channelNumber).toBe(1)
     expect(firstOnAir(listChannels())!.number).not.toBe(0)
     expect(firstOnAir(listChannels())!.number).not.toBe(1000)
     expect(resolveStartupTuning(restore(), { lastChannelNumber: 225, previousChannelNumber: 1000 })).toEqual({ channelNumber: 225, previousNumber: null })

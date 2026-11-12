@@ -49,8 +49,8 @@ describe('one TVN, two entries', () => {
     ])
   })
 
-  it('a fresh viewer starts on 000 TVN; /tvn always starts on 000; a returning viewer keeps their channel', () => {
-    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(0)
+  it('a fresh viewer starts on 001; /tvn always starts on 000; a returning viewer keeps their channel', () => {
+    expect(DEFAULT_PREFERENCES.lastChannelNumber).toBe(1)
     expect(provider).toContain('const tuning = resolveStartupTuning(startup, stored, currentEntryMode())')
     expect(provider).toContain('commitChannel(tuning, false)')
     expect(provider).toContain('historyRef.current = visit(EMPTY_HISTORY, tuning.channelNumber)')
